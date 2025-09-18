@@ -3,5 +3,39 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
+    "bulud-ng": {
+      "projectType": "library",
+      "root": "projects/bulud-ng",
+      "sourceRoot": "projects/bulud-ng/src",
+      "prefix": "bulud",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/bulud-ng/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/bulud-ng/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "tsConfig": "projects/bulud-ng/tsconfig.spec.json"
+          }
+        }
+      }
+    }
+  },
+  "schematics": {
+    "@schematics/angular:component": {
+      "style": "scss"
+    }
+  },
+  "cli": {
+    "analytics": false
   }
 }

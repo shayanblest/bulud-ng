@@ -3,6 +3,11 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "paths": {
+      "bulud-ng": [
+        "./dist/bulud-ng"
+      ]
+    },
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -22,5 +27,13 @@
     "typeCheckHostBindings": true,
     "strictTemplates": true
   },
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/bulud-ng/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/bulud-ng/tsconfig.spec.json"
+    }
+  ]
 }
