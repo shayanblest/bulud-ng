@@ -1,0 +1,28 @@
+<span
+  class="bulud-badge"
+  [class.bulud-badge--neutral]="variant() === 'neutral'"
+  [class.bulud-badge--primary]="variant() === 'primary'"
+  [class.bulud-badge--success]="variant() === 'success'"
+  [class.bulud-badge--warning]="variant() === 'warning'"
+  [class.bulud-badge--danger]="variant() === 'danger'"
+  [class.bulud-badge--small]="size() === 'small'"
+  [class.bulud-badge--medium]="size() === 'medium'"
+  [class.bulud-badge--large]="size() === 'large'"
+>
+  @if (dot()) {
+    <span class="bulud-badge__dot" aria-hidden="true"></span>
+  }
+  <span class="bulud-badge__content"><ng-content /></span>
+  @if (dismissible()) {
+    <button
+      class="bulud-badge__dismiss"
+      type="button"
+      [attr.aria-label]="dismissLabel()"
+      (click)="dismiss($event)"
+    >
+      <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+        <path d="m6 6 8 8m0-8-8 8" />
+      </svg>
+    </button>
+  }
+</span>

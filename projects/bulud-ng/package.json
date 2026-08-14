@@ -2,11 +2,23 @@
   "name": "bulud-ng",
   "version": "0.0.1",
   "peerDependencies": {
-    "@angular/common": "^20.3.0",
-    "@angular/core": "^20.3.0"
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
   },
   "dependencies": {
     "tslib": "^2.3.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "exports": {
+    "./tailwind.css": {
+      "style": "./tailwind.css",
+      "default": "./tailwind.css"
+    }
+  }
 }

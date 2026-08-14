@@ -1,5 +1,2 @@
-/*
- * Public API Surface of bulud-ng
- */
-
-export * from './lib/components/test/test';
+export * from './lib/theme/bulud-theme';
+export * from './lib/i18n/bulud-i18n';

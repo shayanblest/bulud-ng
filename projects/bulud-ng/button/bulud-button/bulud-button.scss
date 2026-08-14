@@ -1,0 +1,217 @@
+:host {
+  display: inline-flex;
+  max-inline-size: 100%;
+  vertical-align: middle;
+}
+
+:host(.bulud-button-host--full-width) {
+  display: flex;
+  inline-size: 100%;
+}
+
+.bulud-button {
+  --_background: var(
+    --bulud-button-background,
+    var(--bulud-color-primary, #2563eb)
+  );
+  --_background-hover: var(
+    --bulud-button-background-hover,
+    var(--bulud-color-primary-hover, #1d4ed8)
+  );
+  --_background-active: var(
+    --bulud-button-background-active,
+    var(--bulud-color-primary-active, #1e40af)
+  );
+  --_border: var(--bulud-button-border, transparent);
+  --_foreground: var(
+    --bulud-button-foreground,
+    var(--bulud-color-on-primary, #ffffff)
+  );
+  --_focus: var(
+    --bulud-button-focus-ring,
+    var(--bulud-color-focus, #93c5fd)
+  );
+
+  align-items: center;
+  background: var(--_background);
+  border: 1px solid var(--_border);
+  border-radius: var(
+    --bulud-button-radius,
+    var(--bulud-radius-control, 0.5rem)
+  );
+  box-sizing: border-box;
+  color: var(--_foreground);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: var(--bulud-button-font-weight, 600);
+  gap: var(--bulud-button-gap, 0.5rem);
+  inline-size: 100%;
+  justify-content: center;
+  line-height: 1;
+  min-inline-size: 0;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease;
+  user-select: none;
+  white-space: normal;
+}
+
+.bulud-button:hover:not(:disabled) {
+  background: var(--_background-hover);
+}
+
+.bulud-button:active:not(:disabled) {
+  background: var(--_background-active);
+}
+
+.bulud-button:focus-visible {
+  outline: 3px solid var(--_focus);
+  outline-offset: 2px;
+}
+
+.bulud-button:disabled {
+  cursor: not-allowed;
+  opacity: var(--bulud-button-disabled-opacity, 0.55);
+}
+
+.bulud-button--secondary {
+  --_background: var(
+    --bulud-button-secondary-background,
+    var(--bulud-color-surface, #ffffff)
+  );
+  --_background-hover: var(
+    --bulud-button-secondary-background-hover,
+    var(--bulud-color-surface-hover, #f8fafc)
+  );
+  --_background-active: var(
+    --bulud-button-secondary-background-active,
+    var(--bulud-color-surface-active, #f1f5f9)
+  );
+  --_border: var(
+    --bulud-button-secondary-border,
+    var(--bulud-color-border, #cbd5e1)
+  );
+  --_foreground: var(
+    --bulud-button-secondary-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+}
+
+.bulud-button--danger {
+  --_background: var(
+    --bulud-button-danger-background,
+    var(--bulud-color-danger, #dc2626)
+  );
+  --_background-hover: var(
+    --bulud-button-danger-background-hover,
+    var(--bulud-color-danger-hover, #b91c1c)
+  );
+  --_background-active: var(
+    --bulud-button-danger-background-active,
+    var(--bulud-color-danger-active, #991b1b)
+  );
+  --_foreground: var(
+    --bulud-button-danger-foreground,
+    var(--bulud-color-on-danger, #ffffff)
+  );
+  --_focus: var(
+    --bulud-button-danger-focus-ring,
+    var(--bulud-color-danger-focus, #fca5a5)
+  );
+}
+
+.bulud-button--ghost {
+  --_background: transparent;
+  --_background-hover: var(
+    --bulud-button-ghost-background-hover,
+    var(--bulud-color-surface-hover, #f1f5f9)
+  );
+  --_background-active: var(
+    --bulud-button-ghost-background-active,
+    var(--bulud-color-surface-active, #e2e8f0)
+  );
+  --_foreground: var(
+    --bulud-button-ghost-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+}
+
+.bulud-button--small {
+  block-size: var(--bulud-button-height-small, 2rem);
+  font-size: var(--bulud-button-font-size-small, 0.8125rem);
+  padding-inline: var(--bulud-button-padding-inline-small, 0.75rem);
+}
+
+.bulud-button--medium {
+  block-size: var(--bulud-button-height-medium, 2.5rem);
+  font-size: var(--bulud-button-font-size-medium, 0.875rem);
+  padding-inline: var(--bulud-button-padding-inline-medium, 1rem);
+}
+
+.bulud-button--large {
+  block-size: var(--bulud-button-height-large, 3rem);
+  font-size: var(--bulud-button-font-size-large, 1rem);
+  padding-inline: var(--bulud-button-padding-inline-large, 1.25rem);
+}
+
+.bulud-button__content {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.bulud-button__spinner {
+  animation: bulud-button-spin 700ms linear infinite;
+  block-size: 1em;
+  border: 0.125em solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  inline-size: 1em;
+}
+
+.bulud-visually-hidden {
+  block-size: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  inline-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+}
+
+@keyframes bulud-button-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-button {
+    transition: none;
+  }
+
+  .bulud-button__spinner {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .bulud-button {
+    border-color: ButtonText;
+  }
+
+  .bulud-button:disabled {
+    color: GrayText;
+    opacity: 1;
+  }
+}
