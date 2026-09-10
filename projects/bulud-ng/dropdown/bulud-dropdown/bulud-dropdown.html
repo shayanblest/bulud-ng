@@ -1,10 +1,15 @@
 <div class="bulud-dropdown">
   <button
+    #trigger
     class="bulud-dropdown__trigger"
     type="button"
-    [disabled]="disabled()"
-      [attr.aria-label]="ariaLabel()"
+    role="combobox"
+    [disabled]="isDisabled()"
+    [attr.aria-label]="ariaLabel()"
     [attr.aria-expanded]="open()"
+    [attr.aria-controls]="instanceId + '-listbox'"
+    [attr.aria-activedescendant]="activeOptionId()"
+    [attr.aria-invalid]="isInvalid() ? 'true' : null"
     aria-haspopup="listbox"
     (click)="toggle()"
     (keydown)="openFromKeyboard($event)"
@@ -35,11 +40,11 @@
     </span>
   </button>
 
-  @if (clearable() && selectedOptions().length > 0 && !disabled()) {
+  @if (clearable() && selectedOptions().length > 0 && !isDisabled()) {
     <button
       class="bulud-dropdown__clear"
       type="button"
-      aria-label="Clear selection"
+      [attr.aria-label]="clearLabel() ?? locale.dropdown.clearLabel"
       (click)="clear($event)"
     >
         <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
@@ -52,7 +57,9 @@
     <div class="bulud-dropdown__panel">
       @if (searchable()) {
         <label class="bulud-dropdown__search">
-          <span class="bulud-visually-hidden">Search options</span>
+          <span class="bulud-visually-hidden">
+            {{ searchLabel() ?? locale.dropdown.searchLabel }}
+          </span>
           <span class="bulud-dropdown__search-icon" aria-hidden="true">
             <svg viewBox="0 0 20 20" focusable="false">
               <circle cx="8.5" cy="8.5" r="4.75" />
@@ -63,8 +70,10 @@
             #searchInput
             type="search"
             [value]="searchTerm()"
-            [placeholder]="searchPlaceholder()"
-            (input)="searchTerm.set(searchInput.value)"
+            [placeholder]="
+              searchPlaceholder() ?? locale.dropdown.searchPlaceholder
+            "
+            (input)="handleSearchInput(searchInput.value)"
             (keydown)="handleSearchKeydown($event)"
           />
         </label>
@@ -73,28 +82,32 @@
       @if (loading()) {
         <div class="bulud-dropdown__message" role="status">
           <span class="bulud-dropdown__spinner" aria-hidden="true"></span>
-          {{ loadingText() }}
+          {{ loadingText() ?? locale.dropdown.loadingText }}
         </div>
       } @else if (options().length === 0) {
         <div class="bulud-dropdown__message">
-          {{ emptyText() }}
+          {{ emptyText() ?? locale.dropdown.emptyText }}
         </div>
       } @else if (filteredOptions().length === 0) {
         <div class="bulud-dropdown__message">
-          {{ noResultsText() }}
+          {{ noResultsText() ?? locale.dropdown.noResultsText }}
         </div>
       } @else {
         <div
           class="bulud-dropdown__options"
           role="listbox"
           [attr.aria-multiselectable]="multiple() ? 'true' : null"
+          [id]="instanceId + '-listbox'"
         >
-          @for (option of filteredOptions(); track option) {
+          @for (option of filteredOptions(); track option; let index = $index) {
             <button
               class="bulud-dropdown__option"
               type="button"
+              [id]="optionId(index)"
+              tabindex="-1"
               role="option"
               [attr.aria-selected]="isSelected(option)"
+              [class.bulud-dropdown__option--active]="isActive(index)"
               (click)="selectOption(option)"
               (keydown)="handleOptionKeydown($event, option)"
             >

@@ -19,35 +19,43 @@ Tailwind CSS 4 is optional. Bulud components work without Tailwind.
 Create a consumer-owned `src/bulud.config.ts`:
 
 ```ts
-import { defineBuludTheme } from 'bulud-ng';
+import { defineBuludTheme } from "bulud-ng";
 
 export const buludTheme = defineBuludTheme({
   colors: {
-    primary: '#7c3aed',
-    primaryHover: '#6d28d9',
-    primaryActive: '#5b21b6',
-    focus: '#c4b5fd',
+    primary: "#7c3aed",
+    primaryHover: "#6d28d9",
+    primaryActive: "#5b21b6",
+    focus: "#c4b5fd",
   },
   shape: {
-    controlRadius: '0.75rem',
+    controlRadius: "0.75rem",
   },
   button: {
-    fontWeight: '700',
+    fontWeight: "700",
     medium: {
-      height: '2.75rem',
-      paddingInline: '1.25rem',
+      height: "2.75rem",
+      paddingInline: "1.25rem",
     },
   },
 });
 ```
 
+Import the optional default light/dark CSS explicitly in the application's
+global stylesheet. Dark mode follows an ancestor `.dark` class or
+`data-theme="dark"` attribute:
+
+```css
+@import "bulud-ng/theme.css";
+```
+
 Register that configuration once in the application configuration:
 
 ```ts
-import { ApplicationConfig } from '@angular/core';
-import { provideBuludTheme } from 'bulud-ng';
+import { ApplicationConfig } from "@angular/core";
+import { provideBuludTheme } from "bulud-ng";
 
-import { buludTheme } from './bulud.config';
+import { buludTheme } from "./bulud.config";
 
 export const appConfig: ApplicationConfig = {
   providers: [provideBuludTheme(buludTheme)],
@@ -57,6 +65,9 @@ export const appConfig: ApplicationConfig = {
 The provider resolves omitted values against `BULUD_DEFAULT_THEME` and writes
 the resulting `--bulud-*` custom properties to the document root. Components
 therefore inherit one application-wide theme without per-component providers.
+Theme configuration supports `colors`, `shape`, `button`, `dropdown`, and
+`badge` tokens. The precedence is instance custom property, component token,
+global provider configuration, then the library default.
 
 ## Tailwind CSS integration
 
@@ -71,9 +82,7 @@ after Tailwind:
 The bridge exposes Bulud tokens as Tailwind utilities:
 
 ```html
-<section
-  class="rounded-bulud-control border border-bulud-border bg-bulud-surface p-6 text-bulud-on-surface"
->
+<section class="rounded-bulud-control border border-bulud-border bg-bulud-surface p-6 text-bulud-on-surface">
   <h2 class="text-bulud-primary">Account</h2>
 
   <bulud-button class="mt-4 w-full md:w-auto">Save</bulud-button>
@@ -100,8 +109,8 @@ consumer to scan library files for utility classes.
 Import `BuludDropdown` from its own secondary entry point:
 
 ```ts
-import { Component } from '@angular/core';
-import { BuludDropdown } from 'bulud-ng/dropdown';
+import { Component } from "@angular/core";
+import { BuludDropdown } from "bulud-ng/dropdown";
 
 interface Framework {
   readonly id: string;
@@ -111,12 +120,7 @@ interface Framework {
 @Component({
   imports: [BuludDropdown],
   template: `
-    <bulud-dropdown
-      aria-label="Choose a framework"
-      [options]="frameworks"
-      [optionLabel]="label"
-      [(value)]="framework"
-    >
+    <bulud-dropdown aria-label="Choose a framework" [options]="frameworks" [optionLabel]="label" [(value)]="framework">
       <ng-template #optionTemplate let-option let-selected="selected">
         <span>{{ option.label }}</span>
         @if (selected) {
@@ -128,8 +132,8 @@ interface Framework {
 })
 export class FrameworkPicker {
   readonly frameworks: readonly Framework[] = [
-    { id: 'angular', label: 'Angular' },
-    { id: 'react', label: 'React' },
+    { id: "angular", label: "Angular" },
+    { id: "react", label: "React" },
   ];
   framework: Framework | null = null;
   readonly label = (option: Framework): string => option.label;
@@ -142,35 +146,146 @@ projected `#optionTemplate`/`#selectedTemplate` templates. In multiple mode,
 bind `[(value)]` to a readonly array:
 
 ```html
-<bulud-dropdown
-  multiple
-  [options]="teamMembers"
-  [optionLabel]="memberLabel"
-  [(value)]="selectedMembers"
-/>
+<bulud-dropdown multiple [options]="teamMembers" [optionLabel]="memberLabel" [(value)]="selectedMembers" />
 ```
+
+When text inputs are omitted, the dropdown uses the injected locale. Configure
+English or Persian defaults with `provideBuludLocale`; explicit instance inputs
+such as `placeholder`, `loadingText`, `clearLabel`, and `searchLabel` take
+precedence. The provider also applies `lang` and `dir` to the document; the
+component follows the ancestor direction and does not switch it.
+
+```ts
+import { provideBuludLocale } from "bulud-ng";
+
+export const appConfig = {
+  providers: [provideBuludLocale({ language: "fa" })],
+};
+```
+
+The trigger needs a consumer-provided `aria-label` when its visible content is
+not an adequate accessible name. Search and clear actions receive localized
+accessible labels automatically, with `searchLabel` and `clearLabel` available
+for one-off overrides.
+
+The trigger follows the combobox/listbox keyboard pattern: `ArrowDown` and
+`ArrowUp` open and move the active option, `Home` and `End` jump to the first
+and last option, `Enter` or `Space` selects, and `Escape` closes and restores
+focus to the trigger. Pointer interaction outside the dropdown also closes an
+open panel. Consumers should provide an accurate `aria-label` when the
+projected trigger content is not sufficient.
+
+For Angular Forms, bind the dropdown with `formControl`/`formControlName` or
+`[(ngModel)]`. Single-select controls use the selected option value and
+multiple-select controls use a readonly array. The `required` input adds the
+standard `required` validation error, propagates disabled state from the form,
+emits changes after user selection/clearing, and marks the control touched when
+focus leaves the dropdown.
+
+### Dropdown inputs
+
+| Input               | Type                             | Default          | Description                                      |
+| ------------------- | -------------------------------- | ---------------- | ------------------------------------------------ |
+| `options`           | `readonly T[]`                   | `[]`             | Options rendered in the listbox                  |
+| `value`             | `T \| readonly T[] \| null`      | `null`           | Selected value; use an array with `multiple`     |
+| `multiple`          | `boolean`                        | `false`          | Keeps the panel open and toggles multiple values |
+| `searchable`        | `boolean`                        | `true`           | Shows the search field                           |
+| `clearable`         | `boolean`                        | `true`           | Shows the clear action for a selected value      |
+| `disabled`          | `boolean`                        | `false`          | Prevents opening and interaction                 |
+| `loading`           | `boolean`                        | `false`          | Shows a loading status instead of options        |
+| `required`          | `boolean`                        | `false`          | Enables the standard Forms `required` validator  |
+| `placeholder`       | `string \| undefined`            | locale default   | Empty-selection trigger text                     |
+| `searchPlaceholder` | `string \| undefined`            | locale default   | Search input placeholder                         |
+| `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result              |
+| `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                            |
+| `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection           |
+| `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger         |
+| `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text               |
+| `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values            |
+
+`clearLabel` and `searchLabel` override the localized accessible names for the
+clear action and search field. The component exposes `valueChange` through its
+model binding; Angular Forms users should prefer `formControl`, `formControlName`,
+or `ngModel` when participating in form state.
+
+### Dropdown accessibility
+
+The trigger is a `role="combobox"` controlling a `role="listbox"`. Its active
+option is exposed through `aria-activedescendant`; the component supplies stable
+IDs and `aria-selected` state. Consumers must provide `aria-label` when the
+visible trigger content is not an adequate accessible name. Keyboard behavior
+is `ArrowUp`/`ArrowDown` to open and move, `Home`/`End` to jump, `Enter` or
+`Space` to select, and `Escape` to close and restore focus.
+
+## Badge
+
+Import the standalone component from its secondary entry point:
+
+```ts
+import { BuludBadge } from "bulud-ng/badge";
+```
+
+`BuludBadge` renders projected content with optional status dot and dismiss
+action. Its `dismissed` output emits after the dismiss button is activated.
+
+| Input/output   | Type                                                           | Default          | Description                                |
+| -------------- | -------------------------------------------------------------- | ---------------- | ------------------------------------------ |
+| `variant`      | `'neutral' \| 'primary' \| 'success' \| 'warning' \| 'danger'` | `'neutral'`      | Visual treatment                           |
+| `size`         | `'small' \| 'medium' \| 'large'`                               | `'medium'`       | Badge size                                 |
+| `dot`          | `boolean`                                                      | `false`          | Shows a decorative status dot              |
+| `dismissible`  | `boolean`                                                      | `false`          | Shows a keyboard-accessible dismiss button |
+| `dismissLabel` | `string`                                                       | `'Remove badge'` | Accessible name for dismiss                |
+| `dismissed`    | `Output<void>`                                                 | —                | Emits when dismissal is activated          |
+
+When `dismissible` is enabled, provide a specific `dismissLabel` if the badge
+context requires a more descriptive action name. The dot is decorative and is
+hidden from assistive technology.
+
+## Locale API
+
+`provideBuludLocale` supplies typed English or Persian Dropdown defaults through
+`BULUD_LOCALE`. Instance text inputs override provider values. The provider also
+sets the document `lang` and `dir`; components follow ancestor direction and do
+not own the application language switcher.
+
+```ts
+import { provideBuludLocale } from "bulud-ng";
+
+export const appConfig = {
+  providers: [
+    provideBuludLocale({
+      language: "fa",
+      dropdown: { clearLabel: "حذف انتخاب" },
+    }),
+  ],
+};
+```
+
+## Theme API
+
+`defineBuludTheme` provides type inference for consumer configuration and
+`provideBuludTheme` registers the resolved theme. `BULUD_THEME` exposes the
+fully resolved typed value for advanced integrations. Theme values resolve in
+this order: per-instance CSS custom property, component token, global provider
+configuration, then library default. Import `bulud-ng/theme.css` explicitly to
+ship the default light and dark variable sets.
+
+All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
+`BuludButtonTheme`, `BuludDropdownTheme`, `BuludBadgeTheme`, `BuludTheme`, and
+`BuludThemeConfig`) are exported from the root entry point.
 
 ## Button
 
 Import the standalone component from its public secondary entry point:
 
 ```ts
-import { Component } from '@angular/core';
-import { BuludButton } from 'bulud-ng/button';
+import { Component } from "@angular/core";
+import { BuludButton } from "bulud-ng/button";
 
 @Component({
-  selector: 'app-save-action',
+  selector: "app-save-action",
   imports: [BuludButton],
-  template: `
-    <bulud-button
-      variant="primary"
-      [loading]="saving"
-      loadingLabel="Saving changes"
-      (click)="save()"
-    >
-      Save
-    </bulud-button>
-  `,
+  template: ` <bulud-button variant="primary" [loading]="saving" loadingLabel="Saving changes" (click)="save()"> Save </bulud-button> `,
 })
 export class SaveAction {
   saving = false;
@@ -186,16 +301,16 @@ click behavior are preserved.
 
 ### Inputs
 
-| Input | Type | Default | Description |
-| --- | --- | --- | --- |
-| `type` | `'button' \| 'submit' \| 'reset'` | `'button'` | Native button type |
-| `variant` | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'` | Visual treatment |
-| `size` | `'small' \| 'medium' \| 'large'` | `'medium'` | Control size |
-| `disabled` | `boolean` | `false` | Prevents interaction |
-| `loading` | `boolean` | `false` | Shows progress and prevents repeated interaction |
-| `loadingLabel` | `string` | `'Loading'` | Assistive text for the loading state |
-| `fullWidth` | `boolean` | `false` | Fills the available inline size |
-| `aria-label` | `string \| null` | `null` | Overrides projected text as the accessible name |
+| Input          | Type                                              | Default     | Description                                      |
+| -------------- | ------------------------------------------------- | ----------- | ------------------------------------------------ |
+| `type`         | `'button' \| 'submit' \| 'reset'`                 | `'button'`  | Native button type                               |
+| `variant`      | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'` | Visual treatment                                 |
+| `size`         | `'small' \| 'medium' \| 'large'`                  | `'medium'`  | Control size                                     |
+| `disabled`     | `boolean`                                         | `false`     | Prevents interaction                             |
+| `loading`      | `boolean`                                         | `false`     | Shows progress and prevents repeated interaction |
+| `loadingLabel` | `string`                                          | `'Loading'` | Assistive text for the loading state             |
+| `fullWidth`    | `boolean`                                         | `false`     | Fills the available inline size                  |
+| `aria-label`   | `string \| null`                                  | `null`      | Overrides projected text as the accessible name  |
 
 The component uses the native bubbling `click` event rather than a duplicate
 custom output.

@@ -15,6 +15,8 @@ Review every change critically and report concrete defects, regressions, and unr
 - Forms integration, where applicable, through `ControlValueAccessor` and `Validator`.
 - Unit, demo, and Playwright coverage for every reachable state.
 - Bundle size, performance, dependency changes, and unrelated refactoring.
+- Treat an implementation issue as a review handoff when it contains the automatic reviewer-request comment. Review that issue directly, and close it only after approval and required validation pass.
+- Start automatically when the workflow runner receives the reviewer-request comment. Post approval and run `bd close <issue-id> --reason "Reviewed and approved"` automatically when no blockers remain; do not ask the user for confirmation.
 
 ## Review Output
 

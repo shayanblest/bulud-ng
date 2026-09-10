@@ -337,10 +337,32 @@
                 </p>
               </div>
 
+              <div class="mb-5 flex flex-wrap gap-4 text-sm font-semibold text-slate-700">
+                <label class="inline-flex items-center gap-2">
+                  <input
+                    id="dropdown-loading"
+                    type="checkbox"
+                    [checked]="dropdownLoading()"
+                    (change)="dropdownLoading.set(!dropdownLoading())"
+                  />
+                  {{ text().loading }}
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input
+                    id="dropdown-empty"
+                    type="checkbox"
+                    [checked]="dropdownEmpty()"
+                    (change)="dropdownEmpty.set(!dropdownEmpty())"
+                  />
+                  {{ text().empty }}
+                </label>
+              </div>
+
               <bulud-dropdown
                 class="block w-full"
                 [attr.aria-label]="text().frameworkLabel"
-                [options]="frameworks"
+                [options]="dropdownEmpty() ? [] : frameworks"
+                [loading]="dropdownLoading()"
                 [optionLabel]="optionLabel"
                 [placeholder]="dropdownLocale().placeholder"
                 [searchPlaceholder]="dropdownLocale().searchPlaceholder"
@@ -423,6 +445,7 @@
         </section>
 
         <section
+          id="interactive"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >
           <div

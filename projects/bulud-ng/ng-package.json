@@ -2,7 +2,8 @@
   "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
   "dest": "../../dist/bulud-ng",
   "assets": [
-    "tailwind.css"
+    "tailwind.css",
+    "theme.css"
   ],
   "lib": {
     "entryFile": "src/public-api.ts"

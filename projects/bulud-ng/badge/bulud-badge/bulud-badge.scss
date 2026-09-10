@@ -7,11 +7,11 @@
 .bulud-badge {
   align-items: center;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--bulud-badge-radius, 999px);
   box-sizing: border-box;
   display: inline-flex;
   font: inherit;
-  font-weight: 500;
+  font-weight: var(--bulud-badge-font-weight, 500);
   gap: 0;
   line-height: 1.25;
   max-inline-size: 100%;
@@ -87,11 +87,11 @@
 }
 
 .bulud-badge__dismiss:hover {
-  background: rgb(15 23 42 / 0.1);
+  background: var(--bulud-badge-dismiss-hover-background, rgb(15 23 42 / 0.1));
 }
 
 .bulud-badge__dismiss:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid var(--bulud-badge-focus, currentColor);
   outline-offset: 2px;
 }
 
@@ -109,12 +109,9 @@
 }
 
 .bulud-badge--primary {
-  background: var(--bulud-badge-primary-background, #f5f3ff);
-  border-color: var(--bulud-badge-primary-border, #ddd6fe);
-  color: var(
-    --bulud-badge-primary-foreground,
-    var(--bulud-color-primary, #5b21b6)
-  );
+  background: var(--bulud-badge-primary-background, #eff6ff);
+  border-color: var(--bulud-badge-primary-border, #bfdbfe);
+  color: var(--bulud-badge-primary-foreground, #1d4ed8);
 }
 
 .bulud-badge--primary .bulud-badge__dot {
@@ -122,19 +119,19 @@
 }
 
 .bulud-badge--success {
-  background: #dcfce7;
-  border-color: #bbf7d0;
-  color: #15803d;
+  background: var(--bulud-badge-success-background, #dcfce7);
+  border-color: var(--bulud-badge-success-border, #bbf7d0);
+  color: var(--bulud-badge-success-foreground, #15803d);
 }
 
 .bulud-badge--warning {
-  background: #fef3c7;
-  border-color: #fde68a;
-  color: #a16207;
+  background: var(--bulud-badge-warning-background, #fef3c7);
+  border-color: var(--bulud-badge-warning-border, #fde68a);
+  color: var(--bulud-badge-warning-foreground, #a16207);
 }
 
 .bulud-badge--danger {
-  background: #ffe4e6;
-  border-color: #fecdd3;
-  color: #be123c;
+  background: var(--bulud-badge-danger-background, #ffe4e6);
+  border-color: var(--bulud-badge-danger-border, #fecdd3);
+  color: var(--bulud-badge-danger-foreground, #be123c);
 }

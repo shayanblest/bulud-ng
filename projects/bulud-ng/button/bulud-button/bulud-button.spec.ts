@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import {
   BuludButton,
+  BuludButtonType,
   BuludButtonSize,
   BuludButtonVariant,
 } from './bulud-button';
@@ -13,6 +14,7 @@ import {
     <bulud-button
       aria-label="Save changes"
       [disabled]="disabled()"
+      [type]="type()"
       [fullWidth]="fullWidth()"
       [loading]="loading()"
       [loadingLabel]="loadingLabel()"
@@ -32,6 +34,7 @@ class TestHost {
   readonly loadingLabel = signal('Saving');
   readonly size = signal<BuludButtonSize>('medium');
   readonly variant = signal<BuludButtonVariant>('primary');
+  readonly type = signal<BuludButtonType>('button');
 }
 
 describe('BuludButton', () => {
@@ -60,6 +63,7 @@ describe('BuludButton', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHost],
+      providers: [provideZonelessChangeDetection()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHost);
@@ -122,5 +126,23 @@ describe('BuludButton', () => {
     fixture.detectChanges();
 
     expect(getHost().classList).toContain('bulud-button-host--full-width');
+  });
+
+  it('renders every supported variant and size reactively', () => {
+    for (const variant of ['primary', 'secondary', 'danger', 'ghost'] as const) {
+      for (const size of ['small', 'medium', 'large'] as const) {
+        fixture.componentInstance.variant.set(variant);
+        fixture.componentInstance.size.set(size);
+        fixture.detectChanges();
+        expect(getButton().classList).toContain(`bulud-button--${variant}`);
+        expect(getButton().classList).toContain(`bulud-button--${size}`);
+      }
+    }
+  });
+
+  it('forwards the native button type', () => {
+    fixture.componentInstance.type.set('submit');
+    fixture.detectChanges();
+    expect(getButton().type).toBe('submit');
   });
 });
