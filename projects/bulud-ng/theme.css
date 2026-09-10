@@ -1,0 +1,66 @@
+/* Explicitly import this file in the consumer application's global styles. */
+:root {
+  --bulud-color-primary: #2563eb;
+  --bulud-color-primary-hover: #1d4ed8;
+  --bulud-color-primary-active: #1e40af;
+  --bulud-color-on-primary: #ffffff;
+  --bulud-color-surface: #ffffff;
+  --bulud-color-surface-hover: #f8fafc;
+  --bulud-color-surface-active: #f1f5f9;
+  --bulud-color-on-surface: #0f172a;
+  --bulud-color-border: #cbd5e1;
+  --bulud-color-danger: #dc2626;
+  --bulud-color-danger-hover: #b91c1c;
+  --bulud-color-danger-active: #991b1b;
+  --bulud-color-on-danger: #ffffff;
+  --bulud-color-focus: #93c5fd;
+  --bulud-color-danger-focus: #fca5a5;
+  --bulud-radius-control: 0.5rem;
+  --bulud-dropdown-option-hover-background: #eff6ff;
+  --bulud-dropdown-option-selected-foreground: #1d4ed8;
+  --bulud-dropdown-option-selected-background: #2563eb;
+  --bulud-badge-primary-background: #eff6ff;
+  --bulud-badge-primary-border: #bfdbfe;
+  --bulud-badge-primary-foreground: #1d4ed8;
+}
+
+:where(.dark, [data-theme='dark']) {
+  --bulud-color-primary: #60a5fa;
+  --bulud-color-primary-hover: #93c5fd;
+  --bulud-color-primary-active: #bfdbfe;
+  --bulud-color-on-primary: #172554;
+  --bulud-color-surface: #0f172a;
+  --bulud-color-surface-hover: #1e293b;
+  --bulud-color-surface-active: #334155;
+  --bulud-color-on-surface: #f8fafc;
+  --bulud-color-border: #475569;
+  --bulud-color-danger: #fb7185;
+  --bulud-color-danger-hover: #fda4af;
+  --bulud-color-danger-active: #fecdd3;
+  --bulud-color-on-danger: #4c0519;
+  --bulud-color-focus: #bfdbfe;
+  --bulud-color-danger-focus: #fecdd3;
+  --bulud-dropdown-option-hover-background: #1e3a8a;
+  --bulud-dropdown-option-selected-foreground: #dbeafe;
+  --bulud-dropdown-option-selected-background: #2563eb;
+  --bulud-dropdown-background: #0f172a;
+  --bulud-dropdown-panel-background: #0f172a;
+  --bulud-dropdown-option-foreground: #f8fafc;
+  --bulud-dropdown-option-border: #475569;
+  --bulud-dropdown-message-foreground: #cbd5e1;
+  --bulud-badge-primary-background: #1e3a8a;
+  --bulud-badge-primary-border: #3b82f6;
+  --bulud-badge-primary-foreground: #dbeafe;
+  --bulud-badge-neutral-background: #1e293b;
+  --bulud-badge-neutral-border: #475569;
+  --bulud-badge-neutral-foreground: #e2e8f0;
+  --bulud-badge-success-background: #14532d;
+  --bulud-badge-success-border: #166534;
+  --bulud-badge-success-foreground: #bbf7d0;
+  --bulud-badge-warning-background: #78350f;
+  --bulud-badge-warning-border: #92400e;
+  --bulud-badge-warning-foreground: #fde68a;
+  --bulud-badge-danger-background: #881337;
+  --bulud-badge-danger-border: #9f1239;
+  --bulud-badge-danger-foreground: #fecdd3;
+}

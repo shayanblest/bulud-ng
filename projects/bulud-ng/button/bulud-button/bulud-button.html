@@ -1,0 +1,28 @@
+<button
+  class="bulud-button"
+  [class.bulud-button--primary]="variant() === 'primary'"
+  [class.bulud-button--secondary]="variant() === 'secondary'"
+  [class.bulud-button--danger]="variant() === 'danger'"
+  [class.bulud-button--ghost]="variant() === 'ghost'"
+  [class.bulud-button--small]="size() === 'small'"
+  [class.bulud-button--medium]="size() === 'medium'"
+  [class.bulud-button--large]="size() === 'large'"
+  [type]="type()"
+  [disabled]="disabled() || loading()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [attr.aria-label]="ariaLabel()"
+>
+  @if (loading()) {
+    <span class="bulud-button__spinner" aria-hidden="true"></span>
+  }
+
+  <span class="bulud-button__content">
+    <ng-content />
+  </span>
+</button>
+
+<span class="bulud-visually-hidden" role="status">
+  @if (loading()) {
+    {{ loadingLabel() }}
+  }
+</span>

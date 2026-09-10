@@ -3,10 +3,16 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "build": "ng build bulud-ng",
+    "build:demo": "ng build demo",
+    "demo": "ng serve demo",
+    "format:check": "prettier --check eslint.config.mjs package.json projects/bulud-ng/README.md",
+    "lint": "eslint .",
+    "watch": "ng build bulud-ng --watch --configuration development",
+    "test": "ng test bulud-ng",
+    "test:ci": "ng test bulud-ng --watch=false --browsers=ChromeHeadless",
+    "test:tailwind": "tailwindcss -i projects/bulud-ng/tailwind.integration.css -o .angular/cache/bulud-tailwind.css --minify",
+    "e2e": "playwright test"
   },
   "prettier": {
     "overrides": [
@@ -20,25 +26,37 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "^20.1.0",
-    "@angular/compiler": "^20.1.0",
-    "@angular/core": "^20.1.0",
-    "@angular/forms": "^20.1.0",
-    "@angular/platform-browser": "^20.1.0",
-    "@angular/router": "^20.1.0",
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/router": "^20.3.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/cli": "^20.1.5",
-    "@angular/compiler-cli": "^20.1.0",
+    "@angular/build": "^20.3.1",
+    "@angular/cli": "^20.3.1",
+    "@angular/compiler-cli": "^20.3.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/cli": "^4.3.3",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/jasmine": "~5.1.0",
+    "angular-eslint": "22.5.0",
+    "eslint": "10.10.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.8.2"
+    "ng-packagr": "^20.3.0",
+    "postcss": "^8.5.26",
+    "prettier": "3.9.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.8.2",
+    "typescript-eslint": "8.70.0"
   }
 }

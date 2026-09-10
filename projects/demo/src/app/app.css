@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+main > section:nth-child(n + 2) {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 900px;
+}
+
+:host-context(html[dir='rtl']) {
+  direction: rtl;
+}
+
+:host-context(html[dir='ltr']) {
+  direction: ltr;
+}
+
+pre {
+  direction: ltr;
+  text-align: left;
+  scrollbar-color: rgb(148 163 184 / 0.4) transparent;
+  scrollbar-width: thin;
+}

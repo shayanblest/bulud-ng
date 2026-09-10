@@ -3,6 +3,20 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "paths": {
+      "bulud-ng": [
+        "./projects/bulud-ng/src/public-api.ts"
+      ],
+      "bulud-ng/button": [
+        "./projects/bulud-ng/button/public-api.ts"
+      ],
+      "bulud-ng/dropdown": [
+        "./projects/bulud-ng/dropdown/public-api.ts"
+      ],
+      "bulud-ng/badge": [
+        "./projects/bulud-ng/badge/public-api.ts"
+      ]
+    },
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -22,5 +36,16 @@
     "typeCheckHostBindings": true,
     "strictTemplates": true
   },
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/bulud-ng/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/bulud-ng/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/demo/tsconfig.app.json"
+    }
+  ]
 }

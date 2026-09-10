@@ -1,0 +1,557 @@
+<div class="min-h-screen bg-slate-950 text-slate-100">
+  <ng-template #selectedIcon>
+    <span
+      class="ms-auto grid size-6 shrink-0 place-items-center rounded-full bg-violet-100 text-bulud-primary"
+      aria-label="Selected"
+    >
+      <svg
+        class="size-4"
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <path d="m4.5 10.25 3.5 3.5 7.5-7.5" />
+      </svg>
+    </span>
+  </ng-template>
+  <header
+    class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/95"
+  >
+    <div
+      class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-4 sm:px-8"
+    >
+      <a class="flex items-center gap-3" href="#top" aria-label="Bulud NG home">
+        <span
+          class="grid size-10 place-items-center rounded-xl bg-bulud-primary font-black text-bulud-on-primary shadow-lg shadow-violet-950/40"
+          aria-hidden="true"
+        >
+          B
+        </span>
+        <span>
+          <span class="block text-sm font-bold tracking-wide">Bulud NG</span>
+          <span class="block text-xs text-slate-400">{{ text().preview }}</span>
+        </span>
+      </a>
+
+      <nav class="hidden items-center gap-6 text-sm text-slate-300 sm:flex">
+        <a class="transition hover:text-white" href="#variants">{{ text().navVariants }}</a>
+        <a class="transition hover:text-white" href="#states">{{ text().navStates }}</a>
+        <a class="transition hover:text-white" href="#dropdown">{{ text().navDropdown }}</a>
+        <a class="transition hover:text-white" href="#theme">{{ text().navTheme }}</a>
+      </nav>
+
+      <button
+        type="button"
+        class="rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-xs font-semibold text-violet-200"
+        (click)="toggleLanguage()"
+        [attr.aria-label]="text().switch"
+      >
+        {{ text().switch }}
+      </button>
+      <span
+        class="rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-xs font-semibold text-violet-200"
+      >
+        Angular 20 · Tailwind 4
+      </span>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="relative isolate overflow-hidden">
+      <div
+        class="pointer-events-none absolute inset-0 -z-10 opacity-70"
+        aria-hidden="true"
+      >
+        <div
+          class="absolute start-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-violet-600/30 blur-3xl"
+        ></div>
+        <div
+          class="absolute end-0 top-40 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl"
+        ></div>
+      </div>
+
+      <div
+        class="mx-auto grid max-w-7xl gap-14 px-5 py-20 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-28"
+      >
+        <div>
+          <div
+            class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-violet-200"
+          >
+            <span class="size-1.5 rounded-full bg-emerald-400"></span>
+            {{ text().badge }}
+          </div>
+
+          <h1
+            class="max-w-3xl text-4xl font-black leading-tight tracking-tight text-white sm:text-6xl"
+          >
+            {{ text().hero }}
+            <span class="text-violet-300">{{ text().heroAccent }}</span>
+          </h1>
+
+          <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+            {{ text().intro }}
+          </p>
+
+          <div class="mt-9 flex flex-wrap gap-3">
+            <bulud-button size="large" (click)="incrementCount()">
+              {{ text().primary }}
+            </bulud-button>
+            <bulud-button size="large" variant="secondary">
+              {{ text().api }}
+            </bulud-button>
+          </div>
+
+          <p class="mt-4 text-sm text-slate-400" aria-live="polite">
+            {{ text().clicked }}
+            <span class="font-bold text-violet-300">{{ clickCount() }}</span>
+            {{ clickCount() === 1 ? text().time : text().times }}.
+          </p>
+        </div>
+
+        <aside
+          class="rounded-3xl border border-white/10 bg-white/[0.06] p-3 shadow-2xl shadow-black/30"
+          aria-label="Theme configuration preview"
+        >
+          <div class="rounded-2xl border border-white/10 bg-slate-900 p-6">
+            <div class="mb-5 flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-white">bulud.config.ts</p>
+                <p class="mt-1 text-xs text-slate-400">
+                  {{ text().config }}
+                </p>
+              </div>
+              <span
+                class="rounded-md bg-emerald-400/10 px-2 py-1 text-[0.6875rem] font-bold uppercase tracking-wider text-emerald-300"
+              >
+                {{ text().active }}
+              </span>
+            </div>
+
+            <pre
+              class="overflow-x-auto text-sm leading-7 text-slate-300"
+            ><code><span class="text-fuchsia-300">defineBuludTheme</span>(&#123;
+  colors: &#123;
+    primary: <span class="text-emerald-300">'#7c3aed'</span>,
+    surface: <span class="text-emerald-300">'#ffffff'</span>,
+  &#125;,
+  shape: &#123;
+    controlRadius: <span class="text-emerald-300">'0.75rem'</span>,
+  &#125;,
+&#125;);</code></pre>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="bg-slate-50 py-20 text-slate-900">
+      <div class="mx-auto max-w-7xl space-y-10 px-5 sm:px-8">
+        <div class="max-w-2xl">
+          <p
+            class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+          >
+            {{ text().catalog }}
+          </p>
+          <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+            {{ text().button }}
+          </h2>
+          <p class="mt-4 leading-7 text-slate-600">
+            {{ text().buttonDesc }}
+          </p>
+        </div>
+
+        <section
+          id="variants"
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xl font-extrabold">{{ text().button }}</h3>
+              <p class="mt-1 text-sm text-slate-500">{{ text().buttonDesc }}</p>
+            </div>
+            <div class="inline-flex rounded-lg bg-slate-100 p-1" role="tablist">
+              <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-semibold"
+                [class.bg-white]="buttonTab() === 'preview'"
+                [class.text-bulud-primary]="buttonTab() === 'preview'"
+                (click)="buttonTab.set('preview')"
+                role="tab"
+                [attr.aria-selected]="buttonTab() === 'preview'"
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-semibold"
+                [class.bg-white]="buttonTab() === 'code'"
+                [class.text-bulud-primary]="buttonTab() === 'code'"
+                (click)="buttonTab.set('code')"
+                role="tab"
+                [attr.aria-selected]="buttonTab() === 'code'"
+              >
+                Code
+              </button>
+            </div>
+          </div>
+          @if (buttonTab() === 'code') {
+            <pre class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"><code>&lt;bulud-button&gt;Save changes&lt;/bulud-button&gt;
+&lt;bulud-button variant="secondary"&gt;Cancel&lt;/bulud-button&gt;
+&lt;bulud-button variant="danger" loading&gt;Delete&lt;/bulud-button&gt;</code></pre>
+          } @else {
+          <div class="mb-7">
+            <h3 class="text-xl font-extrabold">{{ text().variants }}</h3>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ text().variantsDesc }}
+            </p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @for (variant of variants; track variant.name) {
+              <article
+                class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
+              >
+                <bulud-button [variant]="variant.name" fullWidth>
+                  {{ variant.label }}
+                </bulud-button>
+                <p class="mt-4 text-sm font-semibold text-bulud-on-surface">
+                  {{ variant.label }}
+                </p>
+                <p class="mt-1 text-xs leading-5 text-slate-500">
+                  {{ variant.description }}
+                </p>
+              </article>
+            }
+          </div>
+          }
+        </section>
+
+        <div class="grid gap-10 xl:grid-cols-2">
+          <section
+            class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          >
+            <div class="mb-7">
+            <h3 class="text-xl font-extrabold">{{ text().sizes }}</h3>
+              <p class="mt-1 text-sm text-slate-500">
+              {{ text().sizesDesc }}
+              </p>
+            </div>
+
+            <div class="flex min-h-24 flex-wrap items-center gap-4">
+              @for (size of sizes; track size.name) {
+                <bulud-button [size]="size.name">
+                  {{ size.label }}
+                </bulud-button>
+              }
+            </div>
+          </section>
+
+          <section
+            id="states"
+            class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          >
+            <div class="mb-7">
+              <h3 class="text-xl font-extrabold">{{ text().states }}</h3>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ text().statesDesc }}
+              </p>
+            </div>
+
+            <div class="flex min-h-24 flex-wrap items-center gap-4">
+              <bulud-button>{{ text().ready }}</bulud-button>
+              <bulud-button disabled>{{ text().disabled }}</bulud-button>
+              <bulud-button loading [loadingLabel]="text().publish">
+                {{ text().publish }}
+              </bulud-button>
+            </div>
+          </section>
+        </div>
+
+        <section
+          id="badge"
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <div class="mb-7">
+            <p class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary">
+              Badge
+            </p>
+            <h3 class="mt-3 text-2xl font-black tracking-tight">
+              Compact status labels
+            </h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            @for (variant of badgeVariants; track variant) {
+              <bulud-badge
+                class="capitalize"
+                [variant]="variant"
+                [dot]="variant === 'neutral'"
+              >
+                {{ variant }}
+              </bulud-badge>
+            }
+            <bulud-badge variant="success">Published</bulud-badge>
+            <bulud-badge variant="primary" dismissible>Dismissible</bulud-badge>
+          </div>
+          <pre class="mt-7 overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"><code>&lt;bulud-badge variant="success"&gt;Published&lt;/bulud-badge&gt;
+&lt;bulud-badge variant="primary" dismissible&gt;Removable&lt;/bulud-badge&gt;</code></pre>
+        </section>
+
+        <section
+          id="dropdown"
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary">
+                {{ text().dropdown }}
+              </p>
+              <h3 class="mt-3 text-2xl font-black tracking-tight">
+                {{ text().dropdownTitle }}
+              </h3>
+            </div>
+            <div class="inline-flex rounded-lg bg-slate-100 p-1" role="tablist">
+              <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold" [class.bg-white]="dropdownTab() === 'preview'" [class.text-bulud-primary]="dropdownTab() === 'preview'" (click)="dropdownTab.set('preview')" role="tab" [attr.aria-selected]="dropdownTab() === 'preview'">Preview</button>
+              <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold" [class.bg-white]="dropdownTab() === 'code'" [class.text-bulud-primary]="dropdownTab() === 'code'" (click)="dropdownTab.set('code')" role="tab" [attr.aria-selected]="dropdownTab() === 'code'">Code</button>
+            </div>
+          </div>
+          @if (dropdownTab() === 'code') {
+            <pre class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"><code>&lt;bulud-dropdown
+  [options]="frameworks"
+  [optionLabel]="optionLabel"
+  searchable
+  clearable
+  [(value)]="selectedFramework"
+&gt;&lt;/bulud-dropdown&gt;</code></pre>
+          } @else {
+          <div class="grid gap-6 lg:grid-cols-2">
+            <article class="rounded-2xl border border-bulud-border bg-bulud-surface p-5">
+              <div class="mb-5">
+                <h4 class="font-extrabold text-bulud-on-surface">
+                  {{ text().single }}
+                </h4>
+                <p class="mt-1 text-sm text-slate-500">
+                  {{ text().singleDesc }}
+                </p>
+              </div>
+
+              <div class="mb-5 flex flex-wrap gap-4 text-sm font-semibold text-slate-700">
+                <label class="inline-flex items-center gap-2">
+                  <input
+                    id="dropdown-loading"
+                    type="checkbox"
+                    [checked]="dropdownLoading()"
+                    (change)="dropdownLoading.set(!dropdownLoading())"
+                  />
+                  {{ text().loading }}
+                </label>
+                <label class="inline-flex items-center gap-2">
+                  <input
+                    id="dropdown-empty"
+                    type="checkbox"
+                    [checked]="dropdownEmpty()"
+                    (change)="dropdownEmpty.set(!dropdownEmpty())"
+                  />
+                  {{ text().empty }}
+                </label>
+              </div>
+
+              <bulud-dropdown
+                class="block w-full"
+                [attr.aria-label]="text().frameworkLabel"
+                [options]="dropdownEmpty() ? [] : frameworks"
+                [loading]="dropdownLoading()"
+                [optionLabel]="optionLabel"
+                [placeholder]="dropdownLocale().placeholder"
+                [searchPlaceholder]="dropdownLocale().searchPlaceholder"
+                [noResultsText]="dropdownLocale().noResultsText"
+                [loadingText]="dropdownLocale().loadingText"
+                [emptyText]="dropdownLocale().emptyText"
+                [(value)]="selectedFramework"
+              >
+                <ng-template
+                  #optionTemplate
+                  let-option
+                  let-selected="selected"
+                >
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold">
+                      {{ option.label }}
+                    </span>
+                    <span class="block text-xs text-slate-500">
+                      {{ option.meta }}
+                    </span>
+                  </span>
+                  @if (selected) {
+                    <ng-container [ngTemplateOutlet]="selectedIcon" />
+                  }
+                </ng-template>
+              </bulud-dropdown>
+            </article>
+
+            <article class="rounded-2xl border border-bulud-border bg-bulud-surface p-5">
+              <div class="mb-5">
+                <h4 class="font-extrabold text-bulud-on-surface">
+                  {{ text().multiple }}
+                </h4>
+                <p class="mt-1 text-sm text-slate-500">
+                  {{ text().multipleDesc }}
+                </p>
+              </div>
+
+              <bulud-dropdown
+                class="block w-full"
+                [attr.aria-label]="text().teamLabel"
+                [options]="teamMembers"
+                [optionLabel]="optionLabel"
+                [placeholder]="dropdownLocale().placeholder"
+                [searchPlaceholder]="dropdownLocale().searchPlaceholder"
+                [noResultsText]="dropdownLocale().noResultsText"
+                [loadingText]="dropdownLocale().loadingText"
+                [emptyText]="dropdownLocale().emptyText"
+                multiple
+                [(value)]="selectedTeam"
+              >
+                <ng-template
+                  #optionTemplate
+                  let-option
+                  let-selected="selected"
+                >
+                  <span class="flex min-w-0 items-center gap-3">
+                    <span
+                      class="grid size-8 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-black text-violet-700"
+                    >
+                      {{ option.label.slice(0, 1) }}
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block truncate font-semibold">
+                        {{ option.label }}
+                      </span>
+                      <span class="block text-xs text-slate-500">
+                        {{ option.meta }}
+                      </span>
+                    </span>
+                  </span>
+                  @if (selected) {
+                    <ng-container [ngTemplateOutlet]="selectedIcon" />
+                  }
+                </ng-template>
+              </bulud-dropdown>
+            </article>
+          </div>
+          }
+        </section>
+
+        <section
+          id="interactive"
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <div
+            class="flex flex-col gap-5 border-b border-slate-100 pb-7 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <h3 class="text-xl font-extrabold">{{ text().interactive }}</h3>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ text().interactiveDesc }}
+              </p>
+            </div>
+
+            <label
+              class="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-700"
+            >
+              <input
+                class="size-4 accent-violet-600"
+                type="checkbox"
+                [checked]="fullWidth()"
+                (change)="fullWidth.set(!fullWidth())"
+              />
+              {{ text().fullWidth }}
+            </label>
+          </div>
+
+          <div class="pt-7">
+            <bulud-button
+              [fullWidth]="fullWidth()"
+              (click)="incrementCount()"
+            >
+              {{ text().increment }}
+            </bulud-button>
+
+            <div
+              class="mt-5 flex items-center justify-between rounded-2xl bg-slate-100 px-5 py-4"
+            >
+              <p class="text-sm text-slate-600">
+                {{ text().current }}
+                <strong class="text-bulud-primary">{{ clickCount() }}</strong>
+              </p>
+              <button
+                class="text-sm font-bold text-bulud-primary underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bulud-focus"
+                type="button"
+                (click)="resetCount()"
+              >
+                {{ text().reset }}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="theme"
+          class="overflow-hidden rounded-3xl bg-slate-900 text-white shadow-xl"
+        >
+          <div class="grid lg:grid-cols-[0.8fr_1.2fr]">
+            <div class="p-7 sm:p-10">
+              <p
+                class="text-sm font-bold uppercase tracking-[0.2em] text-violet-300"
+              >
+                One source of truth
+              </p>
+              <h3 class="mt-3 text-3xl font-black">Theme tokens in action</h3>
+              <p class="mt-4 leading-7 text-slate-300">
+                The cards at the end use Tailwind utilities generated by the
+                same values inherited by Bulud Button.
+              </p>
+            </div>
+
+            <div class="grid gap-px bg-white/10 sm:grid-cols-3">
+              <div class="bg-bulud-primary p-7 text-bulud-on-primary">
+                <div class="mb-12 size-8 rounded-full bg-white/25"></div>
+                <p class="text-xs font-bold uppercase tracking-wider opacity-75">
+                  Primary
+                </p>
+                <p class="mt-2 font-mono text-sm">#7c3aed</p>
+              </div>
+              <div class="bg-bulud-surface p-7 text-bulud-on-surface">
+                <div
+                  class="mb-12 size-8 rounded-bulud-control border border-bulud-border"
+                ></div>
+                <p class="text-xs font-bold uppercase tracking-wider opacity-60">
+                  Surface
+                </p>
+                <p class="mt-2 font-mono text-sm">#ffffff</p>
+              </div>
+              <div class="bg-bulud-danger p-7 text-bulud-on-danger">
+                <div class="mb-12 size-8 rounded-full bg-white/25"></div>
+                <p class="text-xs font-bold uppercase tracking-wider opacity-75">
+                  Danger
+                </p>
+                <p class="mt-2 font-mono text-sm">#e11d48</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-white/10 bg-slate-950">
+    <div
+      class="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-8 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-8"
+    >
+      <p>Bulud NG component development workspace.</p>
+      <p>Standalone · Zoneless · Themeable · Tree-shakable</p>
+    </div>
+  </footer>
+</div>

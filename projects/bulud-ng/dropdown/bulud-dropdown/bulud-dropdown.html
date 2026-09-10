@@ -1,0 +1,144 @@
+<div class="bulud-dropdown">
+  <button
+    #trigger
+    class="bulud-dropdown__trigger"
+    type="button"
+    role="combobox"
+    [disabled]="isDisabled()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="instanceId + '-listbox'"
+    [attr.aria-activedescendant]="activeOptionId()"
+    [attr.aria-invalid]="isInvalid() ? 'true' : null"
+    aria-haspopup="listbox"
+    (click)="toggle()"
+    (keydown)="openFromKeyboard($event)"
+  >
+    <span class="bulud-dropdown__value">
+      @if (selectedTemplate(); as template) {
+        <ng-container
+          [ngTemplateOutlet]="template"
+          [ngTemplateOutletContext]="{
+            $implicit: multiple() ? selectedOptions() : (selectedOptions()[0] ?? null),
+            value: multiple() ? selectedOptions() : (selectedOptions()[0] ?? null),
+            multiple: multiple(),
+          }"
+        />
+      } @else {
+        <span
+          [class.bulud-dropdown__placeholder]="selectedOptions().length === 0"
+        >
+          {{ triggerLabel() }}
+        </span>
+      }
+    </span>
+
+    <span class="bulud-dropdown__chevron" aria-hidden="true">
+      <svg viewBox="0 0 20 20" focusable="false">
+        <path d="m5 7.5 5 5 5-5" />
+      </svg>
+    </span>
+  </button>
+
+  @if (clearable() && selectedOptions().length > 0 && !isDisabled()) {
+    <button
+      class="bulud-dropdown__clear"
+      type="button"
+      [attr.aria-label]="clearLabel() ?? locale.dropdown.clearLabel"
+      (click)="clear($event)"
+    >
+        <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+          <path d="m6 6 8 8m0-8-8 8" />
+        </svg>
+    </button>
+  }
+
+  @if (open()) {
+    <div class="bulud-dropdown__panel">
+      @if (searchable()) {
+        <label class="bulud-dropdown__search">
+          <span class="bulud-visually-hidden">
+            {{ searchLabel() ?? locale.dropdown.searchLabel }}
+          </span>
+          <span class="bulud-dropdown__search-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" focusable="false">
+              <circle cx="8.5" cy="8.5" r="4.75" />
+              <path d="m12 12 4 4" />
+            </svg>
+          </span>
+          <input
+            #searchInput
+            type="search"
+            [value]="searchTerm()"
+            [placeholder]="
+              searchPlaceholder() ?? locale.dropdown.searchPlaceholder
+            "
+            (input)="handleSearchInput(searchInput.value)"
+            (keydown)="handleSearchKeydown($event)"
+          />
+        </label>
+      }
+
+      @if (loading()) {
+        <div class="bulud-dropdown__message" role="status">
+          <span class="bulud-dropdown__spinner" aria-hidden="true"></span>
+          {{ loadingText() ?? locale.dropdown.loadingText }}
+        </div>
+      } @else if (options().length === 0) {
+        <div class="bulud-dropdown__message">
+          {{ emptyText() ?? locale.dropdown.emptyText }}
+        </div>
+      } @else if (filteredOptions().length === 0) {
+        <div class="bulud-dropdown__message">
+          {{ noResultsText() ?? locale.dropdown.noResultsText }}
+        </div>
+      } @else {
+        <div
+          class="bulud-dropdown__options"
+          role="listbox"
+          [attr.aria-multiselectable]="multiple() ? 'true' : null"
+          [id]="instanceId + '-listbox'"
+        >
+          @for (option of filteredOptions(); track option; let index = $index) {
+            <button
+              class="bulud-dropdown__option"
+              type="button"
+              [id]="optionId(index)"
+              tabindex="-1"
+              role="option"
+              [attr.aria-selected]="isSelected(option)"
+              [class.bulud-dropdown__option--active]="isActive(index)"
+              (click)="selectOption(option)"
+              (keydown)="handleOptionKeydown($event, option)"
+            >
+              <span
+                class="bulud-dropdown__check"
+                [class.bulud-dropdown__check--selected]="isSelected(option)"
+                aria-hidden="true"
+              >
+                @if (isSelected(option)) {
+                  <svg viewBox="0 0 20 20" focusable="false">
+                    <path d="m4.5 10.25 3.5 3.5 7.5-7.5" />
+                  </svg>
+                }
+              </span>
+
+              @if (optionTemplate(); as template) {
+                <ng-container
+                  [ngTemplateOutlet]="template"
+                  [ngTemplateOutletContext]="{
+                    $implicit: option,
+                    option,
+                    selected: isSelected(option),
+                  }"
+                />
+              } @else {
+                <span>{{ optionLabel()(option) }}</span>
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
