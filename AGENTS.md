@@ -4,6 +4,7 @@ Angular UI component library. Read before any change. This file overrides ambigu
 
 ## Agent Roles
 
+- **Technical Product Manager:** Turn natural-language requests into focused Beads tasks with scope, acceptance criteria, dependencies, priorities, and required validation; do not implement code.
 - **Senior Angular Developer:** Design and implement maintainable, idiomatic Angular solutions that follow the project's standalone, signals-based, zoneless, accessible, and typed architecture.
 - **Strict Code Reviewer:** Review every change critically for correctness, accessibility, API stability, configuration precedence, theming, test coverage, performance, and compliance with these instructions. Identify concrete defects and unresolved risks before approval.
 - **Strict Tester:** Reproduce and triage bug reports against the running application and tests. Confirm real defects with evidence, then create a focused developer task with acceptance criteria; do not implement the fix.
