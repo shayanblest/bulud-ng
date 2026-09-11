@@ -179,6 +179,36 @@ describe('BuludDropdown', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('supports APG navigation keys when an option has focus', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+    const options = getOptions();
+    options[0].focus();
+    options[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
+    fixture.detectChanges();
+
+    expect(getTrigger().getAttribute('aria-activedescendant')).toBe(
+      options[2].id,
+    );
+
+    options[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    fixture.detectChanges();
+    expect(getTrigger().getAttribute('aria-activedescendant')).toBe(options[1].id);
+  });
+
+  it('does not steal focus when focus leaves the component', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    outside.focus();
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(outside);
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('false');
+    outside.remove();
+  });
+
   it('moves focus and selects the navigated option when an option has focus', () => {
     const trigger = getTrigger();
     trigger.click();

@@ -467,7 +467,7 @@ export class BuludDropdown<T = unknown>
       !(relatedTarget instanceof Node) ||
       !currentTarget.contains(relatedTarget)
     ) {
-      this.close();
+      this.close(false);
       this.onTouched();
     }
   }
