@@ -6,7 +6,6 @@ import {
   makeEnvironmentProviders,
   provideEnvironmentInitializer,
   RendererFactory2,
-  RendererStyleFlags2,
 } from '@angular/core';
 
 /** Color tokens shared by Bulud components and Tailwind utilities. */
@@ -107,13 +106,20 @@ export interface BuludTheme {
 export interface BuludThemeConfig {
   readonly colors?: Partial<BuludColorTheme>;
   readonly shape?: Partial<BuludShapeTheme>;
-  readonly button?: Partial<Omit<BuludButtonTheme, 'small' | 'medium' | 'large'>> & {
+  readonly button?: Partial<
+    Omit<BuludButtonTheme, 'small' | 'medium' | 'large'>
+  > & {
     readonly small?: Partial<BuludButtonSizeTheme>;
     readonly medium?: Partial<BuludButtonSizeTheme>;
     readonly large?: Partial<BuludButtonSizeTheme>;
   };
   readonly dropdown?: Partial<BuludDropdownTheme>;
-  readonly badge?: Partial<Omit<BuludBadgeTheme, 'neutral' | 'primary' | 'success' | 'warning' | 'danger'>> & {
+  readonly badge?: Partial<
+    Omit<
+      BuludBadgeTheme,
+      'neutral' | 'primary' | 'success' | 'warning' | 'danger'
+    >
+  > & {
     readonly neutral?: Partial<BuludBadgeVariantTheme>;
     readonly primary?: Partial<BuludBadgeVariantTheme>;
     readonly success?: Partial<BuludBadgeVariantTheme>;
@@ -124,6 +130,9 @@ export interface BuludThemeConfig {
 
 /** CSS custom properties emitted by the Bulud theme provider. */
 export type BuludThemeCssVariable = `--bulud-${string}`;
+
+const BULUD_THEME_STYLE_ATTRIBUTE = 'data-bulud-theme';
+const BULUD_THEME_SCOPE = ":root:not(.dark):not([data-theme='dark'])";
 
 /** Default theme used for every token omitted by a consumer configuration. */
 export const BULUD_DEFAULT_THEME: BuludTheme = {
@@ -191,10 +200,26 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
     shadow: '0 1rem 2.5rem rgb(15 23 42 / 0.16)',
   },
   badge: {
-    neutral: { background: '#f8fafc', border: '#cbd5e1', foreground: '#1e293b' },
-    primary: { background: '#eff6ff', border: '#bfdbfe', foreground: '#1d4ed8' },
-    success: { background: '#dcfce7', border: '#bbf7d0', foreground: '#15803d' },
-    warning: { background: '#fef3c7', border: '#fde68a', foreground: '#a16207' },
+    neutral: {
+      background: '#f8fafc',
+      border: '#cbd5e1',
+      foreground: '#1e293b',
+    },
+    primary: {
+      background: '#eff6ff',
+      border: '#bfdbfe',
+      foreground: '#1d4ed8',
+    },
+    success: {
+      background: '#dcfce7',
+      border: '#bbf7d0',
+      foreground: '#15803d',
+    },
+    warning: {
+      background: '#fef3c7',
+      border: '#fde68a',
+      foreground: '#a16207',
+    },
     danger: { background: '#ffe4e6', border: '#fecdd3', foreground: '#be123c' },
     radius: '999px',
     fontWeight: '500',
@@ -254,10 +279,22 @@ export function resolveBuludTheme(config: BuludThemeConfig = {}): BuludTheme {
     badge: {
       ...BULUD_DEFAULT_THEME.badge,
       ...config.badge,
-      neutral: { ...BULUD_DEFAULT_THEME.badge.neutral, ...config.badge?.neutral },
-      primary: { ...BULUD_DEFAULT_THEME.badge.primary, ...config.badge?.primary },
-      success: { ...BULUD_DEFAULT_THEME.badge.success, ...config.badge?.success },
-      warning: { ...BULUD_DEFAULT_THEME.badge.warning, ...config.badge?.warning },
+      neutral: {
+        ...BULUD_DEFAULT_THEME.badge.neutral,
+        ...config.badge?.neutral,
+      },
+      primary: {
+        ...BULUD_DEFAULT_THEME.badge.primary,
+        ...config.badge?.primary,
+      },
+      success: {
+        ...BULUD_DEFAULT_THEME.badge.success,
+        ...config.badge?.success,
+      },
+      warning: {
+        ...BULUD_DEFAULT_THEME.badge.warning,
+        ...config.badge?.warning,
+      },
       danger: { ...BULUD_DEFAULT_THEME.badge.danger, ...config.badge?.danger },
     },
   };
@@ -308,16 +345,21 @@ export function createBuludThemeVariables(
     '--bulud-dropdown-focus': theme.dropdown.focus,
     '--bulud-dropdown-placeholder': theme.dropdown.placeholder,
     '--bulud-dropdown-clear-foreground': theme.dropdown.clearForeground,
-    '--bulud-dropdown-clear-hover-background': theme.dropdown.clearHoverBackground,
-    '--bulud-dropdown-clear-hover-foreground': theme.dropdown.clearHoverForeground,
+    '--bulud-dropdown-clear-hover-background':
+      theme.dropdown.clearHoverBackground,
+    '--bulud-dropdown-clear-hover-foreground':
+      theme.dropdown.clearHoverForeground,
     '--bulud-dropdown-panel-background': theme.dropdown.panelBackground,
     '--bulud-dropdown-search-border': theme.dropdown.searchBorder,
     '--bulud-dropdown-search-icon': theme.dropdown.searchIcon,
     '--bulud-dropdown-option-foreground': theme.dropdown.optionForeground,
-    '--bulud-dropdown-option-hover-background': theme.dropdown.optionHoverBackground,
-    '--bulud-dropdown-option-selected-foreground': theme.dropdown.optionSelectedForeground,
+    '--bulud-dropdown-option-hover-background':
+      theme.dropdown.optionHoverBackground,
+    '--bulud-dropdown-option-selected-foreground':
+      theme.dropdown.optionSelectedForeground,
     '--bulud-dropdown-option-border': theme.dropdown.optionBorder,
-    '--bulud-dropdown-option-selected-background': theme.dropdown.optionSelectedBackground,
+    '--bulud-dropdown-option-selected-background':
+      theme.dropdown.optionSelectedBackground,
     '--bulud-dropdown-message-foreground': theme.dropdown.messageForeground,
     '--bulud-dropdown-disabled-opacity': theme.dropdown.disabledOpacity,
     '--bulud-dropdown-radius': theme.dropdown.radius,
@@ -339,14 +381,27 @@ export function createBuludThemeVariables(
     '--bulud-badge-danger-foreground': theme.badge.danger.foreground,
     '--bulud-badge-radius': theme.badge.radius,
     '--bulud-badge-font-weight': theme.badge.fontWeight,
-    '--bulud-badge-dismiss-hover-background': theme.badge.dismissHoverBackground,
+    '--bulud-badge-dismiss-hover-background':
+      theme.badge.dismissHoverBackground,
     '--bulud-badge-focus': theme.badge.focus,
   };
 }
 
+function createBuludThemeCss(
+  variables: Readonly<Record<BuludThemeCssVariable, string>>,
+): string {
+  const declarations = Object.entries(variables)
+    .map(([property, value]) => `  ${property}: ${value};`)
+    .join('\n');
+
+  return `${BULUD_THEME_SCOPE} {\n${declarations}\n}`;
+}
+
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
- * document root during Angular environment initialization.
+ * document root during Angular environment initialization. The generated
+ * stylesheet is scoped out while the root is in dark mode so the explicitly
+ * imported dark theme can take precedence over global light-mode overrides.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -366,14 +421,21 @@ export function provideBuludTheme(
       const renderer = inject(RendererFactory2).createRenderer(null, null);
       const variables = createBuludThemeVariables(theme);
 
-      for (const [property, value] of Object.entries(variables)) {
-        renderer.setStyle(
-          document.documentElement,
-          property,
-          value,
-          RendererStyleFlags2.DashCase,
-        );
+      let styleElement = document.head.querySelector<HTMLStyleElement>(
+        `style[${BULUD_THEME_STYLE_ATTRIBUTE}]`,
+      );
+
+      if (!styleElement) {
+        styleElement = renderer.createElement('style') as HTMLStyleElement;
+        renderer.setAttribute(styleElement, BULUD_THEME_STYLE_ATTRIBUTE, '');
+        renderer.appendChild(document.head, styleElement);
       }
+
+      renderer.setProperty(
+        styleElement,
+        'textContent',
+        createBuludThemeCss(variables),
+      );
     }),
   ]);
 }
