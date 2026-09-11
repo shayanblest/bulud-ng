@@ -159,6 +159,11 @@ Detailed theme contracts belong in:
 text
 docs/THEME.md
 
+Utility API and lifecycle contracts belong in:
+
+text
+docs/UTILITY-API.md
+
 ---
 
 ## 7. Forms and Composition
