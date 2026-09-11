@@ -14,6 +14,23 @@ version in the consuming application.
 
 Tailwind CSS 4 is optional. Bulud components work without Tailwind.
 
+## Public API and entry points
+
+Import shared theme and locale APIs from `bulud-ng`, and each UI feature from
+its documented secondary entry point:
+
+| Package path               | Feature                                              |
+| -------------------------- | ---------------------------------------------------- |
+| `bulud-ng`                 | Theme and locale providers, types, and token helpers |
+| `bulud-ng/button`          | `BuludButton`                                        |
+| `bulud-ng/badge`           | `BuludBadge`                                         |
+| `bulud-ng/dropdown`        | `BuludDropdown`                                      |
+| `bulud-ng/resize-observer` | `BuludResizeObserver` and `BuludElementSize`         |
+
+Do not import from library source paths or component implementation files. See
+the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
+complete export contract.
+
 ## Application theme configuration
 
 Create a consumer-owned `src/bulud.config.ts`:
