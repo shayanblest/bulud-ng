@@ -15,6 +15,7 @@ import {
   signal,
   TemplateRef,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import {
@@ -90,6 +91,8 @@ export class BuludDropdown<T = unknown>
   private readonly injector = inject(Injector);
   private readonly triggerElement = viewChild<ElementRef<HTMLButtonElement>>('trigger');
   private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  private readonly optionElements =
+    viewChildren<ElementRef<HTMLButtonElement>>('option');
   protected readonly instanceId = `bulud-dropdown-${BuludDropdown.nextId++}`;
 
   /** Options rendered in the listbox. */
@@ -278,6 +281,10 @@ export class BuludDropdown<T = unknown>
     this.activeOptionIndex.set((next + count) % count);
   }
 
+  private focusActiveOption(): void {
+    this.optionElements()[this.activeOptionIndex()]?.nativeElement.focus();
+  }
+
   protected handleSearchInput(value: string): void {
     this.searchTerm.set(value);
     this.setActiveFromSelection();
@@ -374,9 +381,38 @@ export class BuludDropdown<T = unknown>
   }
 
   protected handleOptionKeydown(event: KeyboardEvent, option: T): void {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.moveActive(1);
+      this.focusActiveOption();
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.moveActive(-1);
+      this.focusActiveOption();
+      return;
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      this.activeOptionIndex.set(this.filteredOptions().length > 0 ? 0 : -1);
+      this.focusActiveOption();
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      this.activeOptionIndex.set(this.filteredOptions().length - 1);
+      this.focusActiveOption();
+      return;
+    }
+
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.selectOption(option);
+      return;
     }
 
     if (event.key === 'Escape') {

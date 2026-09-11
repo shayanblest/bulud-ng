@@ -101,6 +101,7 @@
         >
           @for (option of filteredOptions(); track option; let index = $index) {
             <button
+              #option
               class="bulud-dropdown__option"
               type="button"
               [id]="optionId(index)"
