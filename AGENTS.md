@@ -78,7 +78,7 @@ Run and pass, using `package.json` scripts where they exist:
 
 1. `npm run format:check`
 2. `npm run lint` — 0 errors
-3. `npm run test` (scoped, or full suite if change crosses features)
+3. `npm run test` (headless Chromium; scoped, or full suite if change crosses features)
 4. `npm run build -- bulud-ng` — 0 errors/new warnings
 5. `npm run e2e` — if markup/states/theming touched
 6. `git diff -- projects/bulud-ng/src/public-api.ts` — confirm intentional

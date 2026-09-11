@@ -14,11 +14,14 @@ Install dependencies:
 npm install
 ```
 
-Run the unit tests once:
+Run the unit tests once in headless Chromium:
 
 ```bash
 npm run test:ci
 ```
+
+The default browser is `ChromeHeadless`. Set `CHROME_BIN` when Chromium is not
+available at `/snap/bin/chromium`.
 
 Compile the Tailwind token bridge:
 
@@ -95,12 +98,14 @@ accessibility, testing, packaging, theming, and compatibility.
 
 ## Current entry points
 
-| Entry point | Purpose |
-| --- | --- |
-| `bulud-ng` | Typed theme configuration and bootstrap provider |
-| `bulud-ng/button` | Accessible standalone button component |
-| `bulud-ng/dropdown` | Searchable single- and multiple-select dropdown |
-| `bulud-ng/tailwind.css` | Tailwind CSS 4 theme-variable bridge |
+| Entry point                | Purpose                                          |
+| -------------------------- | ------------------------------------------------ |
+| `bulud-ng`                 | Typed theme configuration and bootstrap provider |
+| `bulud-ng/button`          | Accessible standalone button component           |
+| `bulud-ng/badge`           | Accessible badge component                       |
+| `bulud-ng/dropdown`        | Searchable single- and multiple-select dropdown  |
+| `bulud-ng/resize-observer` | Element resize observer directive                |
+| `bulud-ng/tailwind.css`    | Tailwind CSS 4 theme-variable bridge             |
 
 ## Compatibility note
 
