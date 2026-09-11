@@ -208,6 +208,33 @@ clear action and search field. The component exposes `valueChange` through its
 model binding; Angular Forms users should prefer `formControl`, `formControlName`,
 or `ngModel` when participating in form state.
 
+## Resize observer
+
+Import `BuludResizeObserver` from its secondary entry point to observe an
+element's content-box size:
+
+```ts
+import { Component } from "@angular/core";
+import { BuludResizeObserver, BuludElementSize } from "bulud-ng/resize-observer";
+
+@Component({
+  imports: [BuludResizeObserver],
+  template: ` <section buludResizeObserver (sizeChange)="size = $event">{{ size.width }} × {{ size.height }}px</section> `,
+})
+export class ResizablePanel {
+  size: BuludElementSize = { width: 0, height: 0 };
+}
+```
+
+The `sizeChange` output emits typed CSS-pixel `width` and `height` values,
+including the browser's initial asynchronous notification. Identical
+dimensions are suppressed. Set `[enabled]="false"` to pause observation; the
+default is `true`. There is no global configuration or theme state for this
+directive, so its `enabled` input is the only configuration and takes direct
+instance precedence. The directive does not add semantics or ARIA; consumers
+must provide the appropriate native element, accessible name, and keyboard
+behavior when observing an interactive element.
+
 ### Dropdown accessibility
 
 The trigger is a `role="combobox"` controlling a `role="listbox"`. Its active

@@ -15,6 +15,9 @@
       ],
       "bulud-ng/badge": [
         "./projects/bulud-ng/badge/public-api.ts"
+      ],
+      "bulud-ng/resize-observer": [
+        "./projects/bulud-ng/resize-observer/public-api.ts"
       ]
     },
     "strict": true,

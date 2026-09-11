@@ -18,9 +18,7 @@
       </svg>
     </span>
   </ng-template>
-  <header
-    class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/95"
-  >
+  <header class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/95">
     <div
       class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-4 sm:px-8"
     >
@@ -38,10 +36,18 @@
       </a>
 
       <nav class="hidden items-center gap-6 text-sm text-slate-300 sm:flex">
-        <a class="transition hover:text-white" href="#variants">{{ text().navVariants }}</a>
-        <a class="transition hover:text-white" href="#states">{{ text().navStates }}</a>
-        <a class="transition hover:text-white" href="#dropdown">{{ text().navDropdown }}</a>
-        <a class="transition hover:text-white" href="#theme">{{ text().navTheme }}</a>
+        <a class="transition hover:text-white" href="#variants">{{
+          text().navVariants
+        }}</a>
+        <a class="transition hover:text-white" href="#states">{{
+          text().navStates
+        }}</a>
+        <a class="transition hover:text-white" href="#dropdown">{{
+          text().navDropdown
+        }}</a>
+        <a class="transition hover:text-white" href="#theme">{{
+          text().navTheme
+        }}</a>
       </nav>
 
       <button
@@ -197,35 +203,37 @@
               </button>
             </div>
           </div>
-          @if (buttonTab() === 'code') {
-            <pre class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"><code>&lt;bulud-button&gt;Save changes&lt;/bulud-button&gt;
+          @if (buttonTab() === "code") {
+            <pre
+              class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"
+            ><code>&lt;bulud-button&gt;Save changes&lt;/bulud-button&gt;
 &lt;bulud-button variant="secondary"&gt;Cancel&lt;/bulud-button&gt;
 &lt;bulud-button variant="danger" loading&gt;Delete&lt;/bulud-button&gt;</code></pre>
           } @else {
-          <div class="mb-7">
-            <h3 class="text-xl font-extrabold">{{ text().variants }}</h3>
-            <p class="mt-1 text-sm text-slate-500">
-              {{ text().variantsDesc }}
-            </p>
-          </div>
+            <div class="mb-7">
+              <h3 class="text-xl font-extrabold">{{ text().variants }}</h3>
+              <p class="mt-1 text-sm text-slate-500">
+                {{ text().variantsDesc }}
+              </p>
+            </div>
 
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @for (variant of variants; track variant.name) {
-              <article
-                class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
-              >
-                <bulud-button [variant]="variant.name" fullWidth>
-                  {{ variant.label }}
-                </bulud-button>
-                <p class="mt-4 text-sm font-semibold text-bulud-on-surface">
-                  {{ variant.label }}
-                </p>
-                <p class="mt-1 text-xs leading-5 text-slate-500">
-                  {{ variant.description }}
-                </p>
-              </article>
-            }
-          </div>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              @for (variant of variants; track variant.name) {
+                <article
+                  class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
+                >
+                  <bulud-button [variant]="variant.name" fullWidth>
+                    {{ variant.label }}
+                  </bulud-button>
+                  <p class="mt-4 text-sm font-semibold text-bulud-on-surface">
+                    {{ variant.label }}
+                  </p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">
+                    {{ variant.description }}
+                  </p>
+                </article>
+              }
+            </div>
           }
         </section>
 
@@ -234,9 +242,9 @@
             class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
           >
             <div class="mb-7">
-            <h3 class="text-xl font-extrabold">{{ text().sizes }}</h3>
+              <h3 class="text-xl font-extrabold">{{ text().sizes }}</h3>
               <p class="mt-1 text-sm text-slate-500">
-              {{ text().sizesDesc }}
+                {{ text().sizesDesc }}
               </p>
             </div>
 
@@ -275,7 +283,9 @@
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >
           <div class="mb-7">
-            <p class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary">
+            <p
+              class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+            >
               Badge
             </p>
             <h3 class="mt-3 text-2xl font-black tracking-tight">
@@ -295,7 +305,9 @@
             <bulud-badge variant="success">Published</bulud-badge>
             <bulud-badge variant="primary" dismissible>Dismissible</bulud-badge>
           </div>
-          <pre class="mt-7 overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"><code>&lt;bulud-badge variant="success"&gt;Published&lt;/bulud-badge&gt;
+          <pre
+            class="mt-7 overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"
+          ><code>&lt;bulud-badge variant="success"&gt;Published&lt;/bulud-badge&gt;
 &lt;bulud-badge variant="primary" dismissible&gt;Removable&lt;/bulud-badge&gt;</code></pre>
         </section>
 
@@ -305,7 +317,9 @@
         >
           <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary">
+              <p
+                class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+              >
                 {{ text().dropdown }}
               </p>
               <h3 class="mt-3 text-2xl font-black tracking-tight">
@@ -313,12 +327,34 @@
               </h3>
             </div>
             <div class="inline-flex rounded-lg bg-slate-100 p-1" role="tablist">
-              <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold" [class.bg-white]="dropdownTab() === 'preview'" [class.text-bulud-primary]="dropdownTab() === 'preview'" (click)="dropdownTab.set('preview')" role="tab" [attr.aria-selected]="dropdownTab() === 'preview'">Preview</button>
-              <button type="button" class="rounded-md px-3 py-1.5 text-sm font-semibold" [class.bg-white]="dropdownTab() === 'code'" [class.text-bulud-primary]="dropdownTab() === 'code'" (click)="dropdownTab.set('code')" role="tab" [attr.aria-selected]="dropdownTab() === 'code'">Code</button>
+              <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-semibold"
+                [class.bg-white]="dropdownTab() === 'preview'"
+                [class.text-bulud-primary]="dropdownTab() === 'preview'"
+                (click)="dropdownTab.set('preview')"
+                role="tab"
+                [attr.aria-selected]="dropdownTab() === 'preview'"
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-semibold"
+                [class.bg-white]="dropdownTab() === 'code'"
+                [class.text-bulud-primary]="dropdownTab() === 'code'"
+                (click)="dropdownTab.set('code')"
+                role="tab"
+                [attr.aria-selected]="dropdownTab() === 'code'"
+              >
+                Code
+              </button>
             </div>
           </div>
-          @if (dropdownTab() === 'code') {
-            <pre class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"><code>&lt;bulud-dropdown
+          @if (dropdownTab() === "code") {
+            <pre
+              class="overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"
+            ><code>&lt;bulud-dropdown
   [options]="frameworks"
   [optionLabel]="optionLabel"
   searchable
@@ -326,105 +362,60 @@
   [(value)]="selectedFramework"
 &gt;&lt;/bulud-dropdown&gt;</code></pre>
           } @else {
-          <div class="grid gap-6 lg:grid-cols-2">
-            <article class="rounded-2xl border border-bulud-border bg-bulud-surface p-5">
-              <div class="mb-5">
-                <h4 class="font-extrabold text-bulud-on-surface">
-                  {{ text().single }}
-                </h4>
-                <p class="mt-1 text-sm text-slate-500">
-                  {{ text().singleDesc }}
-                </p>
-              </div>
-
-              <div class="mb-5 flex flex-wrap gap-4 text-sm font-semibold text-slate-700">
-                <label class="inline-flex items-center gap-2">
-                  <input
-                    id="dropdown-loading"
-                    type="checkbox"
-                    [checked]="dropdownLoading()"
-                    (change)="dropdownLoading.set(!dropdownLoading())"
-                  />
-                  {{ text().loading }}
-                </label>
-                <label class="inline-flex items-center gap-2">
-                  <input
-                    id="dropdown-empty"
-                    type="checkbox"
-                    [checked]="dropdownEmpty()"
-                    (change)="dropdownEmpty.set(!dropdownEmpty())"
-                  />
-                  {{ text().empty }}
-                </label>
-              </div>
-
-              <bulud-dropdown
-                class="block w-full"
-                [attr.aria-label]="text().frameworkLabel"
-                [options]="dropdownEmpty() ? [] : frameworks"
-                [loading]="dropdownLoading()"
-                [optionLabel]="optionLabel"
-                [placeholder]="dropdownLocale().placeholder"
-                [searchPlaceholder]="dropdownLocale().searchPlaceholder"
-                [noResultsText]="dropdownLocale().noResultsText"
-                [loadingText]="dropdownLocale().loadingText"
-                [emptyText]="dropdownLocale().emptyText"
-                [(value)]="selectedFramework"
+            <div class="grid gap-6 lg:grid-cols-2">
+              <article
+                class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
               >
-                <ng-template
-                  #optionTemplate
-                  let-option
-                  let-selected="selected"
-                >
-                  <span class="min-w-0">
-                    <span class="block truncate font-semibold">
-                      {{ option.label }}
-                    </span>
-                    <span class="block text-xs text-slate-500">
-                      {{ option.meta }}
-                    </span>
-                  </span>
-                  @if (selected) {
-                    <ng-container [ngTemplateOutlet]="selectedIcon" />
-                  }
-                </ng-template>
-              </bulud-dropdown>
-            </article>
+                <div class="mb-5">
+                  <h4 class="font-extrabold text-bulud-on-surface">
+                    {{ text().single }}
+                  </h4>
+                  <p class="mt-1 text-sm text-slate-500">
+                    {{ text().singleDesc }}
+                  </p>
+                </div>
 
-            <article class="rounded-2xl border border-bulud-border bg-bulud-surface p-5">
-              <div class="mb-5">
-                <h4 class="font-extrabold text-bulud-on-surface">
-                  {{ text().multiple }}
-                </h4>
-                <p class="mt-1 text-sm text-slate-500">
-                  {{ text().multipleDesc }}
-                </p>
-              </div>
-
-              <bulud-dropdown
-                class="block w-full"
-                [attr.aria-label]="text().teamLabel"
-                [options]="teamMembers"
-                [optionLabel]="optionLabel"
-                [placeholder]="dropdownLocale().placeholder"
-                [searchPlaceholder]="dropdownLocale().searchPlaceholder"
-                [noResultsText]="dropdownLocale().noResultsText"
-                [loadingText]="dropdownLocale().loadingText"
-                [emptyText]="dropdownLocale().emptyText"
-                multiple
-                [(value)]="selectedTeam"
-              >
-                <ng-template
-                  #optionTemplate
-                  let-option
-                  let-selected="selected"
+                <div
+                  class="mb-5 flex flex-wrap gap-4 text-sm font-semibold text-slate-700"
                 >
-                  <span class="flex min-w-0 items-center gap-3">
-                    <span
-                      class="grid size-8 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-black text-violet-700"
-                    >
-                      {{ option.label.slice(0, 1) }}
-                    </span>
+                  <label class="inline-flex items-center gap-2">
+                    <input
+                      id="dropdown-loading"
+                      type="checkbox"
+                      [checked]="dropdownLoading()"
+                      (change)="dropdownLoading.set(!dropdownLoading())"
+                    />
+                    {{ text().loading }}
+                  </label>
+                  <label class="inline-flex items-center gap-2">
+                    <input
+                      id="dropdown-empty"
+                      type="checkbox"
+                      [checked]="dropdownEmpty()"
+                      (change)="dropdownEmpty.set(!dropdownEmpty())"
+                    />
+                    {{ text().empty }}
+                  </label>
+                </div>
+
+                <bulud-dropdown
+                  class="block w-full"
+                  [attr.aria-label]="text().frameworkLabel"
+                  [options]="dropdownEmpty() ? [] : frameworks"
+                  [loading]="dropdownLoading()"
+                  [optionLabel]="optionLabel"
+                  [placeholder]="dropdownLocale().placeholder"
+                  [searchPlaceholder]="dropdownLocale().searchPlaceholder"
+                  [noResultsText]="dropdownLocale().noResultsText"
+                  [loadingText]="dropdownLocale().loadingText"
+                  [emptyText]="dropdownLocale().emptyText"
+                  [(value)]="selectedFramework"
+                >
+                  <ng-template
+                    #optionTemplate
+                    let-option
+                    let-selected="selected"
+                  >
                     <span class="min-w-0">
                       <span class="block truncate font-semibold">
                         {{ option.label }}
@@ -433,14 +424,65 @@
                         {{ option.meta }}
                       </span>
                     </span>
-                  </span>
-                  @if (selected) {
-                    <ng-container [ngTemplateOutlet]="selectedIcon" />
-                  }
-                </ng-template>
-              </bulud-dropdown>
-            </article>
-          </div>
+                    @if (selected) {
+                      <ng-container [ngTemplateOutlet]="selectedIcon" />
+                    }
+                  </ng-template>
+                </bulud-dropdown>
+              </article>
+
+              <article
+                class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
+              >
+                <div class="mb-5">
+                  <h4 class="font-extrabold text-bulud-on-surface">
+                    {{ text().multiple }}
+                  </h4>
+                  <p class="mt-1 text-sm text-slate-500">
+                    {{ text().multipleDesc }}
+                  </p>
+                </div>
+
+                <bulud-dropdown
+                  class="block w-full"
+                  [attr.aria-label]="text().teamLabel"
+                  [options]="teamMembers"
+                  [optionLabel]="optionLabel"
+                  [placeholder]="dropdownLocale().placeholder"
+                  [searchPlaceholder]="dropdownLocale().searchPlaceholder"
+                  [noResultsText]="dropdownLocale().noResultsText"
+                  [loadingText]="dropdownLocale().loadingText"
+                  [emptyText]="dropdownLocale().emptyText"
+                  multiple
+                  [(value)]="selectedTeam"
+                >
+                  <ng-template
+                    #optionTemplate
+                    let-option
+                    let-selected="selected"
+                  >
+                    <span class="flex min-w-0 items-center gap-3">
+                      <span
+                        class="grid size-8 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-black text-violet-700"
+                      >
+                        {{ option.label.slice(0, 1) }}
+                      </span>
+                      <span class="min-w-0">
+                        <span class="block truncate font-semibold">
+                          {{ option.label }}
+                        </span>
+                        <span class="block text-xs text-slate-500">
+                          {{ option.meta }}
+                        </span>
+                      </span>
+                    </span>
+                    @if (selected) {
+                      <ng-container [ngTemplateOutlet]="selectedIcon" />
+                    }
+                  </ng-template>
+                </bulud-dropdown>
+              </article>
+            </div>
           }
         </section>
 
@@ -472,10 +514,7 @@
           </div>
 
           <div class="pt-7">
-            <bulud-button
-              [fullWidth]="fullWidth()"
-              (click)="incrementCount()"
-            >
+            <bulud-button [fullWidth]="fullWidth()" (click)="incrementCount()">
               {{ text().increment }}
             </bulud-button>
 
@@ -494,6 +533,68 @@
                 {{ text().reset }}
               </button>
             </div>
+          </div>
+        </section>
+
+        <section
+          id="resize-observer"
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p
+                class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+              >
+                Resize observer
+              </p>
+              <h3 class="mt-3 text-2xl font-black tracking-tight">
+                Respond to element size changes
+              </h3>
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                Observe the content box without a window resize listener. Toggle
+                observation or resize the panel to see the typed dimensions
+                update.
+              </p>
+            </div>
+            <label
+              class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"
+            >
+              <input
+                id="resize-observer-enabled"
+                type="checkbox"
+                [checked]="resizeObserverEnabled()"
+                (change)="resizeObserverEnabled.set(!resizeObserverEnabled())"
+              />
+              Observation enabled
+            </label>
+          </div>
+
+          <div
+            class="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+          >
+            <div
+              id="resize-observer-target"
+              class="resize overflow-auto rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50 p-5 text-violet-950"
+              style="width: 240px; height: 120px"
+              buludResizeObserver
+              [enabled]="resizeObserverEnabled()"
+              (sizeChange)="updateResizeObserverSize($event)"
+              aria-label="Resize observer target"
+            >
+              <p class="font-semibold">Observed panel</p>
+              <p class="mt-2 text-sm">Drag the lower-right corner.</p>
+            </div>
+            <p
+              id="resize-observer-size"
+              class="text-sm font-semibold text-slate-600"
+              aria-live="polite"
+            >
+              @if (resizeObserverSize(); as size) {
+                Content box: {{ size.width }} × {{ size.height }}px
+              } @else {
+                Waiting for the first size notification…
+              }
+            </p>
           </div>
         </section>
 
@@ -518,7 +619,9 @@
             <div class="grid gap-px bg-white/10 sm:grid-cols-3">
               <div class="bg-bulud-primary p-7 text-bulud-on-primary">
                 <div class="mb-12 size-8 rounded-full bg-white/25"></div>
-                <p class="text-xs font-bold uppercase tracking-wider opacity-75">
+                <p
+                  class="text-xs font-bold uppercase tracking-wider opacity-75"
+                >
                   Primary
                 </p>
                 <p class="mt-2 font-mono text-sm">#7c3aed</p>
@@ -527,14 +630,18 @@
                 <div
                   class="mb-12 size-8 rounded-bulud-control border border-bulud-border"
                 ></div>
-                <p class="text-xs font-bold uppercase tracking-wider opacity-60">
+                <p
+                  class="text-xs font-bold uppercase tracking-wider opacity-60"
+                >
                   Surface
                 </p>
                 <p class="mt-2 font-mono text-sm">#ffffff</p>
               </div>
               <div class="bg-bulud-danger p-7 text-bulud-on-danger">
                 <div class="mb-12 size-8 rounded-full bg-white/25"></div>
-                <p class="text-xs font-bold uppercase tracking-wider opacity-75">
+                <p
+                  class="text-xs font-bold uppercase tracking-wider opacity-75"
+                >
                   Danger
                 </p>
                 <p class="mt-2 font-mono text-sm">#e11d48</p>

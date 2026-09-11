@@ -7,11 +7,11 @@ main > section:nth-child(n + 2) {
   contain-intrinsic-size: 1px 900px;
 }
 
-:host-context(html[dir='rtl']) {
+:host-context(html[dir="rtl"]) {
   direction: rtl;
 }
 
-:host-context(html[dir='ltr']) {
+:host-context(html[dir="ltr"]) {
   direction: ltr;
 }
 
@@ -20,4 +20,8 @@ pre {
   text-align: left;
   scrollbar-color: rgb(148 163 184 / 0.4) transparent;
   scrollbar-width: thin;
+}
+
+#resize-observer-target {
+  resize: both;
 }
