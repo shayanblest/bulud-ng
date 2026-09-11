@@ -10,8 +10,12 @@ test.describe('Bulud component demo', () => {
   }) => {
     const variants = page.locator('#variants bulud-button');
     await expect(variants).toHaveCount(4);
-    await expect(page.locator('#variants .bulud-button--primary')).toBeVisible();
-    await expect(page.locator('#variants .bulud-button--secondary')).toBeVisible();
+    await expect(
+      page.locator('#variants .bulud-button--primary'),
+    ).toBeVisible();
+    await expect(
+      page.locator('#variants .bulud-button--secondary'),
+    ).toBeVisible();
     await expect(page.locator('#variants .bulud-button--danger')).toBeVisible();
     await expect(page.locator('#variants .bulud-button--ghost')).toBeVisible();
 
@@ -22,7 +26,10 @@ test.describe('Bulud component demo', () => {
     const states = page.locator('#states bulud-button');
     await expect(states.nth(1).locator('button')).toBeDisabled();
     await expect(states.nth(2).locator('button')).toBeDisabled();
-    await expect(states.nth(2).locator('button')).toHaveAttribute('aria-busy', 'true');
+    await expect(states.nth(2).locator('button')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
 
     const interactive = page.locator('#interactive');
     const action = interactive.locator('bulud-button');
@@ -38,11 +45,21 @@ test.describe('Bulud component demo', () => {
   }) => {
     const badges = page.locator('#badge bulud-badge');
     await expect(badges).toHaveCount(7);
-    for (const variant of ['neutral', 'primary', 'success', 'warning', 'danger']) {
-      await expect(page.locator(`#badge .bulud-badge--${variant}`).first()).toBeVisible();
+    for (const variant of [
+      'neutral',
+      'primary',
+      'success',
+      'warning',
+      'danger',
+    ]) {
+      await expect(
+        page.locator(`#badge .bulud-badge--${variant}`).first(),
+      ).toBeVisible();
     }
 
-    const dismissible = page.locator('#badge bulud-badge[variant="primary"]').last();
+    const dismissible = page
+      .locator('#badge bulud-badge[variant="primary"]')
+      .last();
     await expect(dismissible.locator('button')).toHaveAttribute(
       'aria-label',
       'Remove badge',
@@ -54,7 +71,10 @@ test.describe('Bulud component demo', () => {
     await button.evaluate((element) => {
       element.style.setProperty('--bulud-button-background', '#123456');
     });
-    await expect(button.locator('button')).toHaveCSS('background-color', 'rgb(18, 52, 86)');
+    await expect(button.locator('button')).toHaveCSS(
+      'background-color',
+      'rgb(18, 52, 86)',
+    );
   });
 
   test('covers dropdown pointer, keyboard opening, search, single, and multiple selection', async ({
@@ -125,7 +145,9 @@ test.describe('Bulud component demo', () => {
     const language = page.locator('header button').first();
     await language.click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-    await expect(page.locator('#dropdown bulud-dropdown').first().locator('input')).toHaveCount(0);
+    await expect(
+      page.locator('#dropdown bulud-dropdown').first().locator('input'),
+    ).toHaveCount(0);
 
     await language.click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
@@ -139,9 +161,34 @@ test.describe('Bulud component demo', () => {
       element.setAttribute('data-theme', 'dark');
     });
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(page.locator('#badge .bulud-badge--success').first()).toHaveCSS(
-      'background-color',
-      'rgb(20, 83, 45)',
+    await expect(
+      page.locator('#badge .bulud-badge--success').first(),
+    ).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  });
+
+  test('covers resize observer enabled, disabled, and re-enabled states', async ({
+    page,
+  }) => {
+    const target = page.locator('#resize-observer-target');
+    const size = page.locator('#resize-observer-size');
+    const enabled = page.locator('#resize-observer-enabled');
+
+    await expect(target).toHaveAttribute(
+      'aria-label',
+      'Resize observer target',
     );
+    const initialSize = (await size.textContent())?.trim() ?? '';
+    expect(initialSize).toMatch(/^Content box: \d+ × \d+px$/);
+
+    await enabled.uncheck();
+    await target.evaluate((element) => {
+      (element as HTMLElement).style.width = '300px';
+      (element as HTMLElement).style.height = '160px';
+    });
+    await expect(size).toHaveText(initialSize);
+
+    await enabled.check();
+    await expect(size).not.toHaveText(initialSize);
+    await expect(size).toContainText('Content box:');
   });
 });

@@ -28,7 +28,8 @@
             "include": [
               "**/*.spec.ts",
               "../button/**/*.spec.ts",
-              "../dropdown/**/*.spec.ts"
+              "../dropdown/**/*.spec.ts",
+              "../resize-observer/**/*.spec.ts"
             ]
           }
         }
