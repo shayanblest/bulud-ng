@@ -1,3 +1,5 @@
+# Temporarily disabled: validation is being run locally in headless Chromium.
+# Restore this file to ci.yml when remote CI is re-enabled.
 name: CI
 
 on:
