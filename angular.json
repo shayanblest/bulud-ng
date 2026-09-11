@@ -29,7 +29,8 @@
               "**/*.spec.ts",
               "../button/**/*.spec.ts",
               "../dropdown/**/*.spec.ts",
-              "../resize-observer/**/*.spec.ts"
+              "../resize-observer/**/*.spec.ts",
+              "../clickoutside/**/*.spec.ts"
             ]
           }
         }
