@@ -26,6 +26,7 @@ its documented secondary entry point:
 | `bulud-ng/badge`           | `BuludBadge`                                         |
 | `bulud-ng/dropdown`        | `BuludDropdown`                                      |
 | `bulud-ng/resize-observer` | `BuludResizeObserver` and `BuludElementSize`         |
+| `bulud-ng/clickoutside`    | `BuludClickOutside` and related trigger types        |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the

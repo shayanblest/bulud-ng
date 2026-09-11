@@ -191,4 +191,22 @@ test.describe('Bulud component demo', () => {
     await expect(size).not.toHaveText(initialSize);
     await expect(size).toContainText('Content box:');
   });
+
+  test('covers click outside inside, outside, and disabled interaction', async ({
+    page,
+  }) => {
+    const inside = page.locator('#clickoutside-inside');
+    const outside = page.locator('#clickoutside-outside');
+    const count = page.locator('#clickoutside-count');
+
+    await inside.click();
+    await expect(count).toHaveText('Outside notifications: 0');
+
+    await outside.click();
+    await expect(count).toHaveText('Outside notifications: 1');
+
+    await page.locator('#clickoutside-enabled').uncheck();
+    await outside.click();
+    await expect(count).toHaveText('Outside notifications: 2');
+  });
 });

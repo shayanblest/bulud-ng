@@ -18,6 +18,9 @@
       ],
       "bulud-ng/resize-observer": [
         "./projects/bulud-ng/resize-observer/public-api.ts"
+      ],
+      "bulud-ng/clickoutside": [
+        "./projects/bulud-ng/clickoutside/public-api.ts"
       ]
     },
     "strict": true,

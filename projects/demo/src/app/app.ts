@@ -19,6 +19,7 @@ import {
   BuludElementSize,
   BuludResizeObserver,
 } from 'bulud-ng/resize-observer';
+import { BuludClickOutside } from 'bulud-ng/clickoutside';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -44,6 +45,7 @@ interface DemoOption {
     BuludDropdown,
     BuludBadge,
     BuludResizeObserver,
+    BuludClickOutside,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -206,6 +208,8 @@ export class App {
   protected readonly dropdownEmpty = signal(false);
   protected readonly resizeObserverEnabled = signal(true);
   protected readonly resizeObserverSize = signal<BuludElementSize | null>(null);
+  protected readonly clickOutsideEnabled = signal(true);
+  protected readonly clickOutsideCount = signal(0);
 
   protected readonly frameworks: readonly DemoOption[] = [
     { id: 'angular', label: 'Angular', meta: 'Framework' },
@@ -262,5 +266,9 @@ export class App {
 
   protected updateResizeObserverSize(size: BuludElementSize): void {
     this.resizeObserverSize.set(size);
+  }
+
+  protected recordClickOutside(): void {
+    this.clickOutsideCount.update((count) => count + 1);
   }
 }
