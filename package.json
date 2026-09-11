@@ -9,8 +9,8 @@
     "format:check": "prettier --check eslint.config.mjs package.json projects/bulud-ng/README.md",
     "lint": "eslint .",
     "watch": "ng build bulud-ng --watch --configuration development",
-    "test": "ng test bulud-ng",
-    "test:ci": "ng test bulud-ng --watch=false --browsers=ChromeHeadless",
+    "test": "CHROME_BIN=${CHROME_BIN:-/snap/bin/chromium} ng test bulud-ng --watch=false --browsers=ChromeHeadless",
+    "test:ci": "npm run test",
     "test:tailwind": "tailwindcss -i projects/bulud-ng/tailwind.integration.css -o .angular/cache/bulud-tailwind.css --minify",
     "e2e": "playwright test"
   },
