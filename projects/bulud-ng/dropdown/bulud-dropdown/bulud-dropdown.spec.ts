@@ -179,6 +179,73 @@ describe('BuludDropdown', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('moves focus and selects the navigated option when an option has focus', () => {
+    const trigger = getTrigger();
+    trigger.click();
+    fixture.detectChanges();
+
+    const options = getOptions();
+    options[0].focus();
+    options[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(options[1]);
+
+    options[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'End', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(options[2]);
+
+    options[2].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+    fixture.detectChanges();
+
+    expect((fixture.componentInstance.value() as TestOption).id).toBe(
+      'tailwind',
+    );
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('handles every option navigation key from the focused option', () => {
+    fixture.componentInstance.searchable.set(false);
+    fixture.detectChanges();
+
+    const trigger = getTrigger();
+    trigger.click();
+    fixture.detectChanges();
+
+    const options = getOptions();
+    options[1].focus();
+    options[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(options[0]);
+
+    options[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(options[0]);
+
+    options[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(options[2]);
+
+    options[2].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(options[0]);
+
+    options[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'End', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(options[2]);
+  });
+
   it('integrates with reactive forms for value, touched, and required state', () => {
     const formsFixture = TestBed.createComponent(FormsHost);
     formsFixture.detectChanges();
