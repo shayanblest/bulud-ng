@@ -129,13 +129,10 @@ describe('Bulud theme', () => {
 
     const parentInjector = TestBed.inject(EnvironmentInjector);
     const document = TestBed.inject(DOCUMENT);
-    const properties = Object.keys(createBuludThemeVariables());
-    const originalValues = new Map(
-      properties.map((property) => [
-        property,
-        document.documentElement.style.getPropertyValue(property),
-      ]),
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
     );
+    const originalStyleText = existingStyle?.textContent ?? null;
     const environmentInjector = createEnvironmentInjector(
       [
         provideBuludTheme({
@@ -152,19 +149,62 @@ describe('Bulud theme', () => {
         '#7c3aed',
       );
       expect(
-        document.documentElement.style.getPropertyValue(
-          '--bulud-color-primary',
-        ),
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-primary'),
       ).toBe('#7c3aed');
     } finally {
       environmentInjector.destroy();
 
-      for (const [property, value] of originalValues) {
-        if (value) {
-          document.documentElement.style.setProperty(property, value);
-        } else {
-          document.documentElement.style.removeProperty(property);
-        }
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('lets an explicit dark ancestor override global light-mode variables', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          colors: {
+            primary: '#7c3aed',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      document.documentElement.setAttribute('data-theme', 'dark');
+
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-primary'),
+      ).not.toBe('#7c3aed');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).toContain(":root:not(.dark):not([data-theme='dark'])");
+    } finally {
+      document.documentElement.removeAttribute('data-theme');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
       }
     }
   });
