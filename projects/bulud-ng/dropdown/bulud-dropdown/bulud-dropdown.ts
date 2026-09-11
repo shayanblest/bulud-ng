@@ -285,6 +285,16 @@ export class BuludDropdown<T = unknown>
     this.optionElements()[this.activeOptionIndex()]?.nativeElement.focus();
   }
 
+  private syncActiveOptionToFocus(event: KeyboardEvent): void {
+    const focusedIndex = this.optionElements().findIndex(
+      (option) => option.nativeElement === event.currentTarget,
+    );
+
+    if (focusedIndex >= 0) {
+      this.activeOptionIndex.set(focusedIndex);
+    }
+  }
+
   protected handleSearchInput(value: string): void {
     this.searchTerm.set(value);
     this.setActiveFromSelection();
@@ -381,6 +391,8 @@ export class BuludDropdown<T = unknown>
   }
 
   protected handleOptionKeydown(event: KeyboardEvent, option: T): void {
+    this.syncActiveOptionToFocus(event);
+
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.moveActive(1);
