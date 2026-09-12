@@ -71,7 +71,7 @@ git add <allowlisted-task-files>
 git diff --cached --check
 git commit -m "<type>(<scope>): <summary>"
 git push -u origin <type>/<beads-id>-<slug>
-gh pr create --base develop --head <type>/<beads-id>-<slug> --title "<title>" --body-file <pr-body>
+mcp__github__create_pull_request(owner="<owner>", repo="<repo>", base="develop", head="<type>/<beads-id>-<slug>", title="<title>", body="<pr-body>")
 bd comment <issue-id> "Publication: <commit-sha>; PR: <pr-url>"
 ```
 
@@ -119,12 +119,19 @@ Beads is the canonical issue manager for this project. It owns issue identity, t
 - Local Beads reviewer approval plus a passing applicable E2E result is the closure gate. Close the Beads task before publishing the approved commit to GitHub. A later PR merge is publication history, not a prerequisite for this task closure flow.
 - If synchronization fails, the Beads task remains authoritative and open; record the failure and unsynchronized fields in Beads, then retry the optional GitHub mirror. Never silently claim that records are synchronized.
 
-Example commands for the external runner:
+For GitHub operations, use the GitHub MCP tools rather than the `gh` CLI. Call
+`mcp__github__get_me` first, use `mcp__github__search_issues` before creating a
+mirror. Use `mcp__github__search_code` to find a PR template before calling
+`mcp__github__create_pull_request`.
+
+Example GitHub MCP operations for the external runner:
 
 ```bash
-gh issue create --title "[Beads <issue-id>] ..." --body "Beads: <issue-id>\n\nScope: ...\nAcceptance: ..."
-gh issue comment <github-issue-number> --body "Beads update: ..."
-gh issue close <github-issue-number> --comment "Merged PR #<pr-number>; merge commit <sha>."
+mcp__github__get_me()
+mcp__github__search_issues(owner="<owner>", repo="<repo>", query="<scope>")
+mcp__github__issue_write(method="create", owner="<owner>", repo="<repo>", title="[Beads <issue-id>] ...", body="Beads: <issue-id>\n\nScope: ...\nAcceptance: ...")
+mcp__github__add_issue_comment(owner="<owner>", repo="<repo>", issue_number=<github-issue-number>, body="Beads update: ...")
+mcp__github__issue_write(method="update", owner="<owner>", repo="<repo>", issue_number=<github-issue-number>, state="closed", state_reason="completed")
 ```
 
 The implementation agent must validate the local worktree and report readiness;
@@ -140,7 +147,7 @@ correction reopens the task; the runner routes it to the developer, and the
 developer amends the same commit and force-pushes only after the correction is
 reviewed again in Beads.
 
-The external AI runner must route new bug reports to the Strict Tester before assigning implementation. The tester must not create developer work without a reproducible product defect. A confirmed defect must produce one focused task and link it back to the report; that task then follows the normal implementation and review handoff.
+The external AI runner must route new bug reports to the Strict Tester before assigning implementation. The tester must not create developer work without a reproducible product defect. A confirmed defect must produce one focused task and link it back to the report; that task then follows the normal implementation and review handoff. If a GitHub mirror is explicitly enabled, use GitHub MCP issue tools and record the mirror link in Beads.
 
 The external AI runner must route feature and component requests without an issue ID to the Technical Product Manager. The manager returns the PRD before any later issue creation or implementation routing. The PRD must remain understandable and actionable without a tracker record.
 

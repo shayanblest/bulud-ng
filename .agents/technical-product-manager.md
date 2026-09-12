@@ -140,3 +140,18 @@ The handoff must report every check separately, changed files, public API/depend
 - The configured unit runner is Karma/Jasmine despite generic references to Vitest; preserve the existing configuration unless a separate approved migration is defined.
 - Decide whether `resize-observer` is a supported first-class entry point or an experimental utility before publishing it.
 - Confirm the project’s GitHub/Beads synchronization policy and permissions before creating mirrored live records.
+
+## GitHub integration
+
+Beads is the canonical tracker. When a GitHub Issue mirror is explicitly
+requested, use the GitHub MCP tools rather than the `gh` CLI:
+
+1. Call `mcp__github__get_me` to verify the authenticated user and permissions.
+2. Call `mcp__github__search_issues` to avoid creating a duplicate mirror.
+3. Call `mcp__github__list_issue_types` when the repository or organization uses issue types.
+4. Create the mirror with `mcp__github__issue_write(method="create", ...)` and include `Beads: <issue-id>` in the title or body.
+5. Add synchronization updates with `mcp__github__add_issue_comment` and record the GitHub URL in Beads.
+
+Do not create a GitHub Issue instead of a Beads task. Do not use `gh` commands
+for issue, pull-request, review, or repository operations; use the corresponding
+GitHub MCP tool and record failures in Beads.
