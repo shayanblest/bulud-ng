@@ -2,17 +2,93 @@
 
 This is the project workflow for an AI team runner. It coordinates work through Beads and keeps implementation and review responsibilities separate.
 
+The workflow runner owns the lifecycle after a user explicitly requests work: it
+creates or reuses the task branch, routes each handoff automatically, applies
+review-requested fixes through the Senior Angular Developer, closes the Beads
+task after approval, and publishes the single approved commit as a GitHub PR.
+Agents must still stop for missing requirements, unrelated dirty worktree
+changes, permission failures, or unresolved blockers.
+
 ## Team sequence
 
 0. **Audit gate (current priority)** — Before building new components or features, audit every existing component against the checklist in `AGENTS.md` §7. Produce one row per component, create separate focused Beads tasks for gaps ordered by risk (accessibility and configuration precedence first), and do not bundle unrelated fixes into the audit. The audit itself is complete only when the report and task links are recorded.
 1. **Product intake (for a new feature/component request without an issue ID)** — Route the request to the Technical Product Manager. The manager produces a clean, implementation-ready PRD with scope, requirements, acceptance criteria, risks, and validation expectations. Issue creation, prioritization, labeling, assignment, and tracker synchronization happen only in a later workflow step, if requested.
 2. **Bug triage (when a bug report exists)** — Route the report to the Strict Tester. The tester reproduces it and records a confirmed/not-reproducible/not-a-bug/duplicate outcome with evidence. A confirmed report gets one focused developer task; no task is created for an unconfirmed report.
-3. **Plan** — Select the PM- or tester-created Beads issue and confirm scope, acceptance criteria, affected states, dependencies, and validation requirements. For audit-created tasks, link the relevant component row and audit finding.
-4. **Implement** — Assign the issue to the Senior Angular Developer. The developer reads `AGENTS.md` and this workflow, inspects existing conventions, and makes the smallest complete change.
-5. **Self-validate and request Beads review** — Run the narrowest relevant checks, then every applicable Definition of Done check from `AGENTS.md`. Update the Beads issue with changed files, public API/dependency impact, and pass/fail results. Before creating a commit, push, or PR, comment on the Beads issue requesting the Strict Code Reviewer to inspect the current local worktree. No GitHub publication is allowed yet.
-6. **Resolve local review requests** — The reviewer records findings in Beads and tells the developer what to fix. The developer makes the fixes in the same task worktree, reruns all applicable validation including E2E, and requests another Beads review. Repeat until every required change is resolved. Do not commit or push review iterations.
-7. **Approve, close, and publish** — After applicable E2E passes and the Strict Code Reviewer records approval in Beads, close the Beads task. Only then create exactly one implementation commit, push the task branch, and create the GitHub PR. The PR is a publication and CI record; it is not the approval gate. Do not create a PR or push before Beads approval and closure.
-8. **Post-publication corrections** — If CI or a post-publication check finds a problem, reopen the Beads task, fix the same branch, amend the single commit, and force-push with `git push --force-with-lease`. Request Beads re-review before any further closure; never add a second commit.
+3. **Plan and create the task branch automatically** — Select the PM- or tester-created Beads issue and confirm scope, acceptance criteria, affected states, dependencies, and validation requirements. For audit-created tasks, link the relevant component row and audit finding. From an up-to-date `develop`, create or reuse the deterministic branch `type/<beads-id>-<slug>` (for example, `feat/bulud-ng-mi5-2-8-tabs`), claim the issue, and record the branch in Beads. Do not carry unrelated worktree changes into the branch; isolate them or stop and request direction.
+4. **Implement automatically** — Assign the issue to the Senior Angular Developer. The developer reads `AGENTS.md` and this workflow, inspects existing conventions, and makes the smallest complete change in the task branch.
+5. **Self-validate and request Beads review automatically** — Run the narrowest relevant checks, then every applicable Definition of Done check from `AGENTS.md`. Update the Beads issue with changed files, public API/dependency impact, and pass/fail results. The runner then posts the reviewer request using the configured reviewer identity and starts the Strict Code Reviewer. No commit, push, or PR is allowed yet.
+6. **Resolve review requests automatically** — The reviewer records either `APPROVED` or actionable `CHANGES REQUESTED` findings in Beads. On change requests, keep the issue `in_progress`, route the findings to the Senior Angular Developer in the same branch/worktree, rerun all applicable validation including E2E, and automatically request re-review. Repeat until approval. Do not commit or push review iterations.
+7. **Approve, close, and publish automatically** — After applicable E2E passes and the Strict Code Reviewer records approval, the runner closes the Beads task with the approval and validation reference. Only after closure, stage the allowlisted task files, verify exactly one staged implementation change, create exactly one commit, push the task branch with upstream tracking, and create one GitHub PR against `develop`. Record the commit SHA, branch, and PR URL in Beads. The PR is a publication and CI record; it is not the approval gate.
+8. **Handle post-publication corrections automatically** — If CI or a post-publication check finds a problem, reopen the Beads task, route the finding to the Senior Angular Developer, fix the same branch, amend the single commit, rerun validation, request Beads re-review, and force-push with `git push --force-with-lease` only after approval and closure. Update the existing PR; never create a second commit or PR.
+
+## Automatic runner protocol
+
+For an explicitly requested implementation task with a valid Beads issue ID, the
+runner executes this state machine without waiting for a separate user prompt
+between stages:
+
+```text
+READY
+  -> PLAN
+  -> BRANCH_CREATED
+  -> IN_PROGRESS
+  -> VALIDATED
+  -> REVIEW_REQUESTED
+  -> [CHANGES_REQUESTED -> IN_PROGRESS -> VALIDATED -> REVIEW_REQUESTED]*
+  -> APPROVED
+  -> CLOSED
+  -> COMMITTED
+  -> PUSHED
+  -> PR_CREATED
+```
+
+At every transition the runner records the issue ID, actor/role, branch, files,
+validation result, and next state in Beads. A failed command, missing permission,
+dirty unrelated worktree, task conflict, or reviewer blocker pauses the state
+machine and records the exact recovery action; it must not silently skip a gate.
+
+### Runner command sequence
+
+The external runner may use this sequence after resolving the placeholders. It
+must verify each command before moving to the next state and must not collapse
+review, closure, and publication into one operation:
+
+```bash
+git fetch origin develop
+git switch develop
+git pull --ff-only origin develop
+git switch -c <type>/<beads-id>-<slug>
+bd update <issue-id> --claim
+bd comment <issue-id> "Branch: <type>/<beads-id>-<slug>"
+
+# Delegate implementation, validation, and the reviewer handoff.
+bd comment <issue-id> "@reviewer please review the current local worktree using .agents/strict-code-reviewer.md."
+
+# On CHANGES REQUESTED, delegate fixes in the same branch and repeat validation/review.
+# On APPROVED, close before publishing.
+bd close <issue-id> --reason "E2E passed and local Beads review approved; publish after closure"
+git add <allowlisted-task-files>
+git diff --cached --check
+git commit -m "<type>(<scope>): <summary>"
+git push -u origin <type>/<beads-id>-<slug>
+gh pr create --base develop --head <type>/<beads-id>-<slug> --title "<title>" --body-file <pr-body>
+bd comment <issue-id> "Publication: <commit-sha>; PR: <pr-url>"
+```
+
+The runner must not execute the publication commands when the issue is not
+approved and closed, when validation is failing, or when the staged diff has
+more than the one intended implementation commit. A reviewer change request
+returns the state to `IN_PROGRESS`; it never creates a new issue, branch, commit,
+or PR.
+
+### Branch and publication rules
+
+- Base every new task branch on the latest `origin/develop`; use one branch per Beads issue and reuse it for review iterations.
+- Use `feat/<beads-id>-<slug>` for features, `fix/<beads-id>-<slug>` for bugs, `chore/<beads-id>-<slug>` for maintenance, and `docs/<beads-id>-<slug>` for documentation-only work.
+- Before staging, compare the worktree against the task scope and exclude `.beads` caches, generated files, and unrelated user changes unless the task explicitly includes them.
+- The implementation PR must contain exactly one commit. Review fixes happen before the commit; post-publication fixes amend that commit and use `--force-with-lease` after re-review.
+- PR titles should describe the change, and the body must include `Beads: <issue-id>`, scope, validation, public API/dependency impact, risks, and the reviewer approval reference.
+- Use the configured package scripts exactly. If a script already names its project, run `npm run build` rather than appending the project name a second time.
 
 ## Beads commands
 
@@ -51,7 +127,18 @@ gh issue comment <github-issue-number> --body "Beads update: ..."
 gh issue close <github-issue-number> --comment "Merged PR #<pr-number>; merge commit <sha>."
 ```
 
-The implementation agent must validate the local worktree and comment on the Beads issue requesting review before creating a commit, pushing, or creating a PR. The external AI runner must treat that comment as a trigger to start the Strict Code Reviewer automatically. Replace `@reviewer` with the configured reviewer identity when one is available. The reviewer inspects the local worktree, records findings in Beads, and tells the developer what to fix. When applicable E2E passes and no blockers remain, the reviewer records approval and closes the Beads task. Only after closure may the developer create exactly one commit, push it, and create the GitHub PR. Any post-publication correction reopens the task; the developer amends the same commit and force-pushes only after the correction is reviewed again in Beads.
+The implementation agent must validate the local worktree and report readiness;
+the external AI runner posts the Beads review request before creating a commit,
+pushing, or creating a PR. The runner treats that comment as a trigger to start
+the Strict Code Reviewer automatically. Replace `@reviewer` with the configured
+reviewer identity when one is available. The reviewer inspects the local
+worktree, records findings in Beads, and tells the developer what to fix. When
+applicable E2E passes and no blockers remain, the reviewer records approval and
+the runner closes the Beads task. Only after closure may the runner create
+exactly one commit, push it, and create the GitHub PR. Any post-publication
+correction reopens the task; the runner routes it to the developer, and the
+developer amends the same commit and force-pushes only after the correction is
+reviewed again in Beads.
 
 The external AI runner must route new bug reports to the Strict Tester before assigning implementation. The tester must not create developer work without a reproducible product defect. A confirmed defect must produce one focused task and link it back to the report; that task then follows the normal implementation and review handoff.
 
@@ -65,17 +152,21 @@ Every completed implementation, review, and audit must include this report in th
 
 ```markdown
 ## Summary
+
 1-3 sentences.
 
 ## Files changed
+
 - path — what changed
 
 ## Validation
+
 - format / lint / tests / e2e / build: pass/fail (counts where relevant)
 - public API diff: none | list
 - dependency diff: none | list (pending approval)
 
 ## Risks / unresolved issues
+
 ## Out of scope (noticed, not done)
 ```
 
@@ -86,7 +177,7 @@ For an audit, replace “Files changed” with the component audit table when no
 Every handoff must include:
 
 - issue ID and concise scope;
-- GitHub branch name and pull-request URL;
+- task branch name; include the pull-request URL once publication exists;
 - files changed;
 - public API, dependency, markup, state, or theming impact;
 - validation commands and pass/fail results;
