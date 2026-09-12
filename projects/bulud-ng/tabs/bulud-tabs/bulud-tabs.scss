@@ -1,0 +1,41 @@
+:host {
+  color: var(--bulud-tabs-foreground);
+  display: block;
+  min-inline-size: 0;
+}
+
+.bulud-tabs {
+  background: var(--bulud-tabs-background);
+  border: 1px solid var(--bulud-tabs-border);
+  border-radius: var(--bulud-tabs-radius);
+  overflow: hidden;
+}
+
+.bulud-tabs__list {
+  align-items: stretch;
+  background: var(--bulud-tabs-background);
+  border-block-end: 1px solid var(--bulud-tabs-border);
+  display: flex;
+  gap: var(--bulud-tabs-gap);
+  overflow-x: auto;
+  padding-inline: 0.5rem;
+}
+
+.bulud-tabs--vertical {
+  display: grid;
+  grid-template-columns: auto 1fr;
+}
+
+.bulud-tabs--vertical .bulud-tabs__list {
+  border-block-end: 0;
+  border-inline-end: 1px solid var(--bulud-tabs-border);
+  flex-direction: column;
+  min-inline-size: 10rem;
+  overflow-x: visible;
+  padding-block: 0.5rem;
+  padding-inline: 0.5rem 0;
+}
+
+.bulud-tabs__panels {
+  background: var(--bulud-tabs-panel-background);
+}

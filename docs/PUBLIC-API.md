@@ -14,6 +14,7 @@ supported.
 | `bulud-ng/badge`           | `BuludBadge`, `BuludBadgeSize`, `BuludBadgeVariant`                                           |
 | `bulud-ng/dropdown`        | `BuludDropdown`, `BuludDropdownOptionTemplateContext`, `BuludDropdownSelectedTemplateContext` |
 | `bulud-ng/resize-observer` | `BuludElementSize`, `BuludResizeObserver`                                                     |
+| `bulud-ng/tabs`            | `BuludTab`, `BuludTabId`, `BuludTabPanel`, `BuludTabs`, `BuludTabsOrientation`                |
 
 The root entry point contains shared configuration and locale contracts. UI
 features are imported from their own secondary entry point so unused features
@@ -34,6 +35,6 @@ remain tree-shakable.
 ## Verification
 
 Run `npm run build` and inspect `dist/bulud-ng/package.json`. The build must
-contain only `.`, `./badge`, `./button`, `./dropdown`,
-`./resize-observer`, `./theme.css`, `./tailwind.css`, and generated metadata.
+contain only `.`, the documented feature entry points, `./theme.css`,
+`./tailwind.css`, and generated metadata.
 Consumers should import only from the paths in the table above.

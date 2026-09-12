@@ -20,6 +20,7 @@ import {
   BuludResizeObserver,
 } from 'bulud-ng/resize-observer';
 import { BuludClickOutside } from 'bulud-ng/clickoutside';
+import { BuludTab, BuludTabPanel, BuludTabs } from 'bulud-ng/tabs';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -46,6 +47,9 @@ interface DemoOption {
     BuludBadge,
     BuludResizeObserver,
     BuludClickOutside,
+    BuludTabs,
+    BuludTab,
+    BuludTabPanel,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -210,6 +214,7 @@ export class App {
   protected readonly resizeObserverSize = signal<BuludElementSize | null>(null);
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
+  protected readonly activeTab = signal<string | null>(null);
 
   protected readonly frameworks: readonly DemoOption[] = [
     { id: 'angular', label: 'Angular', meta: 'Framework' },
