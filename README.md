@@ -23,6 +23,35 @@ npm run test:ci
 The default browser is `ChromeHeadless`. Set `CHROME_BIN` when Chromium is not
 available at `/snap/bin/chromium`.
 
+## Beads task tracking
+
+This repository uses [Beads](https://github.com/gastownhall/beads) for local
+task tracking. Install the `bd` CLI, then initialize the repository after
+cloning:
+
+```bash
+bd init
+bd dolt pull
+bd ready
+```
+
+Push task changes before switching devices or ending a session:
+
+```bash
+bd dolt push
+```
+
+Tasks sync through the repository's Dolt remote. Use `bd dolt pull` on another
+device to retrieve them; do not merge or compare the special Dolt refs with
+normal Git branches.
+
+An optional local web UI is available through `beads-ui`:
+
+```bash
+npm install -g beads-ui
+bdui start --open
+```
+
 Compile the Tailwind token bridge:
 
 ```bash
