@@ -30,7 +30,8 @@
               "../button/**/*.spec.ts",
               "../dropdown/**/*.spec.ts",
               "../resize-observer/**/*.spec.ts",
-              "../clickoutside/**/*.spec.ts"
+              "../clickoutside/**/*.spec.ts",
+              "../tabs/**/*.spec.ts"
             ]
           }
         }

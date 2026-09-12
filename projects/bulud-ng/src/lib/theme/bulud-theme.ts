@@ -93,6 +93,21 @@ export interface BuludBadgeTheme {
   readonly focus: string;
 }
 
+/** Theme tokens for the tabs component and its projected tab controls. */
+export interface BuludTabsTheme {
+  readonly background: string;
+  readonly border: string;
+  readonly foreground: string;
+  readonly activeForeground: string;
+  readonly hoverBackground: string;
+  readonly activeBorder: string;
+  readonly panelBackground: string;
+  readonly disabledOpacity: string;
+  readonly radius: string;
+  readonly gap: string;
+  readonly focus: string;
+}
+
 /** Fully resolved Bulud theme available through dependency injection. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -100,6 +115,7 @@ export interface BuludTheme {
   readonly button: BuludButtonTheme;
   readonly dropdown: BuludDropdownTheme;
   readonly badge: BuludBadgeTheme;
+  readonly tabs: BuludTabsTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -126,6 +142,7 @@ export interface BuludThemeConfig {
     readonly warning?: Partial<BuludBadgeVariantTheme>;
     readonly danger?: Partial<BuludBadgeVariantTheme>;
   };
+  readonly tabs?: Partial<BuludTabsTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -226,6 +243,19 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
     dismissHoverBackground: 'rgb(15 23 42 / 0.1)',
     focus: 'currentColor',
   },
+  tabs: {
+    background: '#ffffff',
+    border: '#cbd5e1',
+    foreground: '#475569',
+    activeForeground: '#1d4ed8',
+    hoverBackground: '#eff6ff',
+    activeBorder: '#2563eb',
+    panelBackground: '#ffffff',
+    disabledOpacity: '0.55',
+    radius: '0.5rem',
+    gap: '0.25rem',
+    focus: '#93c5fd',
+  },
 };
 
 /** Resolved theme injectable for advanced consumer integrations. */
@@ -296,6 +326,10 @@ export function resolveBuludTheme(config: BuludThemeConfig = {}): BuludTheme {
         ...config.badge?.warning,
       },
       danger: { ...BULUD_DEFAULT_THEME.badge.danger, ...config.badge?.danger },
+    },
+    tabs: {
+      ...BULUD_DEFAULT_THEME.tabs,
+      ...config.tabs,
     },
   };
 }
@@ -384,6 +418,17 @@ export function createBuludThemeVariables(
     '--bulud-badge-dismiss-hover-background':
       theme.badge.dismissHoverBackground,
     '--bulud-badge-focus': theme.badge.focus,
+    '--bulud-tabs-background': theme.tabs.background,
+    '--bulud-tabs-border': theme.tabs.border,
+    '--bulud-tabs-foreground': theme.tabs.foreground,
+    '--bulud-tabs-active-foreground': theme.tabs.activeForeground,
+    '--bulud-tabs-hover-background': theme.tabs.hoverBackground,
+    '--bulud-tabs-active-border': theme.tabs.activeBorder,
+    '--bulud-tabs-panel-background': theme.tabs.panelBackground,
+    '--bulud-tabs-disabled-opacity': theme.tabs.disabledOpacity,
+    '--bulud-tabs-radius': theme.tabs.radius,
+    '--bulud-tabs-gap': theme.tabs.gap,
+    '--bulud-tabs-focus': theme.tabs.focus,
   };
 }
 

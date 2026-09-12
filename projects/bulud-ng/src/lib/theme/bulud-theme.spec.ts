@@ -56,6 +56,9 @@ describe('Bulud theme', () => {
         success: { background: '#14532d' },
         fontWeight: '700',
       },
+      tabs: {
+        activeBorder: '#7c3aed',
+      },
     });
 
     expect(theme.colors.primary).toBe('#7c3aed');
@@ -68,6 +71,8 @@ describe('Bulud theme', () => {
       BULUD_DEFAULT_THEME.badge.success.border,
     );
     expect(theme.badge.fontWeight).toBe('700');
+    expect(theme.tabs.activeBorder).toBe('#7c3aed');
+    expect(theme.tabs.foreground).toBe(BULUD_DEFAULT_THEME.tabs.foreground);
   });
 
   it('creates variables shared by components and Tailwind', () => {
@@ -86,12 +91,16 @@ describe('Bulud theme', () => {
           foreground: '#881337',
         },
       },
+      tabs: {
+        activeBorder: '#7c3aed',
+      },
     });
 
     expect(variables['--bulud-color-primary']).toBe('#7c3aed');
     expect(variables['--bulud-radius-control']).toBe('0.75rem');
     expect(variables['--bulud-dropdown-border']).toBe('#f97316');
     expect(variables['--bulud-badge-danger-foreground']).toBe('#881337');
+    expect(variables['--bulud-tabs-active-border']).toBe('#7c3aed');
     expect(variables['--bulud-color-danger']).toBe(
       BULUD_DEFAULT_THEME.colors.danger,
     );
@@ -139,6 +148,9 @@ describe('Bulud theme', () => {
           colors: {
             primary: '#7c3aed',
           },
+          tabs: {
+            activeBorder: '#7c3aed',
+          },
         }),
       ],
       parentInjector,
@@ -148,10 +160,18 @@ describe('Bulud theme', () => {
       expect(environmentInjector.get(BULUD_THEME).colors.primary).toBe(
         '#7c3aed',
       );
+      expect(environmentInjector.get(BULUD_THEME).tabs.activeBorder).toBe(
+        '#7c3aed',
+      );
       expect(
         document.defaultView
           ?.getComputedStyle(document.documentElement)
           .getPropertyValue('--bulud-color-primary'),
+      ).toBe('#7c3aed');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-tabs-active-border'),
       ).toBe('#7c3aed');
     } finally {
       environmentInjector.destroy();
@@ -161,6 +181,31 @@ describe('Bulud theme', () => {
       } else {
         document.head.querySelector('style[data-bulud-theme]')?.remove();
       }
+    }
+  });
+
+  it('keeps a tabs instance custom property above global theme values', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    root.style.setProperty('--bulud-tabs-active-border', '#f97316');
+
+    const instance = document.createElement('bulud-tabs');
+    instance.style.setProperty('--bulud-tabs-active-border', '#22c55e');
+    root.append(instance);
+
+    try {
+      expect(
+        instance.style.getPropertyValue('--bulud-tabs-active-border'),
+      ).toBe('#22c55e');
+      expect(root.style.getPropertyValue('--bulud-tabs-active-border')).toBe(
+        '#f97316',
+      );
+    } finally {
+      instance.remove();
+      root.style.removeProperty('--bulud-tabs-active-border');
     }
   });
 

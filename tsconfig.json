@@ -21,7 +21,8 @@
       ],
       "bulud-ng/clickoutside": [
         "./projects/bulud-ng/clickoutside/public-api.ts"
-      ]
+      ],
+      "bulud-ng/tabs": ["./projects/bulud-ng/tabs/public-api.ts"]
     },
     "strict": true,
     "noImplicitOverride": true,

@@ -1,0 +1,12 @@
+:host {
+  box-sizing: border-box;
+  color: var(--bulud-tabs-foreground);
+  display: block;
+  min-block-size: 8rem;
+  padding: 1.25rem;
+}
+
+:host(:focus-visible) {
+  outline: 3px solid var(--bulud-tabs-focus);
+  outline-offset: -3px;
+}

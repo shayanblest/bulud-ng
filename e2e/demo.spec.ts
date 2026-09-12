@@ -139,6 +139,60 @@ test.describe('Bulud component demo', () => {
     await expect(multipleTrigger).toHaveAttribute('aria-expanded', 'true');
   });
 
+  test('covers tabs semantics, selection, disabled state, orientation, and theme override', async ({
+    page,
+  }) => {
+    const tabs = page.locator('#tabs bulud-tabs').first();
+    const tablist = tabs.locator('[role="tablist"]');
+    const tabButtons = tabs.locator('[role="tab"]');
+
+    await expect(tablist).toHaveAttribute('aria-label', 'Account sections');
+    await expect(tabButtons).toHaveCount(3);
+    await expect(tabButtons.nth(0)).toHaveAttribute('aria-selected', 'true');
+    await expect(tabButtons.nth(2)).toBeDisabled();
+    await expect(tabButtons.nth(2)).toHaveAttribute('aria-disabled', 'true');
+
+    const overviewPanel = tabs.locator('[role="tabpanel"]').nth(0);
+    const activityPanel = tabs.locator('[role="tabpanel"]').nth(1);
+    await expect(tabButtons.nth(0)).toHaveAttribute(
+      'aria-controls',
+      await overviewPanel.getAttribute('id'),
+    );
+    await expect(overviewPanel).toBeVisible();
+    await expect(activityPanel).toBeHidden();
+
+    await tabButtons.nth(0).press('ArrowRight');
+    await expect(tabButtons.nth(1)).toBeFocused();
+    await expect(tabButtons.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tabs-active')).toHaveText(
+      'Active tab: activity',
+    );
+    await tabButtons.nth(1).press('ArrowRight');
+    await expect(tabButtons.nth(0)).toBeFocused();
+    await tabButtons.nth(0).press('End');
+    await expect(tabButtons.nth(1)).toBeFocused();
+
+    await expect(tabButtons.nth(1)).toHaveCSS(
+      'border-bottom-color',
+      'rgb(124, 58, 237)',
+    );
+
+    const verticalTabs = page.locator('#tabs bulud-tabs').nth(1);
+    const verticalTablist = verticalTabs.locator('[role="tablist"]');
+    const verticalButtons = verticalTabs.locator('[role="tab"]');
+    await expect(verticalTablist).toHaveAttribute(
+      'aria-orientation',
+      'vertical',
+    );
+    await verticalButtons.nth(0).focus();
+    await verticalButtons.nth(0).press('ArrowDown');
+    await expect(verticalButtons.nth(1)).toBeFocused();
+    await expect(verticalButtons.nth(1)).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
   test('covers locale switching, RTL direction, and explicit light/dark theme selectors', async ({
     page,
   }) => {

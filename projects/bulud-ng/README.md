@@ -27,6 +27,7 @@ its documented secondary entry point:
 | `bulud-ng/dropdown`        | `BuludDropdown`                                      |
 | `bulud-ng/resize-observer` | `BuludResizeObserver` and `BuludElementSize`         |
 | `bulud-ng/clickoutside`    | `BuludClickOutside` and related trigger types        |
+| `bulud-ng/tabs`            | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -84,7 +85,7 @@ The provider resolves omitted values against `BULUD_DEFAULT_THEME` and writes
 the resulting `--bulud-*` custom properties to the document root. Components
 therefore inherit one application-wide theme without per-component providers.
 Theme configuration supports `colors`, `shape`, `button`, `dropdown`, and
-`badge` tokens. The precedence is instance custom property, component token,
+`badge`, and `tabs` tokens. The precedence is instance custom property, component token,
 global provider configuration, then the library default.
 
 ## Tailwind CSS integration
@@ -225,6 +226,52 @@ focus leaves the dropdown.
 clear action and search field. The component exposes `valueChange` through its
 model binding; Angular Forms users should prefer `formControl`, `formControlName`,
 or `ngModel` when participating in form state.
+
+## Tabs
+
+Import the standalone tabs pieces from the tabs secondary entry point:
+
+```ts
+import { BuludTab, BuludTabPanel, BuludTabs } from "bulud-ng/tabs";
+```
+
+Pair a native button carrying `buludTab` with a projected panel carrying the
+same `buludTabPanel` identifier. The first enabled tab is selected by default;
+use `[(activeId)]` for a controlled, typed selection model:
+
+```html
+<bulud-tabs [(activeId)]="activeTab">
+  <button type="button" [buludTab]="'overview'">Overview</button>
+  <button type="button" [buludTab]="'details'">Details</button>
+
+  <section [buludTabPanel]="'overview'">Overview content</section>
+  <section [buludTabPanel]="'details'">Details content</section>
+</bulud-tabs>
+```
+
+Set `[orientation]="'vertical'"` for a vertical tablist. Horizontal tabs use
+Left/Right, Home, and End; vertical tabs use Up/Down, Home, and End. Arrow
+navigation skips disabled tabs, moves focus, and activates the destination.
+The component supplies stable tab/panel IDs, `aria-selected`, `aria-controls`,
+`aria-labelledby`, and `tabpanel` visibility. Each tab identifier must be
+unique within its tabs instance. Consumers should provide an accessible name
+for the tablist with `aria-label` when the visible page context does not name
+it.
+
+### Tabs inputs and outputs
+
+| Input/output                  | Type                         | Default           | Description                                                              |
+| ----------------------------- | ---------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `activeId` / `activeIdChange` | `BuludTabId \| null`         | First enabled tab | Controlled selection model; use `[(activeId)]` for two-way binding       |
+| `orientation`                 | `'horizontal' \| 'vertical'` | `'horizontal'`    | Layout and arrow-key axis                                                |
+| `aria-label`                  | `string \| null`             | `null`            | Accessible name for the tablist when surrounding context is insufficient |
+| `buludTab`                    | `BuludTabId`                 | Required          | Identifier on a native tab button                                        |
+| `disabled`                    | `boolean`                    | `false`           | Removes a tab from selection and arrow-key navigation                    |
+| `buludTabPanel`               | `BuludTabId`                 | Required          | Identifier matching the panel's tab                                      |
+
+Horizontal tabs use Left/Right, Home, and End; vertical tabs use Up/Down,
+Home, and End. Consumers must provide unique tab identifiers and an accessible
+tablist name where the surrounding page context does not provide one.
 
 ## Resize observer
 
