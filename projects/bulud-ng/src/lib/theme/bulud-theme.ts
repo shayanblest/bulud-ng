@@ -108,6 +108,19 @@ export interface BuludTabsTheme {
   readonly focus: string;
 }
 
+/** Theme tokens for accordion headings and panels. */
+export interface BuludAccordionTheme {
+  readonly background: string;
+  readonly border: string;
+  readonly foreground: string;
+  readonly hoverBackground: string;
+  readonly panelBackground: string;
+  readonly icon: string;
+  readonly focus: string;
+  readonly disabledOpacity: string;
+  readonly radius: string;
+}
+
 /** Fully resolved Bulud theme available through dependency injection. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -116,6 +129,7 @@ export interface BuludTheme {
   readonly dropdown: BuludDropdownTheme;
   readonly badge: BuludBadgeTheme;
   readonly tabs: BuludTabsTheme;
+  readonly accordion: BuludAccordionTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -143,6 +157,7 @@ export interface BuludThemeConfig {
     readonly danger?: Partial<BuludBadgeVariantTheme>;
   };
   readonly tabs?: Partial<BuludTabsTheme>;
+  readonly accordion?: Partial<BuludAccordionTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -256,6 +271,17 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
     gap: '0.25rem',
     focus: '#93c5fd',
   },
+  accordion: {
+    background: '#ffffff',
+    border: '#cbd5e1',
+    foreground: '#0f172a',
+    hoverBackground: '#f8fafc',
+    panelBackground: '#ffffff',
+    icon: '#2563eb',
+    focus: '#93c5fd',
+    disabledOpacity: '0.55',
+    radius: '0.5rem',
+  },
 };
 
 /** Resolved theme injectable for advanced consumer integrations. */
@@ -330,6 +356,10 @@ export function resolveBuludTheme(config: BuludThemeConfig = {}): BuludTheme {
     tabs: {
       ...BULUD_DEFAULT_THEME.tabs,
       ...config.tabs,
+    },
+    accordion: {
+      ...BULUD_DEFAULT_THEME.accordion,
+      ...config.accordion,
     },
   };
 }
@@ -429,6 +459,15 @@ export function createBuludThemeVariables(
     '--bulud-tabs-radius': theme.tabs.radius,
     '--bulud-tabs-gap': theme.tabs.gap,
     '--bulud-tabs-focus': theme.tabs.focus,
+    '--bulud-accordion-background': theme.accordion.background,
+    '--bulud-accordion-border': theme.accordion.border,
+    '--bulud-accordion-foreground': theme.accordion.foreground,
+    '--bulud-accordion-hover-background': theme.accordion.hoverBackground,
+    '--bulud-accordion-panel-background': theme.accordion.panelBackground,
+    '--bulud-accordion-icon': theme.accordion.icon,
+    '--bulud-accordion-focus': theme.accordion.focus,
+    '--bulud-accordion-disabled-opacity': theme.accordion.disabledOpacity,
+    '--bulud-accordion-radius': theme.accordion.radius,
   };
 }
 

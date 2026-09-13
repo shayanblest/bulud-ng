@@ -59,6 +59,9 @@ describe('Bulud theme', () => {
       tabs: {
         activeBorder: '#7c3aed',
       },
+      accordion: {
+        hoverBackground: '#ede9fe',
+      },
     });
 
     expect(theme.colors.primary).toBe('#7c3aed');
@@ -73,6 +76,8 @@ describe('Bulud theme', () => {
     expect(theme.badge.fontWeight).toBe('700');
     expect(theme.tabs.activeBorder).toBe('#7c3aed');
     expect(theme.tabs.foreground).toBe(BULUD_DEFAULT_THEME.tabs.foreground);
+    expect(theme.accordion.hoverBackground).toBe('#ede9fe');
+    expect(theme.accordion.focus).toBe(BULUD_DEFAULT_THEME.accordion.focus);
   });
 
   it('creates variables shared by components and Tailwind', () => {
@@ -94,6 +99,9 @@ describe('Bulud theme', () => {
       tabs: {
         activeBorder: '#7c3aed',
       },
+      accordion: {
+        icon: '#7c3aed',
+      },
     });
 
     expect(variables['--bulud-color-primary']).toBe('#7c3aed');
@@ -101,6 +109,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-dropdown-border']).toBe('#f97316');
     expect(variables['--bulud-badge-danger-foreground']).toBe('#881337');
     expect(variables['--bulud-tabs-active-border']).toBe('#7c3aed');
+    expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
     expect(variables['--bulud-color-danger']).toBe(
       BULUD_DEFAULT_THEME.colors.danger,
     );
@@ -206,6 +215,56 @@ describe('Bulud theme', () => {
     } finally {
       instance.remove();
       root.style.removeProperty('--bulud-tabs-active-border');
+    }
+  });
+
+  it('resolves accordion theme from defaults through global and instance overrides', () => {
+    expect(resolveBuludTheme().accordion.icon).toBe(
+      BULUD_DEFAULT_THEME.accordion.icon,
+    );
+
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          accordion: {
+            icon: '#7c3aed',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+    const instance = document.createElement('bulud-accordion');
+    instance.style.setProperty('--bulud-accordion-icon', '#22c55e');
+    document.body.append(instance);
+
+    try {
+      expect(environmentInjector.get(BULUD_THEME).accordion.icon).toBe(
+        '#7c3aed',
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(instance)
+          .getPropertyValue('--bulud-accordion-icon'),
+      ).toBe('#22c55e');
+    } finally {
+      instance.remove();
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
     }
   });
 

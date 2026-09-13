@@ -193,6 +193,64 @@ test.describe('Bulud component demo', () => {
     );
   });
 
+  test('covers accordion single and multiple expansion, disabled state, keyboard, and theme override', async ({
+    page,
+  }) => {
+    const accordion = page.locator('#accordion');
+    const single = accordion.locator('bulud-accordion').first();
+    const triggers = single.locator('.bulud-accordion-item__trigger');
+    const panels = single.locator('[role="region"]');
+
+    await expect(triggers).toHaveCount(3);
+    await expect(triggers.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await expect(triggers.nth(2)).toBeDisabled();
+    await expect(triggers.nth(2)).toHaveAttribute('aria-disabled', 'true');
+    await expect(triggers.nth(0)).toHaveAttribute(
+      'aria-controls',
+      await panels.nth(0).getAttribute('id'),
+    );
+    await expect(panels.nth(0)).toBeVisible();
+    await expect(panels.nth(1)).toBeHidden();
+
+    await triggers.nth(0).press('ArrowDown');
+    await expect(triggers.nth(1)).toBeFocused();
+    await expect(triggers.nth(1)).toHaveAttribute('aria-expanded', 'false');
+    await triggers.nth(1).press('Enter');
+    await expect(triggers.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#accordion-single-state')).toHaveText(
+      'Expanded: details',
+    );
+    await triggers.nth(1).press('Enter');
+    await expect(triggers.nth(1)).toHaveAttribute('aria-expanded', 'false');
+    await expect(triggers.nth(1)).toBeFocused();
+
+    await expect(triggers.nth(1)).toHaveCSS(
+      'outline-color',
+      'rgb(124, 58, 237)',
+    );
+
+    const multiple = accordion.locator('bulud-accordion').nth(1);
+    const multipleTriggers = multiple.locator('.bulud-accordion-item__trigger');
+    await expect(multipleTriggers.nth(0)).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await multipleTriggers.nth(1).press(' ');
+    await expect(multipleTriggers.nth(1)).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await expect(multiple.locator('[role="region"]').nth(1)).toBeVisible();
+
+    await page.locator('html').evaluate((element) => {
+      element.dir = 'ltr';
+    });
+    await accordion.evaluate((element) => {
+      element.setAttribute('dir', 'rtl');
+    });
+    await expect(single).toHaveCSS('direction', 'rtl');
+  });
+
   test('covers locale switching, RTL direction, and explicit light/dark theme selectors', async ({
     page,
   }) => {

@@ -1,0 +1,33 @@
+<h3 class="bulud-accordion-item__heading">
+  <button
+    #trigger
+    class="bulud-accordion-item__trigger"
+    type="button"
+    [id]="triggerDomId()"
+    [disabled]="disabled()"
+    [attr.aria-controls]="panelDomId()"
+    [attr.aria-expanded]="isExpanded()"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    (click)="toggle()"
+    (keydown)="handleKeydown($event)"
+  >
+    <span class="bulud-accordion-item__title">
+      <ng-content select="[buludAccordionTrigger]" />
+    </span>
+    <span class="bulud-accordion-item__icon" aria-hidden="true">+</span>
+  </button>
+</h3>
+
+<div
+  #panel
+  class="bulud-accordion-item__panel"
+  role="region"
+  [id]="panelDomId()"
+  [attr.aria-labelledby]="triggerDomId()"
+  [attr.aria-hidden]="isExpanded() ? null : 'true'"
+  [hidden]="!isExpanded()"
+>
+  <div class="bulud-accordion-item__content">
+    <ng-content select="[buludAccordionPanel]" />
+  </div>
+</div>

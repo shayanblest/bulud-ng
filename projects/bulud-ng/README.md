@@ -28,6 +28,7 @@ its documented secondary entry point:
 | `bulud-ng/resize-observer` | `BuludResizeObserver` and `BuludElementSize`         |
 | `bulud-ng/clickoutside`    | `BuludClickOutside` and related trigger types        |
 | `bulud-ng/tabs`            | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
+| `bulud-ng/accordion`       | `BuludAccordion` and `BuludAccordionItem`            |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -84,9 +85,53 @@ export const appConfig: ApplicationConfig = {
 The provider resolves omitted values against `BULUD_DEFAULT_THEME` and writes
 the resulting `--bulud-*` custom properties to the document root. Components
 therefore inherit one application-wide theme without per-component providers.
-Theme configuration supports `colors`, `shape`, `button`, `dropdown`, and
-`badge`, and `tabs` tokens. The precedence is instance custom property, component token,
-global provider configuration, then the library default.
+Theme configuration supports `colors`, `shape`, `button`, `dropdown`, `badge`,
+`tabs`, and `accordion` tokens. The precedence is instance custom property,
+component token, global provider configuration, then the library default.
+
+## Accordion
+
+Import the standalone accordion pieces from the accordion secondary entry
+point:
+
+```ts
+import { BuludAccordion, BuludAccordionItem } from "bulud-ng/accordion";
+```
+
+Project item content with a stable identifier, a trigger marker, and a panel
+marker. The item supplies a semantic heading and native button, and the panel
+receives the matching `role="region"` relationship automatically:
+
+```html
+<bulud-accordion [(expanded)]="expandedSection">
+  <section [buludAccordionItem]="'overview'">
+    <span buludAccordionTrigger>Overview</span>
+    <p buludAccordionPanel>Workspace overview content.</p>
+  </section>
+  <section [buludAccordionItem]="'details'">
+    <span buludAccordionTrigger>Details</span>
+    <p buludAccordionPanel>Account details content.</p>
+  </section>
+</bulud-accordion>
+```
+
+Single mode is the default and binds `expanded` to a string or `null`. Set
+`multiple` to bind a readonly string array and keep several panels open:
+
+```html
+<bulud-accordion multiple [(expanded)]="expandedSections">
+  <!-- projected accordion items -->
+</bulud-accordion>
+```
+
+Items can be disabled with `[disabled]`. Enter and Space use native button
+activation; Up/Down move between enabled headings, while Home/End move to the
+first or last enabled heading. Collapsed panels are hidden from the focus order
+and focus returns to the trigger if a user collapses a panel containing focus.
+Consumers must provide unique item identifiers and meaningful projected
+trigger content. The accordion follows ancestor `dir` and supports light/dark
+theme selectors through the shared CSS variables. Instance custom properties
+override the global `provideBuludTheme` values.
 
 ## Tailwind CSS integration
 
@@ -364,7 +409,8 @@ ship the default light and dark variable sets.
 
 All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
 `BuludButtonTheme`, `BuludDropdownTheme`, `BuludBadgeTheme`, `BuludTheme`, and
-`BuludThemeConfig`) are exported from the root entry point.
+`BuludTabsTheme`, `BuludAccordionTheme`, and `BuludThemeConfig`) are exported
+from the root entry point.
 
 ## Button
 

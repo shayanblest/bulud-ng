@@ -31,7 +31,8 @@
               "../dropdown/**/*.spec.ts",
               "../resize-observer/**/*.spec.ts",
               "../clickoutside/**/*.spec.ts",
-              "../tabs/**/*.spec.ts"
+              "../tabs/**/*.spec.ts",
+              "../accordion/**/*.spec.ts"
             ]
           }
         }
@@ -80,9 +81,7 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": [
-              "projects/demo/src/styles.css"
-            ]
+            "styles": ["projects/demo/src/styles.css"]
           },
           "configurations": {
             "production": {
@@ -133,9 +132,7 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": [
-              "projects/demo/src/styles.css"
-            ]
+            "styles": ["projects/demo/src/styles.css"]
           }
         }
       }
