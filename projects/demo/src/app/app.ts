@@ -21,6 +21,7 @@ import {
 } from 'bulud-ng/resize-observer';
 import { BuludClickOutside } from 'bulud-ng/clickoutside';
 import { BuludTab, BuludTabPanel, BuludTabs } from 'bulud-ng/tabs';
+import { BuludAccordion, BuludAccordionItem } from 'bulud-ng/accordion';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -50,6 +51,8 @@ interface DemoOption {
     BuludTabs,
     BuludTab,
     BuludTabPanel,
+    BuludAccordion,
+    BuludAccordionItem,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -215,6 +218,12 @@ export class App {
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
   protected readonly activeTab = signal<string | null>(null);
+  protected readonly expandedAccordion = signal<
+    string | readonly string[] | null
+  >('overview');
+  protected readonly expandedAccordionItems = signal<
+    string | readonly string[] | null
+  >(['team']);
 
   protected readonly frameworks: readonly DemoOption[] = [
     { id: 'angular', label: 'Angular', meta: 'Framework' },
