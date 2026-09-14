@@ -41,6 +41,10 @@ export interface BuludButtonSizeTheme {
 
 /** Button-specific tokens that are not general color or shape decisions. */
 export interface BuludButtonTheme {
+  readonly borderWidth: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
+  readonly ghostBackground: string;
   readonly disabledOpacity: string;
   readonly fontWeight: string;
   readonly gap: string;
@@ -189,6 +193,10 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
     controlRadius: '0.5rem',
   },
   button: {
+    borderWidth: '1px',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    ghostBackground: 'transparent',
     disabledOpacity: '0.55',
     fontWeight: '600',
     gap: '0.5rem',
@@ -390,6 +398,10 @@ export function createBuludThemeVariables(
     '--bulud-color-focus': theme.colors.focus,
     '--bulud-color-danger-focus': theme.colors.dangerFocus,
     '--bulud-radius-control': theme.shape.controlRadius,
+    '--bulud-button-border-width': theme.button.borderWidth,
+    '--bulud-button-focus-width': theme.button.focusWidth,
+    '--bulud-button-focus-offset': theme.button.focusOffset,
+    '--bulud-button-ghost-background': theme.button.ghostBackground,
     '--bulud-button-disabled-opacity': theme.button.disabledOpacity,
     '--bulud-button-font-weight': theme.button.fontWeight,
     '--bulud-button-gap': theme.button.gap,

@@ -116,13 +116,38 @@ test('full width, focus overrides, and reduced motion', async ({ page }) => {
   const section = page.locator('#button-interactions');
   const host = section.locator('#button-dynamic');
   const button = host.locator('button');
+  await section.evaluate((element) => {
+    element.style.setProperty('--bulud-button-border-width', '2px');
+    element.style.setProperty('--bulud-button-focus-width', '4px');
+    element.style.setProperty('--bulud-button-focus-offset', '3px');
+  });
+  await section.getByLabel('Dark button theme').focus();
+  await page.keyboard.press('Tab');
+  await expect(button).toHaveCSS('border-top-width', '2px');
+  await expect(button).toHaveCSS('outline-width', '4px');
+  await expect(button).toHaveCSS('outline-offset', '3px');
+  const ghost = page.locator('#variants .bulud-button--ghost');
+  await page
+    .locator('#variants')
+    .evaluate((element) =>
+      element.style.setProperty('--bulud-button-ghost-background', '#123456'),
+    );
+  await expect(ghost).toHaveCSS('background-color', 'rgb(18, 52, 86)');
+  await ghost
+    .locator('..')
+    .evaluate((element) =>
+      element.style.setProperty('--bulud-button-ghost-background', '#234567'),
+    );
+  await expect(ghost).toHaveCSS('background-color', 'rgb(35, 69, 103)');
   await host.evaluate((element) => {
+    element.style.setProperty('--bulud-button-border-width', '3px');
     element.style.setProperty('--bulud-button-focus-width', '5px');
     element.style.setProperty('--bulud-button-focus-offset', '4px');
     element.style.setProperty('--bulud-button-focus-ring', '#123456');
   });
   await section.getByLabel('Dark button theme').focus();
   await page.keyboard.press('Tab');
+  await expect(button).toHaveCSS('border-top-width', '3px');
   await expect(button).toHaveCSS('outline-width', '5px');
   await expect(button).toHaveCSS('outline-offset', '4px');
   await expect(button).toHaveCSS('outline-color', 'rgb(18, 52, 86)');

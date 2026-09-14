@@ -510,9 +510,27 @@ Additional CSS hooks are `--bulud-button-border-width`,
 `--bulud-button-ghost-background`. These inherit from a scope and can be
 overridden per instance with `[style.--bulud-button-focus-width]`. The typed
 `provideBuludTheme` configuration controls shared colors, shape, and button size,
-weight, gap, and disabled opacity; visual variant and behavioral defaults remain
+weight, gap, disabled opacity, and these four hooks; visual variant and behavioral defaults remain
 component inputs. Component color properties override shared color tokens, and
 instance properties override inherited values.
+
+Configure these hooks with string values (CSS lengths for widths/offset and a CSS
+color for the ghost background). Defaults are `1px`, `3px`, `2px`, and
+`transparent`, respectively:
+
+```ts
+provideBuludTheme({
+  button: {
+    borderWidth: "2px",
+    focusWidth: "4px",
+    focusOffset: "3px",
+    ghostBackground: "#f5f3ff",
+  },
+});
+```
+
+Precedence is instance CSS property → component/scoped CSS property → global
+typed theme → library default. Existing CSS overrides continue to work.
 
 ### Performance and rendering
 

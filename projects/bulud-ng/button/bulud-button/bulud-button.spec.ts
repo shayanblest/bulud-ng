@@ -6,7 +6,11 @@ import {
   signal,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideBuludTheme } from '../../src/lib/theme/bulud-theme';
+import {
+  BULUD_THEME,
+  createBuludThemeVariables,
+  provideBuludTheme,
+} from '../../src/lib/theme/bulud-theme';
 
 import {
   BuludButton,
@@ -237,4 +241,86 @@ describe('BuludButton', () => {
       else document.head.querySelector('style[data-bulud-theme]')?.remove();
     }
   });
+  for (const token of [
+    {
+      field: 'borderWidth',
+      variable: '--bulud-button-border-width',
+      property: 'border-top-width',
+      fallback: '1px',
+      global: '2px',
+      scoped: '3px',
+      instance: '4px',
+    },
+    {
+      field: 'focusWidth',
+      variable: '--bulud-button-focus-width',
+      property: 'outline-width',
+      fallback: '3px',
+      global: '4px',
+      scoped: '5px',
+      instance: '6px',
+    },
+    {
+      field: 'focusOffset',
+      variable: '--bulud-button-focus-offset',
+      property: 'outline-offset',
+      fallback: '2px',
+      global: '3px',
+      scoped: '4px',
+      instance: '5px',
+    },
+    {
+      field: 'ghostBackground',
+      variable: '--bulud-button-ghost-background',
+      property: 'background-color',
+      fallback: 'transparent',
+      global: 'rgb(18, 52, 86)',
+      scoped: 'rgb(35, 69, 103)',
+      instance: 'rgb(52, 86, 120)',
+    },
+  ] as const) {
+    it(`resolves ${token.field} through library, typed global, scoped and instance values`, async () => {
+      fixture.componentInstance.variant.set('ghost');
+      await fixture.whenStable();
+      const button = getButton();
+      const host = getHost();
+      const scope: HTMLElement = fixture.nativeElement;
+      button.style.transition = 'none';
+      button.focus();
+      expect(button.matches(':focus-visible')).toBeTrue();
+      const value = () =>
+        getComputedStyle(button).getPropertyValue(token.property);
+      expect(createBuludThemeVariables()[token.variable]).toBe(token.fallback);
+      expect(value()).toBe(
+        token.field === 'ghostBackground' ? 'rgba(0, 0, 0, 0)' : token.fallback,
+      );
+      const previous = document.head.querySelector('style[data-bulud-theme]');
+      const previousText = previous?.textContent ?? null;
+      const injector = createEnvironmentInjector(
+        [provideBuludTheme({ button: { [token.field]: token.global } })],
+        TestBed.inject(EnvironmentInjector),
+      );
+      try {
+        expect(injector.get(BULUD_THEME).button[token.field]).toBe(
+          token.global,
+        );
+        expect(value()).toBe(token.global);
+        scope.style.setProperty(token.variable, token.scoped);
+        expect(value()).toBe(token.scoped);
+        host.style.setProperty(token.variable, token.instance);
+        expect(value()).toBe(token.instance);
+        host.style.removeProperty(token.variable);
+        expect(value()).toBe(token.scoped);
+        scope.style.removeProperty(token.variable);
+        expect(value()).toBe(token.global);
+      } finally {
+        host.style.removeProperty(token.variable);
+        scope.style.removeProperty(token.variable);
+        button.blur();
+        injector.destroy();
+        if (previous) previous.textContent = previousText;
+        else document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    });
+  }
 });
