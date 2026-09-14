@@ -488,7 +488,31 @@ Local `--bulud-button-*` values take precedence over application-wide
 - Includes visible `:focus-visible`, forced-colors, reduced-motion, and RTL-safe
   styling.
 
-When the button contains only an icon, provide an `aria-label`.
+Enter and Space activate the focused native button. Disabled and loading buttons
+are skipped in the tab order and cannot submit a form. When loading ends, the
+button becomes available again unless `disabled` remains true; focus is not
+moved automatically. Keep projected text stable while loading and supply a
+localized `loadingLabel` for the polite status announcement.
+
+When the button contains only an icon or has empty projected content, provide an
+`aria-label`. Do not project interactive controls inside a button. Attributes
+such as `aria-describedby` placed on the component host are not forwarded to the
+inner button. Button has no value or invalid state and does not implement a form
+value accessor. Use `type="submit"` or `type="reset"` inside a native form.
+
+The demo's Button interactions section exposes loading, disabled, dark theme,
+empty content with an accessible name, instance styling, and form actions. The
+language switch changes the ancestor direction; hover and keyboard focus can be
+exercised on each enabled variant.
+
+Additional CSS hooks are `--bulud-button-border-width`,
+`--bulud-button-focus-width`, `--bulud-button-focus-offset`, and
+`--bulud-button-ghost-background`. These inherit from a scope and can be
+overridden per instance with `[style.--bulud-button-focus-width]`. The typed
+`provideBuludTheme` configuration controls shared colors, shape, and button size,
+weight, gap, and disabled opacity; visual variant and behavioral defaults remain
+component inputs. Component color properties override shared color tokens, and
+instance properties override inherited values.
 
 ### Performance and rendering
 
