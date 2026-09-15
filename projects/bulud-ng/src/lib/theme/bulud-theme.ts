@@ -175,8 +175,8 @@ export type BuludThemeCssVariable = `--bulud-${string}`;
 const BULUD_THEME_STYLE_ATTRIBUTE = 'data-bulud-theme';
 const BULUD_THEME_SCOPE = ":root:not(.dark):not([data-theme='dark'])";
 
-/** Default theme used for every token omitted by a consumer configuration. */
-export const BULUD_DEFAULT_THEME: ResolvedBuludTheme = {
+/** Concrete defaults retained internally for theme resolution. */
+const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
   colors: {
     primary: '#2563eb',
     primaryHover: '#1d4ed8',
@@ -297,11 +297,14 @@ export const BULUD_DEFAULT_THEME: ResolvedBuludTheme = {
   },
 };
 
+/** Default theme used for every token omitted by a consumer configuration. */
+export const BULUD_DEFAULT_THEME: BuludTheme = RESOLVED_DEFAULT_THEME;
+
 /** Resolved theme injectable for advanced consumer integrations. */
 export const BULUD_THEME = new InjectionToken<ResolvedBuludTheme>(
   'BULUD_THEME',
   {
-    factory: () => BULUD_DEFAULT_THEME,
+    factory: () => RESOLVED_DEFAULT_THEME,
   },
 );
 
@@ -334,14 +337,14 @@ export function resolveBuludTheme(
       ...BULUD_DEFAULT_THEME.button,
       ...config.button,
       borderWidth:
-        config.button?.borderWidth ?? BULUD_DEFAULT_THEME.button.borderWidth,
+        config.button?.borderWidth ?? RESOLVED_DEFAULT_THEME.button.borderWidth,
       focusWidth:
-        config.button?.focusWidth ?? BULUD_DEFAULT_THEME.button.focusWidth,
+        config.button?.focusWidth ?? RESOLVED_DEFAULT_THEME.button.focusWidth,
       focusOffset:
-        config.button?.focusOffset ?? BULUD_DEFAULT_THEME.button.focusOffset,
+        config.button?.focusOffset ?? RESOLVED_DEFAULT_THEME.button.focusOffset,
       ghostBackground:
         config.button?.ghostBackground ??
-        BULUD_DEFAULT_THEME.button.ghostBackground,
+        RESOLVED_DEFAULT_THEME.button.ghostBackground,
       small: {
         ...BULUD_DEFAULT_THEME.button.small,
         ...config.button?.small,

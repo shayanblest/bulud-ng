@@ -33,10 +33,46 @@ describe('Bulud theme', () => {
 
     expect(defineBuludTheme(legacyTheme)).toBe(legacyTheme);
     expect(provideBuludTheme(legacyTheme)).toBeDefined();
-    expect(resolvedButton).toEqual({
+    expect<BuludButtonTheme>(resolvedButton).toEqual({
       ...BULUD_DEFAULT_THEME.button,
       ...button,
     });
+  });
+
+  it('accepts a legacy theme typed using typeof BULUD_DEFAULT_THEME', () => {
+    const legacyTheme: typeof BULUD_DEFAULT_THEME = {
+      ...BULUD_DEFAULT_THEME,
+      button: {
+        disabledOpacity: '0.4',
+        fontWeight: '700',
+        gap: '1rem',
+        small: { height: '2rem', fontSize: '1rem', paddingInline: '1rem' },
+        medium: { height: '3rem', fontSize: '1rem', paddingInline: '1rem' },
+        large: { height: '4rem', fontSize: '1rem', paddingInline: '1rem' },
+      },
+    };
+    const resolvedButton: Required<BuludButtonTheme> =
+      resolveBuludTheme(legacyTheme).button;
+
+    expect(provideBuludTheme(legacyTheme)).toBeDefined();
+    expect<BuludButtonTheme>(resolvedButton).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...legacyTheme.button,
+    });
+  });
+
+  it('provides concrete defaults through the injection token factory', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const button: Required<BuludButtonTheme> =
+      TestBed.inject(BULUD_THEME).button;
+
+    expect<BuludButtonTheme>(button).toBe(BULUD_DEFAULT_THEME.button);
+    expect(button.borderWidth).toBe('1px');
+    expect(button.focusWidth).toBe('3px');
+    expect(button.focusOffset).toBe('2px');
+    expect(button.ghostBackground).toBe('transparent');
   });
 
   it('uses concrete defaults for explicitly undefined optional button tokens', () => {
@@ -49,7 +85,7 @@ describe('Bulud theme', () => {
       },
     }).button;
 
-    expect(button).toEqual(BULUD_DEFAULT_THEME.button);
+    expect<BuludButtonTheme>(button).toEqual(BULUD_DEFAULT_THEME.button);
   });
 
   it('preserves a consumer configuration for type-safe config files', () => {
