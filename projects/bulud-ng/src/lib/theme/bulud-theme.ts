@@ -136,8 +136,8 @@ export interface BuludTheme {
   readonly accordion: BuludAccordionTheme;
 }
 
-/** Internal resolved shape with concrete values for every button token. */
-interface ResolvedBuludTheme extends BuludTheme {
+/** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
+export interface ResolvedBuludTheme extends BuludTheme {
   readonly button: Required<BuludButtonTheme>;
 }
 

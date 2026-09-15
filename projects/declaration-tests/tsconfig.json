@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "bulud-ng": ["../../dist/bulud-ng/index.d.ts"]
+    },
+    "types": [],
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noEmitOnError": true,
+    "rootDir": ".",
+    "outDir": "../../.angular/cache/theme-declarations"
+  },
+  "files": ["theme-consumer.ts"],
+  "references": []
+}

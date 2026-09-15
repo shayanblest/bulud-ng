@@ -412,6 +412,25 @@ All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
 `BuludTabsTheme`, `BuludAccordionTheme`, and `BuludThemeConfig`) are exported
 from the root entry point.
 
+`ResolvedBuludTheme` is also exported for values returned by `resolveBuludTheme()`
+and injected through `BULUD_THEME`. Its button fields are all required strings,
+including the four optional consumer tokens. `BuludTheme`, `BuludButtonTheme`,
+and `typeof BULUD_DEFAULT_THEME` continue to accept legacy consumer objects
+without those tokens. This type has no keyboard or ARIA requirements.
+
+```ts
+import { resolveBuludTheme, type ResolvedBuludTheme } from "bulud-ng";
+
+export const theme: ResolvedBuludTheme = resolveBuludTheme({
+  button: { focusWidth: "4px" },
+});
+```
+
+To check downstream declaration emission against the built package, run
+`npm run build` followed by
+`npx tsc -p projects/declaration-tests/tsconfig.json`. The fixture deliberately
+exports inferred resolver and injection results to catch inaccessible public types.
+
 ## Button
 
 Import the standalone component from its public secondary entry point:
