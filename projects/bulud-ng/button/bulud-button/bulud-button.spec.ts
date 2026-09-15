@@ -279,6 +279,53 @@ describe('BuludButton', () => {
       instance: 'rgb(52, 86, 120)',
     },
   ] as const) {
+    for (const [scenario, config] of [
+      ['empty configuration', {}],
+      ['unrelated configuration', { colors: { primary: '#7c3aed' } }],
+      ['undefined token', { button: { [token.field]: undefined } }],
+    ] as const) {
+      it(`lets :root CSS override omitted ${token.field} with ${scenario}`, async () => {
+        fixture.componentInstance.variant.set('ghost');
+        await fixture.whenStable();
+        const button = getButton();
+        button.style.transition = 'none';
+        button.focus();
+        const previous = document.head.querySelector('style[data-bulud-theme]');
+        const previousText = previous?.textContent ?? null;
+        const rootStyle = document.createElement('style');
+        rootStyle.textContent = `:root { ${token.variable}: ${token.scoped}; }`;
+        document.head.append(rootStyle);
+        const injector = createEnvironmentInjector(
+          [provideBuludTheme(config)],
+          TestBed.inject(EnvironmentInjector),
+        );
+        try {
+          expect(injector.get(BULUD_THEME).button[token.field]).toBe(
+            token.fallback,
+          );
+          expect(
+            document.head.querySelector('style[data-bulud-theme]')?.textContent,
+          ).not.toContain(`${token.variable}:`);
+          expect(
+            getComputedStyle(button).getPropertyValue(token.property),
+          ).toBe(token.scoped);
+          rootStyle.remove();
+          expect(
+            getComputedStyle(button).getPropertyValue(token.property),
+          ).toBe(
+            token.field === 'ghostBackground'
+              ? 'rgba(0, 0, 0, 0)'
+              : token.fallback,
+          );
+        } finally {
+          rootStyle.remove();
+          button.blur();
+          injector.destroy();
+          if (previous) previous.textContent = previousText;
+          else document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      });
+    }
     it(`resolves ${token.field} through library, typed global, scoped and instance values`, async () => {
       fixture.componentInstance.variant.set('ghost');
       await fixture.whenStable();
@@ -300,6 +347,9 @@ describe('BuludButton', () => {
         [provideBuludTheme({ button: { [token.field]: token.global } })],
         TestBed.inject(EnvironmentInjector),
       );
+      const rootStyle = document.createElement('style');
+      rootStyle.textContent = `:root { ${token.variable}: ${token.instance}; }`;
+      document.head.append(rootStyle);
       try {
         expect(injector.get(BULUD_THEME).button[token.field]).toBe(
           token.global,
@@ -314,6 +364,7 @@ describe('BuludButton', () => {
         scope.style.removeProperty(token.variable);
         expect(value()).toBe(token.global);
       } finally {
+        rootStyle.remove();
         host.style.removeProperty(token.variable);
         scope.style.removeProperty(token.variable);
         button.blur();

@@ -163,3 +163,39 @@ test('full width, focus overrides, and reduced motion', async ({ page }) => {
   const buttonBounds = await fullWidth.locator('button').boundingBox();
   expect(bounds?.width).toBe(buttonBounds?.width);
 });
+
+test('root CSS overrides omitted button tokens with unrelated typed theme configuration', async ({
+  page,
+}) => {
+  // The demo configures colors and button sizing but omits these four tokens.
+  const providerStyle = page.locator('style[data-bulud-theme]');
+  await expect(providerStyle).toContainText('--bulud-color-primary: #7c3aed');
+  for (const token of [
+    'border-width',
+    'focus-width',
+    'focus-offset',
+    'ghost-background',
+  ]) {
+    await expect(providerStyle).not.toContainText(`--bulud-button-${token}:`);
+  }
+  await page.addStyleTag({
+    content: `:root {
+    --bulud-button-border-width: 2px;
+    --bulud-button-focus-width: 4px;
+    --bulud-button-focus-offset: 3px;
+    --bulud-button-ghost-background: #123456;
+  }`,
+  });
+  const section = page.locator('#button-interactions');
+  await section.getByLabel('Dark button theme').focus();
+  await page.keyboard.press('Tab');
+  const button = section.locator('#button-dynamic button');
+  await expect(button).toBeFocused();
+  await expect(button).toHaveCSS('border-top-width', '2px');
+  await expect(button).toHaveCSS('outline-width', '4px');
+  await expect(button).toHaveCSS('outline-offset', '3px');
+  await expect(page.locator('#variants .bulud-button--ghost')).toHaveCSS(
+    'background-color',
+    'rgb(18, 52, 86)',
+  );
+});

@@ -513,7 +513,11 @@ overridden per instance with `[style.--bulud-button-focus-width]`.
 The `BuludButtonTheme` fields `borderWidth`, `focusWidth`, `focusOffset`, and
 `ghostBackground` are optional, so existing button and complete `BuludTheme`
 objects remain valid. The resolver and `BULUD_THEME` supply concrete values from
-`BULUD_DEFAULT_THEME` for omitted options.
+`BULUD_DEFAULT_THEME` for omitted options. The provider emits these four CSS
+variables only when explicitly configured; omitted or `undefined` options leave
+consumer `:root` CSS free to override the component's library fallback. Explicit
+typed values take precedence over ordinary `:root` rules, while closer scoped
+and per-instance CSS overrides still take precedence over typed values.
 
 `provideBuludTheme` configuration controls shared colors, shape, and button size,
 weight, gap, disabled opacity, and these four hooks; visual variant and behavioral defaults remain

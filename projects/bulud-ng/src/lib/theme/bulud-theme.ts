@@ -528,6 +528,20 @@ export function provideBuludTheme(
   config: BuludThemeConfig = {},
 ): EnvironmentProviders {
   const theme = resolveBuludTheme(config);
+  const variables = { ...createBuludThemeVariables(theme) };
+
+  // Omitted optional tokens must remain CSS fallbacks, not high-specificity
+  // provider declarations that override consumer :root rules.
+  for (const [field, variable] of [
+    ['borderWidth', '--bulud-button-border-width'],
+    ['focusWidth', '--bulud-button-focus-width'],
+    ['focusOffset', '--bulud-button-focus-offset'],
+    ['ghostBackground', '--bulud-button-ghost-background'],
+  ] as const) {
+    if (config.button?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
 
   return makeEnvironmentProviders([
     {
@@ -537,7 +551,6 @@ export function provideBuludTheme(
     provideEnvironmentInitializer(() => {
       const document = inject(DOCUMENT);
       const renderer = inject(RendererFactory2).createRenderer(null, null);
-      const variables = createBuludThemeVariables(theme);
 
       let styleElement = document.head.querySelector<HTMLStyleElement>(
         `style[${BULUD_THEME_STYLE_ATTRIBUTE}]`,
