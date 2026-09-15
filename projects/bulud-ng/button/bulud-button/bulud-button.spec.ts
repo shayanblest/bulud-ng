@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
+  BULUD_DEFAULT_THEME,
   BULUD_THEME,
   createBuludThemeVariables,
   provideBuludTheme,
@@ -291,6 +292,13 @@ describe('BuludButton', () => {
       ['empty configuration', {}],
       ['unrelated configuration', { colors: { primary: '#7c3aed' } }],
       ['undefined token', { button: { [token.field]: undefined } }],
+      [
+        'spread public defaults with a color override',
+        {
+          ...BULUD_DEFAULT_THEME,
+          colors: { ...BULUD_DEFAULT_THEME.colors, primary: '#7c3aed' },
+        },
+      ],
     ] as const) {
       it(`lets :root CSS override omitted ${token.field} with ${scenario}`, async () => {
         fixture.componentInstance.variant.set('ghost');
@@ -352,7 +360,15 @@ describe('BuludButton', () => {
       const previous = document.head.querySelector('style[data-bulud-theme]');
       const previousText = previous?.textContent ?? null;
       const injector = createEnvironmentInjector(
-        [provideBuludTheme({ button: { [token.field]: token.global } })],
+        [
+          provideBuludTheme({
+            ...BULUD_DEFAULT_THEME,
+            button: {
+              ...BULUD_DEFAULT_THEME.button,
+              [token.field]: token.global,
+            },
+          }),
+        ],
         TestBed.inject(EnvironmentInjector),
       );
       const rootStyle = document.createElement('style');

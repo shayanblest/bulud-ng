@@ -297,8 +297,22 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
   },
 };
 
-/** Default theme used for every token omitted by a consumer configuration. */
-export const BULUD_DEFAULT_THEME: BuludTheme = RESOLVED_DEFAULT_THEME;
+/**
+ * Legacy-shaped defaults for consumer configuration. Optional button tokens
+ * stay omitted so spreading this object preserves consumer CSS fallbacks.
+ * Use resolveBuludTheme() when concrete values for every token are needed.
+ */
+export const BULUD_DEFAULT_THEME: BuludTheme = {
+  ...RESOLVED_DEFAULT_THEME,
+  button: {
+    disabledOpacity: RESOLVED_DEFAULT_THEME.button.disabledOpacity,
+    fontWeight: RESOLVED_DEFAULT_THEME.button.fontWeight,
+    gap: RESOLVED_DEFAULT_THEME.button.gap,
+    small: RESOLVED_DEFAULT_THEME.button.small,
+    medium: RESOLVED_DEFAULT_THEME.button.medium,
+    large: RESOLVED_DEFAULT_THEME.button.large,
+  },
+};
 
 /** Resolved theme injectable for advanced consumer integrations. */
 export const BULUD_THEME = new InjectionToken<ResolvedBuludTheme>(

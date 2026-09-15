@@ -18,6 +18,39 @@ import {
 } from './bulud-theme';
 
 describe('Bulud theme', () => {
+  const optionalButtonDefaults = {
+    borderWidth: '1px',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    ghostBackground: 'transparent',
+  };
+
+  it('keeps optional button tokens absent from public defaults at runtime', () => {
+    expect(Object.keys(BULUD_DEFAULT_THEME.button).sort()).toEqual([
+      'disabledOpacity',
+      'fontWeight',
+      'gap',
+      'large',
+      'medium',
+      'small',
+    ]);
+    for (const field of Object.keys(optionalButtonDefaults)) {
+      expect(field in BULUD_DEFAULT_THEME.button).toBeFalse();
+    }
+    expect(resolveBuludTheme(BULUD_DEFAULT_THEME).button).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+    });
+    expect(createBuludThemeVariables(BULUD_DEFAULT_THEME)).toEqual(
+      jasmine.objectContaining({
+        '--bulud-button-border-width': '1px',
+        '--bulud-button-focus-width': '3px',
+        '--bulud-button-focus-offset': '2px',
+        '--bulud-button-ghost-background': 'transparent',
+      }),
+    );
+  });
+
   it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
     const button: BuludButtonTheme = {
       disabledOpacity: '0.4',
@@ -35,6 +68,7 @@ describe('Bulud theme', () => {
     expect(provideBuludTheme(legacyTheme)).toBeDefined();
     expect<BuludButtonTheme>(resolvedButton).toEqual({
       ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
       ...button,
     });
   });
@@ -57,6 +91,7 @@ describe('Bulud theme', () => {
     expect(provideBuludTheme(legacyTheme)).toBeDefined();
     expect<BuludButtonTheme>(resolvedButton).toEqual({
       ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
       ...legacyTheme.button,
     });
   });
@@ -68,7 +103,7 @@ describe('Bulud theme', () => {
     const button: Required<BuludButtonTheme> =
       TestBed.inject(BULUD_THEME).button;
 
-    expect<BuludButtonTheme>(button).toBe(BULUD_DEFAULT_THEME.button);
+    expect<BuludButtonTheme>(button).not.toBe(BULUD_DEFAULT_THEME.button);
     expect(button.borderWidth).toBe('1px');
     expect(button.focusWidth).toBe('3px');
     expect(button.focusOffset).toBe('2px');
@@ -85,7 +120,10 @@ describe('Bulud theme', () => {
       },
     }).button;
 
-    expect<BuludButtonTheme>(button).toEqual(BULUD_DEFAULT_THEME.button);
+    expect<BuludButtonTheme>(button).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+    });
   });
 
   it('preserves a consumer configuration for type-safe config files', () => {
