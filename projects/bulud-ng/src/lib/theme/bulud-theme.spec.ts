@@ -9,6 +9,8 @@ import { TestBed } from '@angular/core/testing';
 import {
   BULUD_DEFAULT_THEME,
   BULUD_THEME,
+  BuludButtonTheme,
+  BuludTheme,
   createBuludThemeVariables,
   defineBuludTheme,
   provideBuludTheme,
@@ -16,6 +18,114 @@ import {
 } from './bulud-theme';
 
 describe('Bulud theme', () => {
+  const optionalButtonDefaults = {
+    borderWidth: '1px',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    ghostBackground: 'transparent',
+  };
+
+  it('keeps optional button tokens absent from public defaults at runtime', () => {
+    expect(Object.keys(BULUD_DEFAULT_THEME.button).sort()).toEqual([
+      'disabledOpacity',
+      'fontWeight',
+      'gap',
+      'large',
+      'medium',
+      'small',
+    ]);
+    for (const field of Object.keys(optionalButtonDefaults)) {
+      expect(field in BULUD_DEFAULT_THEME.button).toBeFalse();
+    }
+    expect(resolveBuludTheme(BULUD_DEFAULT_THEME).button).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+    });
+    expect(createBuludThemeVariables(BULUD_DEFAULT_THEME)).toEqual(
+      jasmine.objectContaining({
+        '--bulud-button-border-width': '1px',
+        '--bulud-button-focus-width': '3px',
+        '--bulud-button-focus-offset': '2px',
+        '--bulud-button-ghost-background': 'transparent',
+      }),
+    );
+  });
+
+  it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
+    const button: BuludButtonTheme = {
+      disabledOpacity: '0.4',
+      fontWeight: '700',
+      gap: '1rem',
+      small: { height: '2rem', fontSize: '1rem', paddingInline: '1rem' },
+      medium: { height: '3rem', fontSize: '1rem', paddingInline: '1rem' },
+      large: { height: '4rem', fontSize: '1rem', paddingInline: '1rem' },
+    };
+    const legacyTheme: BuludTheme = { ...BULUD_DEFAULT_THEME, button };
+    const resolvedButton: Required<BuludButtonTheme> =
+      resolveBuludTheme(legacyTheme).button;
+
+    expect(defineBuludTheme(legacyTheme)).toBe(legacyTheme);
+    expect(provideBuludTheme(legacyTheme)).toBeDefined();
+    expect<BuludButtonTheme>(resolvedButton).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+      ...button,
+    });
+  });
+
+  it('accepts a legacy theme typed using typeof BULUD_DEFAULT_THEME', () => {
+    const legacyTheme: typeof BULUD_DEFAULT_THEME = {
+      ...BULUD_DEFAULT_THEME,
+      button: {
+        disabledOpacity: '0.4',
+        fontWeight: '700',
+        gap: '1rem',
+        small: { height: '2rem', fontSize: '1rem', paddingInline: '1rem' },
+        medium: { height: '3rem', fontSize: '1rem', paddingInline: '1rem' },
+        large: { height: '4rem', fontSize: '1rem', paddingInline: '1rem' },
+      },
+    };
+    const resolvedButton: Required<BuludButtonTheme> =
+      resolveBuludTheme(legacyTheme).button;
+
+    expect(provideBuludTheme(legacyTheme)).toBeDefined();
+    expect<BuludButtonTheme>(resolvedButton).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+      ...legacyTheme.button,
+    });
+  });
+
+  it('provides concrete defaults through the injection token factory', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const button: Required<BuludButtonTheme> =
+      TestBed.inject(BULUD_THEME).button;
+
+    expect<BuludButtonTheme>(button).not.toBe(BULUD_DEFAULT_THEME.button);
+    expect(button.borderWidth).toBe('1px');
+    expect(button.focusWidth).toBe('3px');
+    expect(button.focusOffset).toBe('2px');
+    expect(button.ghostBackground).toBe('transparent');
+  });
+
+  it('uses concrete defaults for explicitly undefined optional button tokens', () => {
+    const button: Required<BuludButtonTheme> = resolveBuludTheme({
+      button: {
+        borderWidth: undefined,
+        focusWidth: undefined,
+        focusOffset: undefined,
+        ghostBackground: undefined,
+      },
+    }).button;
+
+    expect<BuludButtonTheme>(button).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+    });
+  });
+
   it('preserves a consumer configuration for type-safe config files', () => {
     const config = {
       colors: {

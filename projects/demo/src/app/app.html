@@ -279,6 +279,83 @@
         </div>
 
         <section
+          id="button-interactions"
+          class="rounded-3xl border border-slate-200 bg-bulud-surface p-6 text-bulud-on-surface"
+          [attr.data-theme]="buttonDark() ? 'dark' : null"
+        >
+          <h3 class="text-xl font-extrabold">Button interactions and theme</h3>
+          <p class="my-4">
+            Tab to an action, then press Enter or Space. Hover to preview its
+            color. Use the language switch for RTL. Buttons have no invalid
+            state; use Danger for a destructive action.
+          </p>
+          <div class="my-4 flex flex-wrap gap-4">
+            <label
+              ><input
+                type="checkbox"
+                [checked]="buttonDisabled()"
+                (change)="buttonDisabled.set(!buttonDisabled())"
+              />
+              Disable action</label
+            >
+            <label
+              ><input
+                type="checkbox"
+                [checked]="buttonLoading()"
+                (change)="buttonLoading.set(!buttonLoading())"
+              />
+              Loading action</label
+            >
+            <label
+              ><input
+                type="checkbox"
+                [checked]="buttonDark()"
+                (change)="buttonDark.set(!buttonDark())"
+              />
+              Dark button theme</label
+            >
+          </div>
+          <div class="flex flex-wrap gap-4">
+            <bulud-button
+              id="button-dynamic"
+              [disabled]="buttonDisabled()"
+              [loading]="buttonLoading()"
+              loadingLabel="Saving changes"
+              (click)="incrementCount()"
+              >Save changes</bulud-button
+            >
+            <bulud-button aria-label="Empty content action"></bulud-button>
+            <bulud-button
+              style="
+                --bulud-button-background: #14532d;
+                --bulud-button-background-hover: #166534;
+                --bulud-button-background-active: #15803d;
+                --bulud-button-radius: 1rem;
+              "
+              >Instance theme</bulud-button
+            >
+          </div>
+          <p id="button-count" class="my-4">Actions: {{ clickCount() }}</p>
+          <form
+            (submit)="$event.preventDefault(); incrementCount()"
+            class="flex flex-wrap gap-4"
+          >
+            <label
+              >Example value
+              <input
+                aria-label="Example value"
+                name="example"
+                value="Initial"
+                class="border border-bulud-border"
+            /></label>
+            <bulud-button type="submit">Submit example</bulud-button>
+            <bulud-button type="reset" variant="secondary"
+              >Reset example</bulud-button
+            >
+          </form>
+        </section>
+
+        <section
           id="badge"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >

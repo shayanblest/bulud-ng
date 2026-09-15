@@ -27,14 +27,11 @@
     --bulud-button-foreground,
     var(--bulud-color-on-primary, #ffffff)
   );
-  --_focus: var(
-    --bulud-button-focus-ring,
-    var(--bulud-color-focus, #93c5fd)
-  );
+  --_focus: var(--bulud-button-focus-ring, var(--bulud-color-focus, #93c5fd));
 
   align-items: center;
   background: var(--_background);
-  border: 1px solid var(--_border);
+  border: var(--bulud-button-border-width, 1px) solid var(--_border);
   border-radius: var(
     --bulud-button-radius,
     var(--bulud-radius-control, 0.5rem)
@@ -70,8 +67,8 @@
 }
 
 .bulud-button:focus-visible {
-  outline: 3px solid var(--_focus);
-  outline-offset: 2px;
+  outline: var(--bulud-button-focus-width, 3px) solid var(--_focus);
+  outline-offset: var(--bulud-button-focus-offset, 2px);
 }
 
 .bulud-button:disabled {
@@ -126,7 +123,7 @@
 }
 
 .bulud-button--ghost {
-  --_background: transparent;
+  --_background: var(--bulud-button-ghost-background, transparent);
   --_background-hover: var(
     --bulud-button-ghost-background-hover,
     var(--bulud-color-surface-hover, #f1f5f9)

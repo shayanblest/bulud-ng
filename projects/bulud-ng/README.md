@@ -412,6 +412,25 @@ All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
 `BuludTabsTheme`, `BuludAccordionTheme`, and `BuludThemeConfig`) are exported
 from the root entry point.
 
+`ResolvedBuludTheme` is also exported for values returned by `resolveBuludTheme()`
+and injected through `BULUD_THEME`. Its button fields are all required strings,
+including the four optional consumer tokens. `BuludTheme`, `BuludButtonTheme`,
+and `typeof BULUD_DEFAULT_THEME` continue to accept legacy consumer objects
+without those tokens. This type has no keyboard or ARIA requirements.
+
+```ts
+import { resolveBuludTheme, type ResolvedBuludTheme } from "bulud-ng";
+
+export const theme: ResolvedBuludTheme = resolveBuludTheme({
+  button: { focusWidth: "4px" },
+});
+```
+
+To check downstream declaration emission against the built package, run
+`npm run build` followed by
+`npx tsc -p projects/declaration-tests/tsconfig.json`. The fixture deliberately
+exports inferred resolver and injection results to catch inaccessible public types.
+
 ## Button
 
 Import the standalone component from its public secondary entry point:
@@ -488,7 +507,59 @@ Local `--bulud-button-*` values take precedence over application-wide
 - Includes visible `:focus-visible`, forced-colors, reduced-motion, and RTL-safe
   styling.
 
-When the button contains only an icon, provide an `aria-label`.
+Enter and Space activate the focused native button. Disabled and loading buttons
+are skipped in the tab order and cannot submit a form. When loading ends, the
+button becomes available again unless `disabled` remains true; focus is not
+moved automatically. Keep projected text stable while loading and supply a
+localized `loadingLabel` for the polite status announcement.
+
+When the button contains only an icon or has empty projected content, provide an
+`aria-label`. Do not project interactive controls inside a button. Attributes
+such as `aria-describedby` placed on the component host are not forwarded to the
+inner button. Button has no value or invalid state and does not implement a form
+value accessor. Use `type="submit"` or `type="reset"` inside a native form.
+
+The demo's Button interactions section exposes loading, disabled, dark theme,
+empty content with an accessible name, instance styling, and form actions. The
+language switch changes the ancestor direction; hover and keyboard focus can be
+exercised on each enabled variant.
+
+Additional CSS hooks are `--bulud-button-border-width`,
+`--bulud-button-focus-width`, `--bulud-button-focus-offset`, and
+`--bulud-button-ghost-background`. These inherit from a scope and can be
+overridden per instance with `[style.--bulud-button-focus-width]`.
+
+The `BuludButtonTheme` fields `borderWidth`, `focusWidth`, `focusOffset`, and
+`ghostBackground` are optional, so existing button and complete `BuludTheme`
+objects remain valid. The resolver and `BULUD_THEME` supply concrete values from
+`BULUD_DEFAULT_THEME` for omitted options. The provider emits these four CSS
+variables only when explicitly configured; omitted or `undefined` options leave
+consumer `:root` CSS free to override the component's library fallback. Explicit
+typed values take precedence over ordinary `:root` rules, while closer scoped
+and per-instance CSS overrides still take precedence over typed values.
+
+`provideBuludTheme` configuration controls shared colors, shape, and button size,
+weight, gap, disabled opacity, and these four hooks; visual variant and behavioral defaults remain
+component inputs. Component color properties override shared color tokens, and
+instance properties override inherited values.
+
+Configure these hooks with string values (CSS lengths for widths/offset and a CSS
+color for the ghost background). Defaults are `1px`, `3px`, `2px`, and
+`transparent`, respectively:
+
+```ts
+provideBuludTheme({
+  button: {
+    borderWidth: "2px",
+    focusWidth: "4px",
+    focusOffset: "3px",
+    ghostBackground: "#f5f3ff",
+  },
+});
+```
+
+Precedence is instance CSS property → component/scoped CSS property → global
+typed theme → library default. Existing CSS overrides continue to work.
 
 ### Performance and rendering
 
