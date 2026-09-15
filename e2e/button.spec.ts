@@ -169,14 +169,18 @@ test('root CSS overrides omitted button tokens with unrelated typed theme config
 }) => {
   // The demo configures colors and button sizing but omits these four tokens.
   const providerStyle = page.locator('style[data-bulud-theme]');
-  await expect(providerStyle).toContainText('--bulud-color-primary: #7c3aed');
+  await expect
+    .poll(() => providerStyle.textContent())
+    .toContain('--bulud-color-primary: #7c3aed');
   for (const token of [
     'border-width',
     'focus-width',
     'focus-offset',
     'ghost-background',
   ]) {
-    await expect(providerStyle).not.toContainText(`--bulud-button-${token}:`);
+    await expect
+      .poll(() => providerStyle.textContent())
+      .not.toContain(`--bulud-button-${token}:`);
   }
   await page.addStyleTag({
     content: `:root {
@@ -199,3 +203,54 @@ test('root CSS overrides omitted button tokens with unrelated typed theme config
     'rgb(18, 52, 86)',
   );
 });
+
+for (const marker of ['class', 'data-theme'] as const) {
+  test(`nested dark ${marker} resets an explicit global ghost background`, async ({
+    page,
+  }) => {
+    // Provider integration is covered in the browser unit tests. Add the
+    // explicit token to the demo's existing provider rule to test its cascade.
+    await page.locator('style[data-bulud-theme]').evaluate((element) => {
+      element.textContent = element.textContent!.replace(
+        '}',
+        '--bulud-button-ghost-background: #123456; }',
+      );
+    });
+    const scope = page.locator('#variants');
+    const button = scope.locator('.bulud-button--ghost');
+    const host = button.locator('..');
+    await expect(button).toHaveCSS('background-color', 'rgb(18, 52, 86)');
+    await scope.evaluate(
+      (element, attribute) => element.setAttribute(attribute, 'dark'),
+      marker,
+    );
+    await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await scope.evaluate((element) =>
+      element.style.setProperty('--bulud-button-ghost-background', '#234567'),
+    );
+    await expect(button).toHaveCSS('background-color', 'rgb(35, 69, 103)');
+    await host.evaluate((element) =>
+      element.style.setProperty('--bulud-button-ghost-background', '#345678'),
+    );
+    await expect(button).toHaveCSS('background-color', 'rgb(52, 86, 120)');
+    await host.evaluate((element) =>
+      element.style.removeProperty('--bulud-button-ghost-background'),
+    );
+    await scope.evaluate((element) =>
+      element.style.removeProperty('--bulud-button-ghost-background'),
+    );
+    await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await scope.evaluate(
+      (element, attribute) => element.removeAttribute(attribute),
+      marker,
+    );
+    await expect(button).toHaveCSS('background-color', 'rgb(18, 52, 86)');
+    await page
+      .locator('html')
+      .evaluate(
+        (element, attribute) => element.setAttribute(attribute, 'dark'),
+        marker,
+      );
+    await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  });
+}

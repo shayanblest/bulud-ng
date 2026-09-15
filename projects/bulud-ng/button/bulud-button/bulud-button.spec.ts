@@ -4,6 +4,7 @@ import {
   EnvironmentInjector,
   provideZonelessChangeDetection,
   signal,
+  ViewEncapsulation,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -47,6 +48,13 @@ class TestHost {
   readonly variant = signal<BuludButtonVariant>('primary');
   readonly type = signal<BuludButtonType>('button');
 }
+
+@Component({
+  template: '',
+  styleUrl: '../../theme.css',
+  encapsulation: ViewEncapsulation.None,
+})
+class ShippedThemeStyles {}
 
 describe('BuludButton', () => {
   let fixture: ComponentFixture<TestHost>;
@@ -371,6 +379,52 @@ describe('BuludButton', () => {
         injector.destroy();
         if (previous) previous.textContent = previousText;
         else document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    });
+  }
+  for (const marker of ['class', 'data-theme'] as const) {
+    it(`resets an explicit global ghost background in a nested dark ${marker} scope`, async () => {
+      const themeFixture = TestBed.createComponent(ShippedThemeStyles);
+      document.body.append(fixture.nativeElement);
+      fixture.componentInstance.variant.set('ghost');
+      await fixture.whenStable();
+      const button = getButton();
+      const host = getHost();
+      const scope: HTMLElement = fixture.nativeElement;
+      button.style.transition = 'none';
+      const value = () => getComputedStyle(button).backgroundColor;
+      const token = '--bulud-button-ghost-background';
+      const previous = document.head.querySelector('style[data-bulud-theme]');
+      const previousText = previous?.textContent ?? null;
+      const injector = createEnvironmentInjector(
+        [provideBuludTheme({ button: { ghostBackground: '#123456' } })],
+        TestBed.inject(EnvironmentInjector),
+      );
+      try {
+        expect(value()).toBe('rgb(18, 52, 86)');
+        scope.setAttribute(marker, 'dark');
+        expect(value()).toBe('rgba(0, 0, 0, 0)');
+        scope.style.setProperty(token, '#234567');
+        expect(value()).toBe('rgb(35, 69, 103)');
+        host.style.setProperty(token, '#345678');
+        expect(value()).toBe('rgb(52, 86, 120)');
+        host.style.removeProperty(token);
+        expect(value()).toBe('rgb(35, 69, 103)');
+        scope.style.removeProperty(token);
+        expect(value()).toBe('rgba(0, 0, 0, 0)');
+        scope.removeAttribute(marker);
+        expect(value()).toBe('rgb(18, 52, 86)');
+        document.documentElement.setAttribute(marker, 'dark');
+        expect(value()).toBe('rgba(0, 0, 0, 0)');
+      } finally {
+        document.documentElement.removeAttribute(marker);
+        scope.removeAttribute(marker);
+        scope.style.removeProperty(token);
+        host.style.removeProperty(token);
+        injector.destroy();
+        if (previous) previous.textContent = previousText;
+        else document.head.querySelector('style[data-bulud-theme]')?.remove();
+        themeFixture.destroy();
       }
     });
   }
