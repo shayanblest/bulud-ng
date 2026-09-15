@@ -508,7 +508,13 @@ exercised on each enabled variant.
 Additional CSS hooks are `--bulud-button-border-width`,
 `--bulud-button-focus-width`, `--bulud-button-focus-offset`, and
 `--bulud-button-ghost-background`. These inherit from a scope and can be
-overridden per instance with `[style.--bulud-button-focus-width]`. The typed
+overridden per instance with `[style.--bulud-button-focus-width]`.
+
+The `BuludButtonTheme` fields `borderWidth`, `focusWidth`, `focusOffset`, and
+`ghostBackground` are optional, so existing button and complete `BuludTheme`
+objects remain valid. The resolver and `BULUD_THEME` supply concrete values from
+`BULUD_DEFAULT_THEME` for omitted options.
+
 `provideBuludTheme` configuration controls shared colors, shape, and button size,
 weight, gap, disabled opacity, and these four hooks; visual variant and behavioral defaults remain
 component inputs. Component color properties override shared color tokens, and

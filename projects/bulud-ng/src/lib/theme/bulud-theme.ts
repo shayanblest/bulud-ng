@@ -41,10 +41,10 @@ export interface BuludButtonSizeTheme {
 
 /** Button-specific tokens that are not general color or shape decisions. */
 export interface BuludButtonTheme {
-  readonly borderWidth: string;
-  readonly focusWidth: string;
-  readonly focusOffset: string;
-  readonly ghostBackground: string;
+  readonly borderWidth?: string;
+  readonly focusWidth?: string;
+  readonly focusOffset?: string;
+  readonly ghostBackground?: string;
   readonly disabledOpacity: string;
   readonly fontWeight: string;
   readonly gap: string;
@@ -125,7 +125,7 @@ export interface BuludAccordionTheme {
   readonly radius: string;
 }
 
-/** Fully resolved Bulud theme available through dependency injection. */
+/** Consumer theme; omitted optional button tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
   readonly shape: BuludShapeTheme;
@@ -134,6 +134,11 @@ export interface BuludTheme {
   readonly badge: BuludBadgeTheme;
   readonly tabs: BuludTabsTheme;
   readonly accordion: BuludAccordionTheme;
+}
+
+/** Internal resolved shape with concrete values for every button token. */
+interface ResolvedBuludTheme extends BuludTheme {
+  readonly button: Required<BuludButtonTheme>;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -171,7 +176,7 @@ const BULUD_THEME_STYLE_ATTRIBUTE = 'data-bulud-theme';
 const BULUD_THEME_SCOPE = ":root:not(.dark):not([data-theme='dark'])";
 
 /** Default theme used for every token omitted by a consumer configuration. */
-export const BULUD_DEFAULT_THEME: BuludTheme = {
+export const BULUD_DEFAULT_THEME: ResolvedBuludTheme = {
   colors: {
     primary: '#2563eb',
     primaryHover: '#1d4ed8',
@@ -293,9 +298,12 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
 };
 
 /** Resolved theme injectable for advanced consumer integrations. */
-export const BULUD_THEME = new InjectionToken<BuludTheme>('BULUD_THEME', {
-  factory: () => BULUD_DEFAULT_THEME,
-});
+export const BULUD_THEME = new InjectionToken<ResolvedBuludTheme>(
+  'BULUD_THEME',
+  {
+    factory: () => BULUD_DEFAULT_THEME,
+  },
+);
 
 /**
  * Provides type inference for a consumer-owned `bulud.config.ts` without
@@ -310,7 +318,9 @@ export function defineBuludTheme<const Config extends BuludThemeConfig>(
 /**
  * Resolves partial consumer configuration against Bulud defaults.
  */
-export function resolveBuludTheme(config: BuludThemeConfig = {}): BuludTheme {
+export function resolveBuludTheme(
+  config: BuludThemeConfig = {},
+): ResolvedBuludTheme {
   return {
     colors: {
       ...BULUD_DEFAULT_THEME.colors,
@@ -323,6 +333,15 @@ export function resolveBuludTheme(config: BuludThemeConfig = {}): BuludTheme {
     button: {
       ...BULUD_DEFAULT_THEME.button,
       ...config.button,
+      borderWidth:
+        config.button?.borderWidth ?? BULUD_DEFAULT_THEME.button.borderWidth,
+      focusWidth:
+        config.button?.focusWidth ?? BULUD_DEFAULT_THEME.button.focusWidth,
+      focusOffset:
+        config.button?.focusOffset ?? BULUD_DEFAULT_THEME.button.focusOffset,
+      ghostBackground:
+        config.button?.ghostBackground ??
+        BULUD_DEFAULT_THEME.button.ghostBackground,
       small: {
         ...BULUD_DEFAULT_THEME.button.small,
         ...config.button?.small,

@@ -9,6 +9,8 @@ import { TestBed } from '@angular/core/testing';
 import {
   BULUD_DEFAULT_THEME,
   BULUD_THEME,
+  BuludButtonTheme,
+  BuludTheme,
   createBuludThemeVariables,
   defineBuludTheme,
   provideBuludTheme,
@@ -16,6 +18,40 @@ import {
 } from './bulud-theme';
 
 describe('Bulud theme', () => {
+  it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
+    const button: BuludButtonTheme = {
+      disabledOpacity: '0.4',
+      fontWeight: '700',
+      gap: '1rem',
+      small: { height: '2rem', fontSize: '1rem', paddingInline: '1rem' },
+      medium: { height: '3rem', fontSize: '1rem', paddingInline: '1rem' },
+      large: { height: '4rem', fontSize: '1rem', paddingInline: '1rem' },
+    };
+    const legacyTheme: BuludTheme = { ...BULUD_DEFAULT_THEME, button };
+    const resolvedButton: Required<BuludButtonTheme> =
+      resolveBuludTheme(legacyTheme).button;
+
+    expect(defineBuludTheme(legacyTheme)).toBe(legacyTheme);
+    expect(provideBuludTheme(legacyTheme)).toBeDefined();
+    expect(resolvedButton).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...button,
+    });
+  });
+
+  it('uses concrete defaults for explicitly undefined optional button tokens', () => {
+    const button: Required<BuludButtonTheme> = resolveBuludTheme({
+      button: {
+        borderWidth: undefined,
+        focusWidth: undefined,
+        focusOffset: undefined,
+        ghostBackground: undefined,
+      },
+    }).button;
+
+    expect(button).toEqual(BULUD_DEFAULT_THEME.button);
+  });
+
   it('preserves a consumer configuration for type-safe config files', () => {
     const config = {
       colors: {
