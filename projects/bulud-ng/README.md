@@ -410,6 +410,24 @@ the global success color. CSS hooks also include `--bulud-badge-height-{size}`,
 `--bulud-badge-dismiss-icon-size`, `--bulud-badge-focus-width`, and
 `--bulud-badge-focus-offset`. The dismiss target defaults to at least 24 × 24px.
 
+All geometry/focus hooks above have optional string fields in `BuludBadgeTheme`:
+`heightSmall`, `heightMedium`, `heightLarge`, `fontSizeSmall`, `fontSizeMedium`,
+`fontSizeLarge`, `paddingInlineSmall`, `paddingInlineMedium`, `paddingInlineLarge`,
+`borderWidth`, `lineHeight`, `dotSize`, `dotGap`, `dismissSize`, `dismissGap`,
+`dismissMargin`, `dismissPadding`, `dismissIconSize`, `focusWidth`, and `focusOffset`.
+Each maps to the corresponding kebab-case `--bulud-badge-*` variable.
+
+```ts
+provideBuludTheme({ badge: { heightMedium: "2.5rem", focusWidth: "3px" } });
+```
+
+Existing Badge theme objects remain valid. Public defaults omit these optional
+fields; the provider only emits them when explicitly supplied, preserving consumer
+`:root` and scoped CSS. `resolveBuludTheme()` and `BULUD_THEME` expose concrete
+string defaults for every Badge field. `createBuludThemeVariables()` includes all
+resolved variables. The provider retains its existing dark-mode scoping, and
+spacing continues to use logical CSS properties for RTL.
+
 ## Locale API
 
 `provideBuludLocale` supplies typed English or Persian Dropdown defaults through
@@ -445,8 +463,8 @@ All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
 from the root entry point.
 
 `ResolvedBuludTheme` is also exported for values returned by `resolveBuludTheme()`
-and injected through `BULUD_THEME`. Its button fields are all required strings,
-including the four optional consumer tokens. `BuludTheme`, `BuludButtonTheme`,
+and injected through `BULUD_THEME`. Its button and badge fields are all required strings,
+including optional consumer tokens. `BuludTheme`, `BuludButtonTheme`,
 and `typeof BULUD_DEFAULT_THEME` continue to accept legacy consumer objects
 without those tokens. This type has no keyboard or ARIA requirements.
 

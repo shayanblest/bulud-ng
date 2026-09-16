@@ -133,6 +133,11 @@ test('CSS geometry and focus overrides inherit and yield to instance values', as
   const scope = page.locator('#badge-states');
   const host = scope.locator('#badge-removable');
   const button = host.locator('button');
+  await expect(button).toHaveCSS('min-width', '24px');
+  await page.addStyleTag({
+    content: ':root { --bulud-badge-dismiss-size: 28px; }',
+  });
+  await expect(button).toHaveCSS('min-width', '28px');
   await scope.evaluate((el) => {
     el.style.setProperty('--bulud-badge-dismiss-size', '32px');
     el.style.setProperty('--bulud-badge-focus-width', '4px');
