@@ -203,6 +203,9 @@ export class App {
   protected toggleLanguage(): void {
     this.language.update((language) => (language === 'fa' ? 'en' : 'fa'));
   }
+  protected readonly buttonLoading = signal(false);
+  protected readonly buttonDisabled = signal(false);
+  protected readonly buttonDark = signal(false);
   protected readonly clickCount = signal(0);
   protected readonly fullWidth = signal(false);
   protected readonly selectedFramework = signal<
