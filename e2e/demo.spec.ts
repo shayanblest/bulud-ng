@@ -44,7 +44,7 @@ test.describe('Bulud component demo', () => {
     page,
   }) => {
     const badges = page.locator('#badge bulud-badge');
-    await expect(badges).toHaveCount(7);
+    await expect(badges).toHaveCount(15);
     for (const variant of [
       'neutral',
       'primary',

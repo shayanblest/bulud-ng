@@ -371,16 +371,64 @@
           </div>
           <div class="flex flex-wrap items-center gap-3">
             @for (variant of badgeVariants; track variant) {
-              <bulud-badge
-                class="capitalize"
-                [variant]="variant"
-                [dot]="variant === 'neutral'"
-              >
+              <bulud-badge class="capitalize" [variant]="variant" dot>
                 {{ variant }}
               </bulud-badge>
             }
             <bulud-badge variant="success">Published</bulud-badge>
             <bulud-badge variant="primary" dismissible>Dismissible</bulud-badge>
+          </div>
+          <div
+            id="badge-states"
+            class="mt-5 flex flex-wrap items-center gap-3"
+            [class.dark]="badgeDark()"
+          >
+            @for (size of badgeSizes; track size) {
+              <bulud-badge [size]="size">{{ size }}</bulud-badge>
+            }
+            <bulud-badge id="badge-default">Default</bulud-badge>
+            <bulud-badge id="badge-empty" />
+            <bulud-badge dot
+              ><span class="sr-only">Available</span></bulud-badge
+            >
+            <bulud-badge
+              style="
+                --bulud-badge-neutral-background: #14532d;
+                --bulud-badge-neutral-foreground: #ffffff;
+              "
+              >Instance theme</bulud-badge
+            >
+            <label
+              ><input
+                type="checkbox"
+                [checked]="badgeDark()"
+                (change)="badgeDark.set(!badgeDark())"
+              />
+              Dark badge theme</label
+            >
+            <button
+              #restoreBadge
+              type="button"
+              (click)="badgeVisible.set(true)"
+            >
+              Restore badge
+            </button>
+            @if (badgeVisible()) {
+              <bulud-badge
+                id="badge-removable"
+                dismissible
+                dismissLabel="Remove published status"
+                (dismissed)="
+                  badgeVisible.set(false);
+                  badgeDismissCount.set(badgeDismissCount() + 1);
+                  restoreBadge.focus()
+                "
+                >Published</bulud-badge
+              >
+            }
+            <span id="badge-dismiss-count"
+              >Dismissals: {{ badgeDismissCount() }}</span
+            >
           </div>
           <pre
             class="mt-7 overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm leading-7 text-slate-200"

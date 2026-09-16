@@ -374,9 +374,41 @@ action. Its `dismissed` output emits after the dismiss button is activated.
 | `dismissLabel` | `string`                                                       | `'Remove badge'` | Accessible name for dismiss                |
 | `dismissed`    | `Output<void>`                                                 | —                | Emits when dismissal is activated          |
 
-When `dismissible` is enabled, provide a specific `dismissLabel` if the badge
-context requires a more descriptive action name. The dot is decorative and is
-hidden from assistive technology.
+The badge is passive text, with no implicit live region, button role, or tab
+stop. Variants communicate appearance; include meaningful text rather than
+relying on color. The dot and dismiss icon are decorative. For dot-only content,
+project visually hidden text (an empty decorative badge conveys no status).
+Badge is not a form control and has no disabled, loading, or invalid state.
+
+The native dismiss button supports Tab, Enter, Space, and pointer activation.
+It never submits a surrounding form and its click does not bubble. Supply a
+localized, contextual `dismissLabel`; blank labels fall back to `Remove badge`.
+`dismissed` emits once per activation without removing the badge. The consumer
+owns removal and must move focus to a meaningful remaining control:
+
+```html
+<button #restore type="button" (click)="visible.set(true)">Restore badge</button>
+@if (visible()) {
+<bulud-badge variant="success" dot dismissible dismissLabel="Remove published status" (dismissed)="visible.set(false); restore.focus()">Published</bulud-badge>
+}
+```
+
+Import `bulud-ng/theme.css` explicitly for light/dark defaults. Ancestor `.dark`
+or `[data-theme="dark"]` and `dir` control theme and direction. Configure typed
+colors with `provideBuludTheme({ badge: { success: { background: '#14532d' } } })`.
+`BuludBadgeTheme` also configures each variant's border/foreground, radius,
+fontWeight, dismissHoverBackground, and focus. Precedence is instance CSS custom
+property → scoped component token → typed global theme → library fallback;
+behavioral inputs have instance and library defaults only.
+
+For example, `[style.--bulud-badge-success-background]="background()"` overrides
+the global success color. CSS hooks also include `--bulud-badge-height-{size}`,
+`--bulud-badge-font-size-{size}`, `--bulud-badge-padding-inline-{size}`,
+`--bulud-badge-border-width`, `--bulud-badge-line-height`, `--bulud-badge-dot-size`,
+`--bulud-badge-dot-gap`, `--bulud-badge-dismiss-size`, `--bulud-badge-dismiss-gap`,
+`--bulud-badge-dismiss-margin`, `--bulud-badge-dismiss-padding`,
+`--bulud-badge-dismiss-icon-size`, `--bulud-badge-focus-width`, and
+`--bulud-badge-focus-offset`. The dismiss target defaults to at least 24 × 24px.
 
 ## Locale API
 
