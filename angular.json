@@ -28,6 +28,7 @@
             "include": [
               "**/*.spec.ts",
               "../button/**/*.spec.ts",
+              "../badge/**/*.spec.ts",
               "../dropdown/**/*.spec.ts",
               "../resize-observer/**/*.spec.ts",
               "../clickoutside/**/*.spec.ts",
