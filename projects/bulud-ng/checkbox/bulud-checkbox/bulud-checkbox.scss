@@ -37,25 +37,31 @@
 }
 
 .bulud-checkbox__input:checked::after {
-  border-block-end: 2px solid currentColor;
-  border-inline-end: 2px solid currentColor;
+  border-block-end: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
+    currentColor;
+  border-inline-end: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
+    currentColor;
   content: "";
-  height: 0.625rem;
+  height: calc(var(--bulud-checkbox-size, 1.25rem) * 0.5);
   inset: 0;
   margin: auto;
   position: absolute;
-  transform: rotate(45deg) translate(-0.0625rem, -0.0625rem);
-  width: 0.3125rem;
+  transform: rotate(45deg)
+    translate(
+      calc(var(--bulud-checkbox-size, 1.25rem) * -0.05),
+      calc(var(--bulud-checkbox-size, 1.25rem) * -0.05)
+    );
+  width: calc(var(--bulud-checkbox-size, 1.25rem) * 0.25);
 }
 
 .bulud-checkbox__input:indeterminate::after {
   background: currentColor;
   content: "";
-  height: 2px;
+  height: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1);
   inset: 0;
   margin: auto;
   position: absolute;
-  width: 0.625rem;
+  width: calc(var(--bulud-checkbox-size, 1.25rem) * 0.5);
 }
 
 .bulud-checkbox__input:focus-visible {

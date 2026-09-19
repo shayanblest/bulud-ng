@@ -207,4 +207,23 @@ describe('BuludCheckbox', () => {
       ),
     ).toContain('#234567');
   });
+
+  it('scales checked and indeterminate glyph geometry with checkbox size', async () => {
+    const state = fixture.componentInstance;
+    const input = getInput();
+    getHost().style.setProperty('--bulud-checkbox-size', '2.5rem');
+
+    state.control.setValue(true);
+    await fixture.whenStable();
+    const checkedGlyph = getComputedStyle(input, '::after');
+    expect(checkedGlyph.height).toBe('20px');
+    expect(checkedGlyph.width).toBe('10px');
+
+    state.control.setValue(false);
+    state.indeterminate.set(true);
+    await fixture.whenStable();
+    const indeterminateGlyph = getComputedStyle(input, '::after');
+    expect(indeterminateGlyph.height).toBe('4px');
+    expect(indeterminateGlyph.width).toBe('20px');
+  });
 });

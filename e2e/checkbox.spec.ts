@@ -60,7 +60,13 @@ test('covers disabled, indeterminate, required, dark theme and instance override
   await checkbox.press('Space');
   await expect(checkbox).toBeChecked();
   await expect(checkbox).toHaveCSS('background-color', 'rgb(96, 165, 250)');
-  await expect(
-    section.getByRole('checkbox', { name: 'Instance theme' }),
-  ).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  const instance = section.getByRole('checkbox', { name: 'Instance theme' });
+  await expect(instance).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  await expect
+    .poll(() =>
+      instance.evaluate((element) =>
+        getComputedStyle(element, '::after').getPropertyValue('height'),
+      ),
+    )
+    .toBe('16px');
 });
