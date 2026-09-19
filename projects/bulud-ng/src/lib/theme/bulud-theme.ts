@@ -196,6 +196,28 @@ export type BuludThemeCssVariable = `--bulud-${string}`;
 
 const BULUD_THEME_STYLE_ATTRIBUTE = 'data-bulud-theme';
 const BULUD_THEME_SCOPE = ":root:not(.dark):not([data-theme='dark'])";
+const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
+  '--bulud-badge-height-small',
+  '--bulud-badge-font-size-small',
+  '--bulud-badge-padding-inline-small',
+  '--bulud-badge-height-medium',
+  '--bulud-badge-font-size-medium',
+  '--bulud-badge-padding-inline-medium',
+  '--bulud-badge-height-large',
+  '--bulud-badge-font-size-large',
+  '--bulud-badge-padding-inline-large',
+  '--bulud-badge-border-width',
+  '--bulud-badge-line-height',
+  '--bulud-badge-dot-size',
+  '--bulud-badge-dot-gap',
+  '--bulud-badge-dismiss-size',
+  '--bulud-badge-dismiss-gap',
+  '--bulud-badge-dismiss-margin',
+  '--bulud-badge-dismiss-padding',
+  '--bulud-badge-dismiss-icon-size',
+  '--bulud-badge-focus-width',
+  '--bulud-badge-focus-offset',
+]);
 
 /** Concrete defaults retained internally for theme resolution. */
 const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
@@ -643,18 +665,26 @@ export function createBuludThemeVariables(
 function createBuludThemeCss(
   variables: Readonly<Record<BuludThemeCssVariable, string>>,
 ): string {
-  const declarations = Object.entries(variables)
-    .map(([property, value]) => `  ${property}: ${value};`)
-    .join('\n');
+  const declarations = (entries: readonly (readonly [string, string])[]) =>
+    entries.map(([property, value]) => `  ${property}: ${value};`).join('\n');
 
-  return `${BULUD_THEME_SCOPE} {\n${declarations}\n}`;
+  const entries = Object.entries(variables);
+  const badgeGeometry = entries.filter(([property]) =>
+    BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
+  );
+  const lightModeVariables = entries.filter(
+    ([property]) => !BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
+  );
+
+  return `:root {\n${declarations(badgeGeometry)}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
 }
 
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
- * document root during Angular environment initialization. The generated
- * stylesheet is scoped out while the root is in dark mode so the explicitly
- * imported dark theme can take precedence over global light-mode overrides.
+ * document root during Angular environment initialization. Color variables
+ * are scoped out while the root is in dark mode so the explicitly imported
+ * dark theme can take precedence over global light-mode overrides; badge
+ * geometry remains available because it is not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
