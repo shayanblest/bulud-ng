@@ -7,7 +7,6 @@
   align-items: center;
   cursor: pointer;
   display: inline-flex;
-  gap: var(--bulud-checkbox-gap, 0.625rem);
   min-block-size: var(--bulud-checkbox-size, 1.25rem);
   user-select: none;
 }
@@ -81,5 +80,14 @@
 }
 
 .bulud-checkbox__label {
+  align-items: center;
+  cursor: inherit;
+  display: inline-flex;
   line-height: var(--bulud-checkbox-label-line-height, 1.5);
+}
+
+.bulud-checkbox__gap {
+  align-self: stretch;
+  flex: 0 0 var(--bulud-checkbox-gap, 0.625rem);
+  pointer-events: none;
 }

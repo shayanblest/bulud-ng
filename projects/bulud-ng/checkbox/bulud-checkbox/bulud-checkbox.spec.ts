@@ -130,6 +130,19 @@ describe('BuludCheckbox', () => {
     expect(fixture.componentInstance.control.value).toBeFalse();
   });
 
+  it('keeps the visual gap inside the native label hit area', async () => {
+    const input = getInput();
+    const gap = fixture.nativeElement.querySelector(
+      '.bulud-checkbox__gap',
+    ) as HTMLElement;
+
+    gap.click();
+    await fixture.whenStable();
+
+    expect(input.checked).toBeTrue();
+    expect(fixture.componentInstance.control.value).toBeTrue();
+  });
+
   it('supports checked, indeterminate, explicit invalid and aria-label state', async () => {
     const state = fixture.componentInstance;
     state.control.setValue(true);

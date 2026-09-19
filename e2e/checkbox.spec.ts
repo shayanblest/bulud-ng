@@ -14,6 +14,21 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   });
   await expect(defaultCheckbox).not.toBeChecked();
   await expect(defaultCheckbox).not.toHaveAttribute('aria-invalid', 'true');
+  const defaultHost = page.locator('bulud-checkbox').filter({
+    has: page.locator('#checkbox-default'),
+  });
+  const defaultLabel = defaultHost.locator('.bulud-checkbox');
+  const defaultGap = defaultLabel.locator('.bulud-checkbox__gap');
+  await defaultGap.scrollIntoViewIfNeeded();
+  const defaultGapBox = await defaultGap.boundingBox();
+  if (!defaultGapBox) {
+    throw new Error('Expected a measurable Checkbox label gap.');
+  }
+  await page.mouse.click(
+    defaultGapBox.x + defaultGapBox.width / 2,
+    defaultGapBox.y + defaultGapBox.height / 2,
+  );
+  await expect(defaultCheckbox).toBeChecked();
 
   const emptyCheckbox = section.locator('#checkbox-empty');
   await expect(emptyCheckbox).toHaveRole('checkbox', { name: 'Empty label' });
@@ -29,7 +44,14 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   await expect(checkbox).toHaveAttribute('aria-invalid', 'true');
   await checkbox.hover();
   await expect(checkbox).toHaveCSS('border-top-color', 'rgb(225, 29, 72)');
-  await checkbox.focus();
+  const focusStart = section.locator('#checkbox-focus-start');
+  await focusStart.click();
+  await expect(focusStart).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(checkbox).toBeFocused();
+  await expect(checkbox).toHaveCSS('outline-width', '3px');
+  await expect(checkbox).toHaveCSS('outline-offset', '2px');
+  await expect(checkbox).toHaveCSS('outline-color', 'rgb(147, 197, 253)');
   await page.keyboard.press('Space');
   await expect(checkbox).toBeChecked();
   await expect(section.locator('#checkbox-state')).toHaveText('Accepted');
@@ -70,8 +92,9 @@ test('covers disabled, indeterminate, required, dark theme and instance override
   await expect(section.locator('#checkbox-state')).toHaveText('Accepted');
   await section.getByText('Disabled', { exact: true }).click();
   await section.getByText('Indeterminate', { exact: true }).click();
-  await expect(checkbox).toHaveJSProperty('indeterminate', false);
+  await expect(checkbox).toHaveJSProperty('indeterminate', true);
   await checkbox.click();
+  await expect(checkbox).toHaveJSProperty('indeterminate', false);
   await expect(checkbox).not.toBeChecked();
   await page.mouse.move(0, 0);
   await page.evaluate(() => document.documentElement.classList.add('dark'));
@@ -99,11 +122,9 @@ test('covers disabled, indeterminate, required, dark theme and instance override
       ),
     )
     .toBe('16px');
-  expect(
-    await instance.evaluate(
-      (element) => getComputedStyle(element.parentElement!).gap,
-    ),
-  ).toBe('16px');
+  await expect(
+    instance.locator('xpath=..').locator('.bulud-checkbox__gap'),
+  ).toHaveCSS('flex-basis', '16px');
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect
     .poll(() =>

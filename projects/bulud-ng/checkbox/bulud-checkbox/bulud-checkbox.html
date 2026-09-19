@@ -14,5 +14,8 @@
     (change)="handleChange($event)"
     (blur)="handleBlur()"
   />
-  <label class="bulud-checkbox__label" [for]="inputId()"><ng-content /></label>
+  <label class="bulud-checkbox__label" [for]="inputId()">
+    <span class="bulud-checkbox__gap" aria-hidden="true"></span>
+    <ng-content />
+  </label>
 </span>
