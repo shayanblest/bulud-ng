@@ -16,6 +16,8 @@ import { BuludCheckbox } from './bulud-checkbox';
     <bulud-checkbox
       id="terms"
       [aria-label]="ariaLabel()"
+      [aria-describedby]="ariaDescribedBy()"
+      [aria-errormessage]="ariaErrorMessage()"
       [disabled]="disabled()"
       [(indeterminate)]="indeterminate"
       [invalid]="explicitInvalid()"
@@ -29,6 +31,8 @@ import { BuludCheckbox } from './bulud-checkbox';
 })
 class TestHost {
   readonly ariaLabel = signal<string | null>(null);
+  readonly ariaDescribedBy = signal<string | null>(null);
+  readonly ariaErrorMessage = signal<string | null>(null);
   readonly disabled = signal(false);
   readonly indeterminate = signal(false);
   readonly explicitInvalid = signal(false);
@@ -68,7 +72,30 @@ describe('BuludCheckbox', () => {
     expect(label?.textContent).toContain('Accept terms');
     expect(input.required).toBeTrue();
     expect(input.getAttribute('aria-label')).toBeNull();
+    expect(getHost().getAttribute('aria-label')).toBeNull();
+    expect(getHost().getAttribute('aria-describedby')).toBeNull();
+    expect(getHost().getAttribute('aria-errormessage')).toBeNull();
     expect(getHost().getAttribute('id')).toBeNull();
+  });
+
+  it('forwards description and error relationships to the native checkbox', async () => {
+    const state = fixture.componentInstance;
+    state.ariaDescribedBy.set('terms-description');
+    state.ariaErrorMessage.set('terms-error');
+    await fixture.whenStable();
+
+    expect(getInput().getAttribute('aria-describedby')).toBe(
+      'terms-description',
+    );
+    expect(getInput().getAttribute('aria-errormessage')).toBe('terms-error');
+    expect(getHost().getAttribute('aria-describedby')).toBeNull();
+    expect(getHost().getAttribute('aria-errormessage')).toBeNull();
+
+    state.ariaDescribedBy.set(null);
+    state.ariaErrorMessage.set(null);
+    await fixture.whenStable();
+    expect(getInput().getAttribute('aria-describedby')).toBeNull();
+    expect(getInput().getAttribute('aria-errormessage')).toBeNull();
   });
 
   it('forwards the requested id only to the native input for external labels', async () => {
@@ -234,6 +261,32 @@ describe('BuludCheckbox', () => {
       expect(input.getAttribute('aria-invalid')).toBe('true');
       expect(getComputedStyle(input).borderTopColor).toBe('rgb(220, 38, 38)');
     }
+  });
+
+  it('reacts to form status and interaction state changes without a value change', async () => {
+    const state = fixture.componentInstance;
+    const input = getInput();
+
+    state.control.setErrors({ server: true });
+    await fixture.whenStable();
+    expect(input.getAttribute('aria-invalid')).toBeNull();
+    expect(getHost().classList).not.toContain('bulud-checkbox-host--invalid');
+
+    state.control.markAsTouched();
+    await fixture.whenStable();
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(getHost().classList).toContain('bulud-checkbox-host--invalid');
+
+    state.control.setErrors(null);
+    await fixture.whenStable();
+    expect(input.getAttribute('aria-invalid')).toBeNull();
+    expect(getHost().classList).not.toContain('bulud-checkbox-host--invalid');
+
+    state.control.setErrors({ server: true });
+    state.control.markAsDirty();
+    await fixture.whenStable();
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(getHost().classList).toContain('bulud-checkbox-host--invalid');
   });
 
   it('scales checked and indeterminate glyph geometry with checkbox size', async () => {

@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -10,7 +11,9 @@ import {
   input,
   model,
   signal,
+  Signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ControlValueAccessor,
   NG_VALIDATORS,
@@ -46,6 +49,9 @@ let nextCheckboxId = 0;
   host: {
     class: 'bulud-checkbox-host',
     '[attr.id]': 'null',
+    '[attr.aria-label]': 'null',
+    '[attr.aria-describedby]': 'null',
+    '[attr.aria-errormessage]': 'null',
     '[class.bulud-checkbox-host--disabled]': 'isDisabled()',
     '[class.bulud-checkbox-host--invalid]': 'isInvalid()',
   },
@@ -55,6 +61,7 @@ let nextCheckboxId = 0;
 export class BuludCheckbox implements ControlValueAccessor, Validator {
   private readonly injector = inject(Injector);
   private readonly formDisabled = signal(false);
+  private readonly formEvents = signal<Signal<unknown> | null>(null);
   private readonly generatedId = `bulud-checkbox-${nextCheckboxId++}`;
   private onChange: (value: boolean) => void = () => {};
   private onTouched: () => void = () => {};
@@ -64,6 +71,18 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
     effect(() => {
       this.required();
       this.onValidatorChange();
+    });
+
+    afterNextRender(() => {
+      const control = this.getFormControl();
+      if (control) {
+        this.formEvents.set(
+          toSignal(control.events, {
+            initialValue: null,
+            injector: this.injector,
+          }),
+        );
+      }
     });
   }
 
@@ -89,19 +108,38 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
   /** Optional accessible name when projected content is not the label. */
   readonly ariaLabel = input<string | null>(null, { alias: 'aria-label' });
 
+  /** Optional description relationship forwarded to the native checkbox. */
+  readonly ariaDescribedBy = input<string | null>(null, {
+    // ARIA consumers use the standard hyphenated attribute name.
+    // eslint-disable-next-line @angular-eslint/no-input-rename
+    alias: 'aria-describedby',
+  });
+
+  /** Optional error message relationship forwarded to the native checkbox. */
+  readonly ariaErrorMessage = input<string | null>(null, {
+    // ARIA consumers use the standard hyphenated attribute name.
+    // eslint-disable-next-line @angular-eslint/no-input-rename
+    alias: 'aria-errormessage',
+  });
+
   protected isDisabled(): boolean {
     return this.disabled() || this.formDisabled();
   }
 
   protected isInvalid(): boolean {
-    const control = this.injector.get(NgControl, null, {
-      self: true,
-      optional: true,
-    })?.control;
+    this.formEvents()?.();
+    const control = this.getFormControl();
     return (
       this.invalid() ||
       Boolean(control?.invalid && (control.touched || control.dirty))
     );
+  }
+
+  private getFormControl() {
+    return this.injector.get(NgControl, null, {
+      self: true,
+      optional: true,
+    })?.control;
   }
 
   protected handleChange(event: Event): void {
