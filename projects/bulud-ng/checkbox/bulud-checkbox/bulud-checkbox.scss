@@ -7,7 +7,7 @@
   align-items: center;
   cursor: pointer;
   display: inline-flex;
-  gap: 0.625rem;
+  gap: var(--bulud-checkbox-gap, 0.625rem);
   min-block-size: var(--bulud-checkbox-size, 1.25rem);
   user-select: none;
 }
@@ -39,7 +39,7 @@
 .bulud-checkbox__input:checked::after {
   border-block-end: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
     currentColor;
-  border-inline-end: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
+  border-right: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
     currentColor;
   content: "";
   height: calc(var(--bulud-checkbox-size, 1.25rem) * 0.5);

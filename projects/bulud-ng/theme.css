@@ -54,8 +54,11 @@
   --bulud-checkbox-disabled-opacity: 0.55;
   --bulud-checkbox-radius: 0.25rem;
   --bulud-checkbox-size: 1.25rem;
+  --bulud-checkbox-gap: 0.625rem;
 }
 
+:root.dark,
+:root[data-theme="dark"],
 :where(.dark, [data-theme="dark"]) {
   --bulud-button-ghost-background: transparent;
   --bulud-color-primary: #60a5fa;

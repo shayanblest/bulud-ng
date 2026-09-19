@@ -55,6 +55,17 @@ test('covers disabled, indeterminate, required, dark theme and instance override
   await expect(checkbox).toHaveJSProperty('indeterminate', false);
   await checkbox.click();
   await expect(checkbox).not.toBeChecked();
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await page.evaluate(() => document.documentElement.classList.remove('dark'));
+  await page.evaluate(() =>
+    document.documentElement.setAttribute('data-theme', 'dark'),
+  );
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await page.evaluate(() =>
+    document.documentElement.removeAttribute('data-theme'),
+  );
   await section.getByText('Dark theme', { exact: true }).click();
   await expect(checkbox).toHaveCSS('background-color', 'rgb(15, 23, 42)');
   await checkbox.press('Space');
@@ -69,4 +80,19 @@ test('covers disabled, indeterminate, required, dark theme and instance override
       ),
     )
     .toBe('16px');
+  expect(
+    await instance.evaluate(
+      (element) => getComputedStyle(element.parentElement!).gap,
+    ),
+  ).toBe('16px');
+  await page.evaluate(() => (document.documentElement.dir = 'rtl'));
+  await expect
+    .poll(() =>
+      checkbox.evaluate((element) => {
+        const styles = getComputedStyle(element, '::after');
+        return [styles.borderRightWidth, styles.borderLeftWidth];
+      }),
+    )
+    .toEqual(['2px', '0px']);
+  await page.evaluate(() => document.documentElement.removeAttribute('dir'));
 });

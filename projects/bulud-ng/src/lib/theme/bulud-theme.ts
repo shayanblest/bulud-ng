@@ -160,6 +160,7 @@ export interface BuludCheckboxTheme {
   readonly disabledOpacity: string;
   readonly radius: string;
   readonly size: string;
+  readonly gap: string;
 }
 
 /** Consumer theme; omitted optional tokens use library defaults. */
@@ -242,6 +243,7 @@ const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
   '--bulud-checkbox-disabled-opacity',
   '--bulud-checkbox-focus-width',
   '--bulud-checkbox-focus-offset',
+  '--bulud-checkbox-gap',
   '--bulud-checkbox-radius',
   '--bulud-checkbox-size',
 ]);
@@ -399,6 +401,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     disabledOpacity: '0.55',
     radius: '0.25rem',
     size: '1.25rem',
+    gap: '0.625rem',
   },
 };
 
@@ -716,6 +719,7 @@ export function createBuludThemeVariables(
     '--bulud-checkbox-disabled-opacity': theme.checkbox.disabledOpacity,
     '--bulud-checkbox-radius': theme.checkbox.radius,
     '--bulud-checkbox-size': theme.checkbox.size,
+    '--bulud-checkbox-gap': theme.checkbox.gap,
   };
 }
 
@@ -810,6 +814,7 @@ export function provideBuludTheme(
     ['disabledOpacity', '--bulud-checkbox-disabled-opacity'],
     ['radius', '--bulud-checkbox-radius'],
     ['size', '--bulud-checkbox-size'],
+    ['gap', '--bulud-checkbox-gap'],
   ] as const) {
     if (config.checkbox?.[field] === undefined) {
       delete variables[variable];

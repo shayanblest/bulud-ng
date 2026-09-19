@@ -196,16 +196,21 @@ describe('BuludCheckbox', () => {
     expect(variables['--bulud-checkbox-checked-background']).toBe('#123456');
     expect(variables['--bulud-checkbox-focus-width']).toBe('3px');
     expect(variables['--bulud-checkbox-focus-offset']).toBe('2px');
+    expect(variables['--bulud-checkbox-gap']).toBe('0.625rem');
 
     getHost().style.setProperty(
       '--bulud-checkbox-checked-background',
       '#234567',
     );
+    getHost().style.setProperty('--bulud-checkbox-gap', '1rem');
     expect(
       getComputedStyle(getHost()).getPropertyValue(
         '--bulud-checkbox-checked-background',
       ),
     ).toContain('#234567');
+    expect(
+      getComputedStyle(getHost()).getPropertyValue('--bulud-checkbox-gap'),
+    ).toContain('1rem');
   });
 
   it('scales checked and indeterminate glyph geometry with checkbox size', async () => {
