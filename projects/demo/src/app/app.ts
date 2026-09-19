@@ -14,7 +14,7 @@ import {
   BuludButtonVariant,
 } from 'bulud-ng/button';
 import { BuludDropdown } from 'bulud-ng/dropdown';
-import { BuludBadge, BuludBadgeVariant } from 'bulud-ng/badge';
+import { BuludBadge, BuludBadgeSize, BuludBadgeVariant } from 'bulud-ng/badge';
 import {
   BuludElementSize,
   BuludResizeObserver,
@@ -64,6 +64,14 @@ export class App {
   protected readonly language = signal<'en' | 'fa'>('fa');
   protected readonly buttonTab = signal<'preview' | 'code'>('preview');
   protected readonly dropdownTab = signal<'preview' | 'code'>('preview');
+  protected readonly badgeSizes: readonly BuludBadgeSize[] = [
+    'small',
+    'medium',
+    'large',
+  ];
+  protected readonly badgeVisible = signal(true);
+  protected readonly badgeDismissCount = signal(0);
+  protected readonly badgeDark = signal(false);
   protected readonly badgeVariants: readonly BuludBadgeVariant[] = [
     'neutral',
     'primary',

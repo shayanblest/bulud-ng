@@ -422,4 +422,85 @@ describe('Bulud theme', () => {
       }
     }
   });
+
+  for (const darkMode of [
+    {
+      name: ':root.dark',
+      apply: (root: HTMLElement) => root.classList.add('dark'),
+      remove: (root: HTMLElement) => root.classList.remove('dark'),
+    },
+    {
+      name: ":root[data-theme='dark']",
+      apply: (root: HTMLElement) => root.setAttribute('data-theme', 'dark'),
+      remove: (root: HTMLElement) => root.removeAttribute('data-theme'),
+    },
+  ]) {
+    it(`keeps custom badge geometry available in ${darkMode.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const environmentInjector = createEnvironmentInjector(
+        [
+          provideBuludTheme({
+            colors: { primary: '#7c3aed' },
+            badge: {
+              heightSmall: '3.25rem',
+              fontSizeMedium: '1.125rem',
+            },
+          }),
+        ],
+        parentInjector,
+      );
+
+      darkMode.apply(root);
+
+      try {
+        const styleText = document.head.querySelector(
+          'style[data-bulud-theme]',
+        )?.textContent;
+
+        expect(styleText).toContain(':root {');
+        expect(styleText).toContain('--bulud-badge-height-small: 3.25rem;');
+        expect(styleText).toContain(
+          '--bulud-badge-font-size-medium: 1.125rem;',
+        );
+        expect(styleText).toContain(
+          ":root:not(.dark):not([data-theme='dark'])",
+        );
+        expect(styleText).toContain('--bulud-color-primary: #7c3aed;');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-badge-height-small'),
+        ).toBe('3.25rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-badge-font-size-medium'),
+        ).toBe('1.125rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-color-primary'),
+        ).not.toBe('#7c3aed');
+      } finally {
+        darkMode.remove(root);
+        environmentInjector.destroy();
+
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
 });

@@ -2,16 +2,13 @@ import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  computed,
   input,
   output,
 } from '@angular/core';
 
 export type BuludBadgeVariant =
-  | 'neutral'
-  | 'primary'
-  | 'success'
-  | 'warning'
-  | 'danger';
+  'neutral' | 'primary' | 'success' | 'warning' | 'danger';
 
 export type BuludBadgeSize = 'small' | 'medium' | 'large';
 
@@ -32,7 +29,12 @@ export class BuludBadge {
   readonly dot = input(false, { transform: booleanAttribute });
   readonly dismissible = input(false, { transform: booleanAttribute });
   readonly dismissLabel = input('Remove badge');
+  /** Emits once per activation; consumers own removal and subsequent focus. */
   readonly dismissed = output<void>();
+
+  protected readonly accessibleDismissLabel = computed(
+    () => this.dismissLabel().trim() || 'Remove badge',
+  );
 
   protected dismiss(event: Event): void {
     event.stopPropagation();

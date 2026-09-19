@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import {
   BULUD_DEFAULT_THEME,
   BULUD_THEME,
+  type BuludBadgeTheme,
   provideBuludTheme,
   resolveBuludTheme,
 } from 'bulud-ng';
@@ -31,3 +32,20 @@ export const defaultThemeProvider = provideBuludTheme({
   ...legacyDefaults,
   colors: { ...legacyDefaults.colors, primary: '#7c3aed' },
 });
+
+// Existing complete Badge objects need no geometry/focus additions.
+export const legacyBadge: BuludBadgeTheme = {
+  neutral: BULUD_DEFAULT_THEME.badge.neutral,
+  primary: BULUD_DEFAULT_THEME.badge.primary,
+  success: BULUD_DEFAULT_THEME.badge.success,
+  warning: BULUD_DEFAULT_THEME.badge.warning,
+  danger: BULUD_DEFAULT_THEME.badge.danger,
+  radius: '999px',
+  fontWeight: '500',
+  dismissHoverBackground: 'transparent',
+  focus: 'currentColor',
+};
+export const legacyBadgeProvider = provideBuludTheme({ badge: legacyBadge });
+export const resolvedBadgeFocus: string = resolveBuludTheme({
+  badge: legacyBadge,
+}).badge.focusWidth;

@@ -86,6 +86,27 @@ export interface BuludBadgeVariantTheme {
 }
 
 export interface BuludBadgeTheme {
+  readonly heightSmall?: string;
+  readonly fontSizeSmall?: string;
+  readonly paddingInlineSmall?: string;
+  readonly heightMedium?: string;
+  readonly fontSizeMedium?: string;
+  readonly paddingInlineMedium?: string;
+  readonly heightLarge?: string;
+  readonly fontSizeLarge?: string;
+  readonly paddingInlineLarge?: string;
+  readonly borderWidth?: string;
+  readonly lineHeight?: string;
+  readonly dotSize?: string;
+  readonly dotGap?: string;
+  readonly dismissSize?: string;
+  readonly dismissGap?: string;
+  readonly dismissMargin?: string;
+  readonly dismissPadding?: string;
+  readonly dismissIconSize?: string;
+  readonly focusWidth?: string;
+  readonly focusOffset?: string;
+
   readonly neutral: BuludBadgeVariantTheme;
   readonly primary: BuludBadgeVariantTheme;
   readonly success: BuludBadgeVariantTheme;
@@ -125,7 +146,7 @@ export interface BuludAccordionTheme {
   readonly radius: string;
 }
 
-/** Consumer theme; omitted optional button tokens use library defaults. */
+/** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
   readonly shape: BuludShapeTheme;
@@ -139,6 +160,7 @@ export interface BuludTheme {
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
 export interface ResolvedBuludTheme extends BuludTheme {
   readonly button: Required<BuludButtonTheme>;
+  readonly badge: Required<BuludBadgeTheme>;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -174,6 +196,28 @@ export type BuludThemeCssVariable = `--bulud-${string}`;
 
 const BULUD_THEME_STYLE_ATTRIBUTE = 'data-bulud-theme';
 const BULUD_THEME_SCOPE = ":root:not(.dark):not([data-theme='dark'])";
+const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
+  '--bulud-badge-height-small',
+  '--bulud-badge-font-size-small',
+  '--bulud-badge-padding-inline-small',
+  '--bulud-badge-height-medium',
+  '--bulud-badge-font-size-medium',
+  '--bulud-badge-padding-inline-medium',
+  '--bulud-badge-height-large',
+  '--bulud-badge-font-size-large',
+  '--bulud-badge-padding-inline-large',
+  '--bulud-badge-border-width',
+  '--bulud-badge-line-height',
+  '--bulud-badge-dot-size',
+  '--bulud-badge-dot-gap',
+  '--bulud-badge-dismiss-size',
+  '--bulud-badge-dismiss-gap',
+  '--bulud-badge-dismiss-margin',
+  '--bulud-badge-dismiss-padding',
+  '--bulud-badge-dismiss-icon-size',
+  '--bulud-badge-focus-width',
+  '--bulud-badge-focus-offset',
+]);
 
 /** Concrete defaults retained internally for theme resolution. */
 const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
@@ -245,6 +289,26 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     shadow: '0 1rem 2.5rem rgb(15 23 42 / 0.16)',
   },
   badge: {
+    heightSmall: '1.625rem',
+    fontSizeSmall: '0.8125rem',
+    paddingInlineSmall: '0.75rem',
+    heightMedium: '2rem',
+    fontSizeMedium: '0.875rem',
+    paddingInlineMedium: '0.875rem',
+    heightLarge: '2.25rem',
+    fontSizeLarge: '0.9375rem',
+    paddingInlineLarge: '1rem',
+    borderWidth: '1px',
+    lineHeight: '1.25',
+    dotSize: '0.4375rem',
+    dotGap: '0.625rem',
+    dismissSize: '1.5rem',
+    dismissGap: '0.375rem',
+    dismissMargin: '-0.375rem',
+    dismissPadding: '0.125rem',
+    dismissIconSize: '0.875rem',
+    focusWidth: '2px',
+    focusOffset: '2px',
     neutral: {
       background: '#f8fafc',
       border: '#cbd5e1',
@@ -298,12 +362,23 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
 };
 
 /**
- * Legacy-shaped defaults for consumer configuration. Optional button tokens
+ * Legacy-shaped defaults for consumer configuration. Optional tokens
  * stay omitted so spreading this object preserves consumer CSS fallbacks.
  * Use resolveBuludTheme() when concrete values for every token are needed.
  */
 export const BULUD_DEFAULT_THEME: BuludTheme = {
   ...RESOLVED_DEFAULT_THEME,
+  badge: {
+    neutral: RESOLVED_DEFAULT_THEME.badge.neutral,
+    primary: RESOLVED_DEFAULT_THEME.badge.primary,
+    success: RESOLVED_DEFAULT_THEME.badge.success,
+    warning: RESOLVED_DEFAULT_THEME.badge.warning,
+    danger: RESOLVED_DEFAULT_THEME.badge.danger,
+    radius: RESOLVED_DEFAULT_THEME.badge.radius,
+    fontWeight: RESOLVED_DEFAULT_THEME.badge.fontWeight,
+    dismissHoverBackground: RESOLVED_DEFAULT_THEME.badge.dismissHoverBackground,
+    focus: RESOLVED_DEFAULT_THEME.badge.focus,
+  },
   button: {
     disabledOpacity: RESOLVED_DEFAULT_THEME.button.disabledOpacity,
     fontWeight: RESOLVED_DEFAULT_THEME.button.fontWeight,
@@ -379,6 +454,54 @@ export function resolveBuludTheme(
     badge: {
       ...BULUD_DEFAULT_THEME.badge,
       ...config.badge,
+      heightSmall:
+        config.badge?.heightSmall ?? RESOLVED_DEFAULT_THEME.badge.heightSmall,
+      fontSizeSmall:
+        config.badge?.fontSizeSmall ??
+        RESOLVED_DEFAULT_THEME.badge.fontSizeSmall,
+      paddingInlineSmall:
+        config.badge?.paddingInlineSmall ??
+        RESOLVED_DEFAULT_THEME.badge.paddingInlineSmall,
+      heightMedium:
+        config.badge?.heightMedium ?? RESOLVED_DEFAULT_THEME.badge.heightMedium,
+      fontSizeMedium:
+        config.badge?.fontSizeMedium ??
+        RESOLVED_DEFAULT_THEME.badge.fontSizeMedium,
+      paddingInlineMedium:
+        config.badge?.paddingInlineMedium ??
+        RESOLVED_DEFAULT_THEME.badge.paddingInlineMedium,
+      heightLarge:
+        config.badge?.heightLarge ?? RESOLVED_DEFAULT_THEME.badge.heightLarge,
+      fontSizeLarge:
+        config.badge?.fontSizeLarge ??
+        RESOLVED_DEFAULT_THEME.badge.fontSizeLarge,
+      paddingInlineLarge:
+        config.badge?.paddingInlineLarge ??
+        RESOLVED_DEFAULT_THEME.badge.paddingInlineLarge,
+      borderWidth:
+        config.badge?.borderWidth ?? RESOLVED_DEFAULT_THEME.badge.borderWidth,
+      lineHeight:
+        config.badge?.lineHeight ?? RESOLVED_DEFAULT_THEME.badge.lineHeight,
+      dotSize: config.badge?.dotSize ?? RESOLVED_DEFAULT_THEME.badge.dotSize,
+      dotGap: config.badge?.dotGap ?? RESOLVED_DEFAULT_THEME.badge.dotGap,
+      dismissSize:
+        config.badge?.dismissSize ?? RESOLVED_DEFAULT_THEME.badge.dismissSize,
+      dismissGap:
+        config.badge?.dismissGap ?? RESOLVED_DEFAULT_THEME.badge.dismissGap,
+      dismissMargin:
+        config.badge?.dismissMargin ??
+        RESOLVED_DEFAULT_THEME.badge.dismissMargin,
+      dismissPadding:
+        config.badge?.dismissPadding ??
+        RESOLVED_DEFAULT_THEME.badge.dismissPadding,
+      dismissIconSize:
+        config.badge?.dismissIconSize ??
+        RESOLVED_DEFAULT_THEME.badge.dismissIconSize,
+      focusWidth:
+        config.badge?.focusWidth ?? RESOLVED_DEFAULT_THEME.badge.focusWidth,
+      focusOffset:
+        config.badge?.focusOffset ?? RESOLVED_DEFAULT_THEME.badge.focusOffset,
+
       neutral: {
         ...BULUD_DEFAULT_THEME.badge.neutral,
         ...config.badge?.neutral,
@@ -491,6 +614,26 @@ export function createBuludThemeVariables(
     '--bulud-badge-danger-background': theme.badge.danger.background,
     '--bulud-badge-danger-border': theme.badge.danger.border,
     '--bulud-badge-danger-foreground': theme.badge.danger.foreground,
+    '--bulud-badge-height-small': theme.badge.heightSmall,
+    '--bulud-badge-font-size-small': theme.badge.fontSizeSmall,
+    '--bulud-badge-padding-inline-small': theme.badge.paddingInlineSmall,
+    '--bulud-badge-height-medium': theme.badge.heightMedium,
+    '--bulud-badge-font-size-medium': theme.badge.fontSizeMedium,
+    '--bulud-badge-padding-inline-medium': theme.badge.paddingInlineMedium,
+    '--bulud-badge-height-large': theme.badge.heightLarge,
+    '--bulud-badge-font-size-large': theme.badge.fontSizeLarge,
+    '--bulud-badge-padding-inline-large': theme.badge.paddingInlineLarge,
+    '--bulud-badge-border-width': theme.badge.borderWidth,
+    '--bulud-badge-line-height': theme.badge.lineHeight,
+    '--bulud-badge-dot-size': theme.badge.dotSize,
+    '--bulud-badge-dot-gap': theme.badge.dotGap,
+    '--bulud-badge-dismiss-size': theme.badge.dismissSize,
+    '--bulud-badge-dismiss-gap': theme.badge.dismissGap,
+    '--bulud-badge-dismiss-margin': theme.badge.dismissMargin,
+    '--bulud-badge-dismiss-padding': theme.badge.dismissPadding,
+    '--bulud-badge-dismiss-icon-size': theme.badge.dismissIconSize,
+    '--bulud-badge-focus-width': theme.badge.focusWidth,
+    '--bulud-badge-focus-offset': theme.badge.focusOffset,
     '--bulud-badge-radius': theme.badge.radius,
     '--bulud-badge-font-weight': theme.badge.fontWeight,
     '--bulud-badge-dismiss-hover-background':
@@ -522,18 +665,26 @@ export function createBuludThemeVariables(
 function createBuludThemeCss(
   variables: Readonly<Record<BuludThemeCssVariable, string>>,
 ): string {
-  const declarations = Object.entries(variables)
-    .map(([property, value]) => `  ${property}: ${value};`)
-    .join('\n');
+  const declarations = (entries: readonly (readonly [string, string])[]) =>
+    entries.map(([property, value]) => `  ${property}: ${value};`).join('\n');
 
-  return `${BULUD_THEME_SCOPE} {\n${declarations}\n}`;
+  const entries = Object.entries(variables);
+  const badgeGeometry = entries.filter(([property]) =>
+    BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
+  );
+  const lightModeVariables = entries.filter(
+    ([property]) => !BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
+  );
+
+  return `:root {\n${declarations(badgeGeometry)}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
 }
 
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
- * document root during Angular environment initialization. The generated
- * stylesheet is scoped out while the root is in dark mode so the explicitly
- * imported dark theme can take precedence over global light-mode overrides.
+ * document root during Angular environment initialization. Color variables
+ * are scoped out while the root is in dark mode so the explicitly imported
+ * dark theme can take precedence over global light-mode overrides; badge
+ * geometry remains available because it is not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -553,6 +704,33 @@ export function provideBuludTheme(
     ['ghostBackground', '--bulud-button-ghost-background'],
   ] as const) {
     if (config.button?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of [
+    ['heightSmall', '--bulud-badge-height-small'],
+    ['fontSizeSmall', '--bulud-badge-font-size-small'],
+    ['paddingInlineSmall', '--bulud-badge-padding-inline-small'],
+    ['heightMedium', '--bulud-badge-height-medium'],
+    ['fontSizeMedium', '--bulud-badge-font-size-medium'],
+    ['paddingInlineMedium', '--bulud-badge-padding-inline-medium'],
+    ['heightLarge', '--bulud-badge-height-large'],
+    ['fontSizeLarge', '--bulud-badge-font-size-large'],
+    ['paddingInlineLarge', '--bulud-badge-padding-inline-large'],
+    ['borderWidth', '--bulud-badge-border-width'],
+    ['lineHeight', '--bulud-badge-line-height'],
+    ['dotSize', '--bulud-badge-dot-size'],
+    ['dotGap', '--bulud-badge-dot-gap'],
+    ['dismissSize', '--bulud-badge-dismiss-size'],
+    ['dismissGap', '--bulud-badge-dismiss-gap'],
+    ['dismissMargin', '--bulud-badge-dismiss-margin'],
+    ['dismissPadding', '--bulud-badge-dismiss-padding'],
+    ['dismissIconSize', '--bulud-badge-dismiss-icon-size'],
+    ['focusWidth', '--bulud-badge-focus-width'],
+    ['focusOffset', '--bulud-badge-focus-offset'],
+  ] as const) {
+    if (config.badge?.[field] === undefined) {
       delete variables[variable];
     }
   }
