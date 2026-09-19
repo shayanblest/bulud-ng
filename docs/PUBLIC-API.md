@@ -16,6 +16,7 @@ supported.
 | `bulud-ng/resize-observer` | `BuludElementSize`, `BuludResizeObserver`                                                     |
 | `bulud-ng/tabs`            | `BuludTab`, `BuludTabId`, `BuludTabPanel`, `BuludTabs`, `BuludTabsOrientation`                |
 | `bulud-ng/accordion`       | `BuludAccordion`, `BuludAccordionId`, `BuludAccordionItem`, `BuludAccordionMode`              |
+| `bulud-ng/checkbox`        | `BuludCheckbox`                                                                               |
 
 The root entry point contains shared configuration and locale contracts. UI
 features are imported from their own secondary entry point so unused features

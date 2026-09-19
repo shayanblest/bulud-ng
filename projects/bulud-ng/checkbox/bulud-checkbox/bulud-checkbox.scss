@@ -1,0 +1,93 @@
+:host {
+  color: var(--bulud-checkbox-foreground, #0f172a);
+  display: inline-block;
+}
+
+.bulud-checkbox {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  min-block-size: var(--bulud-checkbox-size, 1.25rem);
+  user-select: none;
+}
+
+.bulud-checkbox__input {
+  appearance: none;
+  background: var(--bulud-checkbox-background, #ffffff);
+  border: var(--bulud-checkbox-border-width, 1px) solid
+    var(--bulud-checkbox-border, #cbd5e1);
+  border-radius: var(--bulud-checkbox-radius, 0.25rem);
+  block-size: var(--bulud-checkbox-size, 1.25rem);
+  color: var(--bulud-checkbox-checked-foreground, #ffffff);
+  cursor: inherit;
+  flex: 0 0 auto;
+  inline-size: var(--bulud-checkbox-size, 1.25rem);
+  margin: 0;
+  position: relative;
+}
+
+.bulud-checkbox__input:not(:checked):not(:indeterminate):hover:not(:disabled) {
+  background: var(--bulud-checkbox-background-hover, #f8fafc);
+}
+
+.bulud-checkbox__input:checked,
+.bulud-checkbox__input:indeterminate {
+  background: var(--bulud-checkbox-checked-background, #2563eb);
+  border-color: var(--bulud-checkbox-checked-background, #2563eb);
+}
+
+.bulud-checkbox__input:checked::after {
+  border-block-end: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
+    currentColor;
+  border-right: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1) solid
+    currentColor;
+  content: "";
+  height: calc(var(--bulud-checkbox-size, 1.25rem) * 0.5);
+  inset: 0;
+  margin: auto;
+  position: absolute;
+  transform: rotate(45deg)
+    translate(
+      calc(var(--bulud-checkbox-size, 1.25rem) * -0.05),
+      calc(var(--bulud-checkbox-size, 1.25rem) * -0.05)
+    );
+  width: calc(var(--bulud-checkbox-size, 1.25rem) * 0.25);
+}
+
+.bulud-checkbox__input:indeterminate::after {
+  background: currentColor;
+  content: "";
+  height: calc(var(--bulud-checkbox-size, 1.25rem) * 0.1);
+  inset: 0;
+  margin: auto;
+  position: absolute;
+  width: calc(var(--bulud-checkbox-size, 1.25rem) * 0.5);
+}
+
+.bulud-checkbox__input:focus-visible {
+  outline: var(--bulud-checkbox-focus-width, 3px) solid
+    var(--bulud-checkbox-focus, #93c5fd);
+  outline-offset: var(--bulud-checkbox-focus-offset, 2px);
+}
+
+.bulud-checkbox-host--disabled .bulud-checkbox {
+  cursor: not-allowed;
+  opacity: var(--bulud-checkbox-disabled-opacity, 0.55);
+}
+
+:host(.bulud-checkbox-host--invalid) .bulud-checkbox__input {
+  border-color: var(--bulud-color-danger, #dc2626);
+}
+
+.bulud-checkbox__label {
+  align-items: center;
+  cursor: inherit;
+  display: inline-flex;
+  line-height: var(--bulud-checkbox-label-line-height, 1.5);
+}
+
+.bulud-checkbox__gap {
+  align-self: stretch;
+  flex: 0 0 var(--bulud-checkbox-gap, 0.625rem);
+  pointer-events: none;
+}

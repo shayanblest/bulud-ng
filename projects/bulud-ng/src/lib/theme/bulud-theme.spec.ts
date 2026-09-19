@@ -96,6 +96,41 @@ describe('Bulud theme', () => {
     });
   });
 
+  it('keeps checkbox optional for legacy consumer theme objects', () => {
+    const { checkbox, ...legacyShape } = BULUD_DEFAULT_THEME;
+    const legacyTheme: BuludTheme = legacyShape;
+
+    expect(checkbox).toBeDefined();
+    expect(legacyTheme.checkbox).toBeUndefined();
+    expect(resolveBuludTheme(legacyTheme).checkbox).toEqual(
+      resolveBuludTheme().checkbox,
+    );
+  });
+
+  it('resolves checkbox focus geometry defaults and configured values', () => {
+    expect(resolveBuludTheme().checkbox.focusWidth).toBe('3px');
+    expect(resolveBuludTheme().checkbox.focusOffset).toBe('2px');
+    expect(resolveBuludTheme().checkbox.gap).toBe('0.625rem');
+    expect(resolveBuludTheme().checkbox.borderWidth).toBe('1px');
+    expect(resolveBuludTheme().checkbox.labelLineHeight).toBe('1.5');
+
+    const variables = createBuludThemeVariables({
+      checkbox: {
+        focusWidth: '4px',
+        focusOffset: '6px',
+        gap: '1rem',
+        borderWidth: '3px',
+        labelLineHeight: '1.8',
+      },
+    });
+
+    expect(variables['--bulud-checkbox-focus-width']).toBe('4px');
+    expect(variables['--bulud-checkbox-focus-offset']).toBe('6px');
+    expect(variables['--bulud-checkbox-gap']).toBe('1rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-label-line-height']).toBe('1.8');
+  });
+
   it('provides concrete defaults through the injection token factory', () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
@@ -455,6 +490,16 @@ describe('Bulud theme', () => {
               heightSmall: '3.25rem',
               fontSizeMedium: '1.125rem',
             },
+            checkbox: {
+              size: '2rem',
+              radius: '0.75rem',
+              disabledOpacity: '0.3',
+              focusWidth: '4px',
+              focusOffset: '6px',
+              gap: '1rem',
+              borderWidth: '3px',
+              labelLineHeight: '1.8',
+            },
           }),
         ],
         parentInjector,
@@ -469,6 +514,14 @@ describe('Bulud theme', () => {
 
         expect(styleText).toContain(':root {');
         expect(styleText).toContain('--bulud-badge-height-small: 3.25rem;');
+        expect(styleText).toContain('--bulud-checkbox-size: 2rem;');
+        expect(styleText).toContain('--bulud-checkbox-radius: 0.75rem;');
+        expect(styleText).toContain('--bulud-checkbox-disabled-opacity: 0.3;');
+        expect(styleText).toContain('--bulud-checkbox-focus-width: 4px;');
+        expect(styleText).toContain('--bulud-checkbox-focus-offset: 6px;');
+        expect(styleText).toContain('--bulud-checkbox-gap: 1rem;');
+        expect(styleText).toContain('--bulud-checkbox-border-width: 3px;');
+        expect(styleText).toContain('--bulud-checkbox-label-line-height: 1.8;');
         expect(styleText).toContain(
           '--bulud-badge-font-size-medium: 1.125rem;',
         );
@@ -489,6 +542,46 @@ describe('Bulud theme', () => {
         expect(
           document.defaultView
             ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-size'),
+        ).toBe('2rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-radius'),
+        ).toBe('0.75rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-disabled-opacity'),
+        ).toBe('0.3');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-focus-width'),
+        ).toBe('4px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-focus-offset'),
+        ).toBe('6px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-gap'),
+        ).toBe('1rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-border-width'),
+        ).toBe('3px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-label-line-height'),
+        ).toBe('1.8');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
             .getPropertyValue('--bulud-color-primary'),
         ).not.toBe('#7c3aed');
       } finally {
@@ -503,4 +596,80 @@ describe('Bulud theme', () => {
       }
     });
   }
+
+  it('preserves consumer root checkbox variables when provider options are omitted', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    root.style.setProperty('--bulud-checkbox-size', '3rem');
+    root.style.setProperty('--bulud-checkbox-label-line-height', '2');
+
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme()],
+      parentInjector,
+    );
+
+    try {
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-size:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-focus-width:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-gap:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-border-width:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-label-line-height:');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-checkbox-size'),
+      ).toBe('3rem');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-checkbox-label-line-height'),
+      ).toBe('2');
+    } finally {
+      root.style.removeProperty('--bulud-checkbox-size');
+      root.style.removeProperty('--bulud-checkbox-label-line-height');
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('emits explicitly configured checkbox variables with provider precedence', () => {
+    const variables = createBuludThemeVariables({
+      checkbox: {
+        size: '2rem',
+        gap: '1rem',
+        borderWidth: '3px',
+        labelLineHeight: '1.8',
+      },
+    });
+
+    expect(variables['--bulud-checkbox-size']).toBe('2rem');
+    expect(variables['--bulud-checkbox-gap']).toBe('1rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-label-line-height']).toBe('1.8');
+    expect(createBuludThemeVariables()['--bulud-checkbox-size']).toBe(
+      resolveBuludTheme().checkbox.size,
+    );
+  });
 });

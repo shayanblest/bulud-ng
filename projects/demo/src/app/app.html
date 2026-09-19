@@ -356,6 +356,94 @@
         </section>
 
         <section
+          id="checkbox"
+          class="rounded-3xl border border-slate-200 bg-bulud-surface p-6 text-bulud-on-surface shadow-sm sm:p-8"
+          [attr.data-theme]="checkboxDark() ? 'dark' : null"
+        >
+          <div class="mb-7">
+            <p
+              class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+            >
+              Checkbox
+            </p>
+            <h3 class="mt-3 text-2xl font-black tracking-tight">
+              Native, form-ready selection
+            </h3>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              The projected label, keyboard interaction, required validation,
+              disabled state, and indeterminate state remain native and
+              accessible.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-5">
+            <bulud-checkbox id="checkbox-default"
+              >Default unchecked</bulud-checkbox
+            >
+            <bulud-checkbox
+              id="checkbox-empty"
+              aria-label="Empty label"
+            ></bulud-checkbox>
+            <button
+              id="checkbox-focus-start"
+              type="button"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold"
+            >
+              Focus checkbox
+            </button>
+            <bulud-checkbox
+              [checked]="checkboxAccepted()"
+              [(indeterminate)]="checkboxIndeterminate"
+              [disabled]="checkboxDisabled()"
+              [invalid]="!checkboxAccepted()"
+              required
+              (checkedChange)="checkboxAccepted.set($event)"
+              >Accept terms</bulud-checkbox
+            >
+            <label class="inline-flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                [checked]="checkboxIndeterminate()"
+                (change)="checkboxIndeterminate.set(!checkboxIndeterminate())"
+              />
+              Indeterminate
+            </label>
+            <label class="inline-flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                [checked]="checkboxDisabled()"
+                (change)="checkboxDisabled.set(!checkboxDisabled())"
+              />
+              Disabled
+            </label>
+            <label class="inline-flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                [checked]="checkboxDark()"
+                (change)="checkboxDark.set(!checkboxDark())"
+              />
+              Dark theme
+            </label>
+            <bulud-checkbox
+              style="
+                --bulud-checkbox-checked-background: #14532d;
+                --bulud-checkbox-size: 2rem;
+                --bulud-checkbox-gap: 1rem;
+                --bulud-checkbox-border-width: 3px;
+              "
+              [checked]="true"
+              >Instance theme</bulud-checkbox
+            >
+          </div>
+          <p
+            id="checkbox-state"
+            class="mt-5 text-sm font-semibold"
+            aria-live="polite"
+          >
+            {{ checkboxAccepted() ? "Accepted" : "Not accepted" }}
+          </p>
+        </section>
+
+        <section
           id="badge"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >

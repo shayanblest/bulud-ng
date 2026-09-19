@@ -146,6 +146,25 @@ export interface BuludAccordionTheme {
   readonly radius: string;
 }
 
+/** Theme tokens for checkbox controls. */
+export interface BuludCheckboxTheme {
+  readonly background: string;
+  readonly backgroundHover: string;
+  readonly border: string;
+  readonly borderWidth: string;
+  readonly checkedBackground: string;
+  readonly checkedForeground: string;
+  readonly foreground: string;
+  readonly focus: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
+  readonly disabledOpacity: string;
+  readonly radius: string;
+  readonly size: string;
+  readonly gap: string;
+  readonly labelLineHeight: string;
+}
+
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -155,12 +174,15 @@ export interface BuludTheme {
   readonly badge: BuludBadgeTheme;
   readonly tabs: BuludTabsTheme;
   readonly accordion: BuludAccordionTheme;
+  /** Optional for compatibility with legacy consumer theme objects. */
+  readonly checkbox?: BuludCheckboxTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
-export interface ResolvedBuludTheme extends BuludTheme {
+export interface ResolvedBuludTheme extends Omit<BuludTheme, 'checkbox'> {
   readonly button: Required<BuludButtonTheme>;
   readonly badge: Required<BuludBadgeTheme>;
+  readonly checkbox: BuludCheckboxTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -189,6 +211,7 @@ export interface BuludThemeConfig {
   };
   readonly tabs?: Partial<BuludTabsTheme>;
   readonly accordion?: Partial<BuludAccordionTheme>;
+  readonly checkbox?: Partial<BuludCheckboxTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -217,6 +240,16 @@ const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
   '--bulud-badge-dismiss-icon-size',
   '--bulud-badge-focus-width',
   '--bulud-badge-focus-offset',
+]);
+const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
+  '--bulud-checkbox-border-width',
+  '--bulud-checkbox-disabled-opacity',
+  '--bulud-checkbox-focus-width',
+  '--bulud-checkbox-focus-offset',
+  '--bulud-checkbox-gap',
+  '--bulud-checkbox-radius',
+  '--bulud-checkbox-size',
+  '--bulud-checkbox-label-line-height',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -358,6 +391,23 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     focus: '#93c5fd',
     disabledOpacity: '0.55',
     radius: '0.5rem',
+  },
+  checkbox: {
+    background: '#ffffff',
+    backgroundHover: '#f8fafc',
+    border: '#cbd5e1',
+    borderWidth: '1px',
+    checkedBackground: '#2563eb',
+    checkedForeground: '#ffffff',
+    foreground: '#0f172a',
+    focus: '#93c5fd',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    disabledOpacity: '0.55',
+    radius: '0.25rem',
+    size: '1.25rem',
+    gap: '0.625rem',
+    labelLineHeight: '1.5',
   },
 };
 
@@ -528,6 +578,10 @@ export function resolveBuludTheme(
       ...BULUD_DEFAULT_THEME.accordion,
       ...config.accordion,
     },
+    checkbox: {
+      ...RESOLVED_DEFAULT_THEME.checkbox,
+      ...config.checkbox,
+    },
   };
 }
 
@@ -659,6 +713,21 @@ export function createBuludThemeVariables(
     '--bulud-accordion-focus': theme.accordion.focus,
     '--bulud-accordion-disabled-opacity': theme.accordion.disabledOpacity,
     '--bulud-accordion-radius': theme.accordion.radius,
+    '--bulud-checkbox-background': theme.checkbox.background,
+    '--bulud-checkbox-background-hover': theme.checkbox.backgroundHover,
+    '--bulud-checkbox-border': theme.checkbox.border,
+    '--bulud-checkbox-border-width': theme.checkbox.borderWidth,
+    '--bulud-checkbox-checked-background': theme.checkbox.checkedBackground,
+    '--bulud-checkbox-checked-foreground': theme.checkbox.checkedForeground,
+    '--bulud-checkbox-foreground': theme.checkbox.foreground,
+    '--bulud-checkbox-focus': theme.checkbox.focus,
+    '--bulud-checkbox-focus-width': theme.checkbox.focusWidth,
+    '--bulud-checkbox-focus-offset': theme.checkbox.focusOffset,
+    '--bulud-checkbox-disabled-opacity': theme.checkbox.disabledOpacity,
+    '--bulud-checkbox-radius': theme.checkbox.radius,
+    '--bulud-checkbox-size': theme.checkbox.size,
+    '--bulud-checkbox-gap': theme.checkbox.gap,
+    '--bulud-checkbox-label-line-height': theme.checkbox.labelLineHeight,
   };
 }
 
@@ -672,19 +741,24 @@ function createBuludThemeCss(
   const badgeGeometry = entries.filter(([property]) =>
     BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
   );
+  const checkboxGeometry = entries.filter(([property]) =>
+    BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
+  );
   const lightModeVariables = entries.filter(
-    ([property]) => !BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
+    ([property]) =>
+      !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
+      !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations(badgeGeometry)}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
 }
 
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
  * document root during Angular environment initialization. Color variables
  * are scoped out while the root is in dark mode so the explicitly imported
- * dark theme can take precedence over global light-mode overrides; badge
- * geometry remains available because it is not theme-mode specific.
+ * dark theme can take precedence over global light-mode overrides; badge and
+ * checkbox geometry remain available because they are not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -731,6 +805,28 @@ export function provideBuludTheme(
     ['focusOffset', '--bulud-badge-focus-offset'],
   ] as const) {
     if (config.badge?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of [
+    ['background', '--bulud-checkbox-background'],
+    ['backgroundHover', '--bulud-checkbox-background-hover'],
+    ['border', '--bulud-checkbox-border'],
+    ['borderWidth', '--bulud-checkbox-border-width'],
+    ['checkedBackground', '--bulud-checkbox-checked-background'],
+    ['checkedForeground', '--bulud-checkbox-checked-foreground'],
+    ['foreground', '--bulud-checkbox-foreground'],
+    ['focus', '--bulud-checkbox-focus'],
+    ['focusWidth', '--bulud-checkbox-focus-width'],
+    ['focusOffset', '--bulud-checkbox-focus-offset'],
+    ['disabledOpacity', '--bulud-checkbox-disabled-opacity'],
+    ['radius', '--bulud-checkbox-radius'],
+    ['size', '--bulud-checkbox-size'],
+    ['gap', '--bulud-checkbox-gap'],
+    ['labelLineHeight', '--bulud-checkbox-label-line-height'],
+  ] as const) {
+    if (config.checkbox?.[field] === undefined) {
       delete variables[variable];
     }
   }
