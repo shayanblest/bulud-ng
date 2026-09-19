@@ -27,12 +27,18 @@ test('covers disabled, indeterminate, required, dark theme and instance override
 }) => {
   const section = page.locator('#checkbox');
   const checkbox = section.getByRole('checkbox', { name: 'Accept terms' });
+  const indeterminateToggle = section
+    .locator('label')
+    .filter({ hasText: 'Indeterminate' })
+    .locator('input');
 
-  await section.getByText('Indeterminate', { exact: true }).click();
+  await indeterminateToggle.click();
+  await expect(indeterminateToggle).toBeChecked();
   await expect(checkbox).toHaveJSProperty('indeterminate', true);
-  await checkbox.click();
+  await checkbox.press('Space');
   await expect(checkbox).toBeChecked();
   await expect(checkbox).toHaveJSProperty('indeterminate', false);
+  await expect(indeterminateToggle).not.toBeChecked();
   await section.getByText('Disabled', { exact: true }).click();
   await expect(checkbox).toBeDisabled();
   await checkbox.click({ force: true });

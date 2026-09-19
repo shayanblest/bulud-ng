@@ -169,13 +169,15 @@ export interface BuludTheme {
   readonly badge: BuludBadgeTheme;
   readonly tabs: BuludTabsTheme;
   readonly accordion: BuludAccordionTheme;
-  readonly checkbox: BuludCheckboxTheme;
+  /** Optional for compatibility with legacy consumer theme objects. */
+  readonly checkbox?: BuludCheckboxTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
-export interface ResolvedBuludTheme extends BuludTheme {
+export interface ResolvedBuludTheme extends Omit<BuludTheme, 'checkbox'> {
   readonly button: Required<BuludButtonTheme>;
   readonly badge: Required<BuludBadgeTheme>;
+  readonly checkbox: BuludCheckboxTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -233,6 +235,11 @@ const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
   '--bulud-badge-dismiss-icon-size',
   '--bulud-badge-focus-width',
   '--bulud-badge-focus-offset',
+]);
+const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
+  '--bulud-checkbox-disabled-opacity',
+  '--bulud-checkbox-radius',
+  '--bulud-checkbox-size',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -557,7 +564,7 @@ export function resolveBuludTheme(
       ...config.accordion,
     },
     checkbox: {
-      ...BULUD_DEFAULT_THEME.checkbox,
+      ...RESOLVED_DEFAULT_THEME.checkbox,
       ...config.checkbox,
     },
   };
@@ -714,19 +721,24 @@ function createBuludThemeCss(
   const badgeGeometry = entries.filter(([property]) =>
     BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
   );
+  const checkboxGeometry = entries.filter(([property]) =>
+    BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
+  );
   const lightModeVariables = entries.filter(
-    ([property]) => !BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
+    ([property]) =>
+      !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
+      !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations(badgeGeometry)}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
 }
 
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
  * document root during Angular environment initialization. Color variables
  * are scoped out while the root is in dark mode so the explicitly imported
- * dark theme can take precedence over global light-mode overrides; badge
- * geometry remains available because it is not theme-mode specific.
+ * dark theme can take precedence over global light-mode overrides; badge and
+ * checkbox geometry remain available because they are not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -773,6 +785,23 @@ export function provideBuludTheme(
     ['focusOffset', '--bulud-badge-focus-offset'],
   ] as const) {
     if (config.badge?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of [
+    ['background', '--bulud-checkbox-background'],
+    ['backgroundHover', '--bulud-checkbox-background-hover'],
+    ['border', '--bulud-checkbox-border'],
+    ['checkedBackground', '--bulud-checkbox-checked-background'],
+    ['checkedForeground', '--bulud-checkbox-checked-foreground'],
+    ['foreground', '--bulud-checkbox-foreground'],
+    ['focus', '--bulud-checkbox-focus'],
+    ['disabledOpacity', '--bulud-checkbox-disabled-opacity'],
+    ['radius', '--bulud-checkbox-radius'],
+    ['size', '--bulud-checkbox-size'],
+  ] as const) {
+    if (config.checkbox?.[field] === undefined) {
       delete variables[variable];
     }
   }

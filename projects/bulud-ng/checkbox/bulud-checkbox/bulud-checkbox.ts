@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   forwardRef,
   inject,
@@ -18,6 +19,8 @@ import {
   ValidationErrors,
   Validator,
 } from '@angular/forms';
+
+let nextCheckboxId = 0;
 
 /**
  * A native checkbox form control with projected label content.
@@ -42,6 +45,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'bulud-checkbox-host',
+    '[attr.id]': 'null',
     '[class.bulud-checkbox-host--disabled]': 'isDisabled()',
     '[class.bulud-checkbox-host--invalid]': 'isInvalid()',
   },
@@ -51,6 +55,7 @@ import {
 export class BuludCheckbox implements ControlValueAccessor, Validator {
   private readonly injector = inject(Injector);
   private readonly formDisabled = signal(false);
+  private readonly generatedId = `bulud-checkbox-${nextCheckboxId++}`;
   private onChange: (value: boolean) => void = () => {};
   private onTouched: () => void = () => {};
   private onValidatorChange: () => void = () => {};
@@ -65,8 +70,8 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
   /** Current checked value. Use `[(checked)]` for controlled component state. */
   readonly checked = model(false);
 
-  /** Displays the native mixed state until native activation clears it. */
-  readonly indeterminate = input(false, { transform: booleanAttribute });
+  /** Native mixed state; two-way binding synchronizes native activation. */
+  readonly indeterminate = model(false);
 
   /** Prevents interaction with the checkbox. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -79,6 +84,7 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
 
   /** Optional native id for external labels and automated testing. */
   readonly id = input<string | null>(null);
+  protected readonly inputId = computed(() => this.id() ?? this.generatedId);
 
   /** Optional accessible name when projected content is not the label. */
   readonly ariaLabel = input<string | null>(null, { alias: 'aria-label' });
@@ -104,6 +110,7 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
       return;
     }
 
+    this.indeterminate.set(false);
     this.checked.set(input.checked);
     this.onChange(input.checked);
   }

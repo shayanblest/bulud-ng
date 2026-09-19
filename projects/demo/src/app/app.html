@@ -378,7 +378,7 @@
           <div class="flex flex-wrap items-center gap-5">
             <bulud-checkbox
               [checked]="checkboxAccepted()"
-              [indeterminate]="checkboxIndeterminate()"
+              [(indeterminate)]="checkboxIndeterminate"
               [disabled]="checkboxDisabled()"
               [invalid]="!checkboxAccepted()"
               required

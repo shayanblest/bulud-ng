@@ -17,13 +17,14 @@ import { BuludCheckbox } from './bulud-checkbox';
       id="terms"
       [aria-label]="ariaLabel()"
       [disabled]="disabled()"
-      [indeterminate]="indeterminate()"
+      [(indeterminate)]="indeterminate"
       [invalid]="explicitInvalid()"
       [required]="required()"
       [formControl]="control"
     >
       Accept terms
     </bulud-checkbox>
+    <label for="terms" id="external-label">External label</label>
   `,
 })
 class TestHost {
@@ -67,6 +68,25 @@ describe('BuludCheckbox', () => {
     expect(label?.textContent).toContain('Accept terms');
     expect(input.required).toBeTrue();
     expect(input.getAttribute('aria-label')).toBeNull();
+    expect(getHost().getAttribute('id')).toBeNull();
+  });
+
+  it('forwards the requested id only to the native input for external labels', async () => {
+    const input = getInput();
+    const externalLabel = fixture.nativeElement.querySelector(
+      '#external-label',
+    ) as HTMLLabelElement;
+    let changes = 0;
+    fixture.componentInstance.control.valueChanges.subscribe(() => changes++);
+
+    expect(input.id).toBe('terms');
+    expect(externalLabel.htmlFor).toBe('terms');
+
+    externalLabel.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.control.value).toBeTrue();
+    expect(changes).toBe(1);
   });
 
   it('toggles exactly once through native input and label activation', async () => {
@@ -125,16 +145,22 @@ describe('BuludCheckbox', () => {
     expect(state.control.errors).toEqual({ required: true });
   });
 
-  it('lets native activation clear the current indeterminate state', async () => {
+  it('synchronizes indeterminate state after native activation', async () => {
     const state = fixture.componentInstance;
     state.indeterminate.set(true);
     await fixture.whenStable();
 
     const input = getInput();
+    let checkedChanges = 0;
+    fixture.componentInstance.control.valueChanges.subscribe(
+      () => checkedChanges++,
+    );
     input.click();
     await fixture.whenStable();
 
     expect(input.indeterminate).toBeFalse();
+    expect(state.indeterminate()).toBeFalse();
+    expect(checkedChanges).toBe(1);
   });
 
   it('does not call the Forms change callback from writeValue', async () => {

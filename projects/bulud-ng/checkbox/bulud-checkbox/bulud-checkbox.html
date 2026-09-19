@@ -1,8 +1,8 @@
-<label class="bulud-checkbox">
+<span class="bulud-checkbox">
   <input
     class="bulud-checkbox__input"
     type="checkbox"
-    [attr.id]="id()"
+    [id]="inputId()"
     [checked]="checked()"
     [indeterminate]="indeterminate()"
     [disabled]="isDisabled()"
@@ -12,5 +12,5 @@
     (change)="handleChange($event)"
     (blur)="handleBlur()"
   />
-  <span class="bulud-checkbox__label"><ng-content /></span>
-</label>
+  <label class="bulud-checkbox__label" [for]="inputId()"><ng-content /></label>
+</span>
