@@ -111,14 +111,21 @@ describe('Bulud theme', () => {
     expect(resolveBuludTheme().checkbox.focusWidth).toBe('3px');
     expect(resolveBuludTheme().checkbox.focusOffset).toBe('2px');
     expect(resolveBuludTheme().checkbox.gap).toBe('0.625rem');
+    expect(resolveBuludTheme().checkbox.borderWidth).toBe('1px');
 
     const variables = createBuludThemeVariables({
-      checkbox: { focusWidth: '4px', focusOffset: '6px', gap: '1rem' },
+      checkbox: {
+        focusWidth: '4px',
+        focusOffset: '6px',
+        gap: '1rem',
+        borderWidth: '3px',
+      },
     });
 
     expect(variables['--bulud-checkbox-focus-width']).toBe('4px');
     expect(variables['--bulud-checkbox-focus-offset']).toBe('6px');
     expect(variables['--bulud-checkbox-gap']).toBe('1rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('3px');
   });
 
   it('provides concrete defaults through the injection token factory', () => {
@@ -487,6 +494,7 @@ describe('Bulud theme', () => {
               focusWidth: '4px',
               focusOffset: '6px',
               gap: '1rem',
+              borderWidth: '3px',
             },
           }),
         ],
@@ -508,6 +516,7 @@ describe('Bulud theme', () => {
         expect(styleText).toContain('--bulud-checkbox-focus-width: 4px;');
         expect(styleText).toContain('--bulud-checkbox-focus-offset: 6px;');
         expect(styleText).toContain('--bulud-checkbox-gap: 1rem;');
+        expect(styleText).toContain('--bulud-checkbox-border-width: 3px;');
         expect(styleText).toContain(
           '--bulud-badge-font-size-medium: 1.125rem;',
         );
@@ -558,6 +567,11 @@ describe('Bulud theme', () => {
         expect(
           document.defaultView
             ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-border-width'),
+        ).toBe('3px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
             .getPropertyValue('--bulud-color-primary'),
         ).not.toBe('#7c3aed');
       } finally {
@@ -602,6 +616,9 @@ describe('Bulud theme', () => {
         document.head.querySelector('style[data-bulud-theme]')?.textContent,
       ).not.toContain('--bulud-checkbox-gap:');
       expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-border-width:');
+      expect(
         document.defaultView
           ?.getComputedStyle(root)
           .getPropertyValue('--bulud-checkbox-size'),
@@ -619,11 +636,12 @@ describe('Bulud theme', () => {
 
   it('emits explicitly configured checkbox variables with provider precedence', () => {
     const variables = createBuludThemeVariables({
-      checkbox: { size: '2rem', gap: '1rem' },
+      checkbox: { size: '2rem', gap: '1rem', borderWidth: '3px' },
     });
 
     expect(variables['--bulud-checkbox-size']).toBe('2rem');
     expect(variables['--bulud-checkbox-gap']).toBe('1rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('3px');
     expect(createBuludThemeVariables()['--bulud-checkbox-size']).toBe(
       resolveBuludTheme().checkbox.size,
     );

@@ -15,7 +15,8 @@
 .bulud-checkbox__input {
   appearance: none;
   background: var(--bulud-checkbox-background, #ffffff);
-  border: 1px solid var(--bulud-checkbox-border, #cbd5e1);
+  border: var(--bulud-checkbox-border-width, 1px) solid
+    var(--bulud-checkbox-border, #cbd5e1);
   border-radius: var(--bulud-checkbox-radius, 0.25rem);
   block-size: var(--bulud-checkbox-size, 1.25rem);
   color: var(--bulud-checkbox-checked-foreground, #ffffff);
@@ -75,8 +76,7 @@
   opacity: var(--bulud-checkbox-disabled-opacity, 0.55);
 }
 
-.bulud-checkbox-host--invalid
-  .bulud-checkbox__input:not(:checked):not(:indeterminate) {
+:host(.bulud-checkbox-host--invalid) .bulud-checkbox__input {
   border-color: var(--bulud-color-danger, #dc2626);
 }
 

@@ -197,12 +197,14 @@ describe('BuludCheckbox', () => {
     expect(variables['--bulud-checkbox-focus-width']).toBe('3px');
     expect(variables['--bulud-checkbox-focus-offset']).toBe('2px');
     expect(variables['--bulud-checkbox-gap']).toBe('0.625rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('1px');
 
     getHost().style.setProperty(
       '--bulud-checkbox-checked-background',
       '#234567',
     );
     getHost().style.setProperty('--bulud-checkbox-gap', '1rem');
+    getHost().style.setProperty('--bulud-checkbox-border-width', '3px');
     expect(
       getComputedStyle(getHost()).getPropertyValue(
         '--bulud-checkbox-checked-background',
@@ -211,6 +213,27 @@ describe('BuludCheckbox', () => {
     expect(
       getComputedStyle(getHost()).getPropertyValue('--bulud-checkbox-gap'),
     ).toContain('1rem');
+    expect(
+      getComputedStyle(getHost()).getPropertyValue(
+        '--bulud-checkbox-border-width',
+      ),
+    ).toContain('3px');
+  });
+
+  it('keeps invalid styling visible for all checkbox states', async () => {
+    const state = fixture.componentInstance;
+    const input = getInput();
+    state.explicitInvalid.set(true);
+    await fixture.whenStable();
+
+    for (const mode of ['unchecked', 'checked', 'indeterminate'] as const) {
+      state.control.setValue(mode === 'checked');
+      state.indeterminate.set(mode === 'indeterminate');
+      await fixture.whenStable();
+
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      expect(getComputedStyle(input).borderTopColor).toBe('rgb(220, 38, 38)');
+    }
   });
 
   it('scales checked and indeterminate glyph geometry with checkbox size', async () => {

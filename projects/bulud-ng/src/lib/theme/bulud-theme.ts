@@ -151,6 +151,7 @@ export interface BuludCheckboxTheme {
   readonly background: string;
   readonly backgroundHover: string;
   readonly border: string;
+  readonly borderWidth: string;
   readonly checkedBackground: string;
   readonly checkedForeground: string;
   readonly foreground: string;
@@ -240,6 +241,7 @@ const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
   '--bulud-badge-focus-offset',
 ]);
 const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
+  '--bulud-checkbox-border-width',
   '--bulud-checkbox-disabled-opacity',
   '--bulud-checkbox-focus-width',
   '--bulud-checkbox-focus-offset',
@@ -392,6 +394,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     background: '#ffffff',
     backgroundHover: '#f8fafc',
     border: '#cbd5e1',
+    borderWidth: '1px',
     checkedBackground: '#2563eb',
     checkedForeground: '#ffffff',
     foreground: '#0f172a',
@@ -710,6 +713,7 @@ export function createBuludThemeVariables(
     '--bulud-checkbox-background': theme.checkbox.background,
     '--bulud-checkbox-background-hover': theme.checkbox.backgroundHover,
     '--bulud-checkbox-border': theme.checkbox.border,
+    '--bulud-checkbox-border-width': theme.checkbox.borderWidth,
     '--bulud-checkbox-checked-background': theme.checkbox.checkedBackground,
     '--bulud-checkbox-checked-foreground': theme.checkbox.checkedForeground,
     '--bulud-checkbox-foreground': theme.checkbox.foreground,
@@ -805,6 +809,7 @@ export function provideBuludTheme(
     ['background', '--bulud-checkbox-background'],
     ['backgroundHover', '--bulud-checkbox-background-hover'],
     ['border', '--bulud-checkbox-border'],
+    ['borderWidth', '--bulud-checkbox-border-width'],
     ['checkedBackground', '--bulud-checkbox-checked-background'],
     ['checkedForeground', '--bulud-checkbox-checked-foreground'],
     ['foreground', '--bulud-checkbox-foreground'],

@@ -11,6 +11,8 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   const checkbox = section.getByRole('checkbox', { name: 'Accept terms' });
 
   await expect(checkbox).toHaveAttribute('aria-invalid', 'true');
+  await checkbox.hover();
+  await expect(checkbox).toHaveCSS('border-top-color', 'rgb(225, 29, 72)');
   await checkbox.focus();
   await page.keyboard.press('Space');
   await expect(checkbox).toBeChecked();
@@ -73,6 +75,7 @@ test('covers disabled, indeterminate, required, dark theme and instance override
   await expect(checkbox).toHaveCSS('background-color', 'rgb(96, 165, 250)');
   const instance = section.getByRole('checkbox', { name: 'Instance theme' });
   await expect(instance).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  await expect(instance).toHaveCSS('border-top-width', '3px');
   await expect
     .poll(() =>
       instance.evaluate((element) =>
