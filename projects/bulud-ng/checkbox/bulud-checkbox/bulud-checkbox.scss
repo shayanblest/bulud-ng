@@ -81,5 +81,5 @@
 }
 
 .bulud-checkbox__label {
-  line-height: 1.5;
+  line-height: var(--bulud-checkbox-label-line-height, 1.5);
 }

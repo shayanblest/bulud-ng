@@ -112,6 +112,7 @@ describe('Bulud theme', () => {
     expect(resolveBuludTheme().checkbox.focusOffset).toBe('2px');
     expect(resolveBuludTheme().checkbox.gap).toBe('0.625rem');
     expect(resolveBuludTheme().checkbox.borderWidth).toBe('1px');
+    expect(resolveBuludTheme().checkbox.labelLineHeight).toBe('1.5');
 
     const variables = createBuludThemeVariables({
       checkbox: {
@@ -119,6 +120,7 @@ describe('Bulud theme', () => {
         focusOffset: '6px',
         gap: '1rem',
         borderWidth: '3px',
+        labelLineHeight: '1.8',
       },
     });
 
@@ -126,6 +128,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-checkbox-focus-offset']).toBe('6px');
     expect(variables['--bulud-checkbox-gap']).toBe('1rem');
     expect(variables['--bulud-checkbox-border-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-label-line-height']).toBe('1.8');
   });
 
   it('provides concrete defaults through the injection token factory', () => {
@@ -495,6 +498,7 @@ describe('Bulud theme', () => {
               focusOffset: '6px',
               gap: '1rem',
               borderWidth: '3px',
+              labelLineHeight: '1.8',
             },
           }),
         ],
@@ -517,6 +521,7 @@ describe('Bulud theme', () => {
         expect(styleText).toContain('--bulud-checkbox-focus-offset: 6px;');
         expect(styleText).toContain('--bulud-checkbox-gap: 1rem;');
         expect(styleText).toContain('--bulud-checkbox-border-width: 3px;');
+        expect(styleText).toContain('--bulud-checkbox-label-line-height: 1.8;');
         expect(styleText).toContain(
           '--bulud-badge-font-size-medium: 1.125rem;',
         );
@@ -572,6 +577,11 @@ describe('Bulud theme', () => {
         expect(
           document.defaultView
             ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-label-line-height'),
+        ).toBe('1.8');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
             .getPropertyValue('--bulud-color-primary'),
         ).not.toBe('#7c3aed');
       } finally {
@@ -599,6 +609,7 @@ describe('Bulud theme', () => {
     );
     const originalStyleText = existingStyle?.textContent ?? null;
     root.style.setProperty('--bulud-checkbox-size', '3rem');
+    root.style.setProperty('--bulud-checkbox-label-line-height', '2');
 
     const environmentInjector = createEnvironmentInjector(
       [provideBuludTheme()],
@@ -619,12 +630,21 @@ describe('Bulud theme', () => {
         document.head.querySelector('style[data-bulud-theme]')?.textContent,
       ).not.toContain('--bulud-checkbox-border-width:');
       expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-label-line-height:');
+      expect(
         document.defaultView
           ?.getComputedStyle(root)
           .getPropertyValue('--bulud-checkbox-size'),
       ).toBe('3rem');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-checkbox-label-line-height'),
+      ).toBe('2');
     } finally {
       root.style.removeProperty('--bulud-checkbox-size');
+      root.style.removeProperty('--bulud-checkbox-label-line-height');
       environmentInjector.destroy();
       if (existingStyle) {
         existingStyle.textContent = originalStyleText;
@@ -636,12 +656,18 @@ describe('Bulud theme', () => {
 
   it('emits explicitly configured checkbox variables with provider precedence', () => {
     const variables = createBuludThemeVariables({
-      checkbox: { size: '2rem', gap: '1rem', borderWidth: '3px' },
+      checkbox: {
+        size: '2rem',
+        gap: '1rem',
+        borderWidth: '3px',
+        labelLineHeight: '1.8',
+      },
     });
 
     expect(variables['--bulud-checkbox-size']).toBe('2rem');
     expect(variables['--bulud-checkbox-gap']).toBe('1rem');
     expect(variables['--bulud-checkbox-border-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-label-line-height']).toBe('1.8');
     expect(createBuludThemeVariables()['--bulud-checkbox-size']).toBe(
       resolveBuludTheme().checkbox.size,
     );

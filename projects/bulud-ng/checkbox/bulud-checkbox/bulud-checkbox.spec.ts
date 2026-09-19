@@ -232,6 +232,7 @@ describe('BuludCheckbox', () => {
     );
     getHost().style.setProperty('--bulud-checkbox-gap', '1rem');
     getHost().style.setProperty('--bulud-checkbox-border-width', '3px');
+    getHost().style.setProperty('--bulud-checkbox-label-line-height', '2');
     expect(
       getComputedStyle(getHost()).getPropertyValue(
         '--bulud-checkbox-checked-background',
@@ -245,6 +246,11 @@ describe('BuludCheckbox', () => {
         '--bulud-checkbox-border-width',
       ),
     ).toContain('3px');
+    expect(
+      getComputedStyle(getHost()).getPropertyValue(
+        '--bulud-checkbox-label-line-height',
+      ),
+    ).toContain('2');
   });
 
   it('keeps invalid styling visible for all checkbox states', async () => {

@@ -162,6 +162,7 @@ export interface BuludCheckboxTheme {
   readonly radius: string;
   readonly size: string;
   readonly gap: string;
+  readonly labelLineHeight: string;
 }
 
 /** Consumer theme; omitted optional tokens use library defaults. */
@@ -248,6 +249,7 @@ const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
   '--bulud-checkbox-gap',
   '--bulud-checkbox-radius',
   '--bulud-checkbox-size',
+  '--bulud-checkbox-label-line-height',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -405,6 +407,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     radius: '0.25rem',
     size: '1.25rem',
     gap: '0.625rem',
+    labelLineHeight: '1.5',
   },
 };
 
@@ -724,6 +727,7 @@ export function createBuludThemeVariables(
     '--bulud-checkbox-radius': theme.checkbox.radius,
     '--bulud-checkbox-size': theme.checkbox.size,
     '--bulud-checkbox-gap': theme.checkbox.gap,
+    '--bulud-checkbox-label-line-height': theme.checkbox.labelLineHeight,
   };
 }
 
@@ -820,6 +824,7 @@ export function provideBuludTheme(
     ['radius', '--bulud-checkbox-radius'],
     ['size', '--bulud-checkbox-size'],
     ['gap', '--bulud-checkbox-gap'],
+    ['labelLineHeight', '--bulud-checkbox-label-line-height'],
   ] as const) {
     if (config.checkbox?.[field] === undefined) {
       delete variables[variable];

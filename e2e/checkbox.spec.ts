@@ -8,6 +8,22 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   page,
 }) => {
   const section = page.locator('#checkbox');
+  const defaultCheckbox = section.locator('#checkbox-default');
+  await expect(defaultCheckbox).toHaveRole('checkbox', {
+    name: 'Default unchecked',
+  });
+  await expect(defaultCheckbox).not.toBeChecked();
+  await expect(defaultCheckbox).not.toHaveAttribute('aria-invalid', 'true');
+
+  const emptyCheckbox = section.locator('#checkbox-empty');
+  await expect(emptyCheckbox).toHaveRole('checkbox', { name: 'Empty label' });
+  await expect(emptyCheckbox).toHaveAttribute('aria-label', 'Empty label');
+  await expect(emptyCheckbox).not.toBeChecked();
+  const emptyHost = page.locator('bulud-checkbox').filter({
+    has: page.locator('#checkbox-empty'),
+  });
+  await expect(emptyHost.locator('.bulud-checkbox__label')).toHaveText('');
+
   const checkbox = section.getByRole('checkbox', { name: 'Accept terms' });
 
   await expect(checkbox).toHaveAttribute('aria-invalid', 'true');

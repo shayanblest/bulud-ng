@@ -56,6 +56,7 @@
   --bulud-checkbox-radius: 0.25rem;
   --bulud-checkbox-size: 1.25rem;
   --bulud-checkbox-gap: 0.625rem;
+  --bulud-checkbox-label-line-height: 1.5;
 }
 
 :root.dark,
