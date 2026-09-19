@@ -155,6 +155,8 @@ export interface BuludCheckboxTheme {
   readonly checkedForeground: string;
   readonly foreground: string;
   readonly focus: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
   readonly disabledOpacity: string;
   readonly radius: string;
   readonly size: string;
@@ -238,6 +240,8 @@ const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
 ]);
 const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
   '--bulud-checkbox-disabled-opacity',
+  '--bulud-checkbox-focus-width',
+  '--bulud-checkbox-focus-offset',
   '--bulud-checkbox-radius',
   '--bulud-checkbox-size',
 ]);
@@ -390,6 +394,8 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     checkedForeground: '#ffffff',
     foreground: '#0f172a',
     focus: '#93c5fd',
+    focusWidth: '3px',
+    focusOffset: '2px',
     disabledOpacity: '0.55',
     radius: '0.25rem',
     size: '1.25rem',
@@ -705,6 +711,8 @@ export function createBuludThemeVariables(
     '--bulud-checkbox-checked-foreground': theme.checkbox.checkedForeground,
     '--bulud-checkbox-foreground': theme.checkbox.foreground,
     '--bulud-checkbox-focus': theme.checkbox.focus,
+    '--bulud-checkbox-focus-width': theme.checkbox.focusWidth,
+    '--bulud-checkbox-focus-offset': theme.checkbox.focusOffset,
     '--bulud-checkbox-disabled-opacity': theme.checkbox.disabledOpacity,
     '--bulud-checkbox-radius': theme.checkbox.radius,
     '--bulud-checkbox-size': theme.checkbox.size,
@@ -797,6 +805,8 @@ export function provideBuludTheme(
     ['checkedForeground', '--bulud-checkbox-checked-foreground'],
     ['foreground', '--bulud-checkbox-foreground'],
     ['focus', '--bulud-checkbox-focus'],
+    ['focusWidth', '--bulud-checkbox-focus-width'],
+    ['focusOffset', '--bulud-checkbox-focus-offset'],
     ['disabledOpacity', '--bulud-checkbox-disabled-opacity'],
     ['radius', '--bulud-checkbox-radius'],
     ['size', '--bulud-checkbox-size'],

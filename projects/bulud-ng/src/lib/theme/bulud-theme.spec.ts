@@ -107,6 +107,18 @@ describe('Bulud theme', () => {
     );
   });
 
+  it('resolves checkbox focus geometry defaults and configured values', () => {
+    expect(resolveBuludTheme().checkbox.focusWidth).toBe('3px');
+    expect(resolveBuludTheme().checkbox.focusOffset).toBe('2px');
+
+    const variables = createBuludThemeVariables({
+      checkbox: { focusWidth: '4px', focusOffset: '6px' },
+    });
+
+    expect(variables['--bulud-checkbox-focus-width']).toBe('4px');
+    expect(variables['--bulud-checkbox-focus-offset']).toBe('6px');
+  });
+
   it('provides concrete defaults through the injection token factory', () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
@@ -470,6 +482,8 @@ describe('Bulud theme', () => {
               size: '2rem',
               radius: '0.75rem',
               disabledOpacity: '0.3',
+              focusWidth: '4px',
+              focusOffset: '6px',
             },
           }),
         ],
@@ -488,6 +502,8 @@ describe('Bulud theme', () => {
         expect(styleText).toContain('--bulud-checkbox-size: 2rem;');
         expect(styleText).toContain('--bulud-checkbox-radius: 0.75rem;');
         expect(styleText).toContain('--bulud-checkbox-disabled-opacity: 0.3;');
+        expect(styleText).toContain('--bulud-checkbox-focus-width: 4px;');
+        expect(styleText).toContain('--bulud-checkbox-focus-offset: 6px;');
         expect(styleText).toContain(
           '--bulud-badge-font-size-medium: 1.125rem;',
         );
@@ -520,6 +536,16 @@ describe('Bulud theme', () => {
             ?.getComputedStyle(root)
             .getPropertyValue('--bulud-checkbox-disabled-opacity'),
         ).toBe('0.3');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-focus-width'),
+        ).toBe('4px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-focus-offset'),
+        ).toBe('6px');
         expect(
           document.defaultView
             ?.getComputedStyle(root)
@@ -560,6 +586,9 @@ describe('Bulud theme', () => {
       expect(
         document.head.querySelector('style[data-bulud-theme]')?.textContent,
       ).not.toContain('--bulud-checkbox-size:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-focus-width:');
       expect(
         document.defaultView
           ?.getComputedStyle(root)

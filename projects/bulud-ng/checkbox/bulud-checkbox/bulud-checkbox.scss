@@ -26,7 +26,7 @@
   position: relative;
 }
 
-.bulud-checkbox__input:hover:not(:disabled) {
+.bulud-checkbox__input:not(:checked):not(:indeterminate):hover:not(:disabled) {
   background: var(--bulud-checkbox-background-hover, #f8fafc);
 }
 
@@ -59,8 +59,9 @@
 }
 
 .bulud-checkbox__input:focus-visible {
-  outline: 3px solid var(--bulud-checkbox-focus, #93c5fd);
-  outline-offset: 2px;
+  outline: var(--bulud-checkbox-focus-width, 3px) solid
+    var(--bulud-checkbox-focus, #93c5fd);
+  outline-offset: var(--bulud-checkbox-focus-offset, 2px);
 }
 
 .bulud-checkbox-host--disabled .bulud-checkbox {

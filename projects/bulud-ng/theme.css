@@ -49,6 +49,8 @@
   --bulud-checkbox-checked-foreground: #ffffff;
   --bulud-checkbox-foreground: #0f172a;
   --bulud-checkbox-focus: #93c5fd;
+  --bulud-checkbox-focus-width: 3px;
+  --bulud-checkbox-focus-offset: 2px;
   --bulud-checkbox-disabled-opacity: 0.55;
   --bulud-checkbox-radius: 0.25rem;
   --bulud-checkbox-size: 1.25rem;

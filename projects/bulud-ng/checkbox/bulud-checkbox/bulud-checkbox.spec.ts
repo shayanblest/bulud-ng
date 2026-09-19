@@ -194,6 +194,8 @@ describe('BuludCheckbox', () => {
       checkbox: { checkedBackground: '#123456' },
     });
     expect(variables['--bulud-checkbox-checked-background']).toBe('#123456');
+    expect(variables['--bulud-checkbox-focus-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-focus-offset']).toBe('2px');
 
     getHost().style.setProperty(
       '--bulud-checkbox-checked-background',

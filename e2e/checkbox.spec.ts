@@ -20,6 +20,11 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   await section.getByText('Accept terms', { exact: true }).click();
   await expect(checkbox).toBeChecked();
   await expect(section.locator('#checkbox-state')).toHaveText('Accepted');
+  await checkbox.hover();
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await checkbox.press('Space');
+  await expect(checkbox).not.toBeChecked();
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(248, 250, 252)');
 });
 
 test('covers disabled, indeterminate, required, dark theme and instance overrides', async ({
@@ -35,6 +40,8 @@ test('covers disabled, indeterminate, required, dark theme and instance override
   await indeterminateToggle.click();
   await expect(indeterminateToggle).toBeChecked();
   await expect(checkbox).toHaveJSProperty('indeterminate', true);
+  await checkbox.hover();
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(37, 99, 235)');
   await checkbox.press('Space');
   await expect(checkbox).toBeChecked();
   await expect(checkbox).toHaveJSProperty('indeterminate', false);
