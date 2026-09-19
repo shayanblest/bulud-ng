@@ -146,6 +146,20 @@ export interface BuludAccordionTheme {
   readonly radius: string;
 }
 
+/** Theme tokens for checkbox controls. */
+export interface BuludCheckboxTheme {
+  readonly background: string;
+  readonly backgroundHover: string;
+  readonly border: string;
+  readonly checkedBackground: string;
+  readonly checkedForeground: string;
+  readonly foreground: string;
+  readonly focus: string;
+  readonly disabledOpacity: string;
+  readonly radius: string;
+  readonly size: string;
+}
+
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -155,6 +169,7 @@ export interface BuludTheme {
   readonly badge: BuludBadgeTheme;
   readonly tabs: BuludTabsTheme;
   readonly accordion: BuludAccordionTheme;
+  readonly checkbox: BuludCheckboxTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
@@ -189,6 +204,7 @@ export interface BuludThemeConfig {
   };
   readonly tabs?: Partial<BuludTabsTheme>;
   readonly accordion?: Partial<BuludAccordionTheme>;
+  readonly checkbox?: Partial<BuludCheckboxTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -359,6 +375,18 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     disabledOpacity: '0.55',
     radius: '0.5rem',
   },
+  checkbox: {
+    background: '#ffffff',
+    backgroundHover: '#f8fafc',
+    border: '#cbd5e1',
+    checkedBackground: '#2563eb',
+    checkedForeground: '#ffffff',
+    foreground: '#0f172a',
+    focus: '#93c5fd',
+    disabledOpacity: '0.55',
+    radius: '0.25rem',
+    size: '1.25rem',
+  },
 };
 
 /**
@@ -528,6 +556,10 @@ export function resolveBuludTheme(
       ...BULUD_DEFAULT_THEME.accordion,
       ...config.accordion,
     },
+    checkbox: {
+      ...BULUD_DEFAULT_THEME.checkbox,
+      ...config.checkbox,
+    },
   };
 }
 
@@ -659,6 +691,16 @@ export function createBuludThemeVariables(
     '--bulud-accordion-focus': theme.accordion.focus,
     '--bulud-accordion-disabled-opacity': theme.accordion.disabledOpacity,
     '--bulud-accordion-radius': theme.accordion.radius,
+    '--bulud-checkbox-background': theme.checkbox.background,
+    '--bulud-checkbox-background-hover': theme.checkbox.backgroundHover,
+    '--bulud-checkbox-border': theme.checkbox.border,
+    '--bulud-checkbox-checked-background': theme.checkbox.checkedBackground,
+    '--bulud-checkbox-checked-foreground': theme.checkbox.checkedForeground,
+    '--bulud-checkbox-foreground': theme.checkbox.foreground,
+    '--bulud-checkbox-focus': theme.checkbox.focus,
+    '--bulud-checkbox-disabled-opacity': theme.checkbox.disabledOpacity,
+    '--bulud-checkbox-radius': theme.checkbox.radius,
+    '--bulud-checkbox-size': theme.checkbox.size,
   };
 }
 

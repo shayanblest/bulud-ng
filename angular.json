@@ -33,7 +33,8 @@
               "../resize-observer/**/*.spec.ts",
               "../clickoutside/**/*.spec.ts",
               "../tabs/**/*.spec.ts",
-              "../accordion/**/*.spec.ts"
+              "../accordion/**/*.spec.ts",
+              "../checkbox/**/*.spec.ts"
             ]
           }
         }

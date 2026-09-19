@@ -1,0 +1,16 @@
+<label class="bulud-checkbox">
+  <input
+    class="bulud-checkbox__input"
+    type="checkbox"
+    [attr.id]="id()"
+    [checked]="checked()"
+    [indeterminate]="indeterminate()"
+    [disabled]="isDisabled()"
+    [required]="required()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-invalid]="isInvalid() ? 'true' : null"
+    (change)="handleChange($event)"
+    (blur)="handleBlur()"
+  />
+  <span class="bulud-checkbox__label"><ng-content /></span>
+</label>

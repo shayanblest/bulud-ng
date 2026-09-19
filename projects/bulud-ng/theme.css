@@ -42,6 +42,16 @@
   --bulud-accordion-focus: #93c5fd;
   --bulud-accordion-disabled-opacity: 0.55;
   --bulud-accordion-radius: 0.5rem;
+  --bulud-checkbox-background: #ffffff;
+  --bulud-checkbox-background-hover: #f8fafc;
+  --bulud-checkbox-border: #cbd5e1;
+  --bulud-checkbox-checked-background: #2563eb;
+  --bulud-checkbox-checked-foreground: #ffffff;
+  --bulud-checkbox-foreground: #0f172a;
+  --bulud-checkbox-focus: #93c5fd;
+  --bulud-checkbox-disabled-opacity: 0.55;
+  --bulud-checkbox-radius: 0.25rem;
+  --bulud-checkbox-size: 1.25rem;
 }
 
 :where(.dark, [data-theme="dark"]) {
@@ -99,4 +109,11 @@
   --bulud-accordion-panel-background: #0f172a;
   --bulud-accordion-icon: #60a5fa;
   --bulud-accordion-focus: #bfdbfe;
+  --bulud-checkbox-background: #0f172a;
+  --bulud-checkbox-background-hover: #1e293b;
+  --bulud-checkbox-border: #475569;
+  --bulud-checkbox-checked-background: #60a5fa;
+  --bulud-checkbox-checked-foreground: #172554;
+  --bulud-checkbox-foreground: #f8fafc;
+  --bulud-checkbox-focus: #bfdbfe;
 }

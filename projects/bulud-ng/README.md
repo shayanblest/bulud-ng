@@ -29,6 +29,7 @@ its documented secondary entry point:
 | `bulud-ng/clickoutside`    | `BuludClickOutside` and related trigger types        |
 | `bulud-ng/tabs`            | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
 | `bulud-ng/accordion`       | `BuludAccordion` and `BuludAccordionItem`            |
+| `bulud-ng/checkbox`        | `BuludCheckbox`                                      |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -86,7 +87,7 @@ The provider resolves omitted values against `BULUD_DEFAULT_THEME` and writes
 the resulting `--bulud-*` custom properties to the document root. Components
 therefore inherit one application-wide theme without per-component providers.
 Theme configuration supports `colors`, `shape`, `button`, `dropdown`, `badge`,
-`tabs`, and `accordion` tokens. The precedence is instance custom property,
+`tabs`, `accordion`, and `checkbox` tokens. The precedence is instance custom property,
 component token, global provider configuration, then the library default.
 
 ## Accordion
@@ -271,6 +272,52 @@ focus leaves the dropdown.
 clear action and search field. The component exposes `valueChange` through its
 model binding; Angular Forms users should prefer `formControl`, `formControlName`,
 or `ngModel` when participating in form state.
+
+## Checkbox
+
+Import `BuludCheckbox` from the checkbox secondary entry point:
+
+```ts
+import { BuludCheckbox } from "bulud-ng/checkbox";
+```
+
+Use projected content as the label and bind the boolean value with Angular
+Forms or `[(checked)]`:
+
+```html
+<bulud-checkbox [(checked)]="accepted" required> Accept the terms </bulud-checkbox>
+```
+
+`BuludCheckbox` keeps a native checkbox as the focusable and interactive
+element. Space or projected-label activation toggles it once. `indeterminate`,
+`disabled`, `required`, `invalid`, `id`, and `aria-label` are typed inputs;
+`checkedChange` is emitted for controlled bindings. Native activation clears the
+current mixed state; set `indeterminate` again when the parent needs to reassert
+it. The native label supplies
+the accessible name when projected text is present. Provide `aria-label` (or
+an external label associated with `id`) when the projected content is not a
+meaningful name.
+
+The control implements `ControlValueAccessor` and `Validator`: user changes
+update the form value, blur marks it touched, `required` returns the standard
+`required` error, and a disabled Angular control disables the native input.
+Checkbox theme values use the shared CSS variables and follow the normal
+instance, component token, global provider, and library-default precedence.
+
+### Checkbox inputs
+
+| Input           | Type             | Default | Description                                   |
+| --------------- | ---------------- | ------- | --------------------------------------------- |
+| `checked`       | `boolean`        | `false` | Current checked value; supports `[(checked)]` |
+| `indeterminate` | `boolean`        | `false` | Displays the native mixed state               |
+| `disabled`      | `boolean`        | `false` | Prevents interaction                          |
+| `required`      | `boolean`        | `false` | Enables native and Forms required validation  |
+| `invalid`       | `boolean`        | `false` | Explicit invalid presentation                 |
+| `id`            | `string \| null` | `null`  | Native input id for external labels           |
+| `aria-label`    | `string \| null` | `null`  | Accessible name override                      |
+
+The native checkbox handles Space and label activation. Consumers should keep
+the projected label meaningful and provide `aria-label` when it is not.
 
 ## Tabs
 

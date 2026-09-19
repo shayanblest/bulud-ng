@@ -1,0 +1,78 @@
+:host {
+  color: var(--bulud-checkbox-foreground, #0f172a);
+  display: inline-block;
+}
+
+.bulud-checkbox {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.625rem;
+  min-block-size: var(--bulud-checkbox-size, 1.25rem);
+  user-select: none;
+}
+
+.bulud-checkbox__input {
+  appearance: none;
+  background: var(--bulud-checkbox-background, #ffffff);
+  border: 1px solid var(--bulud-checkbox-border, #cbd5e1);
+  border-radius: var(--bulud-checkbox-radius, 0.25rem);
+  block-size: var(--bulud-checkbox-size, 1.25rem);
+  color: var(--bulud-checkbox-checked-foreground, #ffffff);
+  cursor: inherit;
+  flex: 0 0 auto;
+  inline-size: var(--bulud-checkbox-size, 1.25rem);
+  margin: 0;
+  position: relative;
+}
+
+.bulud-checkbox__input:hover:not(:disabled) {
+  background: var(--bulud-checkbox-background-hover, #f8fafc);
+}
+
+.bulud-checkbox__input:checked,
+.bulud-checkbox__input:indeterminate {
+  background: var(--bulud-checkbox-checked-background, #2563eb);
+  border-color: var(--bulud-checkbox-checked-background, #2563eb);
+}
+
+.bulud-checkbox__input:checked::after {
+  border-block-end: 2px solid currentColor;
+  border-inline-end: 2px solid currentColor;
+  content: "";
+  height: 0.625rem;
+  inset: 0;
+  margin: auto;
+  position: absolute;
+  transform: rotate(45deg) translate(-0.0625rem, -0.0625rem);
+  width: 0.3125rem;
+}
+
+.bulud-checkbox__input:indeterminate::after {
+  background: currentColor;
+  content: "";
+  height: 2px;
+  inset: 0;
+  margin: auto;
+  position: absolute;
+  width: 0.625rem;
+}
+
+.bulud-checkbox__input:focus-visible {
+  outline: 3px solid var(--bulud-checkbox-focus, #93c5fd);
+  outline-offset: 2px;
+}
+
+.bulud-checkbox-host--disabled .bulud-checkbox {
+  cursor: not-allowed;
+  opacity: var(--bulud-checkbox-disabled-opacity, 0.55);
+}
+
+.bulud-checkbox-host--invalid
+  .bulud-checkbox__input:not(:checked):not(:indeterminate) {
+  border-color: var(--bulud-color-danger, #dc2626);
+}
+
+.bulud-checkbox__label {
+  line-height: 1.5;
+}
