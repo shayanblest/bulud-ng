@@ -22,7 +22,7 @@ import { BuludCheckbox } from './bulud-checkbox';
       [(indeterminate)]="indeterminate"
       [invalid]="explicitInvalid()"
       [required]="required()"
-      [formControl]="control"
+      [formControl]="boundControl()"
     >
       Accept terms
     </bulud-checkbox>
@@ -38,6 +38,7 @@ class TestHost {
   readonly explicitInvalid = signal(false);
   readonly required = signal(true);
   readonly control = new FormControl(false);
+  readonly boundControl = signal(this.control);
 }
 
 describe('BuludCheckbox', () => {
@@ -293,6 +294,40 @@ describe('BuludCheckbox', () => {
     await fixture.whenStable();
     expect(input.getAttribute('aria-invalid')).toBe('true');
     expect(getHost().classList).toContain('bulud-checkbox-host--invalid');
+  });
+
+  it('resubscribes to the current form control after replacement', async () => {
+    const state = fixture.componentInstance;
+    const oldControl = state.control;
+    const newControl = new FormControl(false);
+
+    oldControl.setErrors({ old: true });
+    oldControl.markAsTouched();
+    await fixture.whenStable();
+    expect(getInput().getAttribute('aria-invalid')).toBe('true');
+    expect(getHost().classList).toContain('bulud-checkbox-host--invalid');
+
+    state.boundControl.set(newControl);
+    await fixture.whenStable();
+    expect(getInput().getAttribute('aria-invalid')).toBeNull();
+    expect(getHost().classList).not.toContain('bulud-checkbox-host--invalid');
+
+    newControl.setErrors({ replacement: true });
+    newControl.markAsDirty();
+    await fixture.whenStable();
+    expect(getInput().getAttribute('aria-invalid')).toBe('true');
+    expect(getHost().classList).toContain('bulud-checkbox-host--invalid');
+
+    newControl.setErrors(null);
+    await fixture.whenStable();
+    expect(getInput().getAttribute('aria-invalid')).toBeNull();
+    expect(getHost().classList).not.toContain('bulud-checkbox-host--invalid');
+
+    oldControl.setErrors({ stale: true });
+    oldControl.markAsDirty();
+    await fixture.whenStable();
+    expect(getInput().getAttribute('aria-invalid')).toBeNull();
+    expect(getHost().classList).not.toContain('bulud-checkbox-host--invalid');
   });
 
   it('scales checked and indeterminate glyph geometry with checkbox size', async () => {

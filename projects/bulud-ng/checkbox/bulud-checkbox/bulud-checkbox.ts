@@ -1,6 +1,5 @@
 import {
   booleanAttribute,
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -11,9 +10,8 @@ import {
   input,
   model,
   signal,
-  Signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   ControlValueAccessor,
   NG_VALIDATORS,
@@ -22,6 +20,8 @@ import {
   ValidationErrors,
   Validator,
 } from '@angular/forms';
+import { defer, EMPTY } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 let nextCheckboxId = 0;
 
@@ -61,7 +61,18 @@ let nextCheckboxId = 0;
 export class BuludCheckbox implements ControlValueAccessor, Validator {
   private readonly injector = inject(Injector);
   private readonly formDisabled = signal(false);
-  private readonly formEvents = signal<Signal<unknown> | null>(null);
+  private readonly formBindingVersion = signal<number | null>(null);
+  private formBindingCount = 0;
+  private readonly formEvents = toSignal(
+    toObservable(this.formBindingVersion).pipe(
+      switchMap((version) =>
+        version === null
+          ? EMPTY
+          : defer(() => this.getFormControl()?.events ?? EMPTY),
+      ),
+    ),
+    { initialValue: null },
+  );
   private readonly generatedId = `bulud-checkbox-${nextCheckboxId++}`;
   private onChange: (value: boolean) => void = () => {};
   private onTouched: () => void = () => {};
@@ -71,18 +82,6 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
     effect(() => {
       this.required();
       this.onValidatorChange();
-    });
-
-    afterNextRender(() => {
-      const control = this.getFormControl();
-      if (control) {
-        this.formEvents.set(
-          toSignal(control.events, {
-            initialValue: null,
-            injector: this.injector,
-          }),
-        );
-      }
     });
   }
 
@@ -127,7 +126,7 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
   }
 
   protected isInvalid(): boolean {
-    this.formEvents()?.();
+    this.formEvents();
     const control = this.getFormControl();
     return (
       this.invalid() ||
@@ -163,6 +162,7 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
 
   registerOnChange(fn: (value: boolean) => void): void {
     this.onChange = fn;
+    this.formBindingVersion.set(++this.formBindingCount);
   }
 
   registerOnTouched(fn: () => void): void {
