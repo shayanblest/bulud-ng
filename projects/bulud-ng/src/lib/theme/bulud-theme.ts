@@ -249,6 +249,8 @@ export type BuludThemeCssVariable = `--bulud-${string}`;
 
 const BULUD_THEME_STYLE_ATTRIBUTE = 'data-bulud-theme';
 const BULUD_THEME_SCOPE = ":root:not(.dark):not([data-theme='dark'])";
+const BULUD_DARK_THEME_SCOPE =
+  ":root.dark, :root[data-theme='dark'], :where(.dark, [data-theme='dark'])";
 const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
   '--bulud-badge-height-small',
   '--bulud-badge-font-size-small',
@@ -839,16 +841,24 @@ function createBuludThemeCss(
       !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
+  const switchDarkModeVariables = entries.filter(
+    ([property]) =>
+      property.startsWith('--bulud-switch-') &&
+      !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
+  );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations(switchDarkModeVariables)}\n}`;
 }
 
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
  * document root during Angular environment initialization. Color variables
  * are scoped out while the root is in dark mode so the explicitly imported
- * dark theme can take precedence over global light-mode overrides; badge and
- * checkbox geometry remain available because they are not theme-mode specific.
+ * dark theme can take precedence over global light-mode overrides. Explicit
+ * Switch non-geometry overrides are also emitted in dark mode so they remain
+ * global there; omitted Switch tokens stay absent and use the imported dark
+ * defaults. Badge, checkbox, and Switch geometry remain available because
+ * they are not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.

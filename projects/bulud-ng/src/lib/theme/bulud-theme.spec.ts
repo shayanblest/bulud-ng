@@ -458,6 +458,80 @@ describe('Bulud theme', () => {
     }
   });
 
+  it('keeps configured Switch values active in dark mode without leaking omitted tokens', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root { --bulud-switch-background: #ffffff; --bulud-switch-thumb: #64748b; }
+      :root.dark { --bulud-switch-background: #0f172a; --bulud-switch-thumb: #cbd5e1; }
+    `;
+    document.head.append(libraryThemeStyle);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          switch: {
+            background: '#654321',
+            checkedBackground: '#123456',
+            foreground: '#abcdef',
+            disabledOpacity: '0.4',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+    const read = (variable: string, element = instance) =>
+      document.defaultView
+        ?.getComputedStyle(element)
+        .getPropertyValue(variable)
+        .trim();
+
+    try {
+      expect(read('--bulud-switch-background')).toBe('#654321');
+      expect(read('--bulud-switch-checked-background')).toBe('#123456');
+
+      root.classList.add('dark');
+      expect(read('--bulud-switch-background')).toBe('#654321');
+      expect(read('--bulud-switch-checked-background')).toBe('#123456');
+      expect(read('--bulud-switch-foreground')).toBe('#abcdef');
+      expect(read('--bulud-switch-disabled-opacity')).toBe('0.4');
+      expect(read('--bulud-switch-thumb')).toBe('#cbd5e1');
+
+      scope.style.setProperty('--bulud-switch-checked-background', '#234567');
+      expect(read('--bulud-switch-checked-background')).toBe('#234567');
+      instance.style.setProperty(
+        '--bulud-switch-checked-background',
+        '#345678',
+      );
+      expect(read('--bulud-switch-checked-background')).toBe('#345678');
+    } finally {
+      instance.remove();
+      scope.remove();
+      libraryThemeStyle.remove();
+      root.classList.remove('dark');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
   for (const darkMode of [
     {
       name: ':root.dark',
