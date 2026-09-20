@@ -465,6 +465,129 @@ describe('BuludSwitch', () => {
     ).toBe('rgb(220, 38, 38)');
   });
 
+  it('keeps default track geometry and checked travel inside the border box', async () => {
+    const state = fixture.componentInstance;
+    const host = getHost();
+    const track = host.querySelector<HTMLElement>('.bulud-switch__track')!;
+    const thumb = host.querySelector<HTMLElement>('.bulud-switch__thumb')!;
+    document.body.append(fixture.nativeElement);
+    thumb.style.transition = 'none';
+
+    try {
+      const trackStyle = getComputedStyle(track);
+      expect(trackStyle.boxSizing).toBe('border-box');
+      expect(track.getBoundingClientRect().width).toBeCloseTo(44, 0);
+      expect(track.getBoundingClientRect().height).toBeCloseTo(24, 0);
+      expect(getComputedStyle(thumb).boxSizing).toBe('border-box');
+
+      state.control.setValue(false);
+      await fixture.whenStable();
+      const uncheckedThumb = thumb.getBoundingClientRect();
+      state.control.setValue(true);
+      await fixture.whenStable();
+      const checkedThumb = thumb.getBoundingClientRect();
+
+      expect(checkedThumb.left - uncheckedThumb.left).toBeCloseTo(20, 0);
+      expect(
+        uncheckedThumb.left - track.getBoundingClientRect().left,
+      ).toBeCloseTo(3, 0);
+      expect(
+        track.getBoundingClientRect().right - checkedThumb.right,
+      ).toBeCloseTo(3, 0);
+    } finally {
+      thumb.style.removeProperty('transition');
+      fixture.nativeElement.remove();
+    }
+  });
+
+  it('includes custom border width in LTR checked travel', async () => {
+    const state = fixture.componentInstance;
+    const host = getHost();
+    const track = host.querySelector<HTMLElement>('.bulud-switch__track')!;
+    const thumb = host.querySelector<HTMLElement>('.bulud-switch__thumb')!;
+    document.body.append(fixture.nativeElement);
+    host.style.setProperty('--bulud-switch-border-width', '5px');
+    thumb.style.transition = 'none';
+
+    try {
+      state.control.setValue(false);
+      await fixture.whenStable();
+      const uncheckedThumb = thumb.getBoundingClientRect();
+      state.control.setValue(true);
+      await fixture.whenStable();
+      const checkedThumb = thumb.getBoundingClientRect();
+
+      expect(checkedThumb.left - uncheckedThumb.left).toBeCloseTo(12, 0);
+      expect(
+        uncheckedThumb.left - track.getBoundingClientRect().left,
+      ).toBeCloseTo(7, 0);
+      expect(
+        track.getBoundingClientRect().right - checkedThumb.right,
+      ).toBeCloseTo(7, 0);
+    } finally {
+      thumb.style.removeProperty('transition');
+      host.style.removeProperty('--bulud-switch-border-width');
+      fixture.nativeElement.remove();
+    }
+  });
+
+  it('keeps custom width, thumb, padding, and border geometry symmetric in LTR and RTL', async () => {
+    const state = fixture.componentInstance;
+    const host = getHost();
+    const track = host.querySelector<HTMLElement>('.bulud-switch__track')!;
+    const thumb = host.querySelector<HTMLElement>('.bulud-switch__thumb')!;
+    const root = document.documentElement;
+    const previousDirection = root.getAttribute('dir');
+    document.body.append(fixture.nativeElement);
+    host.style.setProperty('--bulud-switch-width', '80px');
+    host.style.setProperty('--bulud-switch-thumb-size', '20px');
+    host.style.setProperty('--bulud-switch-padding', '4px');
+    host.style.setProperty('--bulud-switch-border-width', '3px');
+    thumb.style.transition = 'none';
+
+    try {
+      root.removeAttribute('dir');
+      state.control.setValue(false);
+      await fixture.whenStable();
+      const uncheckedLtr = thumb.getBoundingClientRect();
+      state.control.setValue(true);
+      await fixture.whenStable();
+      const checkedLtr = thumb.getBoundingClientRect();
+      expect(checkedLtr.left - uncheckedLtr.left).toBeCloseTo(46, 0);
+      expect(
+        uncheckedLtr.left - track.getBoundingClientRect().left,
+      ).toBeCloseTo(7, 0);
+      expect(
+        track.getBoundingClientRect().right - checkedLtr.right,
+      ).toBeCloseTo(7, 0);
+
+      root.setAttribute('dir', 'rtl');
+      state.control.setValue(false);
+      await fixture.whenStable();
+      const uncheckedRtl = thumb.getBoundingClientRect();
+      state.control.setValue(true);
+      await fixture.whenStable();
+      const checkedRtl = thumb.getBoundingClientRect();
+      expect(checkedRtl.left - uncheckedRtl.left).toBeCloseTo(-46, 0);
+      expect(
+        track.getBoundingClientRect().right - uncheckedRtl.right,
+      ).toBeCloseTo(7, 0);
+      expect(checkedRtl.left - track.getBoundingClientRect().left).toBeCloseTo(
+        7,
+        0,
+      );
+    } finally {
+      thumb.style.removeProperty('transition');
+      host.style.removeProperty('--bulud-switch-width');
+      host.style.removeProperty('--bulud-switch-thumb-size');
+      host.style.removeProperty('--bulud-switch-padding');
+      host.style.removeProperty('--bulud-switch-border-width');
+      if (previousDirection === null) root.removeAttribute('dir');
+      else root.setAttribute('dir', previousDirection);
+      fixture.nativeElement.remove();
+    }
+  });
+
   for (const token of switchThemeTokens) {
     it(`resolves ${token.field} through library, global, scoped, and instance values`, async () => {
       const state = fixture.componentInstance;
