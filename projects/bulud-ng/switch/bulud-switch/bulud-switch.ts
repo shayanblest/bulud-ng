@@ -8,7 +8,7 @@ import {
   inject,
   Injector,
   input,
-  model,
+  output,
   signal,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -56,6 +56,8 @@ let nextSwitchId = 0;
 export class BuludSwitch implements ControlValueAccessor, Validator {
   private readonly injector = inject(Injector);
   private readonly formDisabled = signal(false);
+  private readonly formConnected = signal(false);
+  protected readonly viewChecked = signal(false);
   private readonly formBindingVersion = signal<number | null>(null);
   private formBindingCount = 0;
   private readonly formEvents = toSignal(
@@ -75,13 +77,21 @@ export class BuludSwitch implements ControlValueAccessor, Validator {
 
   constructor() {
     effect(() => {
+      if (!this.formConnected()) {
+        this.viewChecked.set(this.checked());
+      }
+    });
+    effect(() => {
       this.required();
       this.onValidatorChange();
     });
   }
 
   /** Current switch value. Use `[(checked)]` for controlled state. */
-  readonly checked = model(false);
+  readonly checked = input(false, { transform: booleanAttribute });
+
+  /** Emits once when the user changes the native switch. */
+  readonly checkedChange = output<boolean>();
 
   /** Prevents interaction with the switch. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -139,7 +149,8 @@ export class BuludSwitch implements ControlValueAccessor, Validator {
       return;
     }
 
-    this.checked.set(input.checked);
+    this.viewChecked.set(input.checked);
+    this.checkedChange.emit(input.checked);
     this.onChange(input.checked);
   }
 
@@ -148,11 +159,12 @@ export class BuludSwitch implements ControlValueAccessor, Validator {
   }
 
   writeValue(value: boolean | null): void {
-    this.checked.set(value === true);
+    this.viewChecked.set(value === true);
   }
 
   registerOnChange(fn: (value: boolean) => void): void {
     this.onChange = fn;
+    this.formConnected.set(true);
     this.formBindingVersion.set(++this.formBindingCount);
   }
 
@@ -169,6 +181,6 @@ export class BuludSwitch implements ControlValueAccessor, Validator {
   }
 
   validate(): ValidationErrors | null {
-    return this.required() && !this.checked() ? { required: true } : null;
+    return this.required() && !this.viewChecked() ? { required: true } : null;
   }
 }

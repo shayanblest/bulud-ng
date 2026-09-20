@@ -14,7 +14,7 @@ test('supports switch semantics, projected label, and keyboard interaction', asy
 
   await expect(control).toHaveAttribute('role', 'switch');
   await expect(control).not.toBeChecked();
-  await expect(control).toHaveAttribute('aria-invalid', 'true');
+  await expect(control).not.toHaveAttribute('aria-invalid');
   await label.hover();
   await expect(track).toHaveCSS('background-color', 'rgb(248, 250, 252)');
   await control.press('Space');
@@ -30,6 +30,9 @@ test('supports switch semantics, projected label, and keyboard interaction', asy
 
   await section.getByText('Enable notifications', { exact: true }).click();
   await expect(control).toBeChecked();
+
+  await section.getByText('Enable notifications', { exact: true }).click();
+  await expect(control).not.toBeChecked();
 });
 
 test('covers disabled, dark theme, focus, and instance theme overrides', async ({
@@ -68,6 +71,13 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(instance).toBeChecked();
   await expect(instanceTrack).toHaveCSS('background-color', 'rgb(20, 83, 45)');
   await expect(instanceTrack).toHaveCSS('width', '52px');
+
+  const invalid = section.getByRole('switch', {
+    name: 'Invalid notifications switch',
+  });
+  await expect(invalid).not.toBeChecked();
+  await section.getByText('Invalid', { exact: true }).click();
+  await expect(invalid).toHaveAttribute('aria-invalid', 'true');
 
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect(control).toBeChecked();

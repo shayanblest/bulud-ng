@@ -27,9 +27,17 @@ import { BuludSwitch } from './bulud-switch';
       [aria-errormessage]="ariaErrorMessage()"
       [invalid]="explicitInvalid()"
       [required]="required()"
+      (checkedChange)="recordFormCheckedChange()"
       [formControl]="control"
     >
       Notifications
+    </bulud-switch>
+    <bulud-switch
+      [checked]="standaloneChecked()"
+      (checkedChange)="handleStandaloneChange($event)"
+      aria-label="Standalone switch"
+    >
+      Standalone switch
     </bulud-switch>
     <bulud-switch id="standalone-disabled" [disabled]="disabled()">
       Standalone disabled switch
@@ -44,6 +52,18 @@ class TestHost {
   readonly explicitInvalid = signal(false);
   readonly required = signal(true);
   readonly control = new FormControl(false);
+  readonly standaloneChecked = signal(false);
+  standaloneChanges = 0;
+  formCheckedChanges = 0;
+
+  handleStandaloneChange(value: boolean): void {
+    this.standaloneChanges++;
+    this.standaloneChecked.set(value);
+  }
+
+  recordFormCheckedChange(): void {
+    this.formCheckedChanges++;
+  }
 }
 
 const switchThemeTokens = [
@@ -375,6 +395,72 @@ describe('BuludSwitch', () => {
     expect(state.control.value).toBeFalse();
   });
 
+  it('does not emit checkedChange during initial or programmatic Forms writes', async () => {
+    const state = fixture.componentInstance;
+    expect(state.formCheckedChanges).toBe(0);
+
+    state.control.setValue(true);
+    await fixture.whenStable();
+    state.control.patchValue(false);
+    await fixture.whenStable();
+    state.control.reset(true);
+    await fixture.whenStable();
+    state.control.disable();
+    await fixture.whenStable();
+    state.control.enable();
+    await fixture.whenStable();
+
+    expect(state.formCheckedChanges).toBe(0);
+  });
+
+  it('does not emit checkedChange or call onChange from writeValue', async () => {
+    const instance = fixture.debugElement.children[0]
+      .componentInstance as BuludSwitch;
+    let outputCalls = 0;
+    let changeCalls = 0;
+    instance.checkedChange.subscribe(() => outputCalls++);
+    instance.registerOnChange(() => changeCalls++);
+
+    instance.writeValue(true);
+    await fixture.whenStable();
+
+    expect(getInput().checked).toBeTrue();
+    expect(outputCalls).toBe(0);
+    expect(changeCalls).toBe(0);
+  });
+
+  it('emits and propagates exactly once for user interaction', async () => {
+    const state = fixture.componentInstance;
+    let changeCalls = 0;
+    const instance = fixture.debugElement.children[0]
+      .componentInstance as BuludSwitch;
+    instance.registerOnChange(() => changeCalls++);
+
+    getInput().click();
+    await fixture.whenStable();
+
+    expect(state.formCheckedChanges).toBe(1);
+    expect(changeCalls).toBe(1);
+  });
+
+  it('keeps standalone checked two-way binding working without initialization output', async () => {
+    const state = fixture.componentInstance;
+    const standaloneInput = fixture.nativeElement.querySelector(
+      'input[aria-label="Standalone switch"]',
+    ) as HTMLInputElement;
+
+    expect(state.standaloneChanges).toBe(0);
+    standaloneInput.click();
+    await fixture.whenStable();
+    expect(state.standaloneChecked()).toBeTrue();
+    expect(state.standaloneChanges).toBe(1);
+
+    state.standaloneChecked.set(false);
+    await fixture.whenStable();
+    expect(standaloneInput.checked).toBeFalse();
+    expect(state.standaloneChanges).toBe(1);
+  });
+
   it('implements the full ControlValueAccessor contract', async () => {
     const component = fixture.componentRef.location.nativeElement
       .querySelector('bulud-switch')
@@ -452,17 +538,22 @@ describe('BuludSwitch', () => {
 
   it('keeps the invalid border visible when checked', async () => {
     const state = fixture.componentInstance;
+    document.body.append(fixture.nativeElement);
     state.control.setValue(true);
     state.explicitInvalid.set(true);
     await fixture.whenStable();
 
-    expect(getInput().checked).toBeTrue();
-    expect(getInput().getAttribute('aria-invalid')).toBe('true');
-    expect(
-      getComputedStyle(
-        getHost().querySelector<HTMLElement>('.bulud-switch__track')!,
-      ).borderTopColor,
-    ).toBe('rgb(220, 38, 38)');
+    try {
+      expect(getInput().checked).toBeTrue();
+      expect(getInput().getAttribute('aria-invalid')).toBe('true');
+      expect(
+        getComputedStyle(
+          getHost().querySelector<HTMLElement>('.bulud-switch__track')!,
+        ).borderTopColor,
+      ).toBe('rgb(220, 38, 38)');
+    } finally {
+      fixture.nativeElement.remove();
+    }
   });
 
   it('keeps default track geometry and checked travel inside the border box', async () => {

@@ -474,7 +474,7 @@
               id="switch-default"
               [checked]="switchEnabled()"
               [disabled]="switchDisabled()"
-              [invalid]="!switchEnabled()"
+              [invalid]="false"
               required
               (checkedChange)="switchEnabled.set($event)"
               >Enable notifications</bulud-switch
@@ -486,6 +486,20 @@
                 (change)="switchDisabled.set(!switchDisabled())"
               />
               Disabled
+            </label>
+            <bulud-switch
+              id="switch-invalid"
+              [invalid]="switchInvalid()"
+              aria-label="Invalid notifications switch"
+              >Invalid example</bulud-switch
+            >
+            <label class="inline-flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                [checked]="switchInvalid()"
+                (change)="switchInvalid.set(!switchInvalid())"
+              />
+              Invalid
             </label>
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input

@@ -225,6 +225,7 @@ export class App {
   protected readonly checkboxDark = signal(false);
   protected readonly switchEnabled = signal(false);
   protected readonly switchDisabled = signal(false);
+  protected readonly switchInvalid = signal(false);
   protected readonly switchDark = signal(false);
   protected readonly fullWidth = signal(false);
   protected readonly selectedFramework = signal<
