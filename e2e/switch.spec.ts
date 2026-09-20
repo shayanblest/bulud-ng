@@ -9,13 +9,19 @@ test('supports switch semantics, projected label, and keyboard interaction', asy
 }) => {
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
+  const label = control.locator('xpath=..').locator('.bulud-switch__label');
+  const track = label.locator('.bulud-switch__track');
 
   await expect(control).toHaveAttribute('role', 'switch');
   await expect(control).not.toBeChecked();
   await expect(control).toHaveAttribute('aria-invalid', 'true');
+  await label.hover();
+  await expect(track).toHaveCSS('background-color', 'rgb(248, 250, 252)');
   await control.press('Space');
   await expect(control).toBeChecked();
   await expect(control).not.toHaveAttribute('aria-invalid');
+  await label.hover();
+  await expect(track).toHaveCSS('background-color', 'rgb(37, 99, 235)');
   await expect(section.locator('#switch-state')).toHaveText(
     'Notifications enabled',
   );
@@ -32,10 +38,13 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
   const track = control.locator('xpath=..').locator('.bulud-switch__track');
+  const label = control.locator('xpath=..').locator('.bulud-switch__label');
   const focusStart = section.locator('#switch-focus-start');
 
   await section.getByText('Disabled', { exact: true }).click();
   await expect(control).toBeDisabled();
+  await label.hover();
+  await expect(track).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await control.click({ force: true });
   await expect(control).not.toBeChecked();
 

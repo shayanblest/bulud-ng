@@ -55,8 +55,8 @@
     background-color 120ms ease;
 }
 
-.bulud-switch__input:hover:not(:disabled)
-  + .bulud-switch__label
+.bulud-switch__input:not(:checked):not(:disabled)
+  + .bulud-switch__label:hover
   .bulud-switch__track {
   background: var(--bulud-switch-background-hover, #f8fafc);
 }
@@ -77,6 +77,13 @@
         2
     )
   );
+}
+
+:host(.bulud-switch-host--invalid)
+  .bulud-switch__input:checked
+  + .bulud-switch__label
+  .bulud-switch__track {
+  border-color: var(--bulud-color-danger, #dc2626);
 }
 
 .bulud-switch__input:focus-visible + .bulud-switch__label .bulud-switch__track {
