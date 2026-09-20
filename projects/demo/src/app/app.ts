@@ -23,6 +23,7 @@ import { BuludClickOutside } from 'bulud-ng/clickoutside';
 import { BuludTab, BuludTabPanel, BuludTabs } from 'bulud-ng/tabs';
 import { BuludAccordion, BuludAccordionItem } from 'bulud-ng/accordion';
 import { BuludCheckbox } from 'bulud-ng/checkbox';
+import { BuludSwitch } from 'bulud-ng/switch';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -55,6 +56,7 @@ interface DemoOption {
     BuludAccordion,
     BuludAccordionItem,
     BuludCheckbox,
+    BuludSwitch,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -221,6 +223,9 @@ export class App {
   protected readonly checkboxIndeterminate = signal(false);
   protected readonly checkboxDisabled = signal(false);
   protected readonly checkboxDark = signal(false);
+  protected readonly switchEnabled = signal(false);
+  protected readonly switchDisabled = signal(false);
+  protected readonly switchDark = signal(false);
   protected readonly fullWidth = signal(false);
   protected readonly selectedFramework = signal<
     DemoOption | readonly DemoOption[] | null

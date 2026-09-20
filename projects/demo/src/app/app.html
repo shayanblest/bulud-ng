@@ -444,6 +444,80 @@
         </section>
 
         <section
+          id="switch"
+          class="rounded-3xl border border-slate-200 bg-bulud-surface p-6 text-bulud-on-surface shadow-sm sm:p-8"
+          [attr.data-theme]="switchDark() ? 'dark' : null"
+        >
+          <div class="mb-7">
+            <p
+              class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+            >
+              Switch
+            </p>
+            <h3 class="mt-3 text-2xl font-black tracking-tight">
+              Accessible form-ready state
+            </h3>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              A native keyboard control with switch semantics, projected label,
+              Forms validation, disabled propagation, and theme overrides.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-5">
+            <button
+              id="switch-focus-start"
+              type="button"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold"
+            >
+              Focus switch
+            </button>
+            <bulud-switch
+              id="switch-default"
+              [checked]="switchEnabled()"
+              [disabled]="switchDisabled()"
+              [invalid]="!switchEnabled()"
+              required
+              (checkedChange)="switchEnabled.set($event)"
+              >Enable notifications</bulud-switch
+            >
+            <label class="inline-flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                [checked]="switchDisabled()"
+                (change)="switchDisabled.set(!switchDisabled())"
+              />
+              Disabled
+            </label>
+            <label class="inline-flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                [checked]="switchDark()"
+                (change)="switchDark.set(!switchDark())"
+              />
+              Dark theme
+            </label>
+            <bulud-switch
+              style="
+                --bulud-switch-checked-background: #14532d;
+                --bulud-switch-width: 3.25rem;
+              "
+              [checked]="true"
+              >Instance theme</bulud-switch
+            >
+          </div>
+          <p
+            id="switch-state"
+            class="mt-5 text-sm font-semibold"
+            aria-live="polite"
+          >
+            {{
+              switchEnabled()
+                ? "Notifications enabled"
+                : "Notifications disabled"
+            }}
+          </p>
+        </section>
+
+        <section
           id="badge"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >

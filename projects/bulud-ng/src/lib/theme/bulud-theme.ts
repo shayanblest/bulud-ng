@@ -165,6 +165,29 @@ export interface BuludCheckboxTheme {
   readonly labelLineHeight: string;
 }
 
+/** Theme tokens for switch controls. */
+export interface BuludSwitchTheme {
+  readonly background: string;
+  readonly backgroundHover: string;
+  readonly border: string;
+  readonly borderWidth: string;
+  readonly checkedBackground: string;
+  readonly checkedThumb: string;
+  readonly disabledOpacity: string;
+  readonly focus: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
+  readonly foreground: string;
+  readonly gap: string;
+  readonly height: string;
+  readonly labelLineHeight: string;
+  readonly padding: string;
+  readonly radius: string;
+  readonly thumb: string;
+  readonly thumbSize: string;
+  readonly width: string;
+}
+
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -176,13 +199,19 @@ export interface BuludTheme {
   readonly accordion: BuludAccordionTheme;
   /** Optional for compatibility with legacy consumer theme objects. */
   readonly checkbox?: BuludCheckboxTheme;
+  /** Optional for compatibility with legacy consumer theme objects. */
+  readonly switch?: BuludSwitchTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
-export interface ResolvedBuludTheme extends Omit<BuludTheme, 'checkbox'> {
+export interface ResolvedBuludTheme extends Omit<
+  BuludTheme,
+  'checkbox' | 'switch'
+> {
   readonly button: Required<BuludButtonTheme>;
   readonly badge: Required<BuludBadgeTheme>;
   readonly checkbox: BuludCheckboxTheme;
+  readonly switch: BuludSwitchTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -212,6 +241,7 @@ export interface BuludThemeConfig {
   readonly tabs?: Partial<BuludTabsTheme>;
   readonly accordion?: Partial<BuludAccordionTheme>;
   readonly checkbox?: Partial<BuludCheckboxTheme>;
+  readonly switch?: Partial<BuludSwitchTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -250,6 +280,18 @@ const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
   '--bulud-checkbox-radius',
   '--bulud-checkbox-size',
   '--bulud-checkbox-label-line-height',
+]);
+const BULUD_SWITCH_GEOMETRY_VARIABLES = new Set([
+  '--bulud-switch-border-width',
+  '--bulud-switch-focus-width',
+  '--bulud-switch-focus-offset',
+  '--bulud-switch-gap',
+  '--bulud-switch-height',
+  '--bulud-switch-label-line-height',
+  '--bulud-switch-padding',
+  '--bulud-switch-radius',
+  '--bulud-switch-thumb-size',
+  '--bulud-switch-width',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -408,6 +450,27 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     size: '1.25rem',
     gap: '0.625rem',
     labelLineHeight: '1.5',
+  },
+  switch: {
+    background: '#ffffff',
+    backgroundHover: '#f8fafc',
+    border: '#cbd5e1',
+    borderWidth: '1px',
+    checkedBackground: '#2563eb',
+    checkedThumb: '#ffffff',
+    disabledOpacity: '0.55',
+    focus: '#93c5fd',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    foreground: '#0f172a',
+    gap: '0.625rem',
+    height: '1.5rem',
+    labelLineHeight: '1.5',
+    padding: '0.125rem',
+    radius: '999px',
+    thumb: '#64748b',
+    thumbSize: '1.125rem',
+    width: '2.75rem',
   },
 };
 
@@ -582,6 +645,10 @@ export function resolveBuludTheme(
       ...RESOLVED_DEFAULT_THEME.checkbox,
       ...config.checkbox,
     },
+    switch: {
+      ...RESOLVED_DEFAULT_THEME.switch,
+      ...config.switch,
+    },
   };
 }
 
@@ -728,6 +795,25 @@ export function createBuludThemeVariables(
     '--bulud-checkbox-size': theme.checkbox.size,
     '--bulud-checkbox-gap': theme.checkbox.gap,
     '--bulud-checkbox-label-line-height': theme.checkbox.labelLineHeight,
+    '--bulud-switch-background': theme.switch.background,
+    '--bulud-switch-background-hover': theme.switch.backgroundHover,
+    '--bulud-switch-border': theme.switch.border,
+    '--bulud-switch-border-width': theme.switch.borderWidth,
+    '--bulud-switch-checked-background': theme.switch.checkedBackground,
+    '--bulud-switch-checked-thumb': theme.switch.checkedThumb,
+    '--bulud-switch-disabled-opacity': theme.switch.disabledOpacity,
+    '--bulud-switch-focus': theme.switch.focus,
+    '--bulud-switch-focus-width': theme.switch.focusWidth,
+    '--bulud-switch-focus-offset': theme.switch.focusOffset,
+    '--bulud-switch-foreground': theme.switch.foreground,
+    '--bulud-switch-gap': theme.switch.gap,
+    '--bulud-switch-height': theme.switch.height,
+    '--bulud-switch-label-line-height': theme.switch.labelLineHeight,
+    '--bulud-switch-padding': theme.switch.padding,
+    '--bulud-switch-radius': theme.switch.radius,
+    '--bulud-switch-thumb': theme.switch.thumb,
+    '--bulud-switch-thumb-size': theme.switch.thumbSize,
+    '--bulud-switch-width': theme.switch.width,
   };
 }
 
@@ -744,13 +830,17 @@ function createBuludThemeCss(
   const checkboxGeometry = entries.filter(([property]) =>
     BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
   );
+  const switchGeometry = entries.filter(([property]) =>
+    BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
+  );
   const lightModeVariables = entries.filter(
     ([property]) =>
       !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
-      !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
+      !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
+      !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}`;
 }
 
 /**
@@ -827,6 +917,32 @@ export function provideBuludTheme(
     ['labelLineHeight', '--bulud-checkbox-label-line-height'],
   ] as const) {
     if (config.checkbox?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of [
+    ['background', '--bulud-switch-background'],
+    ['backgroundHover', '--bulud-switch-background-hover'],
+    ['border', '--bulud-switch-border'],
+    ['borderWidth', '--bulud-switch-border-width'],
+    ['checkedBackground', '--bulud-switch-checked-background'],
+    ['checkedThumb', '--bulud-switch-checked-thumb'],
+    ['disabledOpacity', '--bulud-switch-disabled-opacity'],
+    ['focus', '--bulud-switch-focus'],
+    ['focusWidth', '--bulud-switch-focus-width'],
+    ['focusOffset', '--bulud-switch-focus-offset'],
+    ['foreground', '--bulud-switch-foreground'],
+    ['gap', '--bulud-switch-gap'],
+    ['height', '--bulud-switch-height'],
+    ['labelLineHeight', '--bulud-switch-label-line-height'],
+    ['padding', '--bulud-switch-padding'],
+    ['radius', '--bulud-switch-radius'],
+    ['thumb', '--bulud-switch-thumb'],
+    ['thumbSize', '--bulud-switch-thumb-size'],
+    ['width', '--bulud-switch-width'],
+  ] as const) {
+    if (config.switch?.[field] === undefined) {
       delete variables[variable];
     }
   }
