@@ -24,8 +24,8 @@ export type BuludDialogCloseReason = 'escape' | 'backdrop';
 interface DialogStackEntry {
   readonly handleKeydown: (event: KeyboardEvent) => void;
   readonly handleFocusin: (event: FocusEvent) => void;
-  readonly getRestoreTarget: () => FocusCandidate | null;
-  readonly setRestoreTarget: (target: FocusCandidate | null) => void;
+  readonly getRestoreTarget: () => RestoreTargetState | null;
+  readonly setRestoreTarget: (target: RestoreTargetState | null) => void;
   readonly setStackLevel: (level: number) => void;
 }
 
@@ -129,10 +129,12 @@ type FocusCandidate = Element & {
   focus: (options?: FocusOptions) => void;
 };
 
-type DomConstructor = abstract new (...args: never[]) => object;
+interface RestoreTargetState {
+  readonly element: FocusCandidate;
+  readonly allowOpaqueRestore: boolean;
+}
 
-const DOCUMENT_POSITION_PRECEDING = 2;
-const DOCUMENT_POSITION_FOLLOWING = 4;
+type DomConstructor = abstract new (...args: never[]) => object;
 
 function isDomInstance<T>(
   value: unknown,
@@ -506,8 +508,7 @@ export class BuludDialog {
   protected readonly stackLevel = signal(0);
   private wasOpen = false;
   private destroyed = false;
-  private restoreTarget: FocusCandidate | null = null;
-  private readonly opaqueRestoreTargets = new WeakSet<FocusCandidate>();
+  private restoreTarget: RestoreTargetState | null = null;
   private readonly stackEntry: DialogStackEntry = {
     handleKeydown: (event) => this.handleDocumentKeydown(event),
     handleFocusin: (event) => this.handleDocumentFocusin(event),
@@ -595,13 +596,16 @@ export class BuludDialog {
       const isOpen = this.open();
 
       if (isOpen && !this.wasOpen) {
-        this.restoreTarget = this.focusedElement();
-        if (
-          this.restoreTarget &&
-          isOpaqueCustomElement(this.restoreTarget, this.document)
-        ) {
-          this.opaqueRestoreTargets.add(this.restoreTarget);
-        }
+        const restoreTarget = this.focusedElement();
+        this.restoreTarget = restoreTarget
+          ? {
+              element: restoreTarget,
+              allowOpaqueRestore: isOpaqueCustomElement(
+                restoreTarget,
+                this.document,
+              ),
+            }
+          : null;
         this.wasOpen = true;
         this.attachListeners();
         lockBodyScroll(this.document);
@@ -814,13 +818,21 @@ export class BuludDialog {
       return backwards ? focusable.at(-1) : focusable[0];
     }
 
-    const candidates = focusable.filter((candidate) => {
-      const relation = active.compareDocumentPosition(candidate);
-      return Boolean(
-        relation &
-        (backwards ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING),
-      );
-    });
+    const composedOrder = collectComposedElements(surface);
+    const activeIndex = composedOrder.indexOf(active);
+    if (activeIndex < 0) {
+      return backwards ? focusable.at(-1) : focusable[0];
+    }
+
+    const candidates = focusable
+      .map((candidate) => ({
+        candidate,
+        index: composedOrder.indexOf(candidate),
+      }))
+      .filter(({ index }) =>
+        backwards ? index >= 0 && index < activeIndex : index > activeIndex,
+      )
+      .map(({ candidate }) => candidate);
 
     return backwards
       ? (candidates.at(-1) ?? focusable.at(-1))
@@ -992,17 +1004,17 @@ export class BuludDialog {
   }
 
   private restoreFocus(): void {
-    const target = this.restoreTarget;
+    const restoreTarget = this.restoreTarget;
     this.restoreTarget = null;
     if (
-      target?.isConnected &&
+      restoreTarget?.element.isConnected &&
       isProgrammaticFocusTarget(
-        target,
-        target,
-        this.opaqueRestoreTargets.has(target),
+        restoreTarget.element,
+        restoreTarget.element,
+        restoreTarget.allowOpaqueRestore,
       )
     ) {
-      target.focus();
+      restoreTarget.element.focus();
     }
   }
 }

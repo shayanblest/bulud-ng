@@ -323,6 +323,84 @@ describe('BuludDialog', () => {
     expect(document.activeElement?.id).toBe('first-action');
   });
 
+  it('uses composed order around an initial target inside an open shadow root', async () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog
+      .querySelectorAll('button')
+      .forEach((button) => (button.hidden = true));
+
+    const before = document.createElement('button');
+    before.id = 'composed-before';
+    before.textContent = 'Before';
+    const host = document.createElement(
+      'open-shadow-control',
+    ) as OpenShadowControl;
+    host.root.innerHTML = `
+      <button id="shadow-before">Shadow before</button>
+      <h2 id="shadow-initial" tabindex="-1">Initial</h2>
+      <button id="shadow-after">Shadow after</button>
+    `;
+    const after = document.createElement('button');
+    after.id = 'composed-after';
+    after.textContent = 'After';
+    dialog.append(before, host, after);
+
+    fixture.componentInstance.initialFocus.set('#shadow-initial');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const initial = host.root.querySelector('#shadow-initial') as HTMLElement;
+    const shadowBefore = host.root.querySelector(
+      '#shadow-before',
+    ) as HTMLButtonElement;
+    const shadowAfter = host.root.querySelector(
+      '#shadow-after',
+    ) as HTMLButtonElement;
+    initial.focus();
+    expect(host.root.activeElement).toBe(initial);
+
+    initial.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(host.root.activeElement).toBe(shadowAfter);
+
+    shadowAfter.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(host.root.activeElement).toBe(shadowBefore);
+
+    initial.focus();
+    initial.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(host.root.activeElement).toBe(shadowBefore);
+
+    shadowBefore.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(document.activeElement).toBe(before);
+  });
+
   it('recognizes editable content variants and excludes false, hidden, and inert editors', () => {
     openFromTrigger();
     const dialog = getDialog();
@@ -1764,6 +1842,34 @@ describe('BuludDialog stack ownership', () => {
     await fixture.whenStable();
 
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('transfers opaque restore eligibility with a lower dialog opener', async () => {
+    const opener = document.createElement('closed-focus-host');
+    opener.attachShadow({ mode: 'closed', delegatesFocus: true }).innerHTML =
+      '<button>Opaque opener</button>';
+    fixture.nativeElement.insertBefore(
+      opener,
+      fixture.nativeElement.querySelector('bulud-dialog'),
+    );
+    opener.focus();
+    expect(document.activeElement).toBe(opener);
+
+    fixture.componentInstance.firstOpen.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.secondOpen.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.firstOpen.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.secondOpen.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(document.activeElement).toBe(opener);
   });
 
   it('promotes the lower dialog after a native form close of the top dialog', async () => {
