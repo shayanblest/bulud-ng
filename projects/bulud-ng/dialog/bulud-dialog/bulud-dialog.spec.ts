@@ -418,6 +418,206 @@ describe('BuludDialog', () => {
     expect(document.activeElement?.id).toBe('first-action');
   });
 
+  it('excludes intrinsically non-focusable and unavailable tab-indexed elements', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const hiddenInput = Object.assign(document.createElement('input'), {
+      id: 'hidden-input',
+      type: 'hidden',
+      tabIndex: 0,
+    });
+    const hiddenInputWithoutTabIndex = Object.assign(
+      document.createElement('input'),
+      { id: 'hidden-input-without-tabindex', type: 'hidden' },
+    );
+    const hiddenInputNegative = Object.assign(document.createElement('input'), {
+      id: 'hidden-input-negative',
+      type: 'hidden',
+      tabIndex: -1,
+    });
+    const disabled = Object.assign(document.createElement('button'), {
+      id: 'disabled-button',
+      tabIndex: 0,
+      disabled: true,
+    });
+    const hidden = Object.assign(document.createElement('button'), {
+      id: 'hidden-button',
+      tabIndex: 0,
+      hidden: true,
+    });
+    const inert = Object.assign(document.createElement('button'), {
+      id: 'inert-button',
+      tabIndex: 0,
+    });
+    inert.setAttribute('inert', '');
+    const visible = Object.assign(document.createElement('input'), {
+      id: 'visible-input',
+      tabIndex: 0,
+    });
+    dialog.append(
+      hiddenInput,
+      hiddenInputWithoutTabIndex,
+      hiddenInputNegative,
+      disabled,
+      hidden,
+      inert,
+      visible,
+    );
+
+    visible.focus();
+    visible.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(dialog.querySelector('#first-action'));
+
+    fixture.componentInstance.initialFocus.set('#hidden-input');
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    expect(document.activeElement?.id).toBe('first-action');
+  });
+
+  it('wraps Tab around explicit negative-tabindex targets by DOM position', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog
+      .querySelectorAll('button')
+      .forEach((button) => (button.hidden = true));
+
+    const createTarget = (id: string): HTMLHeadingElement => {
+      const target = document.createElement('h3');
+      target.id = id;
+      target.tabIndex = -1;
+      target.textContent = id;
+      return target;
+    };
+    const createButton = (id: string): HTMLButtonElement => {
+      const button = document.createElement('button');
+      button.id = id;
+      button.type = 'button';
+      button.textContent = id;
+      return button;
+    };
+
+    const placements = [
+      ['before', ['target-before', 'before-first', 'before-second']],
+      ['between', ['between-first', 'target-between', 'between-second']],
+      ['after', ['after-first', 'after-second', 'target-after']],
+    ] as const;
+
+    for (const [name, ids] of placements) {
+      const wrapper = document.createElement('div');
+      const elements = ids.map((id) =>
+        id.startsWith('target') ? createTarget(id) : createButton(id),
+      );
+      wrapper.append(...elements);
+      dialog.append(wrapper);
+      const target = wrapper.querySelector(`#target-${name}`) as HTMLElement;
+      target.focus();
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+      );
+      const forwardExpected =
+        name === 'before'
+          ? `before-first`
+          : name === 'between'
+            ? `between-second`
+            : `after-first`;
+      expect(document.activeElement?.id).toBe(forwardExpected);
+
+      target.focus();
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey: true,
+          bubbles: true,
+        }),
+      );
+      const backwardExpected =
+        name === 'before'
+          ? `before-second`
+          : name === 'between'
+            ? `between-first`
+            : `after-second`;
+      expect(document.activeElement?.id).toBe(backwardExpected);
+      wrapper.remove();
+    }
+  });
+
+  it('keeps dynamic candidate changes and a single candidate inside the trap', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const first = dialog.querySelector('#first-action') as HTMLButtonElement;
+    const second = dialog.querySelector('#second-action') as HTMLButtonElement;
+    first.hidden = true;
+    second.hidden = true;
+    const only = document.createElement('button');
+    only.id = 'only-dynamic';
+    only.textContent = 'Only dynamic';
+    dialog.append(only);
+    only.focus();
+    only.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(only);
+
+    const added = document.createElement('button');
+    added.id = 'added-dynamic';
+    added.textContent = 'Added';
+    dialog.append(added);
+    only.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(added);
+    added.remove();
+    only.focus();
+    only.disabled = true;
+    only.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(dialog);
+  });
+
+  it('keeps positive tabindex candidates ahead of zero-tabindex candidates', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog
+      .querySelectorAll('button')
+      .forEach((button) => (button.hidden = true));
+    const first = Object.assign(document.createElement('button'), {
+      id: 'positive-first',
+      tabIndex: 1,
+    });
+    const second = Object.assign(document.createElement('button'), {
+      id: 'positive-second',
+      tabIndex: 2,
+    });
+    const normal = Object.assign(document.createElement('button'), {
+      id: 'zero-tabindex',
+      tabIndex: 0,
+    });
+    dialog.append(first, second, normal);
+
+    first.focus();
+    first.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(second);
+    second.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(normal);
+    normal.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(second);
+  });
+
   it('falls back to the first focusable child and then the dialog surface', () => {
     const trigger = openFromTrigger();
     expect(document.activeElement?.id).toBe('first-action');
@@ -795,7 +995,6 @@ describe('BuludDialog stack ownership', () => {
     const secondAction = fixture.nativeElement.querySelector(
       '#stack-second-action',
     ) as HTMLButtonElement;
-
     expect(document.activeElement).toBe(secondAction);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
@@ -814,13 +1013,16 @@ describe('BuludDialog stack ownership', () => {
     const secondAction = fixture.nativeElement.querySelector(
       '#stack-second-action',
     ) as HTMLButtonElement;
+    const secondNativeClose = fixture.nativeElement.querySelector(
+      '#stack-second-native-close',
+    ) as HTMLButtonElement;
 
     firstAction.focus();
     expect(document.activeElement).toBe(secondAction);
     secondAction.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
     );
-    expect(document.activeElement).toBe(secondAction);
+    expect(document.activeElement).toBe(secondNativeClose);
   });
 
   it('keeps visual stacking aligned with open order even when DOM order differs', async () => {

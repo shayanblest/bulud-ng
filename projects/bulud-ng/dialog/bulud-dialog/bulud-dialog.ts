@@ -256,9 +256,24 @@ function isNativeFocusTarget(element: HTMLElement): boolean {
   return element.tabIndex >= 0;
 }
 
+function isIntrinsicallyNonFocusable(element: HTMLElement): boolean {
+  if (
+    element.localName === 'input' &&
+    element.getAttribute('type')?.trim().toLowerCase() === 'hidden'
+  ) {
+    return true;
+  }
+
+  if (element.localName === 'option' || element.localName === 'optgroup') {
+    return true;
+  }
+
+  return element.localName === 'area' && !element.hasAttribute('href');
+}
+
 function isFocusableElement(element: HTMLElement): boolean {
   if (hasExplicitTabIndex(element)) {
-    return true;
+    return !isIntrinsicallyNonFocusable(element);
   }
 
   if (element.hasAttribute('contenteditable')) {
@@ -588,15 +603,54 @@ export class BuludDialog {
     const active = this.document.activeElement;
     const activeIndex = focusable.indexOf(active as HTMLElement);
     if (event.shiftKey) {
-      if (activeIndex <= 0) {
+      const previous =
+        activeIndex >= 0
+          ? (focusable[activeIndex - 1] ?? focusable.at(-1))
+          : this.relativeTabCandidate(surface, focusable, active, true);
+      if (previous) {
         event.preventDefault();
-        focusable[focusable.length - 1].focus();
+        previous.focus();
       }
-    } else if (activeIndex === focusable.length - 1) {
-      event.preventDefault();
-      focusable[0].focus();
+    } else {
+      const next =
+        activeIndex >= 0
+          ? (focusable[activeIndex + 1] ?? focusable[0])
+          : this.relativeTabCandidate(surface, focusable, active, false);
+      if (next) {
+        event.preventDefault();
+        next.focus();
+      }
     }
   };
+
+  private relativeTabCandidate(
+    surface: HTMLElement,
+    focusable: readonly HTMLElement[],
+    active: Element | null,
+    backwards: boolean,
+  ): HTMLElement | undefined {
+    if (!(active instanceof HTMLElement) || active === surface) {
+      return backwards ? focusable.at(-1) : focusable[0];
+    }
+
+    if (!surface.contains(active)) {
+      return backwards ? focusable.at(-1) : focusable[0];
+    }
+
+    const candidates = focusable.filter((candidate) => {
+      const relation = active.compareDocumentPosition(candidate);
+      return Boolean(
+        relation &
+        (backwards
+          ? Node.DOCUMENT_POSITION_PRECEDING
+          : Node.DOCUMENT_POSITION_FOLLOWING),
+      );
+    });
+
+    return backwards
+      ? (candidates.at(-1) ?? focusable.at(-1))
+      : (candidates[0] ?? focusable[0]);
+  }
 
   private isInsideAnotherNativeDialog(event: KeyboardEvent): boolean {
     const target = event.target;
