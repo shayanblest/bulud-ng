@@ -133,6 +133,31 @@ class NativeDialogHost {
   }
 }
 
+class OpenShadowControl extends HTMLElement {
+  readonly root = this.attachShadow({ mode: 'open', delegatesFocus: true });
+
+  constructor() {
+    super();
+    this.root.innerHTML = '<button id="shadow-first">Shadow first</button>';
+  }
+}
+
+class NestedShadowControl extends HTMLElement {
+  readonly root = this.attachShadow({ mode: 'open' });
+
+  constructor() {
+    super();
+    this.root.innerHTML = '<open-shadow-control></open-shadow-control>';
+  }
+}
+
+if (!customElements.get('open-shadow-control')) {
+  customElements.define('open-shadow-control', OpenShadowControl);
+}
+if (!customElements.get('nested-shadow-control')) {
+  customElements.define('nested-shadow-control', NestedShadowControl);
+}
+
 describe('BuludDialog', () => {
   let fixture: ComponentFixture<TestHost>;
 
@@ -348,6 +373,134 @@ describe('BuludDialog', () => {
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
     );
     expect(document.activeElement).toBe(summary);
+  });
+
+  it('uses one native Tab stop per named radio group', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+    const first = document.createElement('input');
+    const second = document.createElement('input');
+    const next = document.createElement('button');
+    first.type = second.type = 'radio';
+    first.name = second.name = 'choices';
+    second.checked = true;
+    next.textContent = 'Next';
+    dialog.append(first, second, next);
+
+    second.focus();
+    second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(next);
+    next.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
+    );
+    expect(document.activeElement).toBe(second);
+    const arrow = new KeyboardEvent('keydown', {
+      key: 'ArrowLeft',
+      bubbles: true,
+      cancelable: true,
+    });
+    second.dispatchEvent(arrow);
+    expect(arrow.defaultPrevented).toBeFalse();
+  });
+
+  it('chooses the first enabled unchecked radio and keeps groups independent', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+    const disabled = document.createElement('input');
+    const first = document.createElement('input');
+    const second = document.createElement('input');
+    const other = document.createElement('input');
+    const unnamed = document.createElement('input');
+    const next = document.createElement('button');
+    disabled.type = first.type = second.type = other.type = unnamed.type = 'radio';
+    disabled.name = first.name = second.name = 'choices';
+    other.name = 'other';
+    disabled.disabled = true;
+    unnamed.name = '';
+    next.textContent = 'Next';
+    dialog.append(disabled, first, second, other, unnamed, next);
+
+    first.focus();
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(other);
+    other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(unnamed);
+    unnamed.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(next);
+  });
+
+  it('recomputes radio representatives and respects form ownership', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+    const formA = document.createElement('form');
+    const formB = document.createElement('form');
+    const a = document.createElement('input');
+    const b = document.createElement('input');
+    const c = document.createElement('input');
+    a.type = b.type = c.type = 'radio';
+    a.name = b.name = c.name = 'same-name';
+    a.checked = true;
+    c.formNoValidate = true;
+    formA.append(a, b);
+    formB.append(c);
+    dialog.append(formA, formB);
+
+    a.focus();
+    a.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(c);
+    a.checked = false;
+    b.checked = true;
+    c.focus();
+    c.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(b);
+  });
+
+  it('traverses nested open shadow roots, dynamic controls, and active focus', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+    const light = document.createElement('button');
+    const shadow = document.createElement('open-shadow-control');
+    const nested = document.createElement('nested-shadow-control');
+    light.textContent = 'Light';
+    dialog.append(light, shadow, nested);
+
+    const shadowButton = shadow.shadowRoot?.querySelector('button');
+    if (!(shadowButton instanceof HTMLButtonElement)) {
+      throw new Error('Expected an open shadow button.');
+    }
+    shadowButton.focus();
+    expect(shadow.shadowRoot?.activeElement).toBe(shadowButton);
+    shadowButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true }));
+    const nestedButton = nested.shadowRoot?.querySelector('open-shadow-control')?.shadowRoot?.querySelector('button');
+    expect(document.activeElement).toBe(nested);
+    expect(nested.shadowRoot?.activeElement?.shadowRoot?.activeElement).toBe(nestedButton);
+
+    const dynamic = document.createElement('button');
+    dynamic.textContent = 'Dynamic';
+    shadow.shadowRoot?.append(dynamic);
+    nestedButton?.focus();
+    nestedButton?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true }));
+    expect(document.activeElement).toBe(light);
+    dynamic.remove();
+    expect(() => shadow.shadowRoot?.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true }))).not.toThrow();
+  });
+
+  it('treats closed shadow roots as opaque', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+    const host = document.createElement('closed-shadow-host');
+    host.attachShadow({ mode: 'closed' }).innerHTML = '<button>Closed</button>';
+    const light = document.createElement('button');
+    dialog.append(host, light);
+    expect(() => light.focus()).not.toThrow();
+    light.focus();
+    light.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(light);
   });
 
   it('keeps projected control focus styling consumer-owned', () => {

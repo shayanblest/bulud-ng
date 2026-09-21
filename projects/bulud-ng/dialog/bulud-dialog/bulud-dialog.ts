@@ -130,9 +130,9 @@ function isUnavailableElement(element: HTMLElement): boolean {
   }
 
   for (
-    let current: HTMLElement | null = element;
+    let current: Element | null = element;
     current;
-    current = current.parentElement
+    current = composedParent(current)
   ) {
     if (
       current !== element &&
@@ -148,9 +148,9 @@ function isUnavailableElement(element: HTMLElement): boolean {
     }
 
     if (
-      current.hidden ||
       current.getAttribute('aria-hidden') === 'true' ||
-      current.hasAttribute('inert')
+      current.hasAttribute('inert') ||
+      (current instanceof HTMLElement && current.hidden)
     ) {
       return true;
     }
@@ -276,6 +276,16 @@ function isFocusableElement(element: HTMLElement): boolean {
     return !isIntrinsicallyNonFocusable(element);
   }
 
+  // Chromium reports unchecked native radios with tabIndex -1 even though
+  // the group still has a sequential-focus representative. Group reduction
+  // below decides which enabled radio is that representative.
+  if (
+    element.localName === 'input' &&
+    element.getAttribute('type')?.trim().toLowerCase() === 'radio'
+  ) {
+    return true;
+  }
+
   if (element.hasAttribute('contenteditable')) {
     return isContentEditableElement(element);
   }
@@ -292,30 +302,71 @@ function isTabCycleCandidate(element: HTMLElement): boolean {
     return false;
   }
 
-  if (
-    element.localName === 'input' &&
-    element.getAttribute('type')?.toLowerCase() === 'radio'
-  ) {
-    const name = element.getAttribute('name');
-    if (name) {
-      const radios = Array.from(
-        element.ownerDocument.querySelectorAll<HTMLInputElement>(
-          'input[type="radio"]',
-        ),
-      ).filter(
-        (candidate) =>
-          candidate.name === name &&
-          candidate.form === (element as HTMLInputElement).form &&
-          !isUnavailableElement(candidate),
-      );
-      const checked = radios.find((radio) => radio.checked);
-      if (checked && checked !== element) {
-        return false;
-      }
-    }
+  return isFocusableElement(element);
+}
+
+function composedParent(element: Element): Element | null {
+  if (element.assignedSlot) {
+    return element.assignedSlot;
   }
 
-  return isFocusableElement(element);
+  const root = element.getRootNode();
+  return root instanceof ShadowRoot ? root.host : element.parentElement;
+}
+
+function isComposedDescendant(element: Element, ancestor: Element): boolean {
+  for (let current: Element | null = element; current; current = composedParent(current)) {
+    if (current === ancestor) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function collectComposedElements(root: HTMLElement): HTMLElement[] {
+  const elements: HTMLElement[] = [];
+  const visited = new Set<Element>();
+
+  const visit = (element: Element): void => {
+    if (visited.has(element)) {
+      return;
+    }
+    visited.add(element);
+    if (element instanceof HTMLElement) {
+      elements.push(element);
+    }
+
+    if (element instanceof HTMLSlotElement) {
+      const assigned = element.assignedElements({ flatten: true });
+      (assigned.length ? assigned : Array.from(element.children)).forEach(visit);
+      return;
+    }
+
+    const shadowRoot =
+      element instanceof HTMLElement ? element.shadowRoot : null;
+    if (shadowRoot) {
+      Array.from(shadowRoot.children).forEach(visit);
+      return;
+    }
+
+    Array.from(element.children).forEach(visit);
+  };
+
+  Array.from(root.children).forEach(visit);
+  return elements;
+}
+
+function isSameRadioGroup(
+  left: HTMLInputElement,
+  right: HTMLInputElement,
+): boolean {
+  const leftName = left.getAttribute('name');
+  return (
+    Boolean(leftName) &&
+    leftName === right.getAttribute('name') &&
+    left.form === right.form &&
+    left.getRootNode() === right.getRootNode()
+  );
 }
 
 function isProgrammaticFocusTarget(
@@ -324,7 +375,7 @@ function isProgrammaticFocusTarget(
 ): boolean {
   if (
     !element.isConnected ||
-    !surface.contains(element) ||
+    !isComposedDescendant(element, surface) ||
     isUnavailableElement(element)
   ) {
     return false;
@@ -600,8 +651,12 @@ export class BuludDialog {
       return;
     }
 
-    const active = this.document.activeElement;
-    const activeIndex = focusable.indexOf(active as HTMLElement);
+    const active = this.deepestActiveElement();
+    const directActiveIndex = focusable.indexOf(active as HTMLElement);
+    const activeIndex =
+      directActiveIndex >= 0
+        ? directActiveIndex
+        : this.radioRepresentativeIndex(focusable, active);
     if (event.shiftKey) {
       const previous =
         activeIndex >= 0
@@ -633,7 +688,7 @@ export class BuludDialog {
       return backwards ? focusable.at(-1) : focusable[0];
     }
 
-    if (!surface.contains(active)) {
+    if (!isComposedDescendant(active, surface)) {
       return backwards ? focusable.at(-1) : focusable[0];
     }
 
@@ -650,6 +705,25 @@ export class BuludDialog {
     return backwards
       ? (candidates.at(-1) ?? focusable.at(-1))
       : (candidates[0] ?? focusable[0]);
+  }
+
+  private radioRepresentativeIndex(
+    focusable: readonly HTMLElement[],
+    active: Element | null,
+  ): number {
+    if (
+      !(active instanceof HTMLInputElement) ||
+      active.type !== 'radio' ||
+      !active.name
+    ) {
+      return -1;
+    }
+    return focusable.findIndex(
+      (candidate) =>
+        candidate instanceof HTMLInputElement &&
+        candidate.type === 'radio' &&
+        isSameRadioGroup(candidate, active),
+    );
   }
 
   private isInsideAnotherNativeDialog(event: KeyboardEvent): boolean {
@@ -694,7 +768,9 @@ export class BuludDialog {
     selector: string,
   ): HTMLElement | null {
     try {
-      const element = surface.querySelector<HTMLElement>(selector);
+      const element = collectComposedElements(surface).find((candidate) =>
+        candidate.matches(selector),
+      );
       return element && isProgrammaticFocusTarget(element, surface)
         ? element
         : null;
@@ -704,8 +780,44 @@ export class BuludDialog {
   }
 
   private focusableElements(surface: HTMLElement): HTMLElement[] {
-    return Array.from(surface.querySelectorAll<HTMLElement>('*'))
-      .filter((element) => isTabCycleCandidate(element))
+    const candidates = collectComposedElements(surface).filter((element) =>
+      isTabCycleCandidate(element),
+    );
+
+    // Native radios with the same name/form/tree scope share one sequential
+    // focus stop. A checked, enabled member represents the group; without one,
+    // the first enabled member in composed document order does. Arrow-key
+    // movement remains entirely browser-owned because only Tab is handled here.
+    const representatives: HTMLInputElement[] = [];
+    const tabCandidates = candidates
+      .filter((candidate) => {
+        if (
+          candidate.localName !== 'input' ||
+          candidate.getAttribute('type')?.trim().toLowerCase() !== 'radio' ||
+          !candidate.getAttribute('name')
+        ) {
+          return true;
+        }
+
+        const radio = candidate as HTMLInputElement;
+        const group = representatives.find((member) =>
+          isSameRadioGroup(member, radio),
+        );
+        if (group) {
+          return group === radio;
+        }
+
+        const groupMembers = candidates.filter(
+          (member): member is HTMLInputElement =>
+            member.localName === 'input' &&
+            member.getAttribute('type')?.trim().toLowerCase() === 'radio' &&
+            isSameRadioGroup(radio, member as HTMLInputElement),
+        );
+        const representative =
+          groupMembers.find((member) => member.checked) ?? groupMembers[0];
+        representatives.push(representative);
+        return representative === radio;
+      })
       .sort((left, right) => {
         const leftTabIndex = left.tabIndex;
         const rightTabIndex = right.tabIndex;
@@ -720,10 +832,18 @@ export class BuludDialog {
         }
         return 0;
       });
+    return tabCandidates;
   }
 
   private focusedElement(): HTMLElement | null {
-    const active = this.document.activeElement;
+    return this.deepestActiveElement();
+  }
+
+  private deepestActiveElement(): HTMLElement | null {
+    let active: Element | null = this.document.activeElement;
+    while (active instanceof HTMLElement && active.shadowRoot?.activeElement) {
+      active = active.shadowRoot.activeElement;
+    }
     return active instanceof HTMLElement ? active : null;
   }
 
