@@ -142,7 +142,10 @@ function isUnavailableElement(element: HTMLElement): boolean {
       const firstSummary = Array.from(current.children).find(
         (child) => child.localName === 'summary',
       );
-      if (element !== firstSummary) {
+      if (
+        !(firstSummary instanceof HTMLElement) ||
+        !isComposedDescendant(element, firstSummary)
+      ) {
         return true;
       }
     }
@@ -321,6 +324,15 @@ function isComposedDescendant(element: Element, ancestor: Element): boolean {
     }
   }
   return false;
+}
+
+function isOpaqueCustomElement(node: EventTarget | null): node is HTMLElement {
+  return (
+    node instanceof HTMLElement &&
+    node.localName.includes('-') &&
+    customElements.get(node.localName) !== undefined &&
+    node.shadowRoot === null
+  );
 }
 
 function collectComposedElements(root: HTMLElement): HTMLElement[] {
@@ -623,8 +635,19 @@ export class BuludDialog {
       return;
     }
 
+    if (this.isInsideAnotherNativeDialog(event)) {
+      return;
+    }
+
+    // A closed shadow tree is intentionally opaque. Once focus is in such a
+    // widget, let the browser own its internal Tab navigation rather than
+    // guessing at inaccessible descendants.
+    if (event.composedPath().some(isOpaqueCustomElement)) {
+      return;
+    }
+
     if (event.key === 'Escape') {
-      if (event.defaultPrevented || this.isInsideAnotherNativeDialog(event)) {
+      if (event.defaultPrevented) {
         return;
       }
       if (this.closeOnEscape()) {
@@ -727,15 +750,9 @@ export class BuludDialog {
   }
 
   private isInsideAnotherNativeDialog(event: KeyboardEvent): boolean {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return false;
-    }
-
-    const containingDialog = target.closest('dialog');
-    return (
-      containingDialog !== null &&
-      containingDialog !== this.overlay()?.nativeElement
+    const overlay = this.overlay()?.nativeElement;
+    return event.composedPath().some(
+      (node) => node instanceof HTMLDialogElement && node !== overlay,
     );
   }
 

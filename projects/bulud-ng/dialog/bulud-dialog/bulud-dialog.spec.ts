@@ -157,6 +157,9 @@ if (!customElements.get('open-shadow-control')) {
 if (!customElements.get('nested-shadow-control')) {
   customElements.define('nested-shadow-control', NestedShadowControl);
 }
+if (!customElements.get('closed-focus-host')) {
+  customElements.define('closed-focus-host', class extends HTMLElement {});
+}
 
 describe('BuludDialog', () => {
   let fixture: ComponentFixture<TestHost>;
@@ -373,6 +376,140 @@ describe('BuludDialog', () => {
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
     );
     expect(document.activeElement).toBe(summary);
+  });
+
+  it('defers Tab ownership to a nested native modal and resumes afterward', () => {
+    openFromTrigger();
+    const outer = getDialog();
+    const nested = document.createElement('dialog');
+    const nestedButton = document.createElement('button');
+    nestedButton.textContent = 'Nested';
+    nested.append(nestedButton);
+    outer.append(nested);
+    nested.showModal();
+
+    nestedButton.focus();
+    const forward = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    nestedButton.dispatchEvent(forward);
+    expect(forward.defaultPrevented).toBeFalse();
+    const reverse = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    nestedButton.dispatchEvent(reverse);
+    expect(reverse.defaultPrevented).toBeFalse();
+
+    nested.close();
+    const outerLast = outer.querySelector('#second-action') as HTMLButtonElement;
+    outerLast.focus();
+    outerLast.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement?.id).toBe('first-action');
+  });
+
+  it('defers nested native modal events from an open shadow root', () => {
+    openFromTrigger();
+    const outer = getDialog();
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    const nested = document.createElement('dialog');
+    const nestedButton = document.createElement('button');
+    nestedButton.textContent = 'Shadow nested';
+    nested.append(nestedButton);
+    shadow.append(nested);
+    outer.append(host);
+    nested.showModal();
+
+    nestedButton.focus();
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    nestedButton.dispatchEvent(event);
+    expect(event.defaultPrevented).toBeFalse();
+    nested.close();
+  });
+
+  it('preserves an opaque closed-shadow host without inspecting its internals', () => {
+    openFromTrigger();
+    const outer = getDialog();
+    const host = document.createElement('closed-focus-host');
+    host.tabIndex = 0;
+    host.attachShadow({ mode: 'closed', delegatesFocus: true }).innerHTML =
+      '<button>Opaque control</button>';
+    const next = document.createElement('button');
+    next.textContent = 'After opaque';
+    outer.append(host, next);
+
+    host.focus();
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    host.dispatchEvent(event);
+    expect(event.defaultPrevented).toBeFalse();
+    expect(() => host.shadowRoot).not.toThrow();
+    expect(host.shadowRoot).toBeNull();
+  });
+
+  it('keeps closed-summary descendants, excludes closed-details content, and handles nesting', () => {
+    openFromTrigger();
+    const outer = getDialog();
+    outer.querySelectorAll('button').forEach((button) => button.remove());
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    const summaryButton = document.createElement('button');
+    const summaryLink = document.createElement('a');
+    const summaryInput = document.createElement('input');
+    const excluded = document.createElement('button');
+    const nested = document.createElement('details');
+    const nestedSummary = document.createElement('summary');
+    const nestedExcluded = document.createElement('button');
+    const after = document.createElement('button');
+    summaryButton.textContent = 'Summary button';
+    summaryLink.href = '#summary';
+    summaryInput.type = 'text';
+    excluded.textContent = 'Excluded';
+    nestedSummary.textContent = 'Nested summary';
+    nestedExcluded.textContent = 'Nested excluded';
+    after.textContent = 'After';
+    nested.append(nestedSummary, nestedExcluded);
+    summary.append(summaryButton, summaryLink, summaryInput, nested);
+    details.append(summary, excluded);
+    outer.append(details, after);
+
+    summary.focus();
+    summary.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(summaryButton);
+    summaryButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(summaryLink);
+    summaryLink.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(summaryInput);
+    summaryInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(nestedSummary);
+    nestedSummary.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(document.activeElement).toBe(after);
+    after.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(nestedSummary);
+
+    details.open = true;
+    nested.open = true;
+    after.focus();
+    after.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    expect(document.activeElement).toBe(excluded);
   });
 
   it('uses one native Tab stop per named radio group', () => {
