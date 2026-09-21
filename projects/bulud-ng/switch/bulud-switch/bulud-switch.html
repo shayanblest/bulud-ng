@@ -1,0 +1,23 @@
+<span class="bulud-switch">
+  <input
+    class="bulud-switch__input"
+    type="checkbox"
+    role="switch"
+    [id]="inputId()"
+    [checked]="viewChecked()"
+    [disabled]="isDisabled()"
+    [required]="required()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-describedby]="ariaDescribedBy()"
+    [attr.aria-errormessage]="ariaErrorMessage()"
+    [attr.aria-invalid]="isInvalid() ? 'true' : null"
+    (change)="handleChange($event)"
+    (blur)="handleBlur()"
+  />
+  <label class="bulud-switch__label" [for]="inputId()">
+    <span class="bulud-switch__track" aria-hidden="true">
+      <span class="bulud-switch__thumb"></span>
+    </span>
+    <span class="bulud-switch__content"><ng-content /></span>
+  </label>
+</span>

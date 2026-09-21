@@ -30,6 +30,7 @@ its documented secondary entry point:
 | `bulud-ng/tabs`            | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
 | `bulud-ng/accordion`       | `BuludAccordion` and `BuludAccordionItem`            |
 | `bulud-ng/checkbox`        | `BuludCheckbox`                                      |
+| `bulud-ng/switch`          | `BuludSwitch`                                        |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -330,6 +331,54 @@ instance, component token, global provider, and library-default precedence.
 
 The native checkbox handles Space and label activation. Consumers should keep
 the projected label meaningful and provide `aria-label` when it is not.
+
+## Switch
+
+Import `BuludSwitch` from the switch secondary entry point:
+
+```ts
+import { BuludSwitch } from "bulud-ng/switch";
+```
+
+Use projected content as the accessible name and bind the boolean value with
+Angular Forms or `[(checked)]`:
+
+```html
+<bulud-switch [(checked)]="notificationsEnabled"> Enable notifications </bulud-switch>
+```
+
+`BuludSwitch` uses a native checkbox with `role="switch"`, so Space and label
+activation use browser-native keyboard and pointer behavior while exposing the
+APG switch role and checked state. Consumers should provide meaningful
+projected content or `aria-label`, and can use `id` with an external label.
+`disabled`, `required`, `invalid`, `aria-describedby`, and
+`aria-errormessage` are typed inputs. The component implements
+`ControlValueAccessor` and `Validator`; user changes update Forms, blur marks
+the control touched, required returns `{ required: true }`, and Angular Forms
+disabled state disables the native control. Switch transitions are disabled
+when the user requests reduced motion.
+
+Switch theme values use CSS custom properties and follow instance override,
+global `provideBuludTheme` configuration, and library-default precedence. The
+explicitly imported `theme.css` provides light and dark defaults.
+
+### Switch inputs
+
+| Input               | Type             | Default | Description                                    |
+| ------------------- | ---------------- | ------- | ---------------------------------------------- |
+| `checked`           | `boolean`        | `false` | Current switch state; supports two-way binding |
+| `disabled`          | `boolean`        | `false` | Prevents interaction                           |
+| `required`          | `boolean`        | `false` | Enables required validation                    |
+| `invalid`           | `boolean`        | `false` | Explicit invalid presentation                  |
+| `id`                | `string \| null` | `null`  | Native input id                                |
+| `aria-label`        | `string \| null` | `null`  | Accessible name override                       |
+| `aria-describedby`  | `string \| null` | `null`  | Description relationship                       |
+| `aria-errormessage` | `string \| null` | `null`  | Error relationship                             |
+
+`checkedChange` emits once for each user change; programmatic Angular Forms
+writes do not emit it. The native switch handles
+Space and projected-label activation; Enter is not required by the switch APG
+pattern.
 
 ## Tabs
 

@@ -57,6 +57,25 @@
   --bulud-checkbox-size: 1.25rem;
   --bulud-checkbox-gap: 0.625rem;
   --bulud-checkbox-label-line-height: 1.5;
+  --bulud-switch-background: #ffffff;
+  --bulud-switch-background-hover: #f8fafc;
+  --bulud-switch-border: #cbd5e1;
+  --bulud-switch-border-width: 1px;
+  --bulud-switch-checked-background: #2563eb;
+  --bulud-switch-checked-thumb: #ffffff;
+  --bulud-switch-disabled-opacity: 0.55;
+  --bulud-switch-focus: #93c5fd;
+  --bulud-switch-focus-width: 3px;
+  --bulud-switch-focus-offset: 2px;
+  --bulud-switch-foreground: #0f172a;
+  --bulud-switch-gap: 0.625rem;
+  --bulud-switch-height: 1.5rem;
+  --bulud-switch-label-line-height: 1.5;
+  --bulud-switch-padding: 0.125rem;
+  --bulud-switch-radius: 999px;
+  --bulud-switch-thumb: #64748b;
+  --bulud-switch-thumb-size: 1.125rem;
+  --bulud-switch-width: 2.75rem;
 }
 
 :root.dark,
@@ -123,4 +142,12 @@
   --bulud-checkbox-checked-foreground: #172554;
   --bulud-checkbox-foreground: #f8fafc;
   --bulud-checkbox-focus: #bfdbfe;
+  --bulud-switch-background: #0f172a;
+  --bulud-switch-background-hover: #1e293b;
+  --bulud-switch-border: #475569;
+  --bulud-switch-checked-background: #60a5fa;
+  --bulud-switch-checked-thumb: #172554;
+  --bulud-switch-foreground: #f8fafc;
+  --bulud-switch-focus: #bfdbfe;
+  --bulud-switch-thumb: #cbd5e1;
 }

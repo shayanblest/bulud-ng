@@ -34,7 +34,8 @@
               "../clickoutside/**/*.spec.ts",
               "../tabs/**/*.spec.ts",
               "../accordion/**/*.spec.ts",
-              "../checkbox/**/*.spec.ts"
+              "../checkbox/**/*.spec.ts",
+              "../switch/**/*.spec.ts"
             ]
           }
         }

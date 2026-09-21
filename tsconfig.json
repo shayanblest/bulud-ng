@@ -16,7 +16,8 @@
       ],
       "bulud-ng/tabs": ["./projects/bulud-ng/tabs/public-api.ts"],
       "bulud-ng/accordion": ["./projects/bulud-ng/accordion/public-api.ts"],
-      "bulud-ng/checkbox": ["./projects/bulud-ng/checkbox/public-api.ts"]
+      "bulud-ng/checkbox": ["./projects/bulud-ng/checkbox/public-api.ts"],
+      "bulud-ng/switch": ["./projects/bulud-ng/switch/public-api.ts"]
     },
     "strict": true,
     "noImplicitOverride": true,
