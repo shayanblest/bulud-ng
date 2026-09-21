@@ -27,7 +27,11 @@ import { BuludDialog } from './bulud-dialog';
       (closeRequest)="lastCloseReason.set($event)"
     >
       <h2 id="dialog-title">Dialog title</h2>
+      <h2 id="static-initial-focus" tabindex="-1">Static dialog title</h2>
       <p id="dialog-description">Dialog description</p>
+      <button id="disconnected-target" tabindex="-1" type="button">
+        Removed target
+      </button>
       <button id="first-action" type="button">First action</button>
       <button id="second-action" type="button">Second action</button>
     </bulud-dialog>
@@ -53,6 +57,7 @@ class TestHost {
 @Component({
   imports: [BuludDialog],
   template: `
+    <button id="stack-trigger" type="button">Open stack</button>
     <bulud-dialog [(open)]="firstOpen" aria-label="First dialog">
       <button id="stack-first-action" type="button">First action</button>
     </bulud-dialog>
@@ -145,6 +150,75 @@ describe('BuludDialog', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('allows a static negative-tabindex heading as explicit initial focus', () => {
+    fixture.componentInstance.initialFocus.set('#static-initial-focus');
+    openFromTrigger();
+
+    expect(document.activeElement?.id).toBe('static-initial-focus');
+
+    const first = fixture.nativeElement.querySelector(
+      '#first-action',
+    ) as HTMLButtonElement;
+    first.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement?.id).toBe('second-action');
+
+    const second = fixture.nativeElement.querySelector(
+      '#second-action',
+    ) as HTMLButtonElement;
+    second.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement?.id).toBe('first-action');
+  });
+
+  it('rejects plain, disabled, hidden, inert, and disconnected explicit targets', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const targets = [
+      Object.assign(document.createElement('div'), { id: 'plain-target' }),
+      Object.assign(document.createElement('button'), {
+        id: 'disabled-target',
+        disabled: true,
+      }),
+      Object.assign(document.createElement('button'), {
+        id: 'hidden-target',
+        hidden: true,
+      }),
+      Object.assign(document.createElement('button'), {
+        id: 'inert-target',
+      }),
+    ];
+    targets[3].setAttribute('inert', '');
+    for (const target of targets) {
+      dialog.append(target);
+    }
+
+    for (const target of targets) {
+      fixture.componentInstance.initialFocus.set(`#${target.id}`);
+      fixture.componentInstance.open.set(false);
+      fixture.detectChanges();
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      expect(document.activeElement?.id).toBe('first-action');
+    }
+
+    fixture.componentInstance.initialFocus.set('#disconnected-target');
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    const disconnected = getDialog().querySelector('#disconnected-target');
+    disconnected?.remove();
+    (fixture.nativeElement.querySelector('#trigger') as HTMLElement).focus();
+    expect(document.activeElement?.id).toBe('first-action');
   });
 
   it('falls back to the first focusable child and then the dialog surface', () => {
@@ -421,6 +495,9 @@ describe('BuludDialog stack ownership', () => {
   });
 
   const openBoth = async (): Promise<void> => {
+    (
+      fixture.nativeElement.querySelector('#stack-trigger') as HTMLElement
+    ).focus();
     fixture.componentInstance.firstOpen.set(true);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -479,5 +556,21 @@ describe('BuludDialog stack ownership', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(document.body.style.overflow).toBe('');
+  });
+
+  it('transfers a lower dialog opener before restoring after the top closes', async () => {
+    await openBoth();
+    const trigger = fixture.nativeElement.querySelector(
+      '#stack-trigger',
+    ) as HTMLButtonElement;
+
+    fixture.componentInstance.firstOpen.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.secondOpen.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(document.activeElement).toBe(trigger);
   });
 });

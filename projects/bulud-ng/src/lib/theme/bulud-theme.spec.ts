@@ -51,6 +51,54 @@ describe('Bulud theme', () => {
     );
   });
 
+  it('keeps Dialog omitted from legacy defaults and provider CSS', () => {
+    expect('dialog' in BULUD_DEFAULT_THEME).toBeFalse();
+
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root { --bulud-dialog-background: #ffffff; }
+      :root.dark { --bulud-dialog-background: #0f172a; }
+    `;
+    document.head.append(libraryThemeStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme(BULUD_DEFAULT_THEME)],
+      parentInjector,
+    );
+
+    try {
+      const styleText = document.head.querySelector(
+        'style[data-bulud-theme]',
+      )?.textContent;
+      expect(styleText).not.toContain('--bulud-dialog-background:');
+      root.classList.add('dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-background'),
+      ).toBe('#0f172a');
+    } finally {
+      root.classList.remove('dark');
+      libraryThemeStyle.remove();
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
   it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
     const button: BuludButtonTheme = {
       disabledOpacity: '0.4',

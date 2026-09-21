@@ -515,7 +515,13 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
  * Use resolveBuludTheme() when concrete values for every token are needed.
  */
 export const BULUD_DEFAULT_THEME: BuludTheme = {
-  ...RESOLVED_DEFAULT_THEME,
+  colors: RESOLVED_DEFAULT_THEME.colors,
+  shape: RESOLVED_DEFAULT_THEME.shape,
+  dropdown: RESOLVED_DEFAULT_THEME.dropdown,
+  tabs: RESOLVED_DEFAULT_THEME.tabs,
+  accordion: RESOLVED_DEFAULT_THEME.accordion,
+  checkbox: RESOLVED_DEFAULT_THEME.checkbox,
+  switch: RESOLVED_DEFAULT_THEME.switch,
   badge: {
     neutral: RESOLVED_DEFAULT_THEME.badge.neutral,
     primary: RESOLVED_DEFAULT_THEME.badge.primary,

@@ -37,6 +37,8 @@ const FOCUSABLE_SELECTOR = [
 interface DialogStackEntry {
   readonly handleKeydown: (event: KeyboardEvent) => void;
   readonly handleFocusin: (event: FocusEvent) => void;
+  readonly getRestoreTarget: () => HTMLElement | null;
+  readonly setRestoreTarget: (target: HTMLElement | null) => void;
 }
 
 interface DialogRegistry {
@@ -86,6 +88,9 @@ function unregisterDialog(
   }
 
   const wasTop = index === registry.stack.length - 1;
+  if (!wasTop) {
+    registry.stack[index + 1].setRestoreTarget(entry.getRestoreTarget());
+  }
   registry.stack.splice(index, 1);
 
   if (registry.stack.length === 0) {
@@ -125,14 +130,9 @@ function unlockBodyScroll(document: Document): void {
   }
 }
 
-function isFocusableElement(element: HTMLElement): boolean {
-  const tabindex = element.getAttribute('tabindex');
-  if (tabindex !== null && Number.parseInt(tabindex, 10) < 0) {
-    return false;
-  }
-
+function isUnavailableElement(element: HTMLElement): boolean {
   if (element.matches(':disabled')) {
-    return false;
+    return true;
   }
 
   for (
@@ -145,16 +145,58 @@ function isFocusableElement(element: HTMLElement): boolean {
       current.getAttribute('aria-hidden') === 'true' ||
       current.hasAttribute('inert')
     ) {
-      return false;
+      return true;
     }
 
     const style = current.ownerDocument.defaultView?.getComputedStyle(current);
     if (style?.display === 'none' || style?.visibility === 'hidden') {
-      return false;
+      return true;
     }
   }
 
-  return true;
+  return false;
+}
+
+function hasNonNegativeTabIndex(element: HTMLElement): boolean {
+  const tabindex = element.getAttribute('tabindex');
+  return (
+    tabindex !== null &&
+    /^[-+]?\d+$/.test(tabindex.trim()) &&
+    Number.parseInt(tabindex, 10) >= 0
+  );
+}
+
+function hasExplicitTabIndex(element: HTMLElement): boolean {
+  const tabindex = element.getAttribute('tabindex');
+  return tabindex !== null && /^[-+]?\d+$/.test(tabindex.trim());
+}
+
+function isTabCycleCandidate(element: HTMLElement): boolean {
+  if (isUnavailableElement(element) || !element.isConnected) {
+    return false;
+  }
+
+  return (
+    element.matches(FOCUSABLE_SELECTOR) &&
+    (!element.hasAttribute('tabindex') || hasNonNegativeTabIndex(element))
+  );
+}
+
+function isProgrammaticFocusTarget(
+  element: HTMLElement,
+  surface: HTMLElement,
+): boolean {
+  if (
+    !element.isConnected ||
+    !surface.contains(element) ||
+    isUnavailableElement(element)
+  ) {
+    return false;
+  }
+
+  const hasExplicitTabIndexValue = hasExplicitTabIndex(element);
+  const isNaturallyFocusable = element.matches(FOCUSABLE_SELECTOR);
+  return hasExplicitTabIndexValue || isNaturallyFocusable;
 }
 
 /**
@@ -182,6 +224,10 @@ export class BuludDialog {
   private readonly stackEntry: DialogStackEntry = {
     handleKeydown: (event) => this.handleDocumentKeydown(event),
     handleFocusin: (event) => this.handleDocumentFocusin(event),
+    getRestoreTarget: () => this.restoreTarget,
+    setRestoreTarget: (target) => {
+      this.restoreTarget = target;
+    },
   };
 
   /** Controlled open state. Use `[(open)]` for two-way binding. */
@@ -368,18 +414,22 @@ export class BuludDialog {
     }
 
     const requested = this.initialFocus();
-    const explicit = requested ? this.queryFocusable(surface, requested) : null;
+    const explicit = requested
+      ? this.queryProgrammaticFocusTarget(surface, requested)
+      : null;
     const target = explicit ?? this.focusableElements(surface)[0] ?? surface;
     target.focus();
   }
 
-  private queryFocusable(
+  private queryProgrammaticFocusTarget(
     surface: HTMLElement,
     selector: string,
   ): HTMLElement | null {
     try {
       const element = surface.querySelector<HTMLElement>(selector);
-      return element && isFocusableElement(element) ? element : null;
+      return element && isProgrammaticFocusTarget(element, surface)
+        ? element
+        : null;
     } catch {
       return null;
     }
@@ -388,7 +438,7 @@ export class BuludDialog {
   private focusableElements(surface: HTMLElement): HTMLElement[] {
     return Array.from(
       surface.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    ).filter((element) => isFocusableElement(element));
+    ).filter((element) => isTabCycleCandidate(element));
   }
 
   private focusedElement(): HTMLElement | null {
@@ -399,7 +449,7 @@ export class BuludDialog {
   private restoreFocus(): void {
     const target = this.restoreTarget;
     this.restoreTarget = null;
-    if (target?.isConnected && isFocusableElement(target)) {
+    if (target?.isConnected && isProgrammaticFocusTarget(target, target)) {
       target.focus();
     }
   }
