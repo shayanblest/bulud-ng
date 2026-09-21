@@ -461,6 +461,7 @@ function isSameRadioGroup(
 function isProgrammaticFocusTarget(
   element: FocusCandidate,
   surface: Element,
+  allowOpaqueRestore = false,
 ): boolean {
   if (
     !element.isConnected ||
@@ -472,7 +473,12 @@ function isProgrammaticFocusTarget(
 
   const hasExplicitTabIndexValue = hasExplicitTabIndex(element);
   const isNaturallyFocusable = isFocusableElement(element);
-  return hasExplicitTabIndexValue || isNaturallyFocusable;
+  return (
+    hasExplicitTabIndexValue ||
+    isNaturallyFocusable ||
+    (allowOpaqueRestore &&
+      isOpaqueCustomElement(element, surface.ownerDocument))
+  );
 }
 
 /**
@@ -501,6 +507,7 @@ export class BuludDialog {
   private wasOpen = false;
   private destroyed = false;
   private restoreTarget: FocusCandidate | null = null;
+  private readonly opaqueRestoreTargets = new WeakSet<FocusCandidate>();
   private readonly stackEntry: DialogStackEntry = {
     handleKeydown: (event) => this.handleDocumentKeydown(event),
     handleFocusin: (event) => this.handleDocumentFocusin(event),
@@ -589,6 +596,12 @@ export class BuludDialog {
 
       if (isOpen && !this.wasOpen) {
         this.restoreTarget = this.focusedElement();
+        if (
+          this.restoreTarget &&
+          isOpaqueCustomElement(this.restoreTarget, this.document)
+        ) {
+          this.opaqueRestoreTargets.add(this.restoreTarget);
+        }
         this.wasOpen = true;
         this.attachListeners();
         lockBodyScroll(this.document);
@@ -981,7 +994,14 @@ export class BuludDialog {
   private restoreFocus(): void {
     const target = this.restoreTarget;
     this.restoreTarget = null;
-    if (target?.isConnected && isProgrammaticFocusTarget(target, target)) {
+    if (
+      target?.isConnected &&
+      isProgrammaticFocusTarget(
+        target,
+        target,
+        this.opaqueRestoreTargets.has(target),
+      )
+    ) {
       target.focus();
     }
   }

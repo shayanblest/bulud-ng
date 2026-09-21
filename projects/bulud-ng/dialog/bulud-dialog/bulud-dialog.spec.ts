@@ -259,6 +259,43 @@ describe('BuludDialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it('restores focus through a closed delegatesFocus shadow host', () => {
+    const host = document.createElement('closed-focus-host');
+    host.attachShadow({ mode: 'closed', delegatesFocus: true }).innerHTML =
+      '<button>Opaque opener</button>';
+    const dialogHost = fixture.nativeElement.querySelector('bulud-dialog');
+    fixture.nativeElement.insertBefore(host, dialogHost);
+
+    host.focus();
+    expect(document.activeElement).toBe(host);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+
+    // The internal target is intentionally inaccessible; the host being the
+    // active element proves the browser performed delegated focus restoration.
+    expect(document.activeElement).toBe(host);
+  });
+
+  it('does not accept an unfocused negative-tabindex custom host as an opener', () => {
+    const invalid = document.createElement('closed-focus-host');
+    invalid.tabIndex = -1;
+    const dialogHost = fixture.nativeElement.querySelector('bulud-dialog');
+    fixture.nativeElement.insertBefore(invalid, dialogHost);
+    const trigger = fixture.nativeElement.querySelector(
+      '#trigger',
+    ) as HTMLButtonElement;
+    trigger.focus();
+
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it('allows a static negative-tabindex heading as explicit initial focus', () => {
     fixture.componentInstance.initialFocus.set('#static-initial-focus');
     openFromTrigger();
