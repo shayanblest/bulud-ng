@@ -47,7 +47,12 @@ class TestHost {
   readonly initialFocus = signal<string | undefined>(undefined);
   readonly lastCloseReason = signal<string | null>(null);
   readonly openChangeCount = signal(0);
-  readonly themeOverride = { background: '#14532d', maxWidth: '40rem' };
+  readonly themeOverride = {
+    background: '#14532d',
+    maxWidth: '40rem',
+    focusWidth: '5px',
+    focusOffset: '7px',
+  };
 
   recordOpenChange(): void {
     this.openChangeCount.update((count) => count + 1);
@@ -58,19 +63,23 @@ class TestHost {
   imports: [BuludDialog],
   template: `
     <button id="stack-trigger" type="button">Open stack</button>
-    <bulud-dialog [(open)]="firstOpen" aria-label="First dialog">
-      <button id="stack-first-action" type="button">First action</button>
+    <bulud-dialog [(open)]="thirdOpen" aria-label="Third dialog">
+      <button id="stack-third-action" type="button">Third action</button>
     </bulud-dialog>
     @if (secondPresent()) {
       <bulud-dialog [(open)]="secondOpen" aria-label="Second dialog">
         <button id="stack-second-action" type="button">Second action</button>
       </bulud-dialog>
     }
+    <bulud-dialog [(open)]="firstOpen" aria-label="First dialog">
+      <button id="stack-first-action" type="button">First action</button>
+    </bulud-dialog>
   `,
 })
 class StackHost {
   readonly firstOpen = signal(false);
   readonly secondOpen = signal(false);
+  readonly thirdOpen = signal(false);
   readonly secondPresent = signal(true);
 }
 
@@ -179,6 +188,89 @@ describe('BuludDialog', () => {
     expect(document.activeElement?.id).toBe('first-action');
   });
 
+  it('recognizes editable content variants and excludes false, hidden, and inert editors', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const validEditors = [
+      ['bare-editor', undefined],
+      ['empty-editor', ''],
+      ['true-editor', 'true'],
+      ['plaintext-editor', 'plaintext-only'],
+    ] as const;
+
+    for (const [id, value] of validEditors) {
+      const editor = document.createElement('div');
+      editor.id = id;
+      editor.setAttribute('contenteditable', value ?? '');
+      dialog.append(editor);
+    }
+    const falseEditor = document.createElement('div');
+    falseEditor.id = 'false-editor';
+    falseEditor.setAttribute('contenteditable', 'false');
+    dialog.append(falseEditor);
+    const hiddenEditor = document.createElement('div');
+    hiddenEditor.id = 'hidden-editor';
+    hiddenEditor.setAttribute('contenteditable', 'true');
+    hiddenEditor.hidden = true;
+    dialog.append(hiddenEditor);
+    const inertEditor = document.createElement('div');
+    inertEditor.id = 'inert-editor';
+    inertEditor.setAttribute('contenteditable', 'true');
+    inertEditor.setAttribute('inert', '');
+    dialog.append(inertEditor);
+
+    for (const [id] of validEditors) {
+      fixture.componentInstance.initialFocus.set(`#${id}`);
+      fixture.detectChanges();
+      document.dispatchEvent(new FocusEvent('focusin'));
+      expect(document.activeElement?.id).toBe(id);
+    }
+
+    for (const id of ['false-editor', 'hidden-editor', 'inert-editor']) {
+      fixture.componentInstance.initialFocus.set(`#${id}`);
+      fixture.detectChanges();
+      document.dispatchEvent(new FocusEvent('focusin'));
+      expect(document.activeElement?.id).toBe('first-action');
+    }
+  });
+
+  it('traps Tab and Shift+Tab when editable content is the only interactive content', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelector('#first-action')?.remove();
+    dialog.querySelector('#second-action')?.remove();
+    const editor = document.createElement('div');
+    editor.id = 'only-editor';
+    editor.setAttribute('contenteditable', '');
+    dialog.append(editor);
+    fixture.componentInstance.initialFocus.set(undefined);
+    fixture.detectChanges();
+    document.dispatchEvent(new FocusEvent('focusin'));
+
+    expect(document.activeElement).toBe(editor);
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(editor);
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(editor);
+  });
+
+  it('uses instance focus geometry for the visible focus ring', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.focus();
+
+    expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
+    expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
+  });
+
   it('rejects plain, disabled, hidden, inert, and disconnected explicit targets', () => {
     openFromTrigger();
     const dialog = getDialog();
@@ -281,7 +373,7 @@ describe('BuludDialog', () => {
     );
 
     expect(document.activeElement).toBe(dialog);
-    expect(getComputedStyle(dialog).outlineWidth).toBe('3px');
+    expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
   });
 
   it('closes once for enabled Escape and emits its user close reason', () => {
@@ -506,6 +598,13 @@ describe('BuludDialog stack ownership', () => {
     await fixture.whenStable();
   };
 
+  const openThree = async (): Promise<void> => {
+    await openBoth();
+    fixture.componentInstance.thirdOpen.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+  };
+
   it('lets only the top-most dialog handle Escape and restores in stack order', async () => {
     await openBoth();
     const firstAction = fixture.nativeElement.querySelector(
@@ -540,6 +639,82 @@ describe('BuludDialog stack ownership', () => {
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
     );
     expect(document.activeElement).toBe(secondAction);
+  });
+
+  it('keeps visual stacking aligned with open order even when DOM order differs', async () => {
+    await openBoth();
+    const first = fixture.nativeElement.querySelector(
+      '[role="dialog"][aria-label="First dialog"]',
+    ) as HTMLElement;
+    const second = fixture.nativeElement.querySelector(
+      '[role="dialog"][aria-label="Second dialog"]',
+    ) as HTMLElement;
+    const firstZIndex = Number.parseInt(
+      getComputedStyle(first.parentElement!).zIndex,
+      10,
+    );
+    const secondZIndex = Number.parseInt(
+      getComputedStyle(second.parentElement!).zIndex,
+      10,
+    );
+
+    expect(secondZIndex).toBeGreaterThan(firstZIndex);
+    expect(document.activeElement?.id).toBe('stack-second-action');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.secondOpen()).toBeFalse();
+    expect(getComputedStyle(first.parentElement!).zIndex).toBe('1000');
+    expect(document.activeElement?.id).toBe('stack-first-action');
+  });
+
+  it('moves a reopened dialog to the visual and behavioral top', async () => {
+    await openBoth();
+    fixture.componentInstance.secondOpen.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.secondOpen.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const first = fixture.nativeElement.querySelector(
+      '[role="dialog"][aria-label="First dialog"]',
+    ) as HTMLElement;
+    const second = fixture.nativeElement.querySelector(
+      '[role="dialog"][aria-label="Second dialog"]',
+    ) as HTMLElement;
+    expect(
+      Number.parseInt(getComputedStyle(second.parentElement!).zIndex, 10),
+    ).toBeGreaterThan(
+      Number.parseInt(getComputedStyle(first.parentElement!).zIndex, 10),
+    );
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.secondOpen()).toBeFalse();
+    expect(fixture.componentInstance.firstOpen()).toBeTrue();
+  });
+
+  it('promotes the next dialog when the visual top dialog is destroyed', async () => {
+    await openThree();
+    const third = fixture.nativeElement.querySelector(
+      '[role="dialog"][aria-label="Third dialog"]',
+    ) as HTMLElement;
+    const second = fixture.nativeElement.querySelector(
+      '[role="dialog"][aria-label="Second dialog"]',
+    ) as HTMLElement;
+    expect(
+      Number.parseInt(getComputedStyle(third.parentElement!).zIndex, 10),
+    ).toBeGreaterThan(
+      Number.parseInt(getComputedStyle(second.parentElement!).zIndex, 10),
+    );
+
+    fixture.componentInstance.thirdOpen.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(getComputedStyle(second.parentElement!).zIndex).toBe('1001');
+    expect(document.activeElement?.id).toBe('stack-second-action');
+    expect(document.body.style.overflow).toBe('hidden');
   });
 
   it('destroying the top dialog preserves the lower trap and scroll lock', async () => {

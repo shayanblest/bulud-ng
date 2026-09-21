@@ -316,6 +316,8 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
     expect(variables['--bulud-dialog-background']).toBe('#fef3c7');
     expect(variables['--bulud-dialog-max-width']).toBe('40rem');
+    expect(variables['--bulud-dialog-focus-width']).toBe('3px');
+    expect(variables['--bulud-dialog-focus-offset']).toBe('2px');
     expect(variables['--bulud-color-danger']).toBe(
       BULUD_DEFAULT_THEME.colors.danger,
     );
@@ -613,6 +615,8 @@ describe('Bulud theme', () => {
         --bulud-dialog-radius: 0.75rem;
         --bulud-dialog-padding: 1.5rem;
         --bulud-dialog-max-width: 32rem;
+        --bulud-dialog-focus-width: 3px;
+        --bulud-dialog-focus-offset: 2px;
       }
       :root.dark {
         --bulud-dialog-background: #0f172a;
@@ -633,6 +637,8 @@ describe('Bulud theme', () => {
             radius: '1rem',
             padding: '2rem',
             maxWidth: '40rem',
+            focusWidth: '5px',
+            focusOffset: '7px',
           },
         }),
       ],
@@ -652,6 +658,8 @@ describe('Bulud theme', () => {
       expect(read('--bulud-dialog-radius')).toBe('1rem');
       expect(read('--bulud-dialog-padding')).toBe('2rem');
       expect(read('--bulud-dialog-max-width')).toBe('40rem');
+      expect(read('--bulud-dialog-focus-width')).toBe('5px');
+      expect(read('--bulud-dialog-focus-offset')).toBe('7px');
 
       scope.style.setProperty('--bulud-dialog-background', '#234567');
       expect(read('--bulud-dialog-background')).toBe('#234567');
@@ -686,8 +694,14 @@ describe('Bulud theme', () => {
     const originalStyleText = existingStyle?.textContent ?? null;
     const libraryThemeStyle = document.createElement('style');
     libraryThemeStyle.textContent = `
-      :root { --bulud-dialog-foreground: #0f172a; }
-      :root.dark { --bulud-dialog-foreground: #f8fafc; }
+      :root {
+        --bulud-dialog-foreground: #0f172a;
+        --bulud-dialog-focus-width: 3px;
+        --bulud-dialog-focus-offset: 2px;
+      }
+      :root.dark {
+        --bulud-dialog-foreground: #f8fafc;
+      }
     `;
     document.head.append(libraryThemeStyle);
     const environmentInjector = createEnvironmentInjector(
@@ -706,6 +720,11 @@ describe('Bulud theme', () => {
           ?.getComputedStyle(root)
           .getPropertyValue('--bulud-dialog-foreground'),
       ).toBe('#f8fafc');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-focus-width'),
+      ).toBe('3px');
     } finally {
       root.classList.remove('dark');
       libraryThemeStyle.remove();

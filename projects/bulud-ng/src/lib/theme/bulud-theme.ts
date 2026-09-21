@@ -199,6 +199,8 @@ export interface BuludDialogTheme {
   readonly padding: string;
   readonly maxWidth: string;
   readonly focus: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
 }
 
 /** Consumer theme; omitted optional tokens use library defaults. */
@@ -316,6 +318,8 @@ const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
   '--bulud-dialog-radius',
   '--bulud-dialog-padding',
   '--bulud-dialog-max-width',
+  '--bulud-dialog-focus-width',
+  '--bulud-dialog-focus-offset',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -506,6 +510,8 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     padding: '1.5rem',
     maxWidth: '32rem',
     focus: '#93c5fd',
+    focusWidth: '3px',
+    focusOffset: '2px',
   },
 };
 
@@ -868,6 +874,8 @@ export function createBuludThemeVariables(
     '--bulud-dialog-padding': theme.dialog.padding,
     '--bulud-dialog-max-width': theme.dialog.maxWidth,
     '--bulud-dialog-focus': theme.dialog.focus,
+    '--bulud-dialog-focus-width': theme.dialog.focusWidth,
+    '--bulud-dialog-focus-offset': theme.dialog.focusOffset,
   };
 }
 
@@ -1028,6 +1036,8 @@ export function provideBuludTheme(
     ['padding', '--bulud-dialog-padding'],
     ['maxWidth', '--bulud-dialog-max-width'],
     ['focus', '--bulud-dialog-focus'],
+    ['focusWidth', '--bulud-dialog-focus-width'],
+    ['focusOffset', '--bulud-dialog-focus-offset'],
   ] as const) {
     if (config.dialog?.[field] === undefined) {
       delete variables[variable];

@@ -85,6 +85,8 @@
   --bulud-dialog-padding: 1.5rem;
   --bulud-dialog-max-width: 32rem;
   --bulud-dialog-focus: #93c5fd;
+  --bulud-dialog-focus-width: 3px;
+  --bulud-dialog-focus-offset: 2px;
 }
 
 :root.dark,

@@ -2,6 +2,7 @@
   <div
     class="bulud-dialog__backdrop"
     [attr.data-dialog-id]="dialogId()"
+    [style.z-index]="1000 + stackLevel()"
     [style.--bulud-dialog-backdrop]="
       instanceStyles()['--bulud-dialog-backdrop']
     "
@@ -19,6 +20,12 @@
       instanceStyles()['--bulud-dialog-max-width']
     "
     [style.--bulud-dialog-focus]="instanceStyles()['--bulud-dialog-focus']"
+    [style.--bulud-dialog-focus-width]="
+      instanceStyles()['--bulud-dialog-focus-width']
+    "
+    [style.--bulud-dialog-focus-offset]="
+      instanceStyles()['--bulud-dialog-focus-offset']
+    "
     (pointerdown)="handleBackdropPointerdown($event)"
   >
     <section

@@ -14,6 +14,7 @@ import {
   model,
   output,
   runInInjectionContext,
+  signal,
   viewChild,
 } from '@angular/core';
 
@@ -30,7 +31,7 @@ const FOCUSABLE_SELECTOR = [
   'textarea:not([disabled])',
   'video[controls]',
   'audio[controls]',
-  '[contenteditable="true"]',
+  '[contenteditable]',
   '[tabindex]',
 ].join(',');
 
@@ -39,6 +40,7 @@ interface DialogStackEntry {
   readonly handleFocusin: (event: FocusEvent) => void;
   readonly getRestoreTarget: () => HTMLElement | null;
   readonly setRestoreTarget: (target: HTMLElement | null) => void;
+  readonly setStackLevel: (level: number) => void;
 }
 
 interface DialogRegistry {
@@ -54,6 +56,10 @@ interface BodyScrollLockState {
 
 const dialogRegistries = new WeakMap<Document, DialogRegistry>();
 const bodyScrollLocks = new WeakMap<Document, BodyScrollLockState>();
+
+function updateStackLevels(stack: readonly DialogStackEntry[]): void {
+  stack.forEach((entry, index) => entry.setStackLevel(index));
+}
 
 function registerDialog(document: Document, entry: DialogStackEntry): void {
   let registry = dialogRegistries.get(document);
@@ -71,6 +77,7 @@ function registerDialog(document: Document, entry: DialogStackEntry): void {
   }
 
   registry.stack.push(entry);
+  updateStackLevels(registry.stack);
 }
 
 function unregisterDialog(
@@ -92,6 +99,7 @@ function unregisterDialog(
     registry.stack[index + 1].setRestoreTarget(entry.getRestoreTarget());
   }
   registry.stack.splice(index, 1);
+  updateStackLevels(registry.stack);
 
   if (registry.stack.length === 0) {
     document.removeEventListener('keydown', registry.keydown, true);
@@ -171,13 +179,75 @@ function hasExplicitTabIndex(element: HTMLElement): boolean {
   return tabindex !== null && /^[-+]?\d+$/.test(tabindex.trim());
 }
 
+function isContentEditableElement(element: HTMLElement): boolean {
+  const ownValue = element.getAttribute('contenteditable');
+  if (ownValue !== null) {
+    const normalizedOwnValue = ownValue.trim().toLowerCase();
+    if (normalizedOwnValue === 'false') {
+      return false;
+    }
+    if (
+      normalizedOwnValue === '' ||
+      normalizedOwnValue === 'true' ||
+      normalizedOwnValue === 'plaintext-only'
+    ) {
+      return true;
+    }
+  }
+
+  const contentEditable = (
+    element as HTMLElement & {
+      readonly isContentEditable?: boolean;
+    }
+  ).isContentEditable;
+  if (contentEditable === true) {
+    return contentEditable;
+  }
+  for (
+    let current: HTMLElement | null = element;
+    current;
+    current = current.parentElement
+  ) {
+    const value = current.getAttribute('contenteditable');
+    if (value === null) {
+      continue;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'false') {
+      return false;
+    }
+    if (
+      normalized === '' ||
+      normalized === 'true' ||
+      normalized === 'plaintext-only'
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isFocusableSelectorMatch(element: HTMLElement): boolean {
+  if (!element.matches(FOCUSABLE_SELECTOR)) {
+    return false;
+  }
+
+  return (
+    !element.hasAttribute('contenteditable') ||
+    isContentEditableElement(element) ||
+    hasExplicitTabIndex(element)
+  );
+}
+
 function isTabCycleCandidate(element: HTMLElement): boolean {
   if (isUnavailableElement(element) || !element.isConnected) {
     return false;
   }
 
   return (
-    element.matches(FOCUSABLE_SELECTOR) &&
+    isFocusableSelectorMatch(element) &&
     (!element.hasAttribute('tabindex') || hasNonNegativeTabIndex(element))
   );
 }
@@ -195,7 +265,7 @@ function isProgrammaticFocusTarget(
   }
 
   const hasExplicitTabIndexValue = hasExplicitTabIndex(element);
-  const isNaturallyFocusable = element.matches(FOCUSABLE_SELECTOR);
+  const isNaturallyFocusable = isFocusableSelectorMatch(element);
   return hasExplicitTabIndexValue || isNaturallyFocusable;
 }
 
@@ -219,6 +289,7 @@ export class BuludDialog {
   private readonly destroyRef = inject(DestroyRef);
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
   private readonly instanceId = `bulud-dialog-${BuludDialog.nextId++}`;
+  protected readonly stackLevel = signal(0);
   private wasOpen = false;
   private restoreTarget: HTMLElement | null = null;
   private readonly stackEntry: DialogStackEntry = {
@@ -228,6 +299,7 @@ export class BuludDialog {
     setRestoreTarget: (target) => {
       this.restoreTarget = target;
     },
+    setStackLevel: (level) => this.stackLevel.set(level),
   };
 
   /** Controlled open state. Use `[(open)]` for two-way binding. */
@@ -274,6 +346,8 @@ export class BuludDialog {
       '--bulud-dialog-padding': override.padding,
       '--bulud-dialog-max-width': override.maxWidth,
       '--bulud-dialog-focus': override.focus,
+      '--bulud-dialog-focus-width': override.focusWidth,
+      '--bulud-dialog-focus-offset': override.focusOffset,
     };
   });
 

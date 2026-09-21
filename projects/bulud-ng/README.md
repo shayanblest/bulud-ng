@@ -423,7 +423,8 @@ unique and must identify visible projected content. Consumers should provide a
 visible close action inside the projected footer; Escape/backdrop behavior is
 optional and policy-controlled. The component follows ancestor `dir` and dark
 theme selectors, respects `prefers-reduced-motion`, and supports `dialog`
-theme tokens plus per-instance `[theme]` overrides.
+theme tokens—including focus color/width/offset—plus per-instance `[theme]`
+overrides.
 
 ## Tabs
 

@@ -30,8 +30,9 @@
 
 .bulud-dialog__surface:focus,
 .bulud-dialog__surface :focus-visible {
-  outline: 3px solid var(--bulud-dialog-focus, #93c5fd);
-  outline-offset: 2px;
+  outline: var(--bulud-dialog-focus-width, 3px) solid
+    var(--bulud-dialog-focus, #93c5fd);
+  outline-offset: var(--bulud-dialog-focus-offset, 2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
