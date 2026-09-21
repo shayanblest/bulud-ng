@@ -51,6 +51,27 @@ describe('Bulud theme', () => {
     );
   });
 
+  it('resolves every public Dialog token to its canonical default', () => {
+    expect(Object.keys(resolveBuludTheme().dialog).sort()).toEqual([
+      'backdrop',
+      'background',
+      'border',
+      'borderWidth',
+      'focus',
+      'focusOffset',
+      'focusWidth',
+      'foreground',
+      'maxWidth',
+      'padding',
+      'radius',
+      'shadow',
+      'stackBase',
+      'viewportGutter',
+    ]);
+    expect(resolveBuludTheme().dialog.borderWidth).toBe('1px');
+    expect(resolveBuludTheme().dialog.viewportGutter).toBe('1rem');
+  });
+
   it('keeps Dialog omitted from legacy defaults and provider CSS', () => {
     expect('dialog' in BULUD_DEFAULT_THEME).toBeFalse();
 

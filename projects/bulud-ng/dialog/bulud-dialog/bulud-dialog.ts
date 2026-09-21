@@ -129,8 +129,31 @@ type FocusCandidate = Element & {
   focus: (options?: FocusOptions) => void;
 };
 
+type DomConstructor = abstract new (...args: never[]) => object;
+
+const DOCUMENT_POSITION_PRECEDING = 2;
+const DOCUMENT_POSITION_FOLLOWING = 4;
+
+function isDomInstance<T>(
+  value: unknown,
+  document: Document,
+  constructorName: string,
+): value is T {
+  const constructor = (
+    document.defaultView as unknown as Record<string, unknown> | null
+  )?.[constructorName];
+  return (
+    typeof constructor === 'function' &&
+    value instanceof (constructor as DomConstructor)
+  );
+}
+
 function isUnavailableElement(element: Element): boolean {
-  if (element instanceof HTMLElement && element.matches(':disabled')) {
+  const document = element.ownerDocument;
+  if (
+    isDomInstance<HTMLElement>(element, document, 'HTMLElement') &&
+    element.matches(':disabled')
+  ) {
     return true;
   }
 
@@ -148,7 +171,7 @@ function isUnavailableElement(element: Element): boolean {
         (child) => child.localName === 'summary',
       );
       if (
-        !(firstSummary instanceof HTMLElement) ||
+        !isDomInstance<HTMLElement>(firstSummary, document, 'HTMLElement') ||
         !isComposedDescendant(element, firstSummary)
       ) {
         return true;
@@ -158,7 +181,8 @@ function isUnavailableElement(element: Element): boolean {
     if (
       current.getAttribute('aria-hidden') === 'true' ||
       current.hasAttribute('inert') ||
-      (current instanceof HTMLElement && current.hidden)
+      (isDomInstance<HTMLElement>(current, document, 'HTMLElement') &&
+        current.hidden)
     ) {
       return true;
     }
@@ -303,7 +327,7 @@ function isFocusableElement(element: Element): element is FocusCandidate {
   // the group still has a sequential-focus representative. Group reduction
   // below decides which enabled radio is that representative.
   if (
-    element instanceof HTMLElement &&
+    isDomInstance<HTMLElement>(element, element.ownerDocument, 'HTMLElement') &&
     element.localName === 'input' &&
     element.getAttribute('type')?.trim().toLowerCase() === 'radio'
   ) {
@@ -311,7 +335,7 @@ function isFocusableElement(element: Element): element is FocusCandidate {
   }
 
   if (
-    element instanceof HTMLElement &&
+    isDomInstance<HTMLElement>(element, element.ownerDocument, 'HTMLElement') &&
     element.hasAttribute('contenteditable')
   ) {
     return isContentEditableElement(element);
@@ -342,7 +366,9 @@ function composedParent(element: Element): Element | null {
   }
 
   const root = element.getRootNode();
-  return root instanceof ShadowRoot ? root.host : element.parentElement;
+  return isDomInstance<ShadowRoot>(root, element.ownerDocument, 'ShadowRoot')
+    ? root.host
+    : element.parentElement;
 }
 
 function isComposedDescendant(element: Element, ancestor: Element): boolean {
@@ -358,18 +384,30 @@ function isComposedDescendant(element: Element, ancestor: Element): boolean {
   return false;
 }
 
-function isOpaqueCustomElement(node: EventTarget | null): node is HTMLElement {
+function isOpaqueCustomElement(
+  node: EventTarget | null,
+  document: Document,
+): node is HTMLElement {
   return (
-    node instanceof HTMLElement &&
+    isDomInstance<HTMLElement>(node, document, 'HTMLElement') &&
     node.localName.includes('-') &&
-    customElements.get(node.localName) !== undefined &&
+    document.defaultView?.customElements?.get(node.localName) !== undefined &&
     node.shadowRoot === null
   );
+}
+
+function isModalNativeDialog(dialog: HTMLDialogElement): boolean {
+  try {
+    return dialog.matches(':modal');
+  } catch {
+    return false;
+  }
 }
 
 function collectComposedElements(root: HTMLElement): Element[] {
   const elements: Element[] = [];
   const visited = new Set<Element>();
+  const document = root.ownerDocument;
 
   const visit = (element: Element): void => {
     if (visited.has(element)) {
@@ -378,7 +416,7 @@ function collectComposedElements(root: HTMLElement): Element[] {
     visited.add(element);
     elements.push(element);
 
-    if (element instanceof HTMLSlotElement) {
+    if (isDomInstance<HTMLSlotElement>(element, document, 'HTMLSlotElement')) {
       const assigned = element.assignedElements({ flatten: true });
       (assigned.length ? assigned : Array.from(element.children)).forEach(
         visit,
@@ -386,8 +424,13 @@ function collectComposedElements(root: HTMLElement): Element[] {
       return;
     }
 
-    const shadowRoot =
-      element instanceof HTMLElement || element instanceof SVGElement
+    const shadowRoot = isDomInstance<HTMLElement>(
+      element,
+      root.ownerDocument,
+      'HTMLElement',
+    )
+      ? element.shadowRoot
+      : isDomInstance<SVGElement>(element, root.ownerDocument, 'SVGElement')
         ? element.shadowRoot
         : null;
     if (shadowRoot) {
@@ -538,7 +581,7 @@ export class BuludDialog {
     // The render callback runs after the projected content exists, which lets
     // dynamic projected controls participate in initial focus and trapping.
     const checkState = (): void => {
-      if (this.destroyed) {
+      if (this.destroyed || !this.document.defaultView) {
         return;
       }
 
@@ -694,7 +737,11 @@ export class BuludDialog {
     // widget, let the browser own its internal Tab navigation rather than
     // guessing at inaccessible descendants. Escape remains owned by this
     // dialog when it bubbles out unconsumed.
-    if (event.composedPath().some(isOpaqueCustomElement)) {
+    if (
+      event
+        .composedPath()
+        .some((node) => isOpaqueCustomElement(node, this.document))
+    ) {
       return;
     }
 
@@ -743,7 +790,10 @@ export class BuludDialog {
     active: Element | null,
     backwards: boolean,
   ): FocusCandidate | undefined {
-    if (!(active instanceof Element) || active === surface) {
+    if (
+      !isDomInstance<Element>(active, this.document, 'Element') ||
+      active === surface
+    ) {
       return backwards ? focusable.at(-1) : focusable[0];
     }
 
@@ -755,9 +805,7 @@ export class BuludDialog {
       const relation = active.compareDocumentPosition(candidate);
       return Boolean(
         relation &
-        (backwards
-          ? Node.DOCUMENT_POSITION_PRECEDING
-          : Node.DOCUMENT_POSITION_FOLLOWING),
+        (backwards ? DOCUMENT_POSITION_PRECEDING : DOCUMENT_POSITION_FOLLOWING),
       );
     });
 
@@ -771,7 +819,11 @@ export class BuludDialog {
     active: Element | null,
   ): number {
     if (
-      !(active instanceof HTMLInputElement) ||
+      !isDomInstance<HTMLInputElement>(
+        active,
+        this.document,
+        'HTMLInputElement',
+      ) ||
       active.type !== 'radio' ||
       !active.name
     ) {
@@ -779,7 +831,11 @@ export class BuludDialog {
     }
     return focusable.findIndex(
       (candidate) =>
-        candidate instanceof HTMLInputElement &&
+        isDomInstance<HTMLInputElement>(
+          candidate,
+          this.document,
+          'HTMLInputElement',
+        ) &&
         candidate.type === 'radio' &&
         isSameRadioGroup(candidate, active),
     );
@@ -789,13 +845,26 @@ export class BuludDialog {
     const overlay = this.overlay()?.nativeElement;
     return event
       .composedPath()
-      .some((node) => node instanceof HTMLDialogElement && node !== overlay);
+      .some(
+        (node) =>
+          isDomInstance<HTMLDialogElement>(
+            node,
+            this.document,
+            'HTMLDialogElement',
+          ) &&
+          node !== overlay &&
+          isModalNativeDialog(node),
+      );
   }
 
   private readonly handleDocumentFocusin = (event: FocusEvent): void => {
     const surface = this.panel()?.nativeElement;
     const target = event.target;
-    if (!surface || !(target instanceof Node) || surface.contains(target)) {
+    if (
+      !surface ||
+      !isDomInstance<Node>(target, this.document, 'Node') ||
+      surface.contains(target)
+    ) {
       return;
     }
 
@@ -892,18 +961,24 @@ export class BuludDialog {
 
   private focusedElement(): HTMLElement | null {
     const active = this.deepestActiveElement();
-    return active instanceof HTMLElement ? active : null;
+    return isDomInstance<HTMLElement>(active, this.document, 'HTMLElement')
+      ? active
+      : null;
   }
 
   private deepestActiveElement(): FocusCandidate | null {
     let active: Element | null = this.document.activeElement;
     while (
-      (active instanceof HTMLElement || active instanceof SVGElement) &&
+      (isDomInstance<HTMLElement>(active, this.document, 'HTMLElement') ||
+        isDomInstance<SVGElement>(active, this.document, 'SVGElement')) &&
       active.shadowRoot?.activeElement
     ) {
       active = active.shadowRoot.activeElement;
     }
-    return active instanceof Element && isFocusCapable(active) ? active : null;
+    return isDomInstance<Element>(active, this.document, 'Element') &&
+      isFocusCapable(active)
+      ? active
+      : null;
   }
 
   private restoreFocus(): void {

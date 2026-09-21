@@ -408,6 +408,17 @@ describe('BuludDialog', () => {
     nestedButton.dispatchEvent(reverse);
     expect(reverse.defaultPrevented).toBeFalse();
 
+    nestedButton.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeTrue();
+
     nested.close();
     const outerLast = outer.querySelector(
       '#second-action',
@@ -442,6 +453,65 @@ describe('BuludDialog', () => {
     nestedButton.dispatchEvent(event);
     expect(event.defaultPrevented).toBeFalse();
     nested.close();
+  });
+
+  it('keeps trapping around a modeless dialog in an open shadow root', () => {
+    openFromTrigger();
+    const outer = getDialog();
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    const modeless = document.createElement('dialog');
+    const modelessButton = document.createElement('button');
+    modelessButton.textContent = 'Modeless';
+    modeless.append(modelessButton);
+    modeless.open = true;
+    shadow.append(modeless);
+    outer.append(host);
+
+    modelessButton.focus();
+    const tab = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    modelessButton.dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBeTrue();
+    expect(document.activeElement?.id).toBe('first-action');
+
+    modelessButton.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+      }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeFalse();
+  });
+
+  it('does not enter the DOM lifecycle when the document has no browser window', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(document, 'defaultView');
+    Object.defineProperty(document, 'defaultView', {
+      configurable: true,
+      value: null,
+    });
+
+    try {
+      expect(() => {
+        fixture.componentInstance.open.set(true);
+        fixture.detectChanges();
+      }).not.toThrow();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(document, 'defaultView', descriptor);
+      } else {
+        delete (document as unknown as { defaultView?: unknown }).defaultView;
+      }
+      fixture.componentInstance.open.set(false);
+      fixture.detectChanges();
+    }
   });
 
   it('preserves an opaque closed-shadow host without inspecting its internals', () => {
