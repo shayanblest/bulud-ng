@@ -725,6 +725,7 @@ describe('Bulud theme', () => {
         --bulud-dialog-foreground: #0f172a;
         --bulud-dialog-focus-width: 3px;
         --bulud-dialog-focus-offset: 2px;
+        --bulud-dialog-viewport-gutter: 5px;
       }
       :root.dark {
         --bulud-dialog-foreground: #f8fafc;
@@ -742,6 +743,7 @@ describe('Bulud theme', () => {
         'style[data-bulud-theme]',
       )?.textContent;
       expect(styleText).not.toContain('--bulud-dialog-foreground:');
+      expect(styleText).not.toContain('--bulud-dialog-viewport-gutter:');
       expect(
         document.defaultView
           ?.getComputedStyle(root)
@@ -752,6 +754,11 @@ describe('Bulud theme', () => {
           ?.getComputedStyle(root)
           .getPropertyValue('--bulud-dialog-focus-width'),
       ).toBe('3px');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-viewport-gutter'),
+      ).toBe('5px');
     } finally {
       root.classList.remove('dark');
       libraryThemeStyle.remove();

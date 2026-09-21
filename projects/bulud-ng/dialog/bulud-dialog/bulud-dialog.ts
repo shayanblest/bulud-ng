@@ -337,6 +337,10 @@ function composedParent(element: Element): Element | null {
     return element.assignedSlot;
   }
 
+  if (element.parentElement) {
+    return element.parentElement;
+  }
+
   const root = element.getRootNode();
   return root instanceof ShadowRoot ? root.host : element.parentElement;
 }

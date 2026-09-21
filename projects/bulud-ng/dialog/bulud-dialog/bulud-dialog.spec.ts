@@ -700,6 +700,62 @@ describe('BuludDialog', () => {
     ).not.toThrow();
   });
 
+  it('checks ordinary ancestors inside open shadow roots for availability', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const createWrappedControl = (
+      attribute: 'hidden' | 'inert' | 'aria-hidden' | null,
+      id: string,
+    ): HTMLButtonElement => {
+      const host = document.createElement('open-shadow-control');
+      const wrapper = document.createElement('div');
+      const button = document.createElement('button');
+      button.id = id;
+      button.textContent = id;
+      if (attribute === 'hidden') {
+        wrapper.hidden = true;
+      } else if (attribute === 'inert') {
+        wrapper.inert = true;
+      } else if (attribute === 'aria-hidden') {
+        wrapper.setAttribute('aria-hidden', 'true');
+      }
+      wrapper.append(button);
+      host.shadowRoot?.replaceChildren(wrapper);
+      dialog.append(host);
+      return button;
+    };
+
+    const visible = createWrappedControl(null, 'visible-shadow-control');
+    createWrappedControl('hidden', 'hidden-shadow-control');
+    createWrappedControl('inert', 'inert-shadow-control');
+    createWrappedControl('aria-hidden', 'aria-hidden-shadow-control');
+    const visibleHost = (visible.getRootNode() as ShadowRoot).host;
+    const next = document.createElement('button');
+    next.id = 'next-light-control';
+    dialog.append(next);
+
+    visible.focus();
+    visible.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(document.activeElement).toBe(next);
+
+    next.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(visibleHost);
+  });
+
   it('treats closed shadow roots as opaque', () => {
     openFromTrigger();
     const dialog = getDialog();

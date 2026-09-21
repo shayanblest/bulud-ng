@@ -324,6 +324,7 @@ const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
   '--bulud-dialog-max-width',
   '--bulud-dialog-focus-width',
   '--bulud-dialog-focus-offset',
+  '--bulud-dialog-viewport-gutter',
   '--bulud-dialog-stack-base',
 ]);
 
@@ -1050,6 +1051,7 @@ export function provideBuludTheme(
     ['focus', '--bulud-dialog-focus'],
     ['focusWidth', '--bulud-dialog-focus-width'],
     ['focusOffset', '--bulud-dialog-focus-offset'],
+    ['viewportGutter', '--bulud-dialog-viewport-gutter'],
     ['stackBase', '--bulud-dialog-stack-base'],
   ] as const) {
     if (config.dialog?.[field] === undefined) {
