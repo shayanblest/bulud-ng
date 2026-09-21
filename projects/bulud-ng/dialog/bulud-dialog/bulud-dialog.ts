@@ -11,7 +11,6 @@ import {
   inject,
   Injector,
   input,
-  model,
   output,
   runInInjectionContext,
   signal,
@@ -59,7 +58,7 @@ function registerDialog(document: Document, entry: DialogStackEntry): void {
       focusin: (event) => stack.at(-1)?.handleFocusin(event as FocusEvent),
     };
     dialogRegistries.set(document, registry);
-    document.addEventListener('keydown', registry.keydown, true);
+    document.addEventListener('keydown', registry.keydown);
     document.addEventListener('focusin', registry.focusin, true);
   }
 
@@ -89,7 +88,7 @@ function unregisterDialog(
   updateStackLevels(registry.stack);
 
   if (registry.stack.length === 0) {
-    document.removeEventListener('keydown', registry.keydown, true);
+    document.removeEventListener('keydown', registry.keydown);
     document.removeEventListener('focusin', registry.focusin, true);
     dialogRegistries.delete(document);
   }
@@ -345,6 +344,7 @@ export class BuludDialog {
   private readonly instanceId = `bulud-dialog-${BuludDialog.nextId++}`;
   protected readonly stackLevel = signal(0);
   private wasOpen = false;
+  private destroyed = false;
   private restoreTarget: HTMLElement | null = null;
   private readonly stackEntry: DialogStackEntry = {
     handleKeydown: (event) => this.handleDocumentKeydown(event),
@@ -355,9 +355,12 @@ export class BuludDialog {
     },
     setStackLevel: (level) => this.stackLevel.set(level),
   };
+  private removeNativeCloseListener: (() => void) | null = null;
+  private readonly nativeCloseListener = (): void => this.handleNativeClose();
 
   /** Controlled open state. Use `[(open)]` for two-way binding. */
-  readonly open = model(false);
+  readonly open = input(false);
+  readonly openChange = output<boolean>();
 
   /** Accessible name supplied directly to the dialog. */
   readonly ariaLabel = input<string | null>(null, { alias: 'aria-label' });
@@ -395,6 +398,7 @@ export class BuludDialog {
       '--bulud-dialog-background': override.background,
       '--bulud-dialog-foreground': override.foreground,
       '--bulud-dialog-border': override.border,
+      '--bulud-dialog-border-width': override.borderWidth,
       '--bulud-dialog-radius': override.radius,
       '--bulud-dialog-shadow': override.shadow,
       '--bulud-dialog-padding': override.padding,
@@ -408,14 +412,12 @@ export class BuludDialog {
 
   constructor() {
     this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
       if (this.wasOpen) {
-        const wasTop = this.detachListeners();
-        unlockBodyScroll(this.document);
+        const wasTop = this.cleanupActiveDialog();
         this.closeNativeDialog();
         if (wasTop) {
           this.restoreFocus();
-        } else {
-          this.restoreTarget = null;
         }
       }
     });
@@ -423,6 +425,10 @@ export class BuludDialog {
     // The render callback runs after the projected content exists, which lets
     // dynamic projected controls participate in initial focus and trapping.
     const checkState = (): void => {
+      if (this.destroyed) {
+        return;
+      }
+
       const isOpen = this.open();
 
       if (isOpen && !this.wasOpen) {
@@ -439,14 +445,10 @@ export class BuludDialog {
           }),
         );
       } else if (!isOpen && this.wasOpen) {
+        const wasTop = this.cleanupActiveDialog();
         this.closeNativeDialog();
-        this.wasOpen = false;
-        const wasTop = this.detachListeners();
-        unlockBodyScroll(this.document);
         if (wasTop) {
           this.restoreFocus();
-        } else {
-          this.restoreTarget = null;
         }
       }
     };
@@ -458,8 +460,13 @@ export class BuludDialog {
 
   /** Closes the dialog as a programmatic action. */
   close(): void {
-    if (this.open()) {
-      this.open.set(false);
+    if (this.open() && this.wasOpen) {
+      const wasTop = this.cleanupActiveDialog();
+      this.closeNativeDialog();
+      if (wasTop) {
+        this.restoreFocus();
+      }
+      this.openChange.emit(false);
     }
   }
 
@@ -482,10 +489,29 @@ export class BuludDialog {
     event.preventDefault();
   }
 
+  /** Synchronize native form-driven closes with the controlled lifecycle. */
+  protected handleNativeClose(): void {
+    if (this.destroyed || !this.wasOpen) {
+      return;
+    }
+
+    this.cleanupActiveDialog(true);
+    this.openChange.emit(false);
+  }
+
   private openNativeDialog(): void {
     const overlay = this.overlay()?.nativeElement;
     if (overlay && !overlay.open) {
-      overlay.showModal();
+      overlay.addEventListener('close', this.nativeCloseListener);
+      this.removeNativeCloseListener = () =>
+        overlay.removeEventListener('close', this.nativeCloseListener);
+      try {
+        overlay.showModal();
+      } catch (error) {
+        this.removeNativeCloseListener();
+        this.removeNativeCloseListener = null;
+        throw error;
+      }
     }
   }
 
@@ -493,7 +519,29 @@ export class BuludDialog {
     const overlay = this.overlay()?.nativeElement;
     if (overlay?.open) {
       overlay.close();
+      this.removeNativeCloseListener?.();
+      this.removeNativeCloseListener = null;
     }
+  }
+
+  private cleanupActiveDialog(restoreImmediately = false): boolean {
+    if (!this.wasOpen) {
+      return false;
+    }
+
+    this.wasOpen = false;
+    const wasTop = this.detachListeners();
+    unlockBodyScroll(this.document);
+    this.stackLevel.set(0);
+    if (wasTop) {
+      if (restoreImmediately) {
+        this.restoreFocus();
+      }
+    } else {
+      this.restoreTarget = null;
+    }
+
+    return wasTop;
   }
 
   private attachListeners(): void {
@@ -510,6 +558,9 @@ export class BuludDialog {
     }
 
     if (event.key === 'Escape') {
+      if (event.defaultPrevented || this.isInsideAnotherNativeDialog(event)) {
+        return;
+      }
       if (this.closeOnEscape()) {
         event.preventDefault();
         event.stopPropagation();
@@ -546,6 +597,19 @@ export class BuludDialog {
       focusable[0].focus();
     }
   };
+
+  private isInsideAnotherNativeDialog(event: KeyboardEvent): boolean {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    const containingDialog = target.closest('dialog');
+    return (
+      containingDialog !== null &&
+      containingDialog !== this.overlay()?.nativeElement
+    );
+  }
 
   private readonly handleDocumentFocusin = (event: FocusEvent): void => {
     const surface = this.panel()?.nativeElement;

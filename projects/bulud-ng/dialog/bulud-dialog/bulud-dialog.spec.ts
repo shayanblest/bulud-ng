@@ -70,6 +70,9 @@ class TestHost {
     @if (secondPresent()) {
       <bulud-dialog [(open)]="secondOpen" aria-label="Second dialog">
         <button id="stack-second-action" type="button">Second action</button>
+        <form method="dialog">
+          <button id="stack-second-native-close" type="submit">Close</button>
+        </form>
       </bulud-dialog>
     }
     <bulud-dialog [(open)]="firstOpen" aria-label="First dialog">
@@ -99,6 +102,35 @@ class StackHost {
 })
 class ClippedHost {
   readonly open = signal(false);
+}
+
+@Component({
+  imports: [BuludDialog],
+  template: `
+    <button id="native-trigger" type="button" (click)="open.set(true)">
+      Open native form dialog
+    </button>
+    <bulud-dialog
+      [(open)]="open"
+      aria-label="Native form dialog"
+      (openChange)="recordOpenChange()"
+    >
+      <form method="dialog">
+        <button id="native-submit" type="submit">Submit form</button>
+      </form>
+      <button id="native-formmethod" type="submit" formmethod="dialog">
+        Submitter close
+      </button>
+    </bulud-dialog>
+  `,
+})
+class NativeDialogHost {
+  readonly open = signal(false);
+  openChangeCount = 0;
+
+  recordOpenChange(): void {
+    this.openChangeCount += 1;
+  }
 }
 
 describe('BuludDialog', () => {
@@ -518,6 +550,83 @@ describe('BuludDialog', () => {
     expect(fixture.componentInstance.lastCloseReason()).toBeNull();
   });
 
+  it('synchronizes a native form close through one idempotent cleanup path', async () => {
+    const nativeFixture = TestBed.createComponent(NativeDialogHost);
+    nativeFixture.detectChanges();
+    const trigger = nativeFixture.nativeElement.querySelector(
+      '#native-trigger',
+    ) as HTMLButtonElement;
+    trigger.focus();
+    nativeFixture.componentInstance.open.set(true);
+    nativeFixture.detectChanges();
+    await nativeFixture.whenStable();
+
+    expect(document.body.style.overflow).toBe('hidden');
+    const submit = nativeFixture.nativeElement.querySelector(
+      '#native-submit',
+    ) as HTMLButtonElement;
+    expect(submit.form?.method).toBe('dialog');
+    expect(
+      (nativeFixture.nativeElement.querySelector('dialog') as HTMLDialogElement)
+        .open,
+    ).toBeTrue();
+    const nativeClose = new Promise<void>((resolve) =>
+      nativeFixture.nativeElement
+        .querySelector('dialog')
+        ?.addEventListener('close', () => resolve(), { once: true }),
+    );
+    submit.form?.requestSubmit(submit);
+    await nativeClose;
+    nativeFixture.detectChanges();
+    await nativeFixture.whenStable();
+
+    expect(nativeFixture.componentInstance.open()).toBeFalse();
+    expect(nativeFixture.componentInstance.openChangeCount).toBe(1);
+    expect(document.body.style.overflow).toBe('');
+    expect(document.activeElement).toBe(trigger);
+
+    nativeFixture.componentInstance.open.set(true);
+    nativeFixture.detectChanges();
+    await nativeFixture.whenStable();
+    expect(
+      nativeFixture.nativeElement.querySelector('dialog')?.matches(':modal'),
+    ).toBeTrue();
+    nativeFixture.componentInstance.open.set(false);
+    nativeFixture.detectChanges();
+    await nativeFixture.whenStable();
+    expect(nativeFixture.componentInstance.openChangeCount).toBe(1);
+    nativeFixture.destroy();
+  });
+
+  it('lets projected widgets consume Escape before the Dialog', () => {
+    openFromTrigger();
+    const child = document.createElement('button');
+    child.type = 'button';
+    getDialog().append(child);
+    child.addEventListener('keydown', (event) => event.stopPropagation());
+    child.focus();
+    child.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeTrue();
+
+    child.addEventListener('keydown', (event) => event.preventDefault());
+    child.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeTrue();
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeFalse();
+    expect(fixture.componentInstance.openChangeCount()).toBe(1);
+    expect(fixture.componentInstance.lastCloseReason()).toBe('escape');
+  });
+
   it('does not duplicate openChange or closeRequest emissions', () => {
     openFromTrigger();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -832,6 +941,32 @@ describe('BuludDialog stack ownership', () => {
     await fixture.whenStable();
 
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('promotes the lower dialog after a native form close of the top dialog', async () => {
+    await openBoth();
+    const close = fixture.nativeElement.querySelector(
+      '#stack-second-native-close',
+    ) as HTMLButtonElement;
+    const nativeClose = new Promise<void>((resolve) =>
+      close.closest('dialog')?.addEventListener('close', () => resolve(), {
+        once: true,
+      }),
+    );
+    (close.closest('dialog') as HTMLDialogElement).close('form');
+    await nativeClose;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.secondOpen()).toBeFalse();
+    expect(fixture.componentInstance.firstOpen()).toBeTrue();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.activeElement?.id).toBe('stack-first-action');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.firstOpen()).toBeFalse();
+    expect(document.body.style.overflow).toBe('');
   });
 });
 

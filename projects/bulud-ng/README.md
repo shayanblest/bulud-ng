@@ -427,7 +427,7 @@ unique and must identify visible projected content. Consumers should provide a
 visible close action inside the projected footer; Escape/backdrop behavior is
 optional and policy-controlled. The component follows ancestor `dir` and dark
 theme selectors, respects `prefers-reduced-motion`, and supports `dialog`
-theme tokens—including focus color/width/offset—plus per-instance `[theme]`
+theme tokens—including border color/width and focus color/width/offset—plus per-instance `[theme]`
 overrides. The `stackBase` token controls the viewport overlay's stacking base;
 each open Dialog adds its registry stack level to that base.
 

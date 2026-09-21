@@ -258,6 +258,7 @@ describe('Bulud theme', () => {
       dialog: {
         background: '#fef3c7',
         maxWidth: '40rem',
+        borderWidth: '4px',
       },
     });
 
@@ -277,6 +278,7 @@ describe('Bulud theme', () => {
     expect(theme.accordion.focus).toBe(BULUD_DEFAULT_THEME.accordion.focus);
     expect(theme.dialog.background).toBe('#fef3c7');
     expect(theme.dialog.maxWidth).toBe('40rem');
+    expect(theme.dialog.borderWidth).toBe('4px');
     expect(theme.dialog.shadow).toBe(resolveBuludTheme().dialog.shadow);
     expect(theme.dialog.stackBase).toBe('1000');
   });
@@ -306,6 +308,7 @@ describe('Bulud theme', () => {
       dialog: {
         background: '#fef3c7',
         maxWidth: '40rem',
+        borderWidth: '4px',
       },
     });
 
@@ -317,6 +320,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
     expect(variables['--bulud-dialog-background']).toBe('#fef3c7');
     expect(variables['--bulud-dialog-max-width']).toBe('40rem');
+    expect(variables['--bulud-dialog-border-width']).toBe('4px');
     expect(variables['--bulud-dialog-focus-width']).toBe('3px');
     expect(variables['--bulud-dialog-focus-offset']).toBe('2px');
     expect(variables['--bulud-dialog-stack-base']).toBe('1000');
@@ -617,6 +621,7 @@ describe('Bulud theme', () => {
         --bulud-dialog-radius: 0.75rem;
         --bulud-dialog-padding: 1.5rem;
         --bulud-dialog-max-width: 32rem;
+        --bulud-dialog-border-width: 1px;
         --bulud-dialog-focus-width: 3px;
         --bulud-dialog-focus-offset: 2px;
       }
@@ -639,6 +644,7 @@ describe('Bulud theme', () => {
             radius: '1rem',
             padding: '2rem',
             maxWidth: '40rem',
+            borderWidth: '6px',
             focusWidth: '5px',
             focusOffset: '7px',
             stackBase: '3000',
@@ -661,18 +667,23 @@ describe('Bulud theme', () => {
       expect(read('--bulud-dialog-radius')).toBe('1rem');
       expect(read('--bulud-dialog-padding')).toBe('2rem');
       expect(read('--bulud-dialog-max-width')).toBe('40rem');
+      expect(read('--bulud-dialog-border-width')).toBe('6px');
       expect(read('--bulud-dialog-focus-width')).toBe('5px');
       expect(read('--bulud-dialog-focus-offset')).toBe('7px');
       expect(read('--bulud-dialog-stack-base')).toBe('3000');
 
       scope.style.setProperty('--bulud-dialog-background', '#234567');
       scope.style.setProperty('--bulud-dialog-stack-base', '4000');
+      scope.style.setProperty('--bulud-dialog-border-width', '8px');
       expect(read('--bulud-dialog-background')).toBe('#234567');
       expect(read('--bulud-dialog-stack-base')).toBe('4000');
+      expect(read('--bulud-dialog-border-width')).toBe('8px');
       instance.style.setProperty('--bulud-dialog-background', '#345678');
       instance.style.setProperty('--bulud-dialog-stack-base', '5000');
+      instance.style.setProperty('--bulud-dialog-border-width', '0px');
       expect(read('--bulud-dialog-background')).toBe('#345678');
       expect(read('--bulud-dialog-stack-base')).toBe('5000');
+      expect(read('--bulud-dialog-border-width')).toBe('0px');
     } finally {
       instance.remove();
       scope.remove();

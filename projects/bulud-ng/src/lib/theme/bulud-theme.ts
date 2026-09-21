@@ -194,6 +194,7 @@ export interface BuludDialogTheme {
   readonly background: string;
   readonly foreground: string;
   readonly border: string;
+  readonly borderWidth: string;
   readonly radius: string;
   readonly shadow: string;
   readonly padding: string;
@@ -316,6 +317,7 @@ const BULUD_SWITCH_GEOMETRY_VARIABLES = new Set([
   '--bulud-switch-width',
 ]);
 const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
+  '--bulud-dialog-border-width',
   '--bulud-dialog-radius',
   '--bulud-dialog-padding',
   '--bulud-dialog-max-width',
@@ -507,6 +509,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     background: '#ffffff',
     foreground: '#0f172a',
     border: '#cbd5e1',
+    borderWidth: '1px',
     radius: '0.75rem',
     shadow: '0 1.5rem 4rem rgb(15 23 42 / 0.24)',
     padding: '1.5rem',
@@ -872,6 +875,7 @@ export function createBuludThemeVariables(
     '--bulud-dialog-background': theme.dialog.background,
     '--bulud-dialog-foreground': theme.dialog.foreground,
     '--bulud-dialog-border': theme.dialog.border,
+    '--bulud-dialog-border-width': theme.dialog.borderWidth,
     '--bulud-dialog-radius': theme.dialog.radius,
     '--bulud-dialog-shadow': theme.dialog.shadow,
     '--bulud-dialog-padding': theme.dialog.padding,
@@ -1035,6 +1039,7 @@ export function provideBuludTheme(
     ['background', '--bulud-dialog-background'],
     ['foreground', '--bulud-dialog-foreground'],
     ['border', '--bulud-dialog-border'],
+    ['borderWidth', '--bulud-dialog-border-width'],
     ['radius', '--bulud-dialog-radius'],
     ['shadow', '--bulud-dialog-shadow'],
     ['padding', '--bulud-dialog-padding'],

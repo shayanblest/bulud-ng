@@ -37,7 +37,8 @@
 
 .bulud-dialog__surface {
   background: var(--bulud-dialog-background, #ffffff);
-  border: 1px solid var(--bulud-dialog-border, #cbd5e1);
+  border: var(--bulud-dialog-border-width, 1px) solid
+    var(--bulud-dialog-border, #cbd5e1);
   border-radius: var(--bulud-dialog-radius, 0.75rem);
   box-sizing: border-box;
   color: var(--bulud-dialog-foreground, #0f172a);
