@@ -35,7 +35,8 @@
               "../tabs/**/*.spec.ts",
               "../accordion/**/*.spec.ts",
               "../checkbox/**/*.spec.ts",
-              "../switch/**/*.spec.ts"
+              "../switch/**/*.spec.ts",
+              "../dialog/**/*.spec.ts"
             ]
           }
         }

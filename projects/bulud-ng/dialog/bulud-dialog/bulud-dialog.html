@@ -1,0 +1,38 @@
+@if (open()) {
+  <div
+    class="bulud-dialog__backdrop"
+    [attr.data-dialog-id]="dialogId()"
+    [style.--bulud-dialog-backdrop]="
+      instanceStyles()['--bulud-dialog-backdrop']
+    "
+    [style.--bulud-dialog-background]="
+      instanceStyles()['--bulud-dialog-background']
+    "
+    [style.--bulud-dialog-foreground]="
+      instanceStyles()['--bulud-dialog-foreground']
+    "
+    [style.--bulud-dialog-border]="instanceStyles()['--bulud-dialog-border']"
+    [style.--bulud-dialog-radius]="instanceStyles()['--bulud-dialog-radius']"
+    [style.--bulud-dialog-shadow]="instanceStyles()['--bulud-dialog-shadow']"
+    [style.--bulud-dialog-padding]="instanceStyles()['--bulud-dialog-padding']"
+    [style.--bulud-dialog-max-width]="
+      instanceStyles()['--bulud-dialog-max-width']
+    "
+    [style.--bulud-dialog-focus]="instanceStyles()['--bulud-dialog-focus']"
+    (pointerdown)="handleBackdropPointerdown($event)"
+  >
+    <section
+      #panel
+      class="bulud-dialog__surface"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      [id]="dialogId()"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-labelledby]="ariaLabel() ? null : ariaLabelledby()"
+      [attr.aria-describedby]="ariaDescribedby()"
+    >
+      <ng-content />
+    </section>
+  </div>
+}

@@ -188,6 +188,19 @@ export interface BuludSwitchTheme {
   readonly width: string;
 }
 
+/** Theme tokens for the modal dialog surface and backdrop. */
+export interface BuludDialogTheme {
+  readonly backdrop: string;
+  readonly background: string;
+  readonly foreground: string;
+  readonly border: string;
+  readonly radius: string;
+  readonly shadow: string;
+  readonly padding: string;
+  readonly maxWidth: string;
+  readonly focus: string;
+}
+
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -201,6 +214,8 @@ export interface BuludTheme {
   readonly checkbox?: BuludCheckboxTheme;
   /** Optional for compatibility with legacy consumer theme objects. */
   readonly switch?: BuludSwitchTheme;
+  /** Optional for compatibility with legacy consumer theme objects. */
+  readonly dialog?: BuludDialogTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
@@ -212,6 +227,7 @@ export interface ResolvedBuludTheme extends Omit<
   readonly badge: Required<BuludBadgeTheme>;
   readonly checkbox: BuludCheckboxTheme;
   readonly switch: BuludSwitchTheme;
+  readonly dialog: BuludDialogTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -242,6 +258,7 @@ export interface BuludThemeConfig {
   readonly accordion?: Partial<BuludAccordionTheme>;
   readonly checkbox?: Partial<BuludCheckboxTheme>;
   readonly switch?: Partial<BuludSwitchTheme>;
+  readonly dialog?: Partial<BuludDialogTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -294,6 +311,11 @@ const BULUD_SWITCH_GEOMETRY_VARIABLES = new Set([
   '--bulud-switch-radius',
   '--bulud-switch-thumb-size',
   '--bulud-switch-width',
+]);
+const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
+  '--bulud-dialog-radius',
+  '--bulud-dialog-padding',
+  '--bulud-dialog-max-width',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -474,6 +496,17 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     thumbSize: '1.125rem',
     width: '2.75rem',
   },
+  dialog: {
+    backdrop: 'rgb(15 23 42 / 0.6)',
+    background: '#ffffff',
+    foreground: '#0f172a',
+    border: '#cbd5e1',
+    radius: '0.75rem',
+    shadow: '0 1.5rem 4rem rgb(15 23 42 / 0.24)',
+    padding: '1.5rem',
+    maxWidth: '32rem',
+    focus: '#93c5fd',
+  },
 };
 
 /**
@@ -651,6 +684,10 @@ export function resolveBuludTheme(
       ...RESOLVED_DEFAULT_THEME.switch,
       ...config.switch,
     },
+    dialog: {
+      ...RESOLVED_DEFAULT_THEME.dialog,
+      ...config.dialog,
+    },
   };
 }
 
@@ -816,6 +853,15 @@ export function createBuludThemeVariables(
     '--bulud-switch-thumb': theme.switch.thumb,
     '--bulud-switch-thumb-size': theme.switch.thumbSize,
     '--bulud-switch-width': theme.switch.width,
+    '--bulud-dialog-backdrop': theme.dialog.backdrop,
+    '--bulud-dialog-background': theme.dialog.background,
+    '--bulud-dialog-foreground': theme.dialog.foreground,
+    '--bulud-dialog-border': theme.dialog.border,
+    '--bulud-dialog-radius': theme.dialog.radius,
+    '--bulud-dialog-shadow': theme.dialog.shadow,
+    '--bulud-dialog-padding': theme.dialog.padding,
+    '--bulud-dialog-max-width': theme.dialog.maxWidth,
+    '--bulud-dialog-focus': theme.dialog.focus,
   };
 }
 
@@ -835,30 +881,39 @@ function createBuludThemeCss(
   const switchGeometry = entries.filter(([property]) =>
     BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
+  const dialogGeometry = entries.filter(([property]) =>
+    BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
+  );
   const lightModeVariables = entries.filter(
     ([property]) =>
       !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
-      !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
+      !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property) &&
+      !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
   );
   const switchDarkModeVariables = entries.filter(
     ([property]) =>
       property.startsWith('--bulud-switch-') &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
+  const dialogDarkModeVariables = entries.filter(
+    ([property]) =>
+      property.startsWith('--bulud-dialog-') &&
+      !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
+  );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations(switchDarkModeVariables)}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables])}\n}`;
 }
 
 /**
  * Registers a consumer theme and applies its CSS custom properties to the
  * document root during Angular environment initialization. Color variables
  * are scoped out while the root is in dark mode so the explicitly imported
- * dark theme can take precedence over global light-mode overrides. Explicit
- * Switch non-geometry overrides are also emitted in dark mode so they remain
- * global there; omitted Switch tokens stay absent and use the imported dark
- * defaults. Badge, checkbox, and Switch geometry remain available because
- * they are not theme-mode specific.
+ * dark theme can provide omitted defaults. Explicit Switch and Dialog
+ * non-geometry overrides are also emitted in dark mode so they remain global
+ * there; omitted tokens stay absent and use the imported dark defaults.
+ * Badge, checkbox, Switch, and Dialog geometry remain available because they
+ * are not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -953,6 +1008,22 @@ export function provideBuludTheme(
     ['width', '--bulud-switch-width'],
   ] as const) {
     if (config.switch?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of [
+    ['backdrop', '--bulud-dialog-backdrop'],
+    ['background', '--bulud-dialog-background'],
+    ['foreground', '--bulud-dialog-foreground'],
+    ['border', '--bulud-dialog-border'],
+    ['radius', '--bulud-dialog-radius'],
+    ['shadow', '--bulud-dialog-shadow'],
+    ['padding', '--bulud-dialog-padding'],
+    ['maxWidth', '--bulud-dialog-max-width'],
+    ['focus', '--bulud-dialog-focus'],
+  ] as const) {
+    if (config.dialog?.[field] === undefined) {
       delete variables[variable];
     }
   }

@@ -1,0 +1,42 @@
+:host {
+  direction: inherit;
+  display: contents;
+}
+
+.bulud-dialog__backdrop {
+  align-items: center;
+  background: var(--bulud-dialog-backdrop, rgb(15 23 42 / 0.6));
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow: auto;
+  padding: 1rem;
+  position: fixed;
+  z-index: 1000;
+}
+
+.bulud-dialog__surface {
+  background: var(--bulud-dialog-background, #ffffff);
+  border: 1px solid var(--bulud-dialog-border, #cbd5e1);
+  border-radius: var(--bulud-dialog-radius, 0.75rem);
+  box-sizing: border-box;
+  color: var(--bulud-dialog-foreground, #0f172a);
+  inline-size: min(100%, var(--bulud-dialog-max-width, 32rem));
+  max-block-size: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: var(--bulud-dialog-padding, 1.5rem);
+  box-shadow: var(--bulud-dialog-shadow, 0 1.5rem 4rem rgb(15 23 42 / 0.24));
+}
+
+.bulud-dialog__surface:focus,
+.bulud-dialog__surface :focus-visible {
+  outline: 3px solid var(--bulud-dialog-focus, #93c5fd);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-dialog__backdrop,
+  .bulud-dialog__surface {
+    transition: none;
+  }
+}

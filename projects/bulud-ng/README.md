@@ -31,6 +31,7 @@ its documented secondary entry point:
 | `bulud-ng/accordion`       | `BuludAccordion` and `BuludAccordionItem`            |
 | `bulud-ng/checkbox`        | `BuludCheckbox`                                      |
 | `bulud-ng/switch`          | `BuludSwitch`                                        |
+| `bulud-ng/dialog`          | `BuludDialog`, `BuludDialogCloseReason`              |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -88,7 +89,7 @@ The provider resolves omitted values against `BULUD_DEFAULT_THEME` and writes
 the resulting `--bulud-*` custom properties to the document root. Components
 therefore inherit one application-wide theme without per-component providers.
 Theme configuration supports `colors`, `shape`, `button`, `dropdown`, `badge`,
-`tabs`, `accordion`, and `checkbox` tokens. The precedence is instance custom property,
+`tabs`, `accordion`, `checkbox`, `switch`, and `dialog` tokens. The precedence is instance custom property,
 component token, global provider configuration, then the library default.
 
 ## Accordion
@@ -380,6 +381,50 @@ writes do not emit it. The native switch handles
 Space and projected-label activation; Enter is not required by the switch APG
 pattern.
 
+## Dialog
+
+Import the standalone modal from `bulud-ng/dialog` and project its content.
+The dialog requires an accessible name through `aria-label` or
+`aria-labelledby`; use `aria-describedby` for supporting text:
+
+```ts
+import { BuludDialog, type BuludDialogCloseReason } from "bulud-ng/dialog";
+
+@Component({
+  imports: [BuludDialog],
+  template: `
+    <button type="button" (click)="open.set(true)">Edit profile</button>
+    <bulud-dialog [(open)]="open" aria-labelledby="profile-title" aria-describedby="profile-description" [initialFocus]="'#profile-name'" (closeRequest)="lastCloseReason.set($event)">
+      <h2 id="profile-title">Edit profile</h2>
+      <p id="profile-description">Update your public profile.</p>
+      <input id="profile-name" />
+      <button type="button" (click)="open.set(false)">Cancel</button>
+    </bulud-dialog>
+  `,
+})
+export class ProfileEditor {
+  readonly open = signal(false);
+  readonly lastCloseReason = signal<BuludDialogCloseReason | null>(null);
+}
+```
+
+`open` is a controlled signal model and supports `[(open)]`. `close()` is a
+programmatic close method; `closeRequest` is emitted only for enabled user
+Escape or backdrop requests and reports `"escape"` or `"backdrop"`. Set
+`closeOnEscape` or `closeOnBackdrop` to `false` to disable either policy.
+`initialFocus` is an optional CSS selector scoped to the projected dialog
+surface. Without it, focus moves to the first enabled, visible focusable child,
+or to the dialog surface itself. Tab and Shift+Tab wrap dynamically, and focus
+returns to the opening element when it remains connected and focusable.
+
+The dialog uses `role="dialog"`, `aria-modal="true"`, a viewport backdrop, and
+reference-counted body scroll locking. Consumer-provided labels and IDs must be
+unique and must identify visible projected content. Consumers should provide a
+visible close action inside the projected footer; Escape/backdrop behavior is
+optional and policy-controlled. The component follows ancestor `dir` and dark
+theme selectors, respects `prefers-reduced-motion`, and supports `dialog`
+theme tokens plus per-instance `[theme]` overrides.
+
 ## Tabs
 
 Import the standalone tabs pieces from the tabs secondary entry point:
@@ -567,7 +612,8 @@ ship the default light and dark variable sets.
 
 All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
 `BuludButtonTheme`, `BuludDropdownTheme`, `BuludBadgeTheme`, `BuludTheme`, and
-`BuludTabsTheme`, `BuludAccordionTheme`, and `BuludThemeConfig`) are exported
+`BuludTabsTheme`, `BuludAccordionTheme`, `BuludDialogTheme`, and
+`BuludThemeConfig`) are exported
 from the root entry point.
 
 `ResolvedBuludTheme` is also exported for values returned by `resolveBuludTheme()`

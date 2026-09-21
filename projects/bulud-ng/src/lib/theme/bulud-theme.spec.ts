@@ -207,6 +207,10 @@ describe('Bulud theme', () => {
       accordion: {
         hoverBackground: '#ede9fe',
       },
+      dialog: {
+        background: '#fef3c7',
+        maxWidth: '40rem',
+      },
     });
 
     expect(theme.colors.primary).toBe('#7c3aed');
@@ -223,6 +227,9 @@ describe('Bulud theme', () => {
     expect(theme.tabs.foreground).toBe(BULUD_DEFAULT_THEME.tabs.foreground);
     expect(theme.accordion.hoverBackground).toBe('#ede9fe');
     expect(theme.accordion.focus).toBe(BULUD_DEFAULT_THEME.accordion.focus);
+    expect(theme.dialog.background).toBe('#fef3c7');
+    expect(theme.dialog.maxWidth).toBe('40rem');
+    expect(theme.dialog.shadow).toBe(resolveBuludTheme().dialog.shadow);
   });
 
   it('creates variables shared by components and Tailwind', () => {
@@ -247,6 +254,10 @@ describe('Bulud theme', () => {
       accordion: {
         icon: '#7c3aed',
       },
+      dialog: {
+        background: '#fef3c7',
+        maxWidth: '40rem',
+      },
     });
 
     expect(variables['--bulud-color-primary']).toBe('#7c3aed');
@@ -255,6 +266,8 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-badge-danger-foreground']).toBe('#881337');
     expect(variables['--bulud-tabs-active-border']).toBe('#7c3aed');
     expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
+    expect(variables['--bulud-dialog-background']).toBe('#fef3c7');
+    expect(variables['--bulud-dialog-max-width']).toBe('40rem');
     expect(variables['--bulud-color-danger']).toBe(
       BULUD_DEFAULT_THEME.colors.danger,
     );
@@ -522,6 +535,132 @@ describe('Bulud theme', () => {
       scope.remove();
       libraryThemeStyle.remove();
       root.classList.remove('dark');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps configured Dialog values active in dark mode with scoped and instance precedence', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root {
+        --bulud-dialog-background: #ffffff;
+        --bulud-dialog-foreground: #0f172a;
+        --bulud-dialog-radius: 0.75rem;
+        --bulud-dialog-padding: 1.5rem;
+        --bulud-dialog-max-width: 32rem;
+      }
+      :root.dark {
+        --bulud-dialog-background: #0f172a;
+        --bulud-dialog-foreground: #f8fafc;
+      }
+    `;
+    document.head.append(libraryThemeStyle);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          dialog: {
+            background: '#654321',
+            foreground: '#abcdef',
+            radius: '1rem',
+            padding: '2rem',
+            maxWidth: '40rem',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    const read = (variable: string, element = instance) =>
+      document.defaultView
+        ?.getComputedStyle(element)
+        .getPropertyValue(variable)
+        .trim();
+
+    try {
+      root.classList.add('dark');
+      expect(read('--bulud-dialog-background')).toBe('#654321');
+      expect(read('--bulud-dialog-foreground')).toBe('#abcdef');
+      expect(read('--bulud-dialog-radius')).toBe('1rem');
+      expect(read('--bulud-dialog-padding')).toBe('2rem');
+      expect(read('--bulud-dialog-max-width')).toBe('40rem');
+
+      scope.style.setProperty('--bulud-dialog-background', '#234567');
+      expect(read('--bulud-dialog-background')).toBe('#234567');
+      instance.style.setProperty('--bulud-dialog-background', '#345678');
+      expect(read('--bulud-dialog-background')).toBe('#345678');
+    } finally {
+      instance.remove();
+      scope.remove();
+      libraryThemeStyle.remove();
+      root.classList.remove('dark');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps omitted Dialog tokens on imported dark defaults', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root { --bulud-dialog-foreground: #0f172a; }
+      :root.dark { --bulud-dialog-foreground: #f8fafc; }
+    `;
+    document.head.append(libraryThemeStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme({ dialog: { background: '#654321' } })],
+      parentInjector,
+    );
+
+    try {
+      root.classList.add('dark');
+      const styleText = document.head.querySelector(
+        'style[data-bulud-theme]',
+      )?.textContent;
+      expect(styleText).not.toContain('--bulud-dialog-foreground:');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-foreground'),
+      ).toBe('#f8fafc');
+    } finally {
+      root.classList.remove('dark');
+      libraryThemeStyle.remove();
       environmentInjector.destroy();
 
       if (existingStyle) {
