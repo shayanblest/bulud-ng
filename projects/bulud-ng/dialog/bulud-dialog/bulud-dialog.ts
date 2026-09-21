@@ -124,8 +124,13 @@ function unlockBodyScroll(document: Document): void {
   }
 }
 
-function isUnavailableElement(element: HTMLElement): boolean {
-  if (element.matches(':disabled')) {
+type FocusCandidate = Element & {
+  readonly tabIndex: number;
+  focus: (options?: FocusOptions) => void;
+};
+
+function isUnavailableElement(element: Element): boolean {
+  if (element instanceof HTMLElement && element.matches(':disabled')) {
     return true;
   }
 
@@ -167,7 +172,7 @@ function isUnavailableElement(element: HTMLElement): boolean {
   return false;
 }
 
-function hasNonNegativeTabIndex(element: HTMLElement): boolean {
+function hasNonNegativeTabIndex(element: Element): boolean {
   const tabindex = element.getAttribute('tabindex');
   return (
     tabindex !== null &&
@@ -176,7 +181,7 @@ function hasNonNegativeTabIndex(element: HTMLElement): boolean {
   );
 }
 
-function hasExplicitTabIndex(element: HTMLElement): boolean {
+function hasExplicitTabIndex(element: Element): boolean {
   const tabindex = element.getAttribute('tabindex');
   return tabindex !== null && /^[-+]?\d+$/.test(tabindex.trim());
 }
@@ -231,7 +236,7 @@ function isContentEditableElement(element: HTMLElement): boolean {
   return false;
 }
 
-function isFirstSummary(element: HTMLElement): boolean {
+function isFirstSummary(element: Element): boolean {
   if (element.localName !== 'summary') {
     return false;
   }
@@ -248,7 +253,7 @@ function isFirstSummary(element: HTMLElement): boolean {
   );
 }
 
-function isNativeFocusTarget(element: HTMLElement): boolean {
+function isNativeFocusTarget(element: Element): element is FocusCandidate {
   if (element.localName === 'summary') {
     return isFirstSummary(element);
   }
@@ -256,10 +261,25 @@ function isNativeFocusTarget(element: HTMLElement): boolean {
   // The browser's computed tabIndex captures native controls, media with
   // controls, iframe, anchors with href, and platform-specific focusable
   // elements without maintaining a fragile selector allow-list.
-  return element.tabIndex >= 0;
+  return (
+    'tabIndex' in element &&
+    typeof (element as { tabIndex?: unknown }).tabIndex === 'number' &&
+    'focus' in element &&
+    typeof (element as { focus?: unknown }).focus === 'function' &&
+    (element as FocusCandidate).tabIndex >= 0
+  );
 }
 
-function isIntrinsicallyNonFocusable(element: HTMLElement): boolean {
+function isFocusCapable(element: Element): element is FocusCandidate {
+  return (
+    'tabIndex' in element &&
+    typeof (element as { tabIndex?: unknown }).tabIndex === 'number' &&
+    'focus' in element &&
+    typeof (element as { focus?: unknown }).focus === 'function'
+  );
+}
+
+function isIntrinsicallyNonFocusable(element: Element): boolean {
   if (
     element.localName === 'input' &&
     element.getAttribute('type')?.trim().toLowerCase() === 'hidden'
@@ -274,7 +294,7 @@ function isIntrinsicallyNonFocusable(element: HTMLElement): boolean {
   return element.localName === 'area' && !element.hasAttribute('href');
 }
 
-function isFocusableElement(element: HTMLElement): boolean {
+function isFocusableElement(element: Element): element is FocusCandidate {
   if (hasExplicitTabIndex(element)) {
     return !isIntrinsicallyNonFocusable(element);
   }
@@ -283,20 +303,24 @@ function isFocusableElement(element: HTMLElement): boolean {
   // the group still has a sequential-focus representative. Group reduction
   // below decides which enabled radio is that representative.
   if (
+    element instanceof HTMLElement &&
     element.localName === 'input' &&
     element.getAttribute('type')?.trim().toLowerCase() === 'radio'
   ) {
     return true;
   }
 
-  if (element.hasAttribute('contenteditable')) {
+  if (
+    element instanceof HTMLElement &&
+    element.hasAttribute('contenteditable')
+  ) {
     return isContentEditableElement(element);
   }
 
   return isNativeFocusTarget(element);
 }
 
-function isTabCycleCandidate(element: HTMLElement): boolean {
+function isTabCycleCandidate(element: Element): element is FocusCandidate {
   if (isUnavailableElement(element) || !element.isConnected) {
     return false;
   }
@@ -318,7 +342,11 @@ function composedParent(element: Element): Element | null {
 }
 
 function isComposedDescendant(element: Element, ancestor: Element): boolean {
-  for (let current: Element | null = element; current; current = composedParent(current)) {
+  for (
+    let current: Element | null = element;
+    current;
+    current = composedParent(current)
+  ) {
     if (current === ancestor) {
       return true;
     }
@@ -335,8 +363,8 @@ function isOpaqueCustomElement(node: EventTarget | null): node is HTMLElement {
   );
 }
 
-function collectComposedElements(root: HTMLElement): HTMLElement[] {
-  const elements: HTMLElement[] = [];
+function collectComposedElements(root: HTMLElement): Element[] {
+  const elements: Element[] = [];
   const visited = new Set<Element>();
 
   const visit = (element: Element): void => {
@@ -344,18 +372,20 @@ function collectComposedElements(root: HTMLElement): HTMLElement[] {
       return;
     }
     visited.add(element);
-    if (element instanceof HTMLElement) {
-      elements.push(element);
-    }
+    elements.push(element);
 
     if (element instanceof HTMLSlotElement) {
       const assigned = element.assignedElements({ flatten: true });
-      (assigned.length ? assigned : Array.from(element.children)).forEach(visit);
+      (assigned.length ? assigned : Array.from(element.children)).forEach(
+        visit,
+      );
       return;
     }
 
     const shadowRoot =
-      element instanceof HTMLElement ? element.shadowRoot : null;
+      element instanceof HTMLElement || element instanceof SVGElement
+        ? element.shadowRoot
+        : null;
     if (shadowRoot) {
       Array.from(shadowRoot.children).forEach(visit);
       return;
@@ -382,7 +412,7 @@ function isSameRadioGroup(
 }
 
 function isProgrammaticFocusTarget(
-  element: HTMLElement,
+  element: FocusCandidate,
   surface: HTMLElement,
 ): boolean {
   if (
@@ -484,6 +514,7 @@ export class BuludDialog {
       '--bulud-dialog-focus': override.focus,
       '--bulud-dialog-focus-width': override.focusWidth,
       '--bulud-dialog-focus-offset': override.focusOffset,
+      '--bulud-dialog-viewport-gutter': override.viewportGutter,
       '--bulud-dialog-stack-base': override.stackBase,
     };
   });
@@ -639,13 +670,6 @@ export class BuludDialog {
       return;
     }
 
-    // A closed shadow tree is intentionally opaque. Once focus is in such a
-    // widget, let the browser own its internal Tab navigation rather than
-    // guessing at inaccessible descendants.
-    if (event.composedPath().some(isOpaqueCustomElement)) {
-      return;
-    }
-
     if (event.key === 'Escape') {
       if (event.defaultPrevented) {
         return;
@@ -662,6 +686,14 @@ export class BuludDialog {
       return;
     }
 
+    // A closed shadow tree is intentionally opaque. Once focus is in such a
+    // widget, let the browser own its internal Tab navigation rather than
+    // guessing at inaccessible descendants. Escape remains owned by this
+    // dialog when it bubbles out unconsumed.
+    if (event.composedPath().some(isOpaqueCustomElement)) {
+      return;
+    }
+
     const surface = this.panel()?.nativeElement;
     if (!surface) {
       return;
@@ -675,7 +707,7 @@ export class BuludDialog {
     }
 
     const active = this.deepestActiveElement();
-    const directActiveIndex = focusable.indexOf(active as HTMLElement);
+    const directActiveIndex = focusable.indexOf(active as FocusCandidate);
     const activeIndex =
       directActiveIndex >= 0
         ? directActiveIndex
@@ -703,11 +735,11 @@ export class BuludDialog {
 
   private relativeTabCandidate(
     surface: HTMLElement,
-    focusable: readonly HTMLElement[],
+    focusable: readonly FocusCandidate[],
     active: Element | null,
     backwards: boolean,
-  ): HTMLElement | undefined {
-    if (!(active instanceof HTMLElement) || active === surface) {
+  ): FocusCandidate | undefined {
+    if (!(active instanceof Element) || active === surface) {
       return backwards ? focusable.at(-1) : focusable[0];
     }
 
@@ -731,7 +763,7 @@ export class BuludDialog {
   }
 
   private radioRepresentativeIndex(
-    focusable: readonly HTMLElement[],
+    focusable: readonly FocusCandidate[],
     active: Element | null,
   ): number {
     if (
@@ -751,9 +783,9 @@ export class BuludDialog {
 
   private isInsideAnotherNativeDialog(event: KeyboardEvent): boolean {
     const overlay = this.overlay()?.nativeElement;
-    return event.composedPath().some(
-      (node) => node instanceof HTMLDialogElement && node !== overlay,
-    );
+    return event
+      .composedPath()
+      .some((node) => node instanceof HTMLDialogElement && node !== overlay);
   }
 
   private readonly handleDocumentFocusin = (event: FocusEvent): void => {
@@ -783,12 +815,14 @@ export class BuludDialog {
   private queryProgrammaticFocusTarget(
     surface: HTMLElement,
     selector: string,
-  ): HTMLElement | null {
+  ): FocusCandidate | null {
     try {
       const element = collectComposedElements(surface).find((candidate) =>
         candidate.matches(selector),
       );
-      return element && isProgrammaticFocusTarget(element, surface)
+      return element &&
+        isFocusCapable(element) &&
+        isProgrammaticFocusTarget(element, surface)
         ? element
         : null;
     } catch {
@@ -796,7 +830,7 @@ export class BuludDialog {
     }
   }
 
-  private focusableElements(surface: HTMLElement): HTMLElement[] {
+  private focusableElements(surface: HTMLElement): FocusCandidate[] {
     const candidates = collectComposedElements(surface).filter((element) =>
       isTabCycleCandidate(element),
     );
@@ -853,15 +887,19 @@ export class BuludDialog {
   }
 
   private focusedElement(): HTMLElement | null {
-    return this.deepestActiveElement();
+    const active = this.deepestActiveElement();
+    return active instanceof HTMLElement ? active : null;
   }
 
-  private deepestActiveElement(): HTMLElement | null {
+  private deepestActiveElement(): FocusCandidate | null {
     let active: Element | null = this.document.activeElement;
-    while (active instanceof HTMLElement && active.shadowRoot?.activeElement) {
+    while (
+      (active instanceof HTMLElement || active instanceof SVGElement) &&
+      active.shadowRoot?.activeElement
+    ) {
       active = active.shadowRoot.activeElement;
     }
-    return active instanceof HTMLElement ? active : null;
+    return active instanceof Element && isFocusCapable(active) ? active : null;
   }
 
   private restoreFocus(): void {

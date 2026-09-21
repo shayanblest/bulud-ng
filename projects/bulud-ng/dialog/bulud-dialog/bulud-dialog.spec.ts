@@ -52,6 +52,7 @@ class TestHost {
     maxWidth: '40rem',
     focusWidth: '5px',
     focusOffset: '7px',
+    viewportGutter: '2rem',
     stackBase: '2000',
   };
 
@@ -408,7 +409,9 @@ describe('BuludDialog', () => {
     expect(reverse.defaultPrevented).toBeFalse();
 
     nested.close();
-    const outerLast = outer.querySelector('#second-action') as HTMLButtonElement;
+    const outerLast = outer.querySelector(
+      '#second-action',
+    ) as HTMLButtonElement;
     outerLast.focus();
     outerLast.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
@@ -492,23 +495,45 @@ describe('BuludDialog', () => {
     outer.append(details, after);
 
     summary.focus();
-    summary.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    summary.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(summaryButton);
-    summaryButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    summaryButton.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(summaryLink);
-    summaryLink.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    summaryLink.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(summaryInput);
-    summaryInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    summaryInput.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(nestedSummary);
-    nestedSummary.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    nestedSummary.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(after);
-    after.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    after.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
     expect(document.activeElement).toBe(nestedSummary);
 
     details.open = true;
     nested.open = true;
     after.focus();
-    after.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    after.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
     expect(document.activeElement).toBe(excluded);
   });
 
@@ -526,10 +551,16 @@ describe('BuludDialog', () => {
     dialog.append(first, second, next);
 
     second.focus();
-    second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    second.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(next);
     next.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
     );
     expect(document.activeElement).toBe(second);
     const arrow = new KeyboardEvent('keydown', {
@@ -551,7 +582,12 @@ describe('BuludDialog', () => {
     const other = document.createElement('input');
     const unnamed = document.createElement('input');
     const next = document.createElement('button');
-    disabled.type = first.type = second.type = other.type = unnamed.type = 'radio';
+    disabled.type =
+      first.type =
+      second.type =
+      other.type =
+      unnamed.type =
+        'radio';
     disabled.name = first.name = second.name = 'choices';
     other.name = 'other';
     disabled.disabled = true;
@@ -560,11 +596,17 @@ describe('BuludDialog', () => {
     dialog.append(disabled, first, second, other, unnamed, next);
 
     first.focus();
-    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    first.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(other);
-    other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    other.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(unnamed);
-    unnamed.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    unnamed.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(next);
   });
 
@@ -586,12 +628,20 @@ describe('BuludDialog', () => {
     dialog.append(formA, formB);
 
     a.focus();
-    a.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    a.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(c);
     a.checked = false;
     b.checked = true;
     c.focus();
-    c.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+    c.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
     expect(document.activeElement).toBe(b);
   });
 
@@ -611,19 +661,43 @@ describe('BuludDialog', () => {
     }
     shadowButton.focus();
     expect(shadow.shadowRoot?.activeElement).toBe(shadowButton);
-    shadowButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true }));
-    const nestedButton = nested.shadowRoot?.querySelector('open-shadow-control')?.shadowRoot?.querySelector('button');
+    shadowButton.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    const nestedButton = nested.shadowRoot
+      ?.querySelector('open-shadow-control')
+      ?.shadowRoot?.querySelector('button');
     expect(document.activeElement).toBe(nested);
-    expect(nested.shadowRoot?.activeElement?.shadowRoot?.activeElement).toBe(nestedButton);
+    expect(nested.shadowRoot?.activeElement?.shadowRoot?.activeElement).toBe(
+      nestedButton,
+    );
 
     const dynamic = document.createElement('button');
     dynamic.textContent = 'Dynamic';
     shadow.shadowRoot?.append(dynamic);
     nestedButton?.focus();
-    nestedButton?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true }));
+    nestedButton?.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
     expect(document.activeElement).toBe(light);
     dynamic.remove();
-    expect(() => shadow.shadowRoot?.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true }))).not.toThrow();
+    expect(() =>
+      shadow.shadowRoot?.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          bubbles: true,
+          composed: true,
+        }),
+      ),
+    ).not.toThrow();
   });
 
   it('treats closed shadow roots as opaque', () => {
@@ -636,7 +710,9 @@ describe('BuludDialog', () => {
     dialog.append(host, light);
     expect(() => light.focus()).not.toThrow();
     light.focus();
-    light.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    light.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
     expect(document.activeElement).toBe(light);
   });
 
@@ -994,6 +1070,42 @@ describe('BuludDialog', () => {
     expect(fixture.componentInstance.lastCloseReason()).toBeNull();
   });
 
+  it('keeps Escape ownership after an opaque closed-shadow widget declines it', () => {
+    openFromTrigger();
+    const host = document.createElement('closed-focus-host');
+    host.attachShadow({ mode: 'closed' }).innerHTML =
+      '<button id="opaque-action">Opaque action</button>';
+    getDialog().append(host);
+    host.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeFalse();
+    expect(fixture.componentInstance.openChangeCount()).toBe(1);
+  });
+
+  it('keeps an opaque widget open when it consumes Escape', () => {
+    openFromTrigger();
+    const host = document.createElement('closed-focus-host');
+    host.attachShadow({ mode: 'closed' }).innerHTML =
+      '<button id="opaque-action">Opaque action</button>';
+    host.addEventListener('keydown', (event) => event.stopPropagation());
+    getDialog().append(host);
+    host.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeTrue();
+  });
+
   it('closes only for backdrop pointerdown when enabled', () => {
     openFromTrigger();
     getDialog().dispatchEvent(
@@ -1226,10 +1338,47 @@ describe('BuludDialog', () => {
     expect(overlay.style.getPropertyValue('--bulud-dialog-background')).toBe(
       '#14532d',
     );
+    expect(
+      overlay.style.getPropertyValue('--bulud-dialog-viewport-gutter'),
+    ).toBe('2rem');
     expect(dialog.getAttribute('dir')).toBeNull();
     document.documentElement.dir = 'rtl';
     expect(getDialog()).toBe(dialog);
     document.documentElement.removeAttribute('dir');
+  });
+
+  it('keeps SVG controls in forward and reverse focus order', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const link = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+    link.setAttribute('href', '#svg-target');
+    link.textContent = 'SVG link';
+    const focusable = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect',
+    );
+    focusable.setAttribute('tabindex', '0');
+    const negative = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'rect',
+    );
+    negative.setAttribute('tabindex', '-1');
+    svg.append(link, focusable, negative);
+    dialog.append(svg);
+    link.focus();
+    link.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(focusable);
+    focusable.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(link);
   });
 
   it('cleans listeners and scroll state when destroyed while open', () => {

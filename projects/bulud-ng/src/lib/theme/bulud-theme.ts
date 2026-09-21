@@ -202,6 +202,7 @@ export interface BuludDialogTheme {
   readonly focus: string;
   readonly focusWidth: string;
   readonly focusOffset: string;
+  readonly viewportGutter: string;
   readonly stackBase: string;
 }
 
@@ -517,6 +518,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     focus: '#93c5fd',
     focusWidth: '3px',
     focusOffset: '2px',
+    viewportGutter: '1rem',
     stackBase: '1000',
   },
 };
@@ -883,6 +885,7 @@ export function createBuludThemeVariables(
     '--bulud-dialog-focus': theme.dialog.focus,
     '--bulud-dialog-focus-width': theme.dialog.focusWidth,
     '--bulud-dialog-focus-offset': theme.dialog.focusOffset,
+    '--bulud-dialog-viewport-gutter': theme.dialog.viewportGutter,
     '--bulud-dialog-stack-base': theme.dialog.stackBase,
   };
 }

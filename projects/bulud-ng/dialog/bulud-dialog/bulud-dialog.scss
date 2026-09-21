@@ -31,7 +31,7 @@
   inset: 0;
   justify-content: center;
   overflow: auto;
-  padding: 1rem;
+  padding: var(--bulud-dialog-viewport-gutter, 1rem);
   position: absolute;
 }
 
@@ -43,7 +43,7 @@
   box-sizing: border-box;
   color: var(--bulud-dialog-foreground, #0f172a);
   inline-size: min(100%, var(--bulud-dialog-max-width, 32rem));
-  max-block-size: calc(100dvh - 2rem);
+  max-block-size: calc(100dvh - 2 * var(--bulud-dialog-viewport-gutter));
   overflow: auto;
   padding: var(--bulud-dialog-padding, 1.5rem);
   box-shadow: var(--bulud-dialog-shadow, 0 1.5rem 4rem rgb(15 23 42 / 0.24));
