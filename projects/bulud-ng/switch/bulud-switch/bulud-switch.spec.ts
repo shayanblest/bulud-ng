@@ -561,6 +561,9 @@ describe('BuludSwitch', () => {
     const host = getHost();
     const track = host.querySelector<HTMLElement>('.bulud-switch__track')!;
     const thumb = host.querySelector<HTMLElement>('.bulud-switch__thumb')!;
+    const root = document.documentElement;
+    const previousDirection = root.getAttribute('dir');
+    root.removeAttribute('dir');
     document.body.append(fixture.nativeElement);
     thumb.style.transition = 'none';
 
@@ -587,6 +590,8 @@ describe('BuludSwitch', () => {
       ).toBeCloseTo(3, 0);
     } finally {
       thumb.style.removeProperty('transition');
+      if (previousDirection === null) root.removeAttribute('dir');
+      else root.setAttribute('dir', previousDirection);
       fixture.nativeElement.remove();
     }
   });
@@ -596,6 +601,9 @@ describe('BuludSwitch', () => {
     const host = getHost();
     const track = host.querySelector<HTMLElement>('.bulud-switch__track')!;
     const thumb = host.querySelector<HTMLElement>('.bulud-switch__thumb')!;
+    const root = document.documentElement;
+    const previousDirection = root.getAttribute('dir');
+    root.removeAttribute('dir');
     document.body.append(fixture.nativeElement);
     host.style.setProperty('--bulud-switch-border-width', '5px');
     thumb.style.transition = 'none';
@@ -618,6 +626,8 @@ describe('BuludSwitch', () => {
     } finally {
       thumb.style.removeProperty('transition');
       host.style.removeProperty('--bulud-switch-border-width');
+      if (previousDirection === null) root.removeAttribute('dir');
+      else root.setAttribute('dir', previousDirection);
       fixture.nativeElement.remove();
     }
   });
@@ -675,6 +685,76 @@ describe('BuludSwitch', () => {
       host.style.removeProperty('--bulud-switch-border-width');
       if (previousDirection === null) root.removeAttribute('dir');
       else root.setAttribute('dir', previousDirection);
+      fixture.nativeElement.remove();
+    }
+  });
+
+  it('centers the thumb for independent height, thumb, padding, and border tokens', async () => {
+    const state = fixture.componentInstance;
+    const host = getHost();
+    const track = host.querySelector<HTMLElement>('.bulud-switch__track')!;
+    const thumb = host.querySelector<HTMLElement>('.bulud-switch__thumb')!;
+    const previousDirection = document.documentElement.getAttribute('dir');
+    document.body.append(fixture.nativeElement);
+    thumb.style.transition = 'none';
+
+    const expectCentered = () => {
+      const trackRect = track.getBoundingClientRect();
+      const thumbRect = thumb.getBoundingClientRect();
+      expect(trackRect.height).toBeGreaterThan(thumbRect.height);
+      expect(
+        (thumbRect.top + thumbRect.bottom) / 2 -
+          (trackRect.top + trackRect.bottom) / 2,
+      ).toBeCloseTo(0, 0);
+    };
+
+    try {
+      expect(track.getBoundingClientRect().height).toBeCloseTo(24, 0);
+      expect(thumb.getBoundingClientRect().height).toBeCloseTo(18, 0);
+      expectCentered();
+
+      host.style.setProperty('--bulud-switch-height', '28px');
+      await fixture.whenStable();
+      expect(track.getBoundingClientRect().height).toBeCloseTo(28, 0);
+      expect(thumb.getBoundingClientRect().height).toBeCloseTo(18, 0);
+      expectCentered();
+
+      host.style.setProperty('--bulud-switch-height', '22px');
+      host.style.setProperty('--bulud-switch-thumb-size', '14px');
+      await fixture.whenStable();
+      expect(track.getBoundingClientRect().height).toBeCloseTo(22, 0);
+      expect(thumb.getBoundingClientRect().height).toBeCloseTo(14, 0);
+      expectCentered();
+
+      host.style.setProperty('--bulud-switch-height', '32px');
+      host.style.setProperty('--bulud-switch-thumb-size', '18px');
+      host.style.setProperty('--bulud-switch-padding', '4px');
+      host.style.setProperty('--bulud-switch-border-width', '3px');
+      state.control.setValue(false);
+      await fixture.whenStable();
+      expectCentered();
+      state.control.setValue(true);
+      await fixture.whenStable();
+      expectCentered();
+
+      document.documentElement.setAttribute('dir', 'rtl');
+      state.control.setValue(false);
+      await fixture.whenStable();
+      expectCentered();
+      state.control.setValue(true);
+      await fixture.whenStable();
+      expectCentered();
+    } finally {
+      thumb.style.removeProperty('transition');
+      host.style.removeProperty('--bulud-switch-height');
+      host.style.removeProperty('--bulud-switch-thumb-size');
+      host.style.removeProperty('--bulud-switch-padding');
+      host.style.removeProperty('--bulud-switch-border-width');
+      if (previousDirection === null) {
+        document.documentElement.removeAttribute('dir');
+      } else {
+        document.documentElement.setAttribute('dir', previousDirection);
+      }
       fixture.nativeElement.remove();
     }
   });

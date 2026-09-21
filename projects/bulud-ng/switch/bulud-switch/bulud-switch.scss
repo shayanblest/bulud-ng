@@ -39,6 +39,7 @@
   box-sizing: border-box;
   display: inline-flex;
   flex: 0 0 var(--bulud-switch-width, 2.75rem);
+  align-items: center;
   inline-size: var(--bulud-switch-width, 2.75rem);
   padding: var(--bulud-switch-padding, 0.125rem);
   transition:
@@ -51,6 +52,7 @@
   border-radius: 50%;
   block-size: var(--bulud-switch-thumb-size, 1.125rem);
   box-sizing: border-box;
+  flex: 0 0 var(--bulud-switch-thumb-size, 1.125rem);
   inline-size: var(--bulud-switch-thumb-size, 1.125rem);
   transition:
     transform 120ms ease,
@@ -125,4 +127,36 @@
         -1
     )
   );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-switch__track,
+  .bulud-switch__thumb {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .bulud-switch__track {
+    background: Canvas;
+    border-color: ButtonText;
+  }
+
+  .bulud-switch__thumb {
+    background: ButtonText;
+  }
+
+  .bulud-switch__input:checked + .bulud-switch__label .bulud-switch__track {
+    background: Highlight;
+    border-color: Highlight;
+  }
+
+  .bulud-switch__input:checked + .bulud-switch__label .bulud-switch__thumb {
+    background: HighlightText;
+  }
+
+  .bulud-switch-host--disabled .bulud-switch {
+    color: GrayText;
+    opacity: 1;
+  }
 }

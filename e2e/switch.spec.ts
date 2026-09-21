@@ -9,7 +9,8 @@ test('supports switch semantics, projected label, and keyboard interaction', asy
 }) => {
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
-  const label = control.locator('xpath=..').locator('.bulud-switch__label');
+  const wrapper = section.locator('.bulud-switch').filter({ has: control });
+  const label = wrapper.locator('.bulud-switch__label');
   const track = label.locator('.bulud-switch__track');
 
   await expect(control).toHaveAttribute('role', 'switch');
@@ -40,8 +41,9 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
 }) => {
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
-  const track = control.locator('xpath=..').locator('.bulud-switch__track');
-  const label = control.locator('xpath=..').locator('.bulud-switch__label');
+  const wrapper = section.locator('.bulud-switch').filter({ has: control });
+  const track = wrapper.locator('.bulud-switch__track');
+  const label = wrapper.locator('.bulud-switch__label');
   const focusStart = section.locator('#switch-focus-start');
 
   await section.getByText('Disabled', { exact: true }).click();
@@ -64,10 +66,11 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(track).toHaveCSS('background-color', 'rgb(96, 165, 250)');
 
   const instance = section.getByRole('switch', { name: 'Instance theme' });
-  const instanceTrack = instance
-    .locator('xpath=..')
-    .locator('.bulud-switch__track');
-  const thumb = control.locator('xpath=..').locator('.bulud-switch__thumb');
+  const instanceWrapper = section
+    .locator('.bulud-switch')
+    .filter({ has: instance });
+  const instanceTrack = instanceWrapper.locator('.bulud-switch__track');
+  const thumb = wrapper.locator('.bulud-switch__thumb');
   await expect(instance).toBeChecked();
   await expect(instanceTrack).toHaveCSS('background-color', 'rgb(20, 83, 45)');
   await expect(instanceTrack).toHaveCSS('width', '52px');
@@ -92,4 +95,21 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
     )
     .toBeLessThan(0);
   await page.evaluate(() => document.documentElement.removeAttribute('dir'));
+});
+
+test('suppresses switch motion when reduced motion is requested', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const section = page.locator('#switch');
+  const control = section.getByRole('switch', { name: 'Enable notifications' });
+  const wrapper = section.locator('.bulud-switch').filter({ has: control });
+  const label = wrapper.locator('.bulud-switch__label');
+  const track = label.locator('.bulud-switch__track');
+  const thumb = label.locator('.bulud-switch__thumb');
+
+  await expect(track).toHaveCSS('transition-duration', '0s');
+  await expect(thumb).toHaveCSS('transition-duration', '0s');
+  await control.press('Space');
+  await expect(control).toBeChecked();
 });

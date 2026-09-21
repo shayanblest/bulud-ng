@@ -355,7 +355,8 @@ projected content or `aria-label`, and can use `id` with an external label.
 `aria-errormessage` are typed inputs. The component implements
 `ControlValueAccessor` and `Validator`; user changes update Forms, blur marks
 the control touched, required returns `{ required: true }`, and Angular Forms
-disabled state disables the native control.
+disabled state disables the native control. Switch transitions are disabled
+when the user requests reduced motion.
 
 Switch theme values use CSS custom properties and follow instance override,
 global `provideBuludTheme` configuration, and library-default precedence. The
