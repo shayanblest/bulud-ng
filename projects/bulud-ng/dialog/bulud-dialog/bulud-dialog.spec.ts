@@ -323,6 +323,103 @@ describe('BuludDialog', () => {
     expect(document.activeElement?.id).toBe('first-action');
   });
 
+  it('leaves forward and reverse Tab with a projected widget that consumes it', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const widget = document.createElement('div');
+    widget.id = 'tab-consuming-widget';
+    widget.tabIndex = 0;
+    widget.textContent = 'Editor';
+    dialog.append(widget);
+
+    widget.focus();
+    const forward = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    widget.addEventListener('keydown', (event) => event.preventDefault(), {
+      once: true,
+    });
+    widget.dispatchEvent(forward);
+    expect(forward.defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(widget);
+
+    const reverse = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    widget.addEventListener('keydown', (event) => event.preventDefault(), {
+      once: true,
+    });
+    widget.dispatchEvent(reverse);
+    expect(reverse.defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(widget);
+  });
+
+  it('traps unconsumed forward and reverse Tab events normally', () => {
+    openFromTrigger();
+    const first = fixture.nativeElement.querySelector(
+      '#first-action',
+    ) as HTMLButtonElement;
+    const second = fixture.nativeElement.querySelector(
+      '#second-action',
+    ) as HTMLButtonElement;
+
+    first.focus();
+    const forward = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    first.dispatchEvent(forward);
+    expect(forward.defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(second);
+
+    const reverse = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    second.dispatchEvent(reverse);
+    expect(reverse.defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(first);
+  });
+
+  it('does not reprocess a consumed Tab from open shadow content', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+    const host = document.createElement(
+      'open-shadow-control',
+    ) as OpenShadowControl;
+    host.root.innerHTML = '<div id="shadow-editor" tabindex="0">Editor</div>';
+    dialog.append(host);
+    const editor = host.root.querySelector('#shadow-editor') as HTMLElement;
+    editor.focus();
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    editor.addEventListener('keydown', (keyboardEvent) => {
+      keyboardEvent.preventDefault();
+    });
+    editor.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBeTrue();
+    expect(host.root.activeElement).toBe(editor);
+  });
+
   it('uses composed order around an initial target inside an open shadow root', async () => {
     openFromTrigger();
     const dialog = getDialog();

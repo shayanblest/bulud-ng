@@ -734,6 +734,10 @@ export class BuludDialog {
       return;
     }
 
+    if (event.key === 'Tab' && event.defaultPrevented) {
+      return;
+    }
+
     if (event.key === 'Escape') {
       if (event.defaultPrevented) {
         return;
