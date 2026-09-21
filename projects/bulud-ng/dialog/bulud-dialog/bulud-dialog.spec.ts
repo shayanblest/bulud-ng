@@ -240,6 +240,25 @@ describe('BuludDialog', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('captures and restores focus to an SVG opening control', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const opener = document.createElementNS('http://www.w3.org/2000/svg', 'a');
+    opener.setAttribute('href', '#dialog-opener-target');
+    opener.textContent = 'Open dialog';
+    svg.append(opener);
+    const dialogHost = fixture.nativeElement.querySelector('bulud-dialog');
+    fixture.nativeElement.insertBefore(svg, dialogHost);
+
+    opener.focus();
+    expect(document.activeElement).toBe(opener);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('allows a static negative-tabindex heading as explicit initial focus', () => {
     fixture.componentInstance.initialFocus.set('#static-initial-focus');
     openFromTrigger();

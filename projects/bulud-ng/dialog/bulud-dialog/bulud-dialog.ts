@@ -24,8 +24,8 @@ export type BuludDialogCloseReason = 'escape' | 'backdrop';
 interface DialogStackEntry {
   readonly handleKeydown: (event: KeyboardEvent) => void;
   readonly handleFocusin: (event: FocusEvent) => void;
-  readonly getRestoreTarget: () => HTMLElement | null;
-  readonly setRestoreTarget: (target: HTMLElement | null) => void;
+  readonly getRestoreTarget: () => FocusCandidate | null;
+  readonly setRestoreTarget: (target: FocusCandidate | null) => void;
   readonly setStackLevel: (level: number) => void;
 }
 
@@ -460,7 +460,7 @@ function isSameRadioGroup(
 
 function isProgrammaticFocusTarget(
   element: FocusCandidate,
-  surface: HTMLElement,
+  surface: Element,
 ): boolean {
   if (
     !element.isConnected ||
@@ -500,7 +500,7 @@ export class BuludDialog {
   protected readonly stackLevel = signal(0);
   private wasOpen = false;
   private destroyed = false;
-  private restoreTarget: HTMLElement | null = null;
+  private restoreTarget: FocusCandidate | null = null;
   private readonly stackEntry: DialogStackEntry = {
     handleKeydown: (event) => this.handleDocumentKeydown(event),
     handleFocusin: (event) => this.handleDocumentFocusin(event),
@@ -959,11 +959,8 @@ export class BuludDialog {
     return tabCandidates;
   }
 
-  private focusedElement(): HTMLElement | null {
-    const active = this.deepestActiveElement();
-    return isDomInstance<HTMLElement>(active, this.document, 'HTMLElement')
-      ? active
-      : null;
+  private focusedElement(): FocusCandidate | null {
+    return this.deepestActiveElement();
   }
 
   private deepestActiveElement(): FocusCandidate | null {
