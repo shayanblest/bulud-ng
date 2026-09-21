@@ -278,6 +278,7 @@ describe('Bulud theme', () => {
     expect(theme.dialog.background).toBe('#fef3c7');
     expect(theme.dialog.maxWidth).toBe('40rem');
     expect(theme.dialog.shadow).toBe(resolveBuludTheme().dialog.shadow);
+    expect(theme.dialog.stackBase).toBe('1000');
   });
 
   it('creates variables shared by components and Tailwind', () => {
@@ -318,6 +319,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-dialog-max-width']).toBe('40rem');
     expect(variables['--bulud-dialog-focus-width']).toBe('3px');
     expect(variables['--bulud-dialog-focus-offset']).toBe('2px');
+    expect(variables['--bulud-dialog-stack-base']).toBe('1000');
     expect(variables['--bulud-color-danger']).toBe(
       BULUD_DEFAULT_THEME.colors.danger,
     );
@@ -639,6 +641,7 @@ describe('Bulud theme', () => {
             maxWidth: '40rem',
             focusWidth: '5px',
             focusOffset: '7px',
+            stackBase: '3000',
           },
         }),
       ],
@@ -660,11 +663,16 @@ describe('Bulud theme', () => {
       expect(read('--bulud-dialog-max-width')).toBe('40rem');
       expect(read('--bulud-dialog-focus-width')).toBe('5px');
       expect(read('--bulud-dialog-focus-offset')).toBe('7px');
+      expect(read('--bulud-dialog-stack-base')).toBe('3000');
 
       scope.style.setProperty('--bulud-dialog-background', '#234567');
+      scope.style.setProperty('--bulud-dialog-stack-base', '4000');
       expect(read('--bulud-dialog-background')).toBe('#234567');
+      expect(read('--bulud-dialog-stack-base')).toBe('4000');
       instance.style.setProperty('--bulud-dialog-background', '#345678');
+      instance.style.setProperty('--bulud-dialog-stack-base', '5000');
       expect(read('--bulud-dialog-background')).toBe('#345678');
+      expect(read('--bulud-dialog-stack-base')).toBe('5000');
     } finally {
       instance.remove();
       scope.remove();

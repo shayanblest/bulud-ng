@@ -22,19 +22,6 @@ import { BuludDialogTheme } from 'bulud-ng';
 
 export type BuludDialogCloseReason = 'escape' | 'backdrop';
 
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'area[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'video[controls]',
-  'audio[controls]',
-  '[contenteditable]',
-  '[tabindex]',
-].join(',');
-
 interface DialogStackEntry {
   readonly handleKeydown: (event: KeyboardEvent) => void;
   readonly handleFocusin: (event: FocusEvent) => void;
@@ -149,6 +136,19 @@ function isUnavailableElement(element: HTMLElement): boolean {
     current = current.parentElement
   ) {
     if (
+      current !== element &&
+      current.localName === 'details' &&
+      !(current as HTMLDetailsElement).open
+    ) {
+      const firstSummary = Array.from(current.children).find(
+        (child) => child.localName === 'summary',
+      );
+      if (element !== firstSummary) {
+        return true;
+      }
+    }
+
+    if (
       current.hidden ||
       current.getAttribute('aria-hidden') === 'true' ||
       current.hasAttribute('inert')
@@ -229,16 +229,44 @@ function isContentEditableElement(element: HTMLElement): boolean {
   return false;
 }
 
-function isFocusableSelectorMatch(element: HTMLElement): boolean {
-  if (!element.matches(FOCUSABLE_SELECTOR)) {
+function isFirstSummary(element: HTMLElement): boolean {
+  if (element.localName !== 'summary') {
+    return false;
+  }
+
+  const details = element.parentElement;
+  if (!details || details.localName !== 'details') {
     return false;
   }
 
   return (
-    !element.hasAttribute('contenteditable') ||
-    isContentEditableElement(element) ||
-    hasExplicitTabIndex(element)
+    Array.from(details.children).find(
+      (child) => child.localName === 'summary',
+    ) === element
   );
+}
+
+function isNativeFocusTarget(element: HTMLElement): boolean {
+  if (element.localName === 'summary') {
+    return isFirstSummary(element);
+  }
+
+  // The browser's computed tabIndex captures native controls, media with
+  // controls, iframe, anchors with href, and platform-specific focusable
+  // elements without maintaining a fragile selector allow-list.
+  return element.tabIndex >= 0;
+}
+
+function isFocusableElement(element: HTMLElement): boolean {
+  if (hasExplicitTabIndex(element)) {
+    return true;
+  }
+
+  if (element.hasAttribute('contenteditable')) {
+    return isContentEditableElement(element);
+  }
+
+  return isNativeFocusTarget(element);
 }
 
 function isTabCycleCandidate(element: HTMLElement): boolean {
@@ -246,10 +274,34 @@ function isTabCycleCandidate(element: HTMLElement): boolean {
     return false;
   }
 
-  return (
-    isFocusableSelectorMatch(element) &&
-    (!element.hasAttribute('tabindex') || hasNonNegativeTabIndex(element))
-  );
+  if (element.hasAttribute('tabindex') && !hasNonNegativeTabIndex(element)) {
+    return false;
+  }
+
+  if (
+    element.localName === 'input' &&
+    element.getAttribute('type')?.toLowerCase() === 'radio'
+  ) {
+    const name = element.getAttribute('name');
+    if (name) {
+      const radios = Array.from(
+        element.ownerDocument.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"]',
+        ),
+      ).filter(
+        (candidate) =>
+          candidate.name === name &&
+          candidate.form === (element as HTMLInputElement).form &&
+          !isUnavailableElement(candidate),
+      );
+      const checked = radios.find((radio) => radio.checked);
+      if (checked && checked !== element) {
+        return false;
+      }
+    }
+  }
+
+  return isFocusableElement(element);
 }
 
 function isProgrammaticFocusTarget(
@@ -265,7 +317,7 @@ function isProgrammaticFocusTarget(
   }
 
   const hasExplicitTabIndexValue = hasExplicitTabIndex(element);
-  const isNaturallyFocusable = isFocusableSelectorMatch(element);
+  const isNaturallyFocusable = isFocusableElement(element);
   return hasExplicitTabIndexValue || isNaturallyFocusable;
 }
 
@@ -287,6 +339,8 @@ export class BuludDialog {
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly overlay =
+    viewChild<ElementRef<HTMLDialogElement>>('overlay');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
   private readonly instanceId = `bulud-dialog-${BuludDialog.nextId++}`;
   protected readonly stackLevel = signal(0);
@@ -348,6 +402,7 @@ export class BuludDialog {
       '--bulud-dialog-focus': override.focus,
       '--bulud-dialog-focus-width': override.focusWidth,
       '--bulud-dialog-focus-offset': override.focusOffset,
+      '--bulud-dialog-stack-base': override.stackBase,
     };
   });
 
@@ -356,6 +411,7 @@ export class BuludDialog {
       if (this.wasOpen) {
         const wasTop = this.detachListeners();
         unlockBodyScroll(this.document);
+        this.closeNativeDialog();
         if (wasTop) {
           this.restoreFocus();
         } else {
@@ -377,11 +433,13 @@ export class BuludDialog {
         runInInjectionContext(this.injector, () =>
           afterNextRender(() => {
             if (this.open()) {
+              this.openNativeDialog();
               this.focusInitialTarget();
             }
           }),
         );
       } else if (!isOpen && this.wasOpen) {
+        this.closeNativeDialog();
         this.wasOpen = false;
         const wasTop = this.detachListeners();
         unlockBodyScroll(this.document);
@@ -417,6 +475,24 @@ export class BuludDialog {
   protected handleBackdropPointerdown(event: PointerEvent): void {
     if (this.closeOnBackdrop() && event.target === event.currentTarget) {
       this.requestClose('backdrop');
+    }
+  }
+
+  protected handleNativeCancel(event: Event): void {
+    event.preventDefault();
+  }
+
+  private openNativeDialog(): void {
+    const overlay = this.overlay()?.nativeElement;
+    if (overlay && !overlay.open) {
+      overlay.showModal();
+    }
+  }
+
+  private closeNativeDialog(): void {
+    const overlay = this.overlay()?.nativeElement;
+    if (overlay?.open) {
+      overlay.close();
     }
   }
 
@@ -510,9 +586,22 @@ export class BuludDialog {
   }
 
   private focusableElements(surface: HTMLElement): HTMLElement[] {
-    return Array.from(
-      surface.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    ).filter((element) => isTabCycleCandidate(element));
+    return Array.from(surface.querySelectorAll<HTMLElement>('*'))
+      .filter((element) => isTabCycleCandidate(element))
+      .sort((left, right) => {
+        const leftTabIndex = left.tabIndex;
+        const rightTabIndex = right.tabIndex;
+        if (leftTabIndex > 0 && rightTabIndex <= 0) {
+          return -1;
+        }
+        if (rightTabIndex > 0 && leftTabIndex <= 0) {
+          return 1;
+        }
+        if (leftTabIndex > 0 && rightTabIndex > 0) {
+          return leftTabIndex - rightTabIndex;
+        }
+        return 0;
+      });
   }
 
   private focusedElement(): HTMLElement | null {

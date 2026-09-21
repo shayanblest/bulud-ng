@@ -1,8 +1,10 @@
 @if (open()) {
-  <div
-    class="bulud-dialog__backdrop"
+  <dialog
+    #overlay
+    class="bulud-dialog__overlay"
+    role="presentation"
     [attr.data-dialog-id]="dialogId()"
-    [style.z-index]="1000 + stackLevel()"
+    (cancel)="handleNativeCancel($event)"
     [style.--bulud-dialog-backdrop]="
       instanceStyles()['--bulud-dialog-backdrop']
     "
@@ -26,20 +28,28 @@
     [style.--bulud-dialog-focus-offset]="
       instanceStyles()['--bulud-dialog-focus-offset']
     "
-    (pointerdown)="handleBackdropPointerdown($event)"
+    [style.--bulud-dialog-stack-base]="
+      instanceStyles()['--bulud-dialog-stack-base']
+    "
+    [style.--bulud-dialog-stack-level]="stackLevel()"
   >
-    <section
-      #panel
-      class="bulud-dialog__surface"
-      role="dialog"
-      aria-modal="true"
-      tabindex="-1"
-      [id]="dialogId()"
-      [attr.aria-label]="ariaLabel()"
-      [attr.aria-labelledby]="ariaLabel() ? null : ariaLabelledby()"
-      [attr.aria-describedby]="ariaDescribedby()"
+    <div
+      class="bulud-dialog__backdrop"
+      (pointerdown)="handleBackdropPointerdown($event)"
     >
-      <ng-content />
-    </section>
-  </div>
+      <section
+        #panel
+        class="bulud-dialog__surface"
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        [id]="dialogId()"
+        [attr.aria-label]="ariaLabel()"
+        [attr.aria-labelledby]="ariaLabel() ? null : ariaLabelledby()"
+        [attr.aria-describedby]="ariaDescribedby()"
+      >
+        <ng-content />
+      </section>
+    </div>
+  </dialog>
 }

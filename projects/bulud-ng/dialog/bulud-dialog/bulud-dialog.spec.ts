@@ -52,6 +52,7 @@ class TestHost {
     maxWidth: '40rem',
     focusWidth: '5px',
     focusOffset: '7px',
+    stackBase: '2000',
   };
 
   recordOpenChange(): void {
@@ -81,6 +82,23 @@ class StackHost {
   readonly secondOpen = signal(false);
   readonly thirdOpen = signal(false);
   readonly secondPresent = signal(true);
+}
+
+@Component({
+  imports: [BuludDialog],
+  template: `
+    <div
+      class="clipped-shell"
+      style="contain: paint; overflow: hidden; transform: translateZ(0);"
+    >
+      <bulud-dialog [(open)]="open" aria-label="Clipped host dialog">
+        <button id="clipped-action" type="button">Action</button>
+      </bulud-dialog>
+    </div>
+  `,
+})
+class ClippedHost {
+  readonly open = signal(false);
 }
 
 describe('BuludDialog', () => {
@@ -262,6 +280,59 @@ describe('BuludDialog', () => {
     expect(document.activeElement).toBe(editor);
   });
 
+  it('discovers iframe and first-summary browser tabbables dynamically', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog
+      .querySelectorAll('button')
+      .forEach((button) => (button.hidden = true));
+    const iframe = document.createElement('iframe');
+    iframe.title = 'Preview';
+    dialog.append(iframe);
+    iframe.focus();
+    expect(document.activeElement).toBe(iframe);
+    iframe.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(iframe);
+    iframe.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(iframe);
+
+    iframe.remove();
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'More details';
+    details.append(summary, document.createTextNode('Details content'));
+    dialog.append(details);
+    summary.focus();
+    expect(document.activeElement).toBe(summary);
+    summary.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(summary);
+  });
+
+  it('keeps projected control focus styling consumer-owned', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const button = dialog.querySelector('#first-action') as HTMLButtonElement;
+    button.focus();
+
+    expect(button.style.outlineWidth).toBe('');
+    dialog.focus();
+    expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
+    expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
+    expect(
+      getComputedStyle(dialog.closest('dialog') as HTMLDialogElement).zIndex,
+    ).toBe('2000');
+  });
+
   it('uses instance focus geometry for the visible focus ring', () => {
     openFromTrigger();
     const dialog = getDialog();
@@ -271,7 +342,7 @@ describe('BuludDialog', () => {
     expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
   });
 
-  it('rejects plain, disabled, hidden, inert, and disconnected explicit targets', () => {
+  it('rejects plain, disabled, hidden, inert, and disconnected explicit targets', async () => {
     openFromTrigger();
     const dialog = getDialog();
     const targets = [
@@ -299,6 +370,7 @@ describe('BuludDialog', () => {
       fixture.detectChanges();
       fixture.componentInstance.open.set(true);
       fixture.detectChanges();
+      await fixture.whenStable();
       expect(document.activeElement?.id).toBe('first-action');
     }
 
@@ -307,9 +379,10 @@ describe('BuludDialog', () => {
     fixture.detectChanges();
     fixture.componentInstance.open.set(true);
     fixture.detectChanges();
+    await fixture.whenStable();
     const disconnected = getDialog().querySelector('#disconnected-target');
     disconnected?.remove();
-    (fixture.nativeElement.querySelector('#trigger') as HTMLElement).focus();
+    document.dispatchEvent(new FocusEvent('focusin'));
     expect(document.activeElement?.id).toBe('first-action');
   });
 
@@ -549,9 +622,9 @@ describe('BuludDialog', () => {
 
   it('applies instance theme values while retaining typed defaults and RTL behavior', () => {
     openFromTrigger();
-    const backdrop = getBackdrop();
+    const overlay = getDialog().closest('dialog') as HTMLDialogElement;
     const dialog = getDialog();
-    expect(backdrop.style.getPropertyValue('--bulud-dialog-background')).toBe(
+    expect(overlay.style.getPropertyValue('--bulud-dialog-background')).toBe(
       '#14532d',
     );
     expect(dialog.getAttribute('dir')).toBeNull();
@@ -649,12 +722,14 @@ describe('BuludDialog stack ownership', () => {
     const second = fixture.nativeElement.querySelector(
       '[role="dialog"][aria-label="Second dialog"]',
     ) as HTMLElement;
+    const firstOverlay = first.closest('dialog') as HTMLDialogElement;
+    const secondOverlay = second.closest('dialog') as HTMLDialogElement;
     const firstZIndex = Number.parseInt(
-      getComputedStyle(first.parentElement!).zIndex,
+      getComputedStyle(firstOverlay).zIndex,
       10,
     );
     const secondZIndex = Number.parseInt(
-      getComputedStyle(second.parentElement!).zIndex,
+      getComputedStyle(secondOverlay).zIndex,
       10,
     );
 
@@ -665,7 +740,7 @@ describe('BuludDialog stack ownership', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(fixture.componentInstance.secondOpen()).toBeFalse();
-    expect(getComputedStyle(first.parentElement!).zIndex).toBe('1000');
+    expect(getComputedStyle(firstOverlay).zIndex).toBe('1000');
     expect(document.activeElement?.id).toBe('stack-first-action');
   });
 
@@ -684,10 +759,12 @@ describe('BuludDialog stack ownership', () => {
     const second = fixture.nativeElement.querySelector(
       '[role="dialog"][aria-label="Second dialog"]',
     ) as HTMLElement;
+    const firstOverlay = first.closest('dialog') as HTMLDialogElement;
+    const secondOverlay = second.closest('dialog') as HTMLDialogElement;
     expect(
-      Number.parseInt(getComputedStyle(second.parentElement!).zIndex, 10),
+      Number.parseInt(getComputedStyle(secondOverlay).zIndex, 10),
     ).toBeGreaterThan(
-      Number.parseInt(getComputedStyle(first.parentElement!).zIndex, 10),
+      Number.parseInt(getComputedStyle(firstOverlay).zIndex, 10),
     );
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
@@ -704,15 +781,23 @@ describe('BuludDialog stack ownership', () => {
       '[role="dialog"][aria-label="Second dialog"]',
     ) as HTMLElement;
     expect(
-      Number.parseInt(getComputedStyle(third.parentElement!).zIndex, 10),
+      Number.parseInt(
+        getComputedStyle(third.closest('dialog') as HTMLDialogElement).zIndex,
+        10,
+      ),
     ).toBeGreaterThan(
-      Number.parseInt(getComputedStyle(second.parentElement!).zIndex, 10),
+      Number.parseInt(
+        getComputedStyle(second.closest('dialog') as HTMLDialogElement).zIndex,
+        10,
+      ),
     );
 
     fixture.componentInstance.thirdOpen.set(false);
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(getComputedStyle(second.parentElement!).zIndex).toBe('1001');
+    expect(
+      getComputedStyle(second.closest('dialog') as HTMLDialogElement).zIndex,
+    ).toBe('1001');
     expect(document.activeElement?.id).toBe('stack-second-action');
     expect(document.body.style.overflow).toBe('hidden');
   });
@@ -747,5 +832,44 @@ describe('BuludDialog stack ownership', () => {
     await fixture.whenStable();
 
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+describe('BuludDialog overlay host', () => {
+  let fixture: ComponentFixture<ClippedHost>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ClippedHost],
+      providers: [provideZonelessChangeDetection()],
+    }).compileComponents();
+    fixture = TestBed.createComponent(ClippedHost);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
+    document.body.style.overflow = '';
+  });
+
+  it('uses the native top layer outside transformed and clipped ancestors', async () => {
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const overlay = fixture.nativeElement.querySelector(
+      'dialog.bulud-dialog__overlay',
+    ) as HTMLDialogElement;
+    expect(overlay.open).toBeTrue();
+    expect(overlay.matches(':modal')).toBeTrue();
+    expect(getComputedStyle(overlay).position).toBe('fixed');
+    expect(overlay.parentElement?.parentElement?.className).toBe(
+      'clipped-shell',
+    );
+
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('dialog')).toBeNull();
   });
 });

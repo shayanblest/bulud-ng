@@ -413,9 +413,13 @@ programmatic close method; `closeRequest` is emitted only for enabled user
 Escape or backdrop requests and reports `"escape"` or `"backdrop"`. Set
 `closeOnEscape` or `closeOnBackdrop` to `false` to disable either policy.
 `initialFocus` is an optional CSS selector scoped to the projected dialog
-surface. Without it, focus moves to the first enabled, visible focusable child,
+surface. Without it, focus moves to the first enabled, visible tabbable child,
 or to the dialog surface itself. Tab and Shift+Tab wrap dynamically, and focus
 returns to the opening element when it remains connected and focusable.
+
+The Dialog focus tokens style the Dialog surface's fallback focus ring. Projected
+controls retain their own focus styles so consumers can intentionally style them
+without the component leaking descendant CSS into consumer content.
 
 The dialog uses `role="dialog"`, `aria-modal="true"`, a viewport backdrop, and
 reference-counted body scroll locking. Consumer-provided labels and IDs must be
@@ -424,7 +428,8 @@ visible close action inside the projected footer; Escape/backdrop behavior is
 optional and policy-controlled. The component follows ancestor `dir` and dark
 theme selectors, respects `prefers-reduced-motion`, and supports `dialog`
 theme tokens—including focus color/width/offset—plus per-instance `[theme]`
-overrides.
+overrides. The `stackBase` token controls the viewport overlay's stacking base;
+each open Dialog adds its registry stack level to that base.
 
 ## Tabs
 

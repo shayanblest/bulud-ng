@@ -75,3 +75,31 @@ test('supports dark theme, RTL, and instance geometry override', async ({
   await page.keyboard.press('Escape');
   await page.evaluate(() => document.documentElement.removeAttribute('dir'));
 });
+
+test('keeps the overlay in the viewport top layer under clipped ancestors', async ({
+  page,
+}) => {
+  const section = page.locator('#dialog');
+  await section.locator('bulud-dialog').evaluate((dialog) => {
+    const shell = document.createElement('div');
+    shell.style.contain = 'paint';
+    shell.style.overflow = 'hidden';
+    shell.style.transform = 'translateZ(0)';
+    dialog.replaceWith(shell);
+    shell.append(dialog);
+  });
+
+  await section.getByRole('button', { name: 'Open dialog' }).click();
+  const overlay = page.locator('dialog.bulud-dialog__overlay');
+  await expect(overlay).toHaveAttribute('open', '');
+  await expect
+    .poll(() => overlay.evaluate((element) => element.matches(':modal')))
+    .toBe(true);
+
+  const viewport = page.viewportSize();
+  const box = await overlay.boundingBox();
+  expect(box?.x).toBe(0);
+  expect(box?.y).toBe(0);
+  expect(box?.width).toBe(viewport?.width);
+  expect(box?.height).toBe(viewport?.height);
+});

@@ -201,6 +201,7 @@ export interface BuludDialogTheme {
   readonly focus: string;
   readonly focusWidth: string;
   readonly focusOffset: string;
+  readonly stackBase: string;
 }
 
 /** Consumer theme; omitted optional tokens use library defaults. */
@@ -320,6 +321,7 @@ const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
   '--bulud-dialog-max-width',
   '--bulud-dialog-focus-width',
   '--bulud-dialog-focus-offset',
+  '--bulud-dialog-stack-base',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -512,6 +514,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     focus: '#93c5fd',
     focusWidth: '3px',
     focusOffset: '2px',
+    stackBase: '1000',
   },
 };
 
@@ -876,6 +879,7 @@ export function createBuludThemeVariables(
     '--bulud-dialog-focus': theme.dialog.focus,
     '--bulud-dialog-focus-width': theme.dialog.focusWidth,
     '--bulud-dialog-focus-offset': theme.dialog.focusOffset,
+    '--bulud-dialog-stack-base': theme.dialog.stackBase,
   };
 }
 
@@ -1038,6 +1042,7 @@ export function provideBuludTheme(
     ['focus', '--bulud-dialog-focus'],
     ['focusWidth', '--bulud-dialog-focus-width'],
     ['focusOffset', '--bulud-dialog-focus-offset'],
+    ['stackBase', '--bulud-dialog-stack-base'],
   ] as const) {
     if (config.dialog?.[field] === undefined) {
       delete variables[variable];

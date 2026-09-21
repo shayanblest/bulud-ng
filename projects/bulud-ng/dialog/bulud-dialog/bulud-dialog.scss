@@ -3,6 +3,27 @@
   display: contents;
 }
 
+.bulud-dialog__overlay {
+  background: transparent;
+  border: 0;
+  box-sizing: border-box;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  padding: 0;
+  position: fixed;
+  width: 100%;
+  z-index: calc(
+    var(--bulud-dialog-stack-base, 1000) + var(--bulud-dialog-stack-level, 0)
+  );
+}
+
+.bulud-dialog__overlay::backdrop {
+  background: transparent;
+}
+
 .bulud-dialog__backdrop {
   align-items: center;
   background: var(--bulud-dialog-backdrop, rgb(15 23 42 / 0.6));
@@ -11,8 +32,7 @@
   justify-content: center;
   overflow: auto;
   padding: 1rem;
-  position: fixed;
-  z-index: 1000;
+  position: absolute;
 }
 
 .bulud-dialog__surface {
@@ -28,8 +48,7 @@
   box-shadow: var(--bulud-dialog-shadow, 0 1.5rem 4rem rgb(15 23 42 / 0.24));
 }
 
-.bulud-dialog__surface:focus,
-.bulud-dialog__surface :focus-visible {
+.bulud-dialog__surface:focus {
   outline: var(--bulud-dialog-focus-width, 3px) solid
     var(--bulud-dialog-focus, #93c5fd);
   outline-offset: var(--bulud-dialog-focus-offset, 2px);

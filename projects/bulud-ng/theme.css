@@ -87,6 +87,7 @@
   --bulud-dialog-focus: #93c5fd;
   --bulud-dialog-focus-width: 3px;
   --bulud-dialog-focus-offset: 2px;
+  --bulud-dialog-stack-base: 1000;
 }
 
 :root.dark,
