@@ -1651,12 +1651,18 @@ describe('BuludDialog', () => {
     }
 
     popover.setAttribute('popover', 'auto');
+    const invoker = document.createElement('button');
+    invoker.id = 'popover-invoker';
+    invoker.type = 'button';
+    invoker.setAttribute('popovertarget', 'dialog-popover');
     const action = document.createElement('button');
     action.textContent = 'Popover action';
     popover.append(action);
-    dialog.append(popover);
+    popover.id = 'dialog-popover';
+    dialog.append(invoker, popover);
+    invoker.focus();
     popover.showPopover();
-    action.focus();
+    expect(document.activeElement).toBe(invoker);
 
     const firstEscape = new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -1664,7 +1670,7 @@ describe('BuludDialog', () => {
       composed: true,
       cancelable: true,
     });
-    action.dispatchEvent(firstEscape);
+    invoker.dispatchEvent(firstEscape);
     fixture.detectChanges();
 
     expect(firstEscape.defaultPrevented).toBeFalse();
@@ -1677,6 +1683,75 @@ describe('BuludDialog', () => {
     );
     fixture.detectChanges();
     expect(fixture.componentInstance.open()).toBeFalse();
+  });
+
+  it('does not let an unrelated open popover take ownership of Dialog Escape', () => {
+    openFromTrigger();
+    const popover = document.createElement('div') as HTMLDivElement & {
+      hidePopover?: () => void;
+      showPopover?: () => void;
+    };
+    if (
+      typeof popover.showPopover !== 'function' ||
+      typeof popover.hidePopover !== 'function'
+    ) {
+      return;
+    }
+
+    popover.setAttribute('popover', 'auto');
+    document.body.append(popover);
+    popover.showPopover();
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(escape);
+    fixture.detectChanges();
+
+    expect(escape.defaultPrevented).toBeTrue();
+    expect(fixture.componentInstance.open()).toBeFalse();
+    popover.hidePopover();
+    popover.remove();
+  });
+
+  it('finds an open projected popover in an open shadow root', () => {
+    openFromTrigger();
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    const invoker = document.createElement('button');
+    const popover = document.createElement('div') as HTMLDivElement & {
+      hidePopover?: () => void;
+      showPopover?: () => void;
+    };
+    if (
+      typeof popover.showPopover !== 'function' ||
+      typeof popover.hidePopover !== 'function'
+    ) {
+      return;
+    }
+
+    popover.setAttribute('popover', 'auto');
+    invoker.setAttribute('popovertarget', 'shadow-popover');
+    popover.id = 'shadow-popover';
+    shadow.append(invoker, popover);
+    getDialog().append(host);
+    invoker.focus();
+    popover.showPopover();
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    invoker.dispatchEvent(escape);
+    fixture.detectChanges();
+
+    expect(escape.defaultPrevented).toBeFalse();
+    expect(fixture.componentInstance.open()).toBeTrue();
+    popover.hidePopover();
   });
 
   it('does not close the Dialog for a popover Escape when closeOnEscape is disabled', () => {

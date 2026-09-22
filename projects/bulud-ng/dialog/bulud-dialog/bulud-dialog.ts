@@ -468,6 +468,12 @@ function isOpenNativePopover(
   }
 }
 
+function hasOpenComposedPopover(root: HTMLElement): boolean {
+  return collectComposedElements(root).some((element) =>
+    isOpenNativePopover(element, root.ownerDocument),
+  );
+}
+
 function collectComposedElements(root: HTMLElement): Element[] {
   const elements: Element[] = [];
   const visited = new Set<Element>();
@@ -822,6 +828,10 @@ export class BuludDialog {
           .composedPath()
           .some((node) => isOpenNativePopover(node, this.document))
       ) {
+        return;
+      }
+      const surface = this.panel()?.nativeElement;
+      if (surface && hasOpenComposedPopover(surface)) {
         return;
       }
       if (this.closeOnEscape()) {

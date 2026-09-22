@@ -50,8 +50,13 @@ test('lets a native popover light-dismiss before the containing Dialog', async (
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Review changes' });
   const popover = dialog.locator('#dialog-test-popover');
+  const invoker = dialog.locator('#dialog-test-popover-invoker');
 
   await dialog.evaluate((element) => {
+    const invoker = document.createElement('button');
+    invoker.id = 'dialog-test-popover-invoker';
+    invoker.type = 'button';
+    invoker.textContent = 'Open popover';
     const popover = document.createElement('div');
     popover.id = 'dialog-test-popover';
     popover.setAttribute('popover', 'auto');
@@ -59,12 +64,14 @@ test('lets a native popover light-dismiss before the containing Dialog', async (
     action.type = 'button';
     action.textContent = 'Popover action';
     popover.append(action);
-    element.append(popover);
+    invoker.setAttribute('popovertarget', popover.id);
+    element.append(invoker, popover);
+    invoker.focus();
     (
       popover as HTMLDivElement & { showPopover: () => void }
     ).showPopover();
-    action.focus();
   });
+  await expect(invoker).toBeFocused();
   await expect(popover).toBeVisible();
 
   await page.keyboard.press('Escape');
