@@ -96,6 +96,10 @@ function unregisterDialog(
   return wasTop;
 }
 
+function isTopDialog(document: Document, entry: DialogStackEntry): boolean {
+  return dialogRegistries.get(document)?.stack.at(-1) === entry;
+}
+
 function lockBodyScroll(document: Document): void {
   const state = bodyScrollLocks.get(document) ?? {
     count: 0,
@@ -659,7 +663,15 @@ export class BuludDialog {
   }
 
   protected handleNativeCancel(event: Event): void {
+    const overlay = this.overlay()?.nativeElement;
+    if (event.target !== overlay) {
+      return;
+    }
+
     event.preventDefault();
+    if (isTopDialog(this.document, this.stackEntry) && this.closeOnEscape()) {
+      this.requestClose('escape');
+    }
   }
 
   /** Synchronize native form-driven closes with the controlled lifecycle. */

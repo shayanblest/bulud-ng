@@ -24,7 +24,7 @@ import { BuludDialog } from './bulud-dialog';
       [initialFocus]="initialFocus()"
       [theme]="themeOverride"
       (openChange)="recordOpenChange()"
-      (closeRequest)="lastCloseReason.set($event)"
+      (closeRequest)="recordCloseRequest($event)"
     >
       <h2 id="dialog-title">Dialog title</h2>
       <h2 id="static-initial-focus" tabindex="-1">Static dialog title</h2>
@@ -46,6 +46,7 @@ class TestHost {
   readonly backdropEnabled = signal(true);
   readonly initialFocus = signal<string | undefined>(undefined);
   readonly lastCloseReason = signal<string | null>(null);
+  readonly closeRequestCount = signal(0);
   readonly openChangeCount = signal(0);
   readonly themeOverride = {
     background: '#14532d',
@@ -58,6 +59,11 @@ class TestHost {
 
   recordOpenChange(): void {
     this.openChangeCount.update((count) => count + 1);
+  }
+
+  recordCloseRequest(reason: string): void {
+    this.lastCloseReason.set(reason);
+    this.closeRequestCount.update((count) => count + 1);
   }
 }
 
@@ -1427,6 +1433,52 @@ describe('BuludDialog', () => {
     expect(fixture.componentInstance.lastCloseReason()).toBeNull();
   });
 
+  it('routes an enabled native cancel through the Escape close lifecycle', () => {
+    const trigger = openFromTrigger();
+    const overlay = getDialog().closest('dialog') as HTMLDialogElement;
+    const event = new Event('cancel', { bubbles: true, cancelable: true });
+
+    overlay.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(event.defaultPrevented).toBeTrue();
+    expect(fixture.componentInstance.open()).toBeFalse();
+    expect(fixture.componentInstance.openChangeCount()).toBe(1);
+    expect(fixture.componentInstance.closeRequestCount()).toBe(1);
+    expect(fixture.componentInstance.lastCloseReason()).toBe('escape');
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('prevents native cancel without closing when Escape is disabled', () => {
+    fixture.componentInstance.escapeEnabled.set(false);
+    openFromTrigger();
+    const overlay = getDialog().closest('dialog') as HTMLDialogElement;
+    const event = new Event('cancel', { bubbles: true, cancelable: true });
+
+    overlay.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(event.defaultPrevented).toBeTrue();
+    expect(fixture.componentInstance.open()).toBeTrue();
+    expect(fixture.componentInstance.openChangeCount()).toBe(0);
+    expect(fixture.componentInstance.closeRequestCount()).toBe(0);
+  });
+
+  it('does not double-process native cancel and native close', () => {
+    const trigger = openFromTrigger();
+    const overlay = getDialog().closest('dialog') as HTMLDialogElement;
+    const event = new Event('cancel', { bubbles: true, cancelable: true });
+
+    overlay.dispatchEvent(event);
+    fixture.detectChanges();
+    overlay.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.openChangeCount()).toBe(1);
+    expect(fixture.componentInstance.closeRequestCount()).toBe(1);
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it('keeps Escape ownership after an opaque closed-shadow widget declines it', () => {
     openFromTrigger();
     const host = document.createElement('closed-focus-host');
@@ -1799,6 +1851,42 @@ describe('BuludDialog stack ownership', () => {
     expect(fixture.componentInstance.secondOpen()).toBeFalse();
     expect(fixture.componentInstance.firstOpen()).toBeTrue();
     expect(document.activeElement).toBe(firstAction);
+  });
+
+  it('lets only the top-most dialog handle native cancel', async () => {
+    await openBoth();
+    const firstOverlay = (
+      fixture.nativeElement.querySelector(
+        '[role="dialog"][aria-label="First dialog"]',
+      ) as HTMLElement
+    ).closest('dialog') as HTMLDialogElement;
+    const secondOverlay = (
+      fixture.nativeElement.querySelector(
+        '[role="dialog"][aria-label="Second dialog"]',
+      ) as HTMLElement
+    ).closest('dialog') as HTMLDialogElement;
+
+    const lowerCancel = new Event('cancel', {
+      bubbles: true,
+      cancelable: true,
+    });
+    firstOverlay.dispatchEvent(lowerCancel);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(lowerCancel.defaultPrevented).toBeTrue();
+    expect(fixture.componentInstance.firstOpen()).toBeTrue();
+    expect(fixture.componentInstance.secondOpen()).toBeTrue();
+
+    const topCancel = new Event('cancel', { bubbles: true, cancelable: true });
+    secondOverlay.dispatchEvent(topCancel);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(topCancel.defaultPrevented).toBeTrue();
+    expect(fixture.componentInstance.secondOpen()).toBeFalse();
+    expect(fixture.componentInstance.firstOpen()).toBeTrue();
+    expect(document.activeElement?.id).toBe('stack-first-action');
   });
 
   it('keeps focus trapping in the top-most dialog', async () => {
