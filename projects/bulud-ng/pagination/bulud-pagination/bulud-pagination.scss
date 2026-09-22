@@ -47,7 +47,9 @@
     border-color 120ms ease;
 }
 
-.bulud-pagination__page:hover:not(:disabled),
+.bulud-pagination__page:hover:not(:disabled):not(
+    .bulud-pagination__page--current
+  ),
 .bulud-pagination__control:hover:not(:disabled) {
   background: var(--bulud-pagination-background-hover, #f8fafc);
 }

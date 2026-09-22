@@ -121,6 +121,29 @@ describe('BuludPagination', () => {
     expect(fixture.componentInstance.pageChange()).toBeNull();
   });
 
+  it('keeps the current page background when hovered and excludes disabled controls', async () => {
+    fixture.componentInstance.page.set(1);
+    await fixture.whenStable();
+
+    const currentPage = fixture.nativeElement.querySelector(
+      '.bulud-pagination__page--current',
+    ) as HTMLButtonElement;
+    const previous = buttons()[0];
+    expect(currentPage.matches(':hover')).toBeFalse();
+    expect(
+      currentPage.classList.contains('bulud-pagination__page--current'),
+    ).toBeTrue();
+    expect(previous.disabled).toBeTrue();
+    expect(previous.matches(':disabled')).toBeTrue();
+
+    const stylesheet = [...document.querySelectorAll('style')]
+      .map((style) => style.textContent ?? '')
+      .find((text) => text.includes('.bulud-pagination__page--current'));
+    expect(stylesheet).toContain(
+      ':hover:not(:disabled):not(.bulud-pagination__page--current)',
+    );
+  });
+
   it('supports single, invalid and very large page counts without duplicates', async () => {
     fixture.componentInstance.count.set(1);
     await fixture.whenStable();

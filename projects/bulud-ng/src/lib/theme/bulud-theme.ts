@@ -359,6 +359,24 @@ const BULUD_PAGINATION_GEOMETRY_VARIABLES = new Set([
   '--bulud-pagination-focus-width',
   '--bulud-pagination-focus-offset',
 ]);
+const BULUD_PAGINATION_THEME_VARIABLES = {
+  background: '--bulud-pagination-background',
+  backgroundHover: '--bulud-pagination-background-hover',
+  activeBackground: '--bulud-pagination-active-background',
+  border: '--bulud-pagination-border',
+  foreground: '--bulud-pagination-foreground',
+  activeForeground: '--bulud-pagination-active-foreground',
+  mutedForeground: '--bulud-pagination-muted-foreground',
+  focus: '--bulud-pagination-focus',
+  disabledOpacity: '--bulud-pagination-disabled-opacity',
+  radius: '--bulud-pagination-radius',
+  size: '--bulud-pagination-size',
+  gap: '--bulud-pagination-gap',
+  borderWidth: '--bulud-pagination-border-width',
+  focusWidth: '--bulud-pagination-focus-width',
+  focusOffset: '--bulud-pagination-focus-offset',
+  fontWeight: '--bulud-pagination-font-weight',
+} as const satisfies Record<keyof BuludPaginationTheme, BuludThemeCssVariable>;
 
 /** Concrete defaults retained internally for theme resolution. */
 const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
@@ -1002,8 +1020,13 @@ function createBuludThemeCss(
       property.startsWith('--bulud-dialog-') &&
       !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
   );
+  const paginationDarkModeVariables = entries.filter(
+    ([property]) =>
+      property.startsWith('--bulud-pagination-') &&
+      !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
+  );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
 }
 
 /**
@@ -1013,8 +1036,9 @@ function createBuludThemeCss(
  * dark theme can provide omitted defaults. Explicit Switch and Dialog
  * non-geometry overrides are also emitted in dark mode so they remain global
  * there; omitted tokens stay absent and use the imported dark defaults.
- * Badge, checkbox, Switch, and Dialog geometry remain available because they
- * are not theme-mode specific.
+ * Explicit Pagination non-geometry overrides are emitted in dark mode by the
+ * same rule. Badge, checkbox, Switch, Dialog, and Pagination geometry remain
+ * available because they are not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -1134,14 +1158,9 @@ export function provideBuludTheme(
     }
   }
 
-  for (const [field, variable] of [
-    ['radius', '--bulud-pagination-radius'],
-    ['size', '--bulud-pagination-size'],
-    ['gap', '--bulud-pagination-gap'],
-    ['borderWidth', '--bulud-pagination-border-width'],
-    ['focusWidth', '--bulud-pagination-focus-width'],
-    ['focusOffset', '--bulud-pagination-focus-offset'],
-  ] as const) {
+  for (const [field, variable] of Object.entries(
+    BULUD_PAGINATION_THEME_VARIABLES,
+  ) as Array<[keyof BuludPaginationTheme, BuludThemeCssVariable]>) {
     if (config.pagination?.[field] === undefined) {
       delete variables[variable];
     }

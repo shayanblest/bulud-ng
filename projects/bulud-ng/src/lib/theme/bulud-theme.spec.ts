@@ -1007,4 +1007,194 @@ describe('Bulud theme', () => {
       resolveBuludTheme().checkbox.size,
     );
   });
+
+  it('maps every Pagination token to one CSS variable', () => {
+    const expectedVariables = [
+      '--bulud-pagination-background',
+      '--bulud-pagination-background-hover',
+      '--bulud-pagination-active-background',
+      '--bulud-pagination-border',
+      '--bulud-pagination-foreground',
+      '--bulud-pagination-active-foreground',
+      '--bulud-pagination-muted-foreground',
+      '--bulud-pagination-focus',
+      '--bulud-pagination-disabled-opacity',
+      '--bulud-pagination-radius',
+      '--bulud-pagination-size',
+      '--bulud-pagination-gap',
+      '--bulud-pagination-border-width',
+      '--bulud-pagination-focus-width',
+      '--bulud-pagination-focus-offset',
+      '--bulud-pagination-font-weight',
+    ];
+    const actualVariables = Object.keys(createBuludThemeVariables()).filter(
+      (variable) => variable.startsWith('--bulud-pagination-'),
+    );
+
+    expect(actualVariables.sort()).toEqual(expectedVariables.sort());
+    expect(Object.keys(resolveBuludTheme().pagination).length).toBe(
+      expectedVariables.length,
+    );
+  });
+
+  for (const darkMode of [
+    {
+      name: '.dark',
+      apply: (root: HTMLElement) => root.classList.add('dark'),
+      remove: (root: HTMLElement) => root.classList.remove('dark'),
+    },
+    {
+      name: '[data-theme="dark"]',
+      apply: (root: HTMLElement) => root.setAttribute('data-theme', 'dark'),
+      remove: (root: HTMLElement) => root.removeAttribute('data-theme'),
+    },
+  ]) {
+    it(`preserves explicit Pagination colors in ${darkMode.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const libraryThemeStyle = document.createElement('style');
+      libraryThemeStyle.textContent = `
+        :root { --bulud-pagination-background: #ffffff; }
+        :root.dark, :root[data-theme="dark"] { --bulud-pagination-background: #0f172a; }
+      `;
+      document.head.append(libraryThemeStyle);
+      const pagination = {
+        background: '#101010',
+        backgroundHover: '#202020',
+        activeBackground: '#303030',
+        border: '#404040',
+        foreground: '#505050',
+        activeForeground: '#606060',
+        mutedForeground: '#707070',
+        focus: '#808080',
+        disabledOpacity: '0.31',
+        fontWeight: '700',
+      };
+      const environmentInjector = createEnvironmentInjector(
+        [provideBuludTheme({ pagination })],
+        parentInjector,
+      );
+
+      try {
+        darkMode.apply(root);
+        const computed = document.defaultView?.getComputedStyle(root);
+        for (const [field, value] of Object.entries(pagination)) {
+          const variable = `--bulud-pagination-${field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+          expect(computed?.getPropertyValue(variable).trim()).toBe(value);
+        }
+      } finally {
+        darkMode.remove(root);
+        environmentInjector.destroy();
+        libraryThemeStyle.remove();
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
+  it('omits every unconfigured Pagination token so consumer CSS remains in control', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    root.style.setProperty('--bulud-pagination-font-weight', '400');
+    root.style.setProperty('--bulud-pagination-background-hover', '#abcdef');
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme({ pagination: { background: '#123456' } })],
+      parentInjector,
+    );
+
+    try {
+      const styleText =
+        document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+        '';
+      expect(styleText).toContain('--bulud-pagination-background: #123456;');
+      expect(styleText).not.toContain('--bulud-pagination-background-hover:');
+      expect(styleText).not.toContain('--bulud-pagination-font-weight:');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-background-hover')
+          .trim(),
+      ).toBe('#abcdef');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-font-weight')
+          .trim(),
+      ).toBe('400');
+    } finally {
+      root.style.removeProperty('--bulud-pagination-font-weight');
+      root.style.removeProperty('--bulud-pagination-background-hover');
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps Pagination geometry provider, scoped, and instance precedence', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const consumerStyle = document.createElement('style');
+    consumerStyle.textContent = ':root { --bulud-pagination-size: 1rem; }';
+    document.head.append(consumerStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme({ pagination: { size: '3rem' } })],
+      parentInjector,
+    );
+
+    try {
+      const read = () =>
+        document.defaultView
+          ?.getComputedStyle(instance)
+          .getPropertyValue('--bulud-pagination-size')
+          .trim();
+      expect(read()).toBe('3rem');
+      scope.style.setProperty('--bulud-pagination-size', '4rem');
+      expect(read()).toBe('4rem');
+      instance.style.setProperty('--bulud-pagination-size', '5rem');
+      expect(read()).toBe('5rem');
+    } finally {
+      instance.remove();
+      scope.remove();
+      consumerStyle.remove();
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
 });
