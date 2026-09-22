@@ -158,11 +158,16 @@ class NestedShadowControl extends HTMLElement {
   }
 }
 
+class DelegatesFocusHost extends HTMLElement {}
+
 if (!customElements.get('open-shadow-control')) {
   customElements.define('open-shadow-control', OpenShadowControl);
 }
 if (!customElements.get('nested-shadow-control')) {
   customElements.define('nested-shadow-control', NestedShadowControl);
+}
+if (!customElements.get('delegates-focus-host')) {
+  customElements.define('delegates-focus-host', DelegatesFocusHost);
 }
 if (!customElements.get('closed-focus-host')) {
   customElements.define('closed-focus-host', class extends HTMLElement {});
@@ -1208,6 +1213,323 @@ describe('BuludDialog', () => {
         }),
       ),
     ).not.toThrow();
+  });
+
+  it('does not double-count a delegatesFocus host in forward or reverse Tab order', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const host = document.createElement('delegates-focus-host');
+    host.tabIndex = 0;
+    const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    const internalFirst = document.createElement('button');
+    const internalSecond = document.createElement('button');
+    const following = document.createElement('button');
+    shadow.append(internalFirst, internalSecond);
+    dialog.append(preceding, host, following);
+
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internalFirst);
+
+    internalFirst.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(shadow.activeElement).toBe(internalSecond);
+
+    internalFirst.focus();
+    internalFirst.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(document.activeElement).toBe(preceding);
+
+    following.focus();
+    following.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internalSecond);
+  });
+
+  it('uses a delegatesFocus host positive tabindex for widget ordering', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const positiveOne = document.createElement('button');
+    positiveOne.tabIndex = 1;
+    const zeroBefore = document.createElement('button');
+    const host = document.createElement('delegates-focus-host');
+    host.tabIndex = 5;
+    const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    const internal = document.createElement('button');
+    const following = document.createElement('button');
+    shadow.append(internal);
+    dialog.append(positiveOne, zeroBefore, host, following);
+
+    positiveOne.focus();
+    positiveOne.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internal);
+
+    zeroBefore.focus();
+    zeroBefore.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internal);
+  });
+
+  it('skips delegatesFocus hosts without sequential descendants', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const host = document.createElement('delegates-focus-host');
+    host.tabIndex = 0;
+    host.attachShadow({ mode: 'open', delegatesFocus: true }).innerHTML =
+      '<span>Not focusable</span>';
+    const following = document.createElement('button');
+    dialog.append(preceding, host, following);
+
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(following);
+    expect(host.shadowRoot?.activeElement).toBeNull();
+
+    following.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(preceding);
+  });
+
+  it('keeps tabindex-negative delegatesFocus hosts out of sequential order', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const host = document.createElement('delegates-focus-host');
+    host.tabIndex = -1;
+    const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    const internal = document.createElement('button');
+    const following = document.createElement('button');
+    shadow.append(internal);
+    dialog.append(preceding, host, following);
+
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internal);
+
+    host.focus();
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internal);
+  });
+
+  it('does not collapse an ordinary open shadow host into its descendants', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const host = document.createElement('div');
+    host.tabIndex = 0;
+    const shadow = host.attachShadow({ mode: 'open' });
+    const internal = document.createElement('button');
+    const following = document.createElement('button');
+    shadow.append(internal);
+    dialog.append(preceding, host, following);
+
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBeNull();
+
+    host.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(host);
+    expect(shadow.activeElement).toBe(internal);
+  });
+
+  it('recomputes delegatesFocus descendants after removal and disabling', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const host = document.createElement('delegates-focus-host');
+    host.tabIndex = 0;
+    const shadow = host.attachShadow({ mode: 'open', delegatesFocus: true });
+    const removed = document.createElement('button');
+    const remaining = document.createElement('button');
+    const following = document.createElement('button');
+    shadow.append(removed, remaining);
+    dialog.append(preceding, host, following);
+
+    removed.remove();
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(shadow.activeElement).toBe(remaining);
+
+    remaining.disabled = true;
+    following.focus();
+    following.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(preceding);
+    expect(shadow.activeElement).toBeNull();
+  });
+
+  it('moves through adjacent delegatesFocus widgets without duplicate stops', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const firstHost = document.createElement('delegates-focus-host');
+    const firstShadow = firstHost.attachShadow({
+      mode: 'open',
+      delegatesFocus: true,
+    });
+    const firstInternal = document.createElement('button');
+    firstShadow.append(firstInternal);
+    const secondHost = document.createElement('delegates-focus-host');
+    const secondShadow = secondHost.attachShadow({
+      mode: 'open',
+      delegatesFocus: true,
+    });
+    const secondInternal = document.createElement('button');
+    secondShadow.append(secondInternal);
+    const following = document.createElement('button');
+    dialog.append(preceding, firstHost, secondHost, following);
+
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(firstShadow.activeElement).toBe(firstInternal);
+    firstInternal.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(secondShadow.activeElement).toBe(secondInternal);
+    secondInternal.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(document.activeElement).toBe(following);
+
+    secondInternal.focus();
+    secondInternal.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(firstShadow.activeElement).toBe(firstInternal);
+    firstInternal.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(document.activeElement).toBe(preceding);
+  });
+
+  it('deduplicates nested delegatesFocus hosts in composed traversal', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const preceding = document.createElement('button');
+    const outerHost = document.createElement('delegates-focus-host');
+    outerHost.tabIndex = 0;
+    const outerShadow = outerHost.attachShadow({
+      mode: 'open',
+      delegatesFocus: true,
+    });
+    const innerHost = document.createElement('delegates-focus-host');
+    innerHost.tabIndex = 0;
+    const innerShadow = innerHost.attachShadow({
+      mode: 'open',
+      delegatesFocus: true,
+    });
+    const internal = document.createElement('button');
+    innerShadow.append(internal);
+    outerShadow.append(innerHost);
+    const following = document.createElement('button');
+    dialog.append(preceding, outerHost, following);
+
+    preceding.focus();
+    preceding.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(outerHost);
+    expect(outerShadow.activeElement).toBe(innerHost);
+    expect(innerShadow.activeElement).toBe(internal);
+
+    internal.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    expect(document.activeElement).toBe(preceding);
   });
 
   it('checks ordinary ancestors inside open shadow roots for availability', () => {

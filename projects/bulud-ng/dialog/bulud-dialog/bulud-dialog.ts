@@ -392,6 +392,12 @@ function isTabCycleCandidate(element: Element): element is FocusCandidate {
     return false;
   }
 
+  // The host's effective destination is in its delegated shadow scope. Keeping
+  // the host would make sequential navigation visit that destination twice.
+  if (isDelegatesFocusShadowHost(element)) {
+    return false;
+  }
+
   if (
     isDomInstance<HTMLElement>(element, element.ownerDocument, 'HTMLElement') &&
     element.hasAttribute('contenteditable') &&
@@ -474,7 +480,44 @@ function hasOpenComposedPopover(root: HTMLElement): boolean {
   );
 }
 
-function collectComposedElements(root: HTMLElement): Element[] {
+function getOpenShadowRoot(element: Element): ShadowRoot | null {
+  const document = element.ownerDocument;
+  if (isDomInstance<HTMLElement>(element, document, 'HTMLElement')) {
+    return element.shadowRoot;
+  }
+  if (isDomInstance<SVGElement>(element, document, 'SVGElement')) {
+    return element.shadowRoot;
+  }
+  return null;
+}
+
+function isDelegatesFocusShadowHost(element: Element): boolean {
+  return getOpenShadowRoot(element)?.delegatesFocus === true;
+}
+
+function delegatedTabIndex(element: FocusCandidate): number {
+  for (
+    let current = composedParent(element);
+    current;
+    current = composedParent(current)
+  ) {
+    if (!isDelegatesFocusShadowHost(current)) {
+      continue;
+    }
+
+    const tabindex = current.getAttribute('tabindex');
+    if (tabindex !== null && /^\+?\d+$/.test(tabindex.trim())) {
+      const value = Number.parseInt(tabindex, 10);
+      if (value > 0) {
+        return value;
+      }
+    }
+  }
+
+  return element.tabIndex;
+}
+
+function collectComposedElements(root: Element): Element[] {
   const elements: Element[] = [];
   const visited = new Set<Element>();
   const document = root.ownerDocument;
@@ -494,15 +537,7 @@ function collectComposedElements(root: HTMLElement): Element[] {
       return;
     }
 
-    const shadowRoot = isDomInstance<HTMLElement>(
-      element,
-      root.ownerDocument,
-      'HTMLElement',
-    )
-      ? element.shadowRoot
-      : isDomInstance<SVGElement>(element, root.ownerDocument, 'SVGElement')
-        ? element.shadowRoot
-        : null;
+    const shadowRoot = getOpenShadowRoot(element);
     if (shadowRoot) {
       Array.from(shadowRoot.children).forEach(visit);
       return;
@@ -1064,8 +1099,8 @@ export class BuludDialog {
         return representative === radio;
       })
       .sort((left, right) => {
-        const leftTabIndex = left.tabIndex;
-        const rightTabIndex = right.tabIndex;
+        const leftTabIndex = delegatedTabIndex(left);
+        const rightTabIndex = delegatedTabIndex(right);
         if (leftTabIndex > 0 && rightTabIndex <= 0) {
           return -1;
         }
