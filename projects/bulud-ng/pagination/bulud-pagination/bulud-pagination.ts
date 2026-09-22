@@ -67,8 +67,11 @@ export class BuludPagination {
   protected readonly renderedPage = computed(() => {
     const count = this.safePageCount();
     const page = this.currentPage();
-    if (!count || !Number.isFinite(page)) {
+    if (!count) {
       return 0;
+    }
+    if (!Number.isFinite(page)) {
+      return page === Infinity ? count : 1;
     }
     return Math.min(Math.max(Math.floor(page), 1), count);
   });
@@ -127,7 +130,7 @@ export class BuludPagination {
   }
 }
 
-export function createPaginationWindow(
+function createPaginationWindow(
   pageCount: number,
   currentPage: number,
 ): readonly BuludPaginationItem[] {

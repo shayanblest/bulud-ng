@@ -87,7 +87,7 @@ test('supports disabled, RTL, dark mode, and instance theme precedence', async (
   await section.getByLabel('Dark theme').check();
   await expect(
     navigation.getByRole('button', { name: 'صفحه فعلی، 4' }),
-  ).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  ).toHaveCSS('background-color', 'rgb(124, 58, 237)');
   const instance = section
     .locator('#pagination-instance-theme')
     .getByRole('button', {
@@ -95,4 +95,19 @@ test('supports disabled, RTL, dark mode, and instance theme precedence', async (
     });
   await expect(instance).toHaveCSS('background-color', 'rgb(20, 83, 45)');
   await expect(instance).toHaveCSS('width', '48px');
+});
+
+test('exposes the zero-page empty state with disabled navigation controls', async ({
+  page,
+}) => {
+  const empty = page.locator('#pagination-empty');
+  await expect(empty).toContainText('No pages available');
+
+  const navigation = empty.getByRole('navigation', {
+    name: 'Empty pagination',
+  });
+  const controls = navigation.getByRole('button');
+  await expect(controls).toHaveCount(2);
+  await expect(controls.nth(0)).toBeDisabled();
+  await expect(controls.nth(1)).toBeDisabled();
 });

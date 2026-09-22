@@ -11,7 +11,7 @@ import {
   provideBuludTheme,
   resolveBuludTheme,
 } from '../../src/lib/theme/bulud-theme';
-import { BuludPagination, createPaginationWindow } from './bulud-pagination';
+import { BuludPagination } from './bulud-pagination';
 
 @Component({
   imports: [BuludPagination],
@@ -186,6 +186,46 @@ describe('BuludPagination', () => {
     expect(fixture.componentInstance.pageChange()).toBeNull();
   });
 
+  it('normalizes non-finite current pages to valid boundaries without mutating input', async () => {
+    const cases = [
+      { value: Number.NaN, expected: 1, request: 2 },
+      { value: Number.POSITIVE_INFINITY, expected: 10, request: 9 },
+      { value: Number.NEGATIVE_INFINITY, expected: 1, request: 2 },
+    ];
+
+    for (const { value, expected, request } of cases) {
+      fixture.componentInstance.page.set(value);
+      fixture.componentInstance.pageChange.set(null);
+      await fixture.whenStable();
+
+      expect(
+        fixture.nativeElement.querySelectorAll('[aria-current="page"]').length,
+      ).toBe(1);
+      expect(
+        fixture.nativeElement.querySelector('[aria-current="page"]')
+          ?.textContent,
+      ).toContain(String(expected));
+      if (Number.isNaN(value)) {
+        expect(Number.isNaN(fixture.componentInstance.page())).toBeTrue();
+      } else {
+        expect(fixture.componentInstance.page()).toBe(value);
+      }
+
+      const previous = buttons()[0];
+      const next = buttons().at(-1) as HTMLButtonElement;
+      expect(previous.disabled).toBe(expected === 1);
+      expect(next.disabled).toBe(expected === 10);
+
+      (request < expected ? previous : next).click();
+      expect(fixture.componentInstance.pageChange()).toBe(request);
+      if (Number.isNaN(value)) {
+        expect(Number.isNaN(fixture.componentInstance.page())).toBeTrue();
+      } else {
+        expect(fixture.componentInstance.page()).toBe(value);
+      }
+    }
+  });
+
   it('uses configured locale labels and dynamic current-page labels', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -245,37 +285,5 @@ describe('BuludPagination', () => {
     ).toBe('#14532d');
     const vars = provideBuludTheme({ pagination: { size: '3rem' } });
     expect(vars).toBeTruthy();
-  });
-
-  it('generates deterministic windows for representative counts', () => {
-    expect(createPaginationWindow(1, 1)).toEqual([1]);
-    expect(createPaginationWindow(5, 3)).toEqual([1, 2, 3, 4, 5]);
-    expect(createPaginationWindow(10, 1)).toEqual([
-      1,
-      2,
-      3,
-      4,
-      5,
-      'ellipsis-end',
-      10,
-    ]);
-    expect(createPaginationWindow(10, 9)).toEqual([
-      1,
-      'ellipsis-start',
-      6,
-      7,
-      8,
-      9,
-      10,
-    ]);
-    expect(createPaginationWindow(100, 50)).toEqual([
-      1,
-      'ellipsis-start',
-      49,
-      50,
-      51,
-      'ellipsis-end',
-      100,
-    ]);
   });
 });

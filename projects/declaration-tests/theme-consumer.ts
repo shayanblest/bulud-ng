@@ -6,6 +6,7 @@ import {
   provideBuludTheme,
   resolveBuludTheme,
 } from 'bulud-ng';
+import { provideBuludLocale } from 'bulud-ng';
 
 // Keep these inferred: downstream declaration emit must be able to name the
 // resolved type without consumers adding explicit return/value annotations.
@@ -31,6 +32,10 @@ export const legacyDefaults: typeof BULUD_DEFAULT_THEME = {
 export const defaultThemeProvider = provideBuludTheme({
   ...legacyDefaults,
   colors: { ...legacyDefaults.colors, primary: '#7c3aed' },
+});
+
+export const partialPaginationLocaleProvider = provideBuludLocale({
+  pagination: { previousPageLabel: 'Previous' },
 });
 
 // Existing complete Badge objects need no geometry/focus additions.

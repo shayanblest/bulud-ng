@@ -439,6 +439,15 @@
               "
             />
           </div>
+          <div
+            id="pagination-empty"
+            class="mt-5 rounded-2xl border border-dashed border-slate-300 p-4"
+          >
+            <p id="pagination-empty-state" class="text-sm font-semibold">
+              No pages available
+            </p>
+            <bulud-pagination [pageCount]="0" aria-label="Empty pagination" />
+          </div>
         </section>
 
         <section

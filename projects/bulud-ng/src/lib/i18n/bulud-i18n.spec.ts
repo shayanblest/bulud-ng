@@ -38,6 +38,16 @@ describe('Bulud locale', () => {
     );
   });
 
+  it('accepts partial Pagination locale overrides and fills omitted labels', () => {
+    const locale = resolveBuludLocale({
+      pagination: { previousPageLabel: 'Previous' },
+    });
+
+    expect(locale.pagination?.previousPageLabel).toBe('Previous');
+    expect(locale.pagination?.navigationLabel).toBe('Pagination');
+    expect(locale.pagination?.pageLabel(3)).toBe('Page 3');
+  });
+
   it('provides the resolved locale and applies document language direction', () => {
     TestBed.configureTestingModule({
       providers: [

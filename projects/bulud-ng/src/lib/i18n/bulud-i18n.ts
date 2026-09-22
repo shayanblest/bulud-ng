@@ -41,7 +41,9 @@ export interface BuludLocale {
   readonly pagination?: BuludPaginationLocale;
 }
 
-export type BuludLocaleConfig = Partial<Omit<BuludLocale, 'dropdown'>> & {
+export type BuludLocaleConfig = Partial<
+  Omit<BuludLocale, 'dropdown' | 'pagination'>
+> & {
   readonly dropdown?: Partial<BuludDropdownLocale>;
   readonly pagination?: Partial<BuludPaginationLocale>;
 };
