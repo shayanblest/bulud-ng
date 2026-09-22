@@ -216,6 +216,13 @@ function hasExplicitTabIndex(element: Element): boolean {
   return tabindex !== null && /^[-+]?\d+$/.test(tabindex.trim());
 }
 
+function isDisplayContentsElement(element: Element): boolean {
+  return (
+    element.ownerDocument.defaultView?.getComputedStyle(element).display ===
+    'contents'
+  );
+}
+
 function isContentEditableElement(element: HTMLElement): boolean {
   const ownValue = element.getAttribute('contenteditable');
   if (ownValue !== null) {
@@ -377,6 +384,10 @@ function isTabCycleCandidate(element: Element): element is FocusCandidate {
     return false;
   }
 
+  if (isDisplayContentsElement(element)) {
+    return false;
+  }
+
   if (element.hasAttribute('tabindex') && !hasNonNegativeTabIndex(element)) {
     return false;
   }
@@ -437,6 +448,21 @@ function isOpaqueCustomElement(
 function isModalNativeDialog(dialog: HTMLDialogElement): boolean {
   try {
     return dialog.matches(':modal');
+  } catch {
+    return false;
+  }
+}
+
+function isOpenNativePopover(
+  node: EventTarget | null,
+  document: Document,
+): boolean {
+  if (!isDomInstance<Element>(node, document, 'Element')) {
+    return false;
+  }
+
+  try {
+    return node.matches(':popover-open');
   } catch {
     return false;
   }
@@ -503,6 +529,7 @@ function isProgrammaticFocusTarget(
 ): boolean {
   if (
     !element.isConnected ||
+    isDisplayContentsElement(element) ||
     !isComposedDescendant(element, surface) ||
     isUnavailableElement(element)
   ) {
@@ -788,6 +815,13 @@ export class BuludDialog {
 
     if (event.key === 'Escape') {
       if (event.defaultPrevented) {
+        return;
+      }
+      if (
+        event
+          .composedPath()
+          .some((node) => isOpenNativePopover(node, this.document))
+      ) {
         return;
       }
       if (this.closeOnEscape()) {

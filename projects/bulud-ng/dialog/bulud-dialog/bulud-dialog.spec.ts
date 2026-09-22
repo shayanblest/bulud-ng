@@ -686,6 +686,62 @@ describe('BuludDialog', () => {
     expect(document.activeElement).toBe(nested);
   });
 
+  it('excludes display-contents wrappers but traverses their focusable children', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const before = document.createElement('button');
+    const zeroWrapper = document.createElement('div');
+    zeroWrapper.style.display = 'contents';
+    zeroWrapper.tabIndex = 0;
+    const zeroChild = document.createElement('button');
+    zeroChild.id = 'contents-zero-child';
+    zeroWrapper.append(zeroChild);
+    const positiveWrapper = document.createElement('div');
+    positiveWrapper.style.display = 'contents';
+    positiveWrapper.tabIndex = 3;
+    const positiveChild = document.createElement('button');
+    positiveChild.id = 'contents-positive-child';
+    positiveWrapper.append(positiveChild);
+    const after = document.createElement('button');
+    dialog.append(before, zeroWrapper, positiveWrapper, after);
+
+    before.focus();
+    before.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(zeroChild);
+
+    zeroChild.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(positiveChild);
+
+    positiveChild.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(after);
+
+    after.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(positiveChild);
+
+    positiveChild.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(zeroChild);
+  });
+
   it('discovers iframe and first-summary browser tabbables dynamically', () => {
     openFromTrigger();
     const dialog = getDialog();
@@ -773,6 +829,45 @@ describe('BuludDialog', () => {
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
     );
     expect(document.activeElement?.id).toBe('first-action');
+  });
+
+  it('keeps Escape ownership with a popover inside a nested native modal', () => {
+    openFromTrigger();
+    const outer = getDialog();
+    const nested = document.createElement('dialog');
+    const popover = document.createElement('div') as HTMLDivElement & {
+      showPopover?: () => void;
+      hidePopover?: () => void;
+    };
+    if (
+      typeof popover.showPopover !== 'function' ||
+      typeof popover.hidePopover !== 'function'
+    ) {
+      return;
+    }
+
+    popover.setAttribute('popover', 'auto');
+    const action = document.createElement('button');
+    popover.append(action);
+    nested.append(popover);
+    outer.append(nested);
+    nested.showModal();
+    popover.showPopover();
+    action.focus();
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    action.dispatchEvent(escape);
+    fixture.detectChanges();
+
+    expect(escape.defaultPrevented).toBeFalse();
+    expect(fixture.componentInstance.open()).toBeTrue();
+    popover.hidePopover();
+    nested.close();
   });
 
   it('defers nested native modal events from an open shadow root', () => {
@@ -1539,6 +1634,89 @@ describe('BuludDialog', () => {
 
     expect(fixture.componentInstance.open()).toBeTrue();
     expect(fixture.componentInstance.lastCloseReason()).toBeNull();
+  });
+
+  it('lets an open native popover dismiss before the Dialog', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    const popover = document.createElement('div') as HTMLDivElement & {
+      hidePopover?: () => void;
+      showPopover?: () => void;
+    };
+    if (
+      typeof popover.showPopover !== 'function' ||
+      typeof popover.hidePopover !== 'function'
+    ) {
+      return;
+    }
+
+    popover.setAttribute('popover', 'auto');
+    const action = document.createElement('button');
+    action.textContent = 'Popover action';
+    popover.append(action);
+    dialog.append(popover);
+    popover.showPopover();
+    action.focus();
+
+    const firstEscape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    action.dispatchEvent(firstEscape);
+    fixture.detectChanges();
+
+    expect(firstEscape.defaultPrevented).toBeFalse();
+    expect(fixture.componentInstance.open()).toBeTrue();
+    expect(popover.matches(':popover-open')).toBeTrue();
+
+    popover.hidePopover();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeFalse();
+  });
+
+  it('does not close the Dialog for a popover Escape when closeOnEscape is disabled', () => {
+    fixture.componentInstance.escapeEnabled.set(false);
+    openFromTrigger();
+    const dialog = getDialog();
+    const popover = document.createElement('div') as HTMLDivElement & {
+      hidePopover?: () => void;
+      showPopover?: () => void;
+    };
+    if (
+      typeof popover.showPopover !== 'function' ||
+      typeof popover.hidePopover !== 'function'
+    ) {
+      return;
+    }
+
+    popover.setAttribute('popover', 'auto');
+    const action = document.createElement('button');
+    popover.append(action);
+    dialog.append(popover);
+    popover.showPopover();
+    action.focus();
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      composed: true,
+      cancelable: true,
+    });
+    action.dispatchEvent(escape);
+    fixture.detectChanges();
+
+    expect(escape.defaultPrevented).toBeFalse();
+    expect(fixture.componentInstance.open()).toBeTrue();
+    popover.hidePopover();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.open()).toBeTrue();
   });
 
   it('routes an enabled native cancel through the Escape close lifecycle', () => {

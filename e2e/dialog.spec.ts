@@ -34,6 +34,48 @@ test('opens with semantics, initial focus, trapping, and restoration', async ({
   await expect(trigger).toBeFocused();
 });
 
+test('lets a native popover light-dismiss before the containing Dialog', async ({
+  page,
+}) => {
+  const supported = await page.evaluate(
+    () =>
+      typeof (HTMLElement.prototype as HTMLElement & {
+        showPopover?: unknown;
+      }).showPopover === 'function',
+  );
+  test.skip(!supported, 'Native popover APIs are unavailable.');
+
+  const section = page.locator('#dialog');
+  const trigger = section.getByRole('button', { name: 'Open dialog' });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: 'Review changes' });
+  const popover = dialog.locator('#dialog-test-popover');
+
+  await dialog.evaluate((element) => {
+    const popover = document.createElement('div');
+    popover.id = 'dialog-test-popover';
+    popover.setAttribute('popover', 'auto');
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.textContent = 'Popover action';
+    popover.append(action);
+    element.append(popover);
+    (
+      popover as HTMLDivElement & { showPopover: () => void }
+    ).showPopover();
+    action.focus();
+  });
+  await expect(popover).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(popover).toBeHidden();
+  await expect(dialog).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
 test('supports disabled Escape and backdrop policies', async ({ page }) => {
   const section = page.locator('#dialog');
   const trigger = section.getByRole('button', { name: 'Open dialog' });
