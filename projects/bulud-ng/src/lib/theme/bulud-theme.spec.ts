@@ -120,6 +120,90 @@ describe('Bulud theme', () => {
     }
   });
 
+  it('keeps Pagination out of legacy defaults while resolving concrete defaults', () => {
+    expect('pagination' in BULUD_DEFAULT_THEME).toBeFalse();
+    expect(resolveBuludTheme().pagination).toEqual(
+      resolveBuludTheme(BULUD_DEFAULT_THEME).pagination,
+    );
+    expect(resolveBuludTheme().pagination.activeBackground).toBe('#2563eb');
+  });
+
+  for (const legacyConfig of [
+    {
+      name: 'direct legacy defaults',
+      value: BULUD_DEFAULT_THEME,
+      themeAttribute: 'dark' as const,
+    },
+    {
+      name: 'spread legacy defaults',
+      value: { ...BULUD_DEFAULT_THEME },
+      themeAttribute: 'data-theme' as const,
+    },
+  ]) {
+    it(`does not pin Pagination light defaults with ${legacyConfig.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const libraryThemeStyle = document.createElement('style');
+      libraryThemeStyle.textContent = `
+        :root {
+          --bulud-pagination-background: #ffffff;
+          --bulud-pagination-active-background: #2563eb;
+        }
+        :root.dark, :root[data-theme="dark"] {
+          --bulud-pagination-background: #0f172a;
+          --bulud-pagination-active-background: #7c3aed;
+        }
+      `;
+      document.head.append(libraryThemeStyle);
+      const environmentInjector = createEnvironmentInjector(
+        [provideBuludTheme(legacyConfig.value)],
+        parentInjector,
+      );
+
+      try {
+        if (legacyConfig.themeAttribute === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.setAttribute('data-theme', 'dark');
+        }
+        const computed = document.defaultView?.getComputedStyle(root);
+        expect(
+          computed?.getPropertyValue('--bulud-pagination-background').trim(),
+        ).toBe('#0f172a');
+        expect(
+          computed
+            ?.getPropertyValue('--bulud-pagination-active-background')
+            .trim(),
+        ).toBe('#7c3aed');
+        const styleText =
+          document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+          '';
+        expect(styleText).not.toContain('--bulud-pagination-background:');
+        expect(styleText).not.toContain(
+          '--bulud-pagination-active-background:',
+        );
+      } finally {
+        root.classList.remove('dark');
+        root.removeAttribute('data-theme');
+        libraryThemeStyle.remove();
+        environmentInjector.destroy();
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
   it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
     const button: BuludButtonTheme = {
       disabledOpacity: '0.4',

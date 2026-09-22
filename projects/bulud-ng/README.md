@@ -634,7 +634,9 @@ through the typed `pagination` theme provider config, or on an individual host
 with `[style]`; instance styles have the highest precedence. Native buttons
 provide keyboard activation, focus-visible indication, disabled semantics, and
 `aria-current="page"` on the selected page. The navigation landmark receives
-an accessible label from the locale or `aria-label`.
+an accessible label from the locale or `aria-label`. Non-interactive ellipsis
+list items expose their localized `ellipsisLabel` without entering the Tab
+order.
 
 ## Locale API
 

@@ -605,7 +605,6 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
   accordion: RESOLVED_DEFAULT_THEME.accordion,
   checkbox: RESOLVED_DEFAULT_THEME.checkbox,
   switch: RESOLVED_DEFAULT_THEME.switch,
-  pagination: RESOLVED_DEFAULT_THEME.pagination,
   badge: {
     neutral: RESOLVED_DEFAULT_THEME.badge.neutral,
     primary: RESOLVED_DEFAULT_THEME.badge.primary,

@@ -70,6 +70,12 @@ describe('BuludPagination', () => {
       fixture.nativeElement.querySelectorAll('[aria-current="page"]').length,
     ).toBe(1);
     expect(nav().getAttribute('aria-label')).toBe('Pagination');
+    const ellipsis = fixture.nativeElement.querySelector(
+      '.bulud-pagination__ellipsis',
+    );
+    expect(ellipsis.getAttribute('aria-label')).toBe('More pages');
+    expect(ellipsis.hasAttribute('aria-hidden')).toBeFalse();
+    expect(ellipsis.querySelector('button, a, input')).toBeNull();
   });
 
   it('emits exactly one requested page and stays controlled', async () => {
@@ -254,6 +260,12 @@ describe('BuludPagination', () => {
         .querySelector('[aria-current="page"]')
         .getAttribute('aria-label'),
     ).toBe('فعلی 5');
+    const ellipsis = fixture.nativeElement.querySelector(
+      '.bulud-pagination__ellipsis',
+    );
+    expect(ellipsis.getAttribute('aria-label')).toBe('بیشتر');
+    expect(ellipsis.hasAttribute('aria-hidden')).toBeFalse();
+    expect(ellipsis.querySelector('button, a, input')).toBeNull();
   });
 
   it('supports instance label overrides and RTL logical behavior', async () => {
@@ -274,7 +286,8 @@ describe('BuludPagination', () => {
   });
 
   it('provides theme defaults and provider theme overrides', () => {
-    expect(BULUD_DEFAULT_THEME.pagination?.size).toBe('2.5rem');
+    expect(BULUD_DEFAULT_THEME.pagination).toBeUndefined();
+    expect(resolveBuludTheme().pagination.size).toBe('2.5rem');
     expect(
       resolveBuludTheme({ pagination: { size: '3rem' } }).pagination.size,
     ).toBe('3rem');
