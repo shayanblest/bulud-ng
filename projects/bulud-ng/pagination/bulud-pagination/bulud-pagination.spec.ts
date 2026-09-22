@@ -1,0 +1,258 @@
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideBuludLocale } from 'bulud-ng';
+import {
+  BULUD_DEFAULT_THEME,
+  createBuludThemeVariables,
+  provideBuludTheme,
+  resolveBuludTheme,
+} from '../../src/lib/theme/bulud-theme';
+import { BuludPagination, createPaginationWindow } from './bulud-pagination';
+
+@Component({
+  imports: [BuludPagination],
+  template: `
+    <bulud-pagination
+      [currentPage]="page()"
+      [pageCount]="count()"
+      [disabled]="disabled()"
+      [aria-label]="navigationLabel()"
+      [previousPageLabel]="previousLabel()"
+      [nextPageLabel]="nextLabel()"
+      [pageLabel]="pageLabel()"
+      (pageChange)="pageChange.set($event)"
+    />
+  `,
+})
+class TestHost {
+  readonly page = signal(5);
+  readonly count = signal(10);
+  readonly disabled = signal(false);
+  readonly navigationLabel = signal<string | undefined>(undefined);
+  readonly previousLabel = signal<string | undefined>(undefined);
+  readonly nextLabel = signal<string | undefined>(undefined);
+  readonly pageLabel = signal<((page: number) => string) | undefined>(
+    undefined,
+  );
+  readonly pageChange = signal<number | null>(null);
+}
+
+describe('BuludPagination', () => {
+  let fixture: ComponentFixture<TestHost>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TestHost],
+      providers: [provideZonelessChangeDetection()],
+    }).compileComponents();
+    fixture = TestBed.createComponent(TestHost);
+    await fixture.whenStable();
+  });
+
+  const nav = (): HTMLElement => fixture.nativeElement.querySelector('nav');
+  const buttons = (): HTMLButtonElement[] => [
+    ...fixture.nativeElement.querySelectorAll('button'),
+  ];
+
+  it('renders a bounded middle window with one current page', () => {
+    expect(
+      [
+        ...fixture.nativeElement.querySelectorAll(
+          '.bulud-pagination__pages > li',
+        ),
+      ].map((button: Element) => button.textContent?.trim()),
+    ).toEqual(['1', '…', '4', '5', '6', '…', '10']);
+    expect(
+      fixture.nativeElement.querySelectorAll('[aria-current="page"]').length,
+    ).toBe(1);
+    expect(nav().getAttribute('aria-label')).toBe('Pagination');
+  });
+
+  it('emits exactly one requested page and stays controlled', async () => {
+    const pageButton = buttons().find(
+      (button) => button.textContent?.trim() === '6',
+    );
+    pageButton?.click();
+    expect(fixture.componentInstance.pageChange()).toBe(6);
+    expect(fixture.componentInstance.page()).toBe(5);
+    expect(
+      fixture.nativeElement.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain('5');
+
+    fixture.componentInstance.page.set(6);
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain('6');
+  });
+
+  it('emits previous and next requests, but not boundaries or current page', async () => {
+    buttons()[0].click();
+    expect(fixture.componentInstance.pageChange()).toBe(4);
+    fixture.componentInstance.pageChange.set(null);
+    buttons()
+      .find((button) => button.textContent?.trim() === '5')
+      ?.click();
+    expect(fixture.componentInstance.pageChange()).toBeNull();
+    buttons().at(-1)?.click();
+    expect(fixture.componentInstance.pageChange()).toBe(6);
+
+    fixture.componentInstance.page.set(1);
+    await fixture.whenStable();
+    fixture.componentInstance.pageChange.set(null);
+    expect(buttons()[0].disabled).toBeTrue();
+    buttons()[0].click();
+    expect(fixture.componentInstance.pageChange()).toBeNull();
+    fixture.componentInstance.page.set(10);
+    await fixture.whenStable();
+    expect(buttons().at(-1)?.disabled).toBeTrue();
+  });
+
+  it('does not emit while disabled and exposes native disabled semantics', async () => {
+    fixture.componentInstance.disabled.set(true);
+    await fixture.whenStable();
+    const page = buttons().find((button) => button.textContent?.trim() === '6');
+    page?.click();
+    expect(page?.disabled).toBeTrue();
+    expect(fixture.componentInstance.pageChange()).toBeNull();
+  });
+
+  it('supports single, invalid and very large page counts without duplicates', async () => {
+    fixture.componentInstance.count.set(1);
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelectorAll('.bulud-pagination__page').length,
+    ).toBe(1);
+    expect(
+      fixture.nativeElement.querySelectorAll('.bulud-pagination__ellipsis')
+        .length,
+    ).toBe(0);
+    fixture.componentInstance.count.set(0);
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelectorAll('.bulud-pagination__page').length,
+    ).toBe(0);
+    fixture.componentInstance.count.set(1000000);
+    fixture.componentInstance.page.set(500000);
+    await fixture.whenStable();
+    const labels = [
+      ...fixture.nativeElement.querySelectorAll('.bulud-pagination__page'),
+    ].map((button: Element) => button.textContent?.trim());
+    expect(labels).toEqual(['1', '499999', '500000', '500001', '1000000']);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it('normalizes invalid current pages for rendering and stays silent', async () => {
+    fixture.componentInstance.page.set(100);
+    fixture.componentInstance.count.set(3);
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain('3');
+    expect(fixture.componentInstance.pageChange()).toBeNull();
+    fixture.componentInstance.page.set(0);
+    fixture.componentInstance.count.set(2);
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain('1');
+    expect(fixture.componentInstance.pageChange()).toBeNull();
+  });
+
+  it('uses configured locale labels and dynamic current-page labels', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [TestHost],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideBuludLocale({
+          pagination: {
+            navigationLabel: 'صفحه‌بندی نتایج',
+            previousPageLabel: 'قبلی',
+            nextPageLabel: 'بعدی',
+            pageLabel: (page) => `صفحه ${page}`,
+            currentPageLabel: (page) => `فعلی ${page}`,
+            ellipsisLabel: 'بیشتر',
+          },
+        }),
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(TestHost);
+    await fixture.whenStable();
+    expect(nav().getAttribute('aria-label')).toBe('صفحه‌بندی نتایج');
+    expect(buttons()[0].getAttribute('aria-label')).toBe('قبلی');
+    expect(buttons().at(-1)?.getAttribute('aria-label')).toBe('بعدی');
+    expect(
+      fixture.nativeElement
+        .querySelector('[aria-current="page"]')
+        .getAttribute('aria-label'),
+    ).toBe('فعلی 5');
+  });
+
+  it('supports instance label overrides and RTL logical behavior', async () => {
+    fixture.componentInstance.navigationLabel.set('Results pages');
+    fixture.componentInstance.previousLabel.set('Back');
+    fixture.componentInstance.nextLabel.set('Forward');
+    fixture.componentInstance.pageLabel.set((page: number) => `Go to ${page}`);
+    await fixture.whenStable();
+    expect(nav().getAttribute('aria-label')).toBe('Results pages');
+    expect(buttons()[0].getAttribute('aria-label')).toBe('Back');
+    expect(buttons().at(-1)?.getAttribute('aria-label')).toBe('Forward');
+    expect(
+      fixture.nativeElement.querySelector('button[aria-label="Go to 4"]'),
+    ).not.toBeNull();
+    nav().setAttribute('dir', 'rtl');
+    buttons()[0].click();
+    expect(fixture.componentInstance.pageChange()).toBe(4);
+  });
+
+  it('provides theme defaults and provider theme overrides', () => {
+    expect(BULUD_DEFAULT_THEME.pagination?.size).toBe('2.5rem');
+    expect(
+      resolveBuludTheme({ pagination: { size: '3rem' } }).pagination.size,
+    ).toBe('3rem');
+    expect(
+      createBuludThemeVariables({
+        pagination: { activeBackground: '#14532d' },
+      })['--bulud-pagination-active-background'],
+    ).toBe('#14532d');
+    const vars = provideBuludTheme({ pagination: { size: '3rem' } });
+    expect(vars).toBeTruthy();
+  });
+
+  it('generates deterministic windows for representative counts', () => {
+    expect(createPaginationWindow(1, 1)).toEqual([1]);
+    expect(createPaginationWindow(5, 3)).toEqual([1, 2, 3, 4, 5]);
+    expect(createPaginationWindow(10, 1)).toEqual([
+      1,
+      2,
+      3,
+      4,
+      5,
+      'ellipsis-end',
+      10,
+    ]);
+    expect(createPaginationWindow(10, 9)).toEqual([
+      1,
+      'ellipsis-start',
+      6,
+      7,
+      8,
+      9,
+      10,
+    ]);
+    expect(createPaginationWindow(100, 50)).toEqual([
+      1,
+      'ellipsis-start',
+      49,
+      50,
+      51,
+      'ellipsis-end',
+      100,
+    ]);
+  });
+});

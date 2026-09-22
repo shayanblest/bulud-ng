@@ -206,6 +206,26 @@ export interface BuludDialogTheme {
   readonly stackBase: string;
 }
 
+/** Theme tokens for Pagination controls. */
+export interface BuludPaginationTheme {
+  readonly background: string;
+  readonly backgroundHover: string;
+  readonly activeBackground: string;
+  readonly border: string;
+  readonly foreground: string;
+  readonly activeForeground: string;
+  readonly mutedForeground: string;
+  readonly focus: string;
+  readonly disabledOpacity: string;
+  readonly radius: string;
+  readonly size: string;
+  readonly gap: string;
+  readonly borderWidth: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
+  readonly fontWeight: string;
+}
+
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -221,6 +241,8 @@ export interface BuludTheme {
   readonly switch?: BuludSwitchTheme;
   /** Optional for compatibility with legacy consumer theme objects. */
   readonly dialog?: BuludDialogTheme;
+  /** Optional for compatibility with legacy consumer theme objects. */
+  readonly pagination?: BuludPaginationTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
@@ -233,6 +255,7 @@ export interface ResolvedBuludTheme extends Omit<
   readonly checkbox: BuludCheckboxTheme;
   readonly switch: BuludSwitchTheme;
   readonly dialog: BuludDialogTheme;
+  readonly pagination: BuludPaginationTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -264,6 +287,7 @@ export interface BuludThemeConfig {
   readonly checkbox?: Partial<BuludCheckboxTheme>;
   readonly switch?: Partial<BuludSwitchTheme>;
   readonly dialog?: Partial<BuludDialogTheme>;
+  readonly pagination?: Partial<BuludPaginationTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -326,6 +350,14 @@ const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
   '--bulud-dialog-focus-offset',
   '--bulud-dialog-viewport-gutter',
   '--bulud-dialog-stack-base',
+]);
+const BULUD_PAGINATION_GEOMETRY_VARIABLES = new Set([
+  '--bulud-pagination-radius',
+  '--bulud-pagination-size',
+  '--bulud-pagination-gap',
+  '--bulud-pagination-border-width',
+  '--bulud-pagination-focus-width',
+  '--bulud-pagination-focus-offset',
 ]);
 
 /** Concrete defaults retained internally for theme resolution. */
@@ -522,6 +554,24 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     viewportGutter: '1rem',
     stackBase: '1000',
   },
+  pagination: {
+    background: '#ffffff',
+    backgroundHover: '#f8fafc',
+    activeBackground: '#2563eb',
+    border: '#cbd5e1',
+    foreground: '#0f172a',
+    activeForeground: '#ffffff',
+    mutedForeground: '#64748b',
+    focus: '#93c5fd',
+    disabledOpacity: '0.55',
+    radius: '0.5rem',
+    size: '2.5rem',
+    gap: '0.25rem',
+    borderWidth: '1px',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    fontWeight: '600',
+  },
 };
 
 /**
@@ -537,6 +587,7 @@ export const BULUD_DEFAULT_THEME: BuludTheme = {
   accordion: RESOLVED_DEFAULT_THEME.accordion,
   checkbox: RESOLVED_DEFAULT_THEME.checkbox,
   switch: RESOLVED_DEFAULT_THEME.switch,
+  pagination: RESOLVED_DEFAULT_THEME.pagination,
   badge: {
     neutral: RESOLVED_DEFAULT_THEME.badge.neutral,
     primary: RESOLVED_DEFAULT_THEME.badge.primary,
@@ -708,6 +759,10 @@ export function resolveBuludTheme(
     dialog: {
       ...RESOLVED_DEFAULT_THEME.dialog,
       ...config.dialog,
+    },
+    pagination: {
+      ...RESOLVED_DEFAULT_THEME.pagination,
+      ...config.pagination,
     },
   };
 }
@@ -888,6 +943,22 @@ export function createBuludThemeVariables(
     '--bulud-dialog-focus-offset': theme.dialog.focusOffset,
     '--bulud-dialog-viewport-gutter': theme.dialog.viewportGutter,
     '--bulud-dialog-stack-base': theme.dialog.stackBase,
+    '--bulud-pagination-background': theme.pagination.background,
+    '--bulud-pagination-background-hover': theme.pagination.backgroundHover,
+    '--bulud-pagination-active-background': theme.pagination.activeBackground,
+    '--bulud-pagination-border': theme.pagination.border,
+    '--bulud-pagination-foreground': theme.pagination.foreground,
+    '--bulud-pagination-active-foreground': theme.pagination.activeForeground,
+    '--bulud-pagination-muted-foreground': theme.pagination.mutedForeground,
+    '--bulud-pagination-focus': theme.pagination.focus,
+    '--bulud-pagination-disabled-opacity': theme.pagination.disabledOpacity,
+    '--bulud-pagination-radius': theme.pagination.radius,
+    '--bulud-pagination-size': theme.pagination.size,
+    '--bulud-pagination-gap': theme.pagination.gap,
+    '--bulud-pagination-border-width': theme.pagination.borderWidth,
+    '--bulud-pagination-focus-width': theme.pagination.focusWidth,
+    '--bulud-pagination-focus-offset': theme.pagination.focusOffset,
+    '--bulud-pagination-font-weight': theme.pagination.fontWeight,
   };
 }
 
@@ -910,12 +981,16 @@ function createBuludThemeCss(
   const dialogGeometry = entries.filter(([property]) =>
     BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
   );
+  const paginationGeometry = entries.filter(([property]) =>
+    BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
+  );
   const lightModeVariables = entries.filter(
     ([property]) =>
       !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property) &&
-      !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
+      !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property) &&
+      !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
   );
   const switchDarkModeVariables = entries.filter(
     ([property]) =>
@@ -928,7 +1003,7 @@ function createBuludThemeCss(
       !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables])}\n}`;
 }
 
 /**
@@ -1055,6 +1130,19 @@ export function provideBuludTheme(
     ['stackBase', '--bulud-dialog-stack-base'],
   ] as const) {
     if (config.dialog?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of [
+    ['radius', '--bulud-pagination-radius'],
+    ['size', '--bulud-pagination-size'],
+    ['gap', '--bulud-pagination-gap'],
+    ['borderWidth', '--bulud-pagination-border-width'],
+    ['focusWidth', '--bulud-pagination-focus-width'],
+    ['focusOffset', '--bulud-pagination-focus-offset'],
+  ] as const) {
+    if (config.pagination?.[field] === undefined) {
       delete variables[variable];
     }
   }

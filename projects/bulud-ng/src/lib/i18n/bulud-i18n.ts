@@ -23,14 +23,27 @@ export interface BuludDropdownLocale {
   readonly searchLabel: string;
 }
 
+/** Accessible strings used by the Pagination component. */
+export interface BuludPaginationLocale {
+  readonly navigationLabel: string;
+  readonly previousPageLabel: string;
+  readonly nextPageLabel: string;
+  readonly pageLabel: (page: number) => string;
+  readonly currentPageLabel: (page: number) => string;
+  readonly ellipsisLabel: string;
+}
+
 export interface BuludLocale {
   readonly language: BuludLanguage;
   readonly direction: BuludDirection;
   readonly dropdown: BuludDropdownLocale;
+  /** Optional for compatibility with locale objects created before Pagination. */
+  readonly pagination?: BuludPaginationLocale;
 }
 
 export type BuludLocaleConfig = Partial<Omit<BuludLocale, 'dropdown'>> & {
   readonly dropdown?: Partial<BuludDropdownLocale>;
+  readonly pagination?: Partial<BuludPaginationLocale>;
 };
 
 export const BULUD_DEFAULT_LOCALE: BuludLocale = {
@@ -45,6 +58,14 @@ export const BULUD_DEFAULT_LOCALE: BuludLocale = {
     selectedText: (count) => `${count} selected`,
     clearLabel: 'Clear selection',
     searchLabel: 'Search options',
+  },
+  pagination: {
+    navigationLabel: 'Pagination',
+    previousPageLabel: 'Previous page',
+    nextPageLabel: 'Next page',
+    pageLabel: (page) => `Page ${page}`,
+    currentPageLabel: (page) => `Current page, ${page}`,
+    ellipsisLabel: 'More pages',
   },
 };
 
@@ -61,14 +82,26 @@ export const BULUD_PERSIAN_LOCALE: BuludLocale = {
     clearLabel: 'پاک کردن انتخاب',
     searchLabel: 'جست‌وجوی گزینه‌ها',
   },
+  pagination: {
+    navigationLabel: 'صفحه‌بندی',
+    previousPageLabel: 'صفحه قبلی',
+    nextPageLabel: 'صفحه بعدی',
+    pageLabel: (page) => `صفحه ${page}`,
+    currentPageLabel: (page) => `صفحه فعلی، ${page}`,
+    ellipsisLabel: 'صفحه‌های بیشتر',
+  },
 };
 
 export const BULUD_LOCALE = new InjectionToken<BuludLocale>('BULUD_LOCALE', {
   factory: () => BULUD_DEFAULT_LOCALE,
 });
 
-export function resolveBuludLocale(config: BuludLocaleConfig = {}): BuludLocale {
-  const base = config.language === 'fa' ? BULUD_PERSIAN_LOCALE : BULUD_DEFAULT_LOCALE;
+export function resolveBuludLocale(
+  config: BuludLocaleConfig = {},
+): BuludLocale {
+  const base =
+    config.language === 'fa' ? BULUD_PERSIAN_LOCALE : BULUD_DEFAULT_LOCALE;
+  const pagination = base.pagination ?? BULUD_DEFAULT_LOCALE.pagination!;
 
   return {
     ...base,
@@ -76,6 +109,10 @@ export function resolveBuludLocale(config: BuludLocaleConfig = {}): BuludLocale 
     dropdown: {
       ...base.dropdown,
       ...config.dropdown,
+    },
+    pagination: {
+      ...pagination,
+      ...config.pagination,
     },
   };
 }

@@ -25,6 +25,7 @@ import { BuludAccordion, BuludAccordionItem } from 'bulud-ng/accordion';
 import { BuludCheckbox } from 'bulud-ng/checkbox';
 import { BuludSwitch } from 'bulud-ng/switch';
 import { BuludDialog } from 'bulud-ng/dialog';
+import { BuludPagination } from 'bulud-ng/pagination';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -59,6 +60,7 @@ interface DemoOption {
     BuludCheckbox,
     BuludSwitch,
     BuludDialog,
+    BuludPagination,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -253,6 +255,29 @@ export class App {
   protected readonly dialogEscape = signal(true);
   protected readonly dialogBackdrop = signal(true);
   protected readonly dialogDark = signal(false);
+  protected readonly paginationPage = signal(5);
+  protected readonly paginationDisabled = signal(false);
+  protected readonly paginationDark = signal(false);
+  protected readonly paginationRtl = signal(false);
+  protected readonly paginationLabels = computed(() =>
+    this.language() === 'fa'
+      ? {
+          navigation: 'صفحه‌بندی نتایج',
+          previous: 'صفحه قبلی',
+          next: 'صفحه بعدی',
+          page: (page: number) => `رفتن به صفحه ${page}`,
+          current: (page: number) => `صفحه فعلی، ${page}`,
+          more: 'صفحه‌های بیشتر',
+        }
+      : {
+          navigation: 'Results pagination',
+          previous: 'Previous page',
+          next: 'Next page',
+          page: (page: number) => `Go to page ${page}`,
+          current: (page: number) => `Current page, ${page}`,
+          more: 'More pages',
+        },
+  );
 
   protected readonly frameworks: readonly DemoOption[] = [
     { id: 'angular', label: 'Angular', meta: 'Framework' },

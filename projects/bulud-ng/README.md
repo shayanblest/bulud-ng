@@ -32,6 +32,7 @@ its documented secondary entry point:
 | `bulud-ng/checkbox`        | `BuludCheckbox`                                      |
 | `bulud-ng/switch`          | `BuludSwitch`                                        |
 | `bulud-ng/dialog`          | `BuludDialog`, `BuludDialogCloseReason`              |
+| `bulud-ng/pagination`      | `BuludPagination`, `BuludPaginationItem`             |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -588,10 +589,57 @@ string defaults for every Badge field. `createBuludThemeVariables()` includes al
 resolved variables. The provider retains its existing dark-mode scoping, and
 spacing continues to use logical CSS properties for RTL.
 
+## Pagination
+
+Import the standalone controlled component from its secondary entry point:
+
+```ts
+import { BuludPagination } from "bulud-ng/pagination";
+
+@Component({
+  imports: [BuludPagination],
+  template: ` <bulud-pagination [currentPage]="page()" [pageCount]="100" (pageChange)="page.set($event)" /> `,
+})
+export class ResultsPage {
+  readonly page = signal(1);
+}
+```
+
+`currentPage` and `pageCount` are typed number inputs; `disabled` disables the
+whole control; and `pageChange` requests a new page without mutating the input.
+The parent must update `currentPage`, making programmatic input changes silent.
+Non-finite or non-positive page counts render no page buttons. Invalid current
+pages are clamped for safe rendering only; the input itself is never changed.
+
+The page window shows all pages through seven pages. Larger collections show
+the first and last pages plus a bounded neighborhood around the current page;
+ellipsis markers are non-interactive. Instance label inputs override the
+injected locale. Configure English/Persian or custom labels through
+`provideBuludLocale({ pagination: { ... } })`:
+
+```ts
+provideBuludLocale({
+  pagination: {
+    navigationLabel: "نتایج",
+    pageLabel: (page) => `صفحه ${page}`,
+    currentPageLabel: (page) => `صفحه فعلی، ${page}`,
+  },
+});
+```
+
+Previous and next are logical page operations and remain correct in RTL; only
+their directional presentation changes. Import `bulud-ng/theme.css` for the
+default light/dark theme. Pagination CSS variables can be set at root/scope,
+through the typed `pagination` theme provider config, or on an individual host
+with `[style]`; instance styles have the highest precedence. Native buttons
+provide keyboard activation, focus-visible indication, disabled semantics, and
+`aria-current="page"` on the selected page. The navigation landmark receives
+an accessible label from the locale or `aria-label`.
+
 ## Locale API
 
-`provideBuludLocale` supplies typed English or Persian Dropdown defaults through
-`BULUD_LOCALE`. Instance text inputs override provider values. The provider also
+`provideBuludLocale` supplies typed English or Persian Dropdown and Pagination
+defaults through `BULUD_LOCALE`. Instance text inputs override provider values. The provider also
 sets the document `lang` and `dir`; components follow ancestor direction and do
 not own the application language switcher.
 
@@ -619,7 +667,7 @@ ship the default light and dark variable sets.
 
 All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
 `BuludButtonTheme`, `BuludDropdownTheme`, `BuludBadgeTheme`, `BuludTheme`, and
-`BuludTabsTheme`, `BuludAccordionTheme`, `BuludDialogTheme`, and
+`BuludTabsTheme`, `BuludAccordionTheme`, `BuludDialogTheme`, `BuludPaginationTheme`, and
 `BuludThemeConfig`) are exported
 from the root entry point.
 

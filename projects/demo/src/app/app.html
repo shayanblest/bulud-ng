@@ -356,6 +356,92 @@
         </section>
 
         <section
+          id="pagination"
+          class="rounded-3xl border border-slate-200 bg-bulud-surface p-6 text-bulud-on-surface shadow-sm sm:p-8"
+          [attr.data-theme]="paginationDark() ? 'dark' : null"
+          [attr.dir]="paginationRtl() ? 'rtl' : 'ltr'"
+        >
+          <div class="mb-7">
+            <p
+              class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+            >
+              Pagination
+            </p>
+            <h3 class="mt-3 text-2xl font-black tracking-tight">
+              Controlled navigation
+            </h3>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              The parent owns the selected page and applies each emitted
+              request.
+            </p>
+          </div>
+          <div class="mb-5 flex flex-wrap gap-4 text-sm font-semibold">
+            <label
+              ><input
+                type="checkbox"
+                [checked]="paginationDisabled()"
+                (change)="paginationDisabled.set(!paginationDisabled())"
+              />
+              Disabled</label
+            >
+            <label
+              ><input
+                type="checkbox"
+                [checked]="paginationDark()"
+                (change)="paginationDark.set(!paginationDark())"
+              />
+              Dark theme</label
+            >
+            <label
+              ><input
+                type="checkbox"
+                [checked]="paginationRtl()"
+                (change)="paginationRtl.set(!paginationRtl())"
+              />
+              RTL</label
+            >
+          </div>
+          <bulud-pagination
+            id="pagination-dynamic"
+            [currentPage]="paginationPage()"
+            [pageCount]="100"
+            [disabled]="paginationDisabled()"
+            [aria-label]="paginationLabels().navigation"
+            [previousPageLabel]="paginationLabels().previous"
+            [nextPageLabel]="paginationLabels().next"
+            [pageLabel]="paginationLabels().page"
+            [currentPageLabel]="paginationLabels().current"
+            [ellipsisLabel]="paginationLabels().more"
+            (pageChange)="paginationPage.set($event)"
+          />
+          <p
+            id="pagination-current"
+            class="mt-5 text-sm font-semibold"
+            aria-live="polite"
+          >
+            Current page: {{ paginationPage() }}
+          </p>
+          <div class="mt-5 flex flex-wrap gap-4">
+            <bulud-pagination
+              id="pagination-single"
+              [currentPage]="1"
+              [pageCount]="1"
+              aria-label="Single page pagination"
+            />
+            <bulud-pagination
+              id="pagination-instance-theme"
+              [currentPage]="2"
+              [pageCount]="5"
+              aria-label="Instance themed pagination"
+              style="
+                --bulud-pagination-active-background: #14532d;
+                --bulud-pagination-size: 3rem;
+              "
+            />
+          </div>
+        </section>
+
+        <section
           id="checkbox"
           class="rounded-3xl border border-slate-200 bg-bulud-surface p-6 text-bulud-on-surface shadow-sm sm:p-8"
           [attr.data-theme]="checkboxDark() ? 'dark' : null"

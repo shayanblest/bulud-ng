@@ -19,6 +19,7 @@ supported.
 | `bulud-ng/checkbox`        | `BuludCheckbox`                                                                               |
 | `bulud-ng/switch`          | `BuludSwitch`                                                                                 |
 | `bulud-ng/dialog`          | `BuludDialog`, `BuludDialogCloseReason`                                                       |
+| `bulud-ng/pagination`      | `BuludPagination`, `BuludPaginationItem`                                                      |
 
 The root entry point contains shared configuration and locale contracts. UI
 features are imported from their own secondary entry point so unused features
