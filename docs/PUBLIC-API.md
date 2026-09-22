@@ -18,6 +18,7 @@ supported.
 | `bulud-ng/accordion`       | `BuludAccordion`, `BuludAccordionId`, `BuludAccordionItem`, `BuludAccordionMode`              |
 | `bulud-ng/checkbox`        | `BuludCheckbox`                                                                               |
 | `bulud-ng/switch`          | `BuludSwitch`                                                                                 |
+| `bulud-ng/dialog`          | `BuludDialog`, `BuludDialogCloseReason`                                                       |
 
 The root entry point contains shared configuration and locale contracts. UI
 features are imported from their own secondary entry point so unused features

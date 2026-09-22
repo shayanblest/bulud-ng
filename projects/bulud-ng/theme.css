@@ -76,6 +76,20 @@
   --bulud-switch-thumb: #64748b;
   --bulud-switch-thumb-size: 1.125rem;
   --bulud-switch-width: 2.75rem;
+  --bulud-dialog-backdrop: rgb(15 23 42 / 0.6);
+  --bulud-dialog-background: #ffffff;
+  --bulud-dialog-foreground: #0f172a;
+  --bulud-dialog-border: #cbd5e1;
+  --bulud-dialog-border-width: 1px;
+  --bulud-dialog-radius: 0.75rem;
+  --bulud-dialog-shadow: 0 1.5rem 4rem rgb(15 23 42 / 0.24);
+  --bulud-dialog-padding: 1.5rem;
+  --bulud-dialog-max-width: 32rem;
+  --bulud-dialog-focus: #93c5fd;
+  --bulud-dialog-focus-width: 3px;
+  --bulud-dialog-focus-offset: 2px;
+  --bulud-dialog-viewport-gutter: 1rem;
+  --bulud-dialog-stack-base: 1000;
 }
 
 :root.dark,
@@ -150,4 +164,10 @@
   --bulud-switch-foreground: #f8fafc;
   --bulud-switch-focus: #bfdbfe;
   --bulud-switch-thumb: #cbd5e1;
+  --bulud-dialog-backdrop: rgb(2 6 23 / 0.75);
+  --bulud-dialog-background: #0f172a;
+  --bulud-dialog-foreground: #f8fafc;
+  --bulud-dialog-border: #475569;
+  --bulud-dialog-shadow: 0 1.5rem 4rem rgb(2 6 23 / 0.5);
+  --bulud-dialog-focus: #bfdbfe;
 }

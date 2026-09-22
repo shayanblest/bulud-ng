@@ -24,6 +24,7 @@ import { BuludTab, BuludTabPanel, BuludTabs } from 'bulud-ng/tabs';
 import { BuludAccordion, BuludAccordionItem } from 'bulud-ng/accordion';
 import { BuludCheckbox } from 'bulud-ng/checkbox';
 import { BuludSwitch } from 'bulud-ng/switch';
+import { BuludDialog } from 'bulud-ng/dialog';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -57,6 +58,7 @@ interface DemoOption {
     BuludAccordionItem,
     BuludCheckbox,
     BuludSwitch,
+    BuludDialog,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -247,6 +249,10 @@ export class App {
   protected readonly expandedAccordionItems = signal<
     string | readonly string[] | null
   >(['team']);
+  protected readonly dialogOpen = signal(false);
+  protected readonly dialogEscape = signal(true);
+  protected readonly dialogBackdrop = signal(true);
+  protected readonly dialogDark = signal(false);
 
   protected readonly frameworks: readonly DemoOption[] = [
     { id: 'angular', label: 'Angular', meta: 'Framework' },

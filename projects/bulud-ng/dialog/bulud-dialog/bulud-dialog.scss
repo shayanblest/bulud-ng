@@ -1,0 +1,63 @@
+:host {
+  direction: inherit;
+  display: contents;
+}
+
+.bulud-dialog__overlay {
+  background: transparent;
+  border: 0;
+  box-sizing: border-box;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  padding: 0;
+  position: fixed;
+  width: 100%;
+  z-index: calc(
+    var(--bulud-dialog-stack-base, 1000) + var(--bulud-dialog-stack-level, 0)
+  );
+}
+
+.bulud-dialog__overlay::backdrop {
+  background: transparent;
+}
+
+.bulud-dialog__backdrop {
+  align-items: center;
+  background: var(--bulud-dialog-backdrop, rgb(15 23 42 / 0.6));
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow: auto;
+  padding: var(--bulud-dialog-viewport-gutter, 1rem);
+  position: absolute;
+}
+
+.bulud-dialog__surface {
+  background: var(--bulud-dialog-background, #ffffff);
+  border: var(--bulud-dialog-border-width, 1px) solid
+    var(--bulud-dialog-border, #cbd5e1);
+  border-radius: var(--bulud-dialog-radius, 0.75rem);
+  box-sizing: border-box;
+  color: var(--bulud-dialog-foreground, #0f172a);
+  inline-size: min(100%, var(--bulud-dialog-max-width, 32rem));
+  max-block-size: calc(100dvh - 2 * var(--bulud-dialog-viewport-gutter, 1rem));
+  overflow: auto;
+  padding: var(--bulud-dialog-padding, 1.5rem);
+  box-shadow: var(--bulud-dialog-shadow, 0 1.5rem 4rem rgb(15 23 42 / 0.24));
+}
+
+.bulud-dialog__surface:focus {
+  outline: var(--bulud-dialog-focus-width, 3px) solid
+    var(--bulud-dialog-focus, #93c5fd);
+  outline-offset: var(--bulud-dialog-focus-offset, 2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-dialog__backdrop,
+  .bulud-dialog__surface {
+    transition: none;
+  }
+}
