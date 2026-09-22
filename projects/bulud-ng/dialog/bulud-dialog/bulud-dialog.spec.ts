@@ -578,6 +578,114 @@ describe('BuludDialog', () => {
     expect(document.activeElement).toBe(editor);
   });
 
+  it('skips nested editing hosts without explicit tab stops', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const before = document.createElement('button');
+    before.id = 'editable-before';
+    const outer = document.createElement('div');
+    outer.id = 'outer-editor';
+    outer.setAttribute('contenteditable', '');
+    const nested = document.createElement('div');
+    nested.id = 'nested-editor';
+    nested.setAttribute('contenteditable', 'true');
+    const nestedWithTabindex = document.createElement('div');
+    nestedWithTabindex.id = 'nested-editor-zero';
+    nestedWithTabindex.setAttribute('contenteditable', 'plaintext-only');
+    nestedWithTabindex.tabIndex = 0;
+    const nestedWithNegativeTabindex = document.createElement('div');
+    nestedWithNegativeTabindex.id = 'nested-editor-negative';
+    nestedWithNegativeTabindex.setAttribute('contenteditable', 'true');
+    nestedWithNegativeTabindex.tabIndex = -1;
+    const after = document.createElement('button');
+    after.id = 'editable-after';
+    outer.append(nested, nestedWithTabindex, nestedWithNegativeTabindex);
+    dialog.append(before, outer, after);
+
+    before.focus();
+    before.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(outer);
+
+    outer.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(nestedWithTabindex);
+
+    nestedWithTabindex.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(after);
+
+    after.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(nestedWithTabindex);
+
+    nestedWithTabindex.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(outer);
+
+    outer.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(before);
+    expect(nested.tabIndex).toBe(-1);
+
+    nestedWithNegativeTabindex.focus();
+    nestedWithNegativeTabindex.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(after);
+  });
+
+  it('keeps positive-tabindex nested editing hosts in existing order', () => {
+    openFromTrigger();
+    const dialog = getDialog();
+    dialog.querySelectorAll('button').forEach((button) => button.remove());
+
+    const before = document.createElement('button');
+    const outer = document.createElement('div');
+    outer.setAttribute('contenteditable', 'true');
+    const nested = document.createElement('div');
+    nested.setAttribute('contenteditable', '');
+    nested.tabIndex = 2;
+    const after = document.createElement('button');
+    outer.append(nested);
+    dialog.append(before, outer, after);
+
+    nested.focus();
+    nested.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(before);
+
+    before.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Tab',
+        shiftKey: true,
+        bubbles: true,
+      }),
+    );
+    expect(document.activeElement).toBe(nested);
+  });
+
   it('discovers iframe and first-summary browser tabbables dynamically', () => {
     openFromTrigger();
     const dialog = getDialog();
@@ -1581,11 +1689,15 @@ describe('BuludDialog', () => {
       (nativeFixture.nativeElement.querySelector('dialog') as HTMLDialogElement)
         .open,
     ).toBeTrue();
-    const nativeClose = new Promise<void>((resolve) =>
-      nativeFixture.nativeElement
-        .querySelector('dialog')
-        ?.addEventListener('close', () => resolve(), { once: true }),
-    );
+    const staleOverlay = nativeFixture.nativeElement.querySelector(
+      'dialog',
+    ) as HTMLDialogElement;
+    let resolveNativeClose!: () => void;
+    const nativeCloseListener = (): void => resolveNativeClose();
+    const nativeClose = new Promise<void>((resolve) => {
+      resolveNativeClose = resolve;
+      staleOverlay.addEventListener('close', nativeCloseListener);
+    });
     submit.form?.requestSubmit(submit);
     await nativeClose;
     nativeFixture.detectChanges();
@@ -1596,16 +1708,33 @@ describe('BuludDialog', () => {
     expect(document.body.style.overflow).toBe('');
     expect(document.activeElement).toBe(trigger);
 
+    staleOverlay.dispatchEvent(new Event('close'));
+    nativeFixture.detectChanges();
+    expect(nativeFixture.componentInstance.openChangeCount).toBe(1);
+    staleOverlay.removeEventListener('close', nativeCloseListener);
+
     nativeFixture.componentInstance.open.set(true);
     nativeFixture.detectChanges();
     await nativeFixture.whenStable();
+    const reopenedOverlay = nativeFixture.nativeElement.querySelector(
+      'dialog',
+    ) as HTMLDialogElement;
+    expect(reopenedOverlay).not.toBe(staleOverlay);
     expect(
       nativeFixture.nativeElement.querySelector('dialog')?.matches(':modal'),
     ).toBeTrue();
-    nativeFixture.componentInstance.open.set(false);
+    const secondNativeClose = new Promise<void>((resolve) =>
+      reopenedOverlay.addEventListener('close', () => resolve(), {
+        once: true,
+      }),
+    );
+    reopenedOverlay.close('second-native-close');
+    await secondNativeClose;
     nativeFixture.detectChanges();
     await nativeFixture.whenStable();
-    expect(nativeFixture.componentInstance.openChangeCount).toBe(1);
+    expect(nativeFixture.componentInstance.openChangeCount).toBe(2);
+    expect(nativeFixture.componentInstance.open()).toBeFalse();
+    expect(document.activeElement).toBe(trigger);
     nativeFixture.destroy();
   });
 

@@ -266,6 +266,28 @@ function isContentEditableElement(element: HTMLElement): boolean {
   return false;
 }
 
+function isNestedEditingHost(element: HTMLElement): boolean {
+  for (
+    let current = composedParent(element);
+    current;
+    current = composedParent(current)
+  ) {
+    if (
+      !isDomInstance<HTMLElement>(
+        current,
+        element.ownerDocument,
+        'HTMLElement',
+      ) || !current.hasAttribute('contenteditable')
+    ) {
+      continue;
+    }
+
+    return isContentEditableElement(current);
+  }
+
+  return false;
+}
+
 function isFirstSummary(element: Element): boolean {
   if (element.localName !== 'summary') {
     return false;
@@ -356,6 +378,16 @@ function isTabCycleCandidate(element: Element): element is FocusCandidate {
   }
 
   if (element.hasAttribute('tabindex') && !hasNonNegativeTabIndex(element)) {
+    return false;
+  }
+
+  if (
+    isDomInstance<HTMLElement>(element, element.ownerDocument, 'HTMLElement') &&
+    element.hasAttribute('contenteditable') &&
+    isContentEditableElement(element) &&
+    isNestedEditingHost(element) &&
+    !hasExplicitTabIndex(element)
+  ) {
     return false;
   }
 
@@ -676,6 +708,10 @@ export class BuludDialog {
 
   /** Synchronize native form-driven closes with the controlled lifecycle. */
   protected handleNativeClose(): void {
+    const removeNativeCloseListener = this.removeNativeCloseListener;
+    this.removeNativeCloseListener = null;
+    removeNativeCloseListener?.();
+
     if (this.destroyed || !this.wasOpen) {
       return;
     }
