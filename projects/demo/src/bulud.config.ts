@@ -35,4 +35,7 @@ export const buludTheme = defineBuludTheme({
       paddingInline: '1.125rem',
     },
   },
+  pagination: {
+    activeBackground: '#7c3aed',
+  },
 });

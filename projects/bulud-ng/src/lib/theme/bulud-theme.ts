@@ -206,6 +206,28 @@ export interface BuludDialogTheme {
   readonly stackBase: string;
 }
 
+/** Theme tokens for Pagination controls. */
+export interface BuludPaginationTheme {
+  readonly background: string;
+  readonly backgroundHover: string;
+  readonly activeBackground: string;
+  readonly border: string;
+  readonly foreground: string;
+  readonly activeForeground: string;
+  readonly mutedForeground: string;
+  readonly focus: string;
+  readonly disabledOpacity: string;
+  readonly radius: string;
+  readonly size: string;
+  readonly pagePadding: string;
+  readonly directionIconSize: string;
+  readonly gap: string;
+  readonly borderWidth: string;
+  readonly focusWidth: string;
+  readonly focusOffset: string;
+  readonly fontWeight: string;
+}
+
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
   readonly colors: BuludColorTheme;
@@ -221,6 +243,8 @@ export interface BuludTheme {
   readonly switch?: BuludSwitchTheme;
   /** Optional for compatibility with legacy consumer theme objects. */
   readonly dialog?: BuludDialogTheme;
+  /** Optional for compatibility with legacy consumer theme objects. */
+  readonly pagination?: BuludPaginationTheme;
 }
 
 /** Resolved value returned by resolveBuludTheme and injected through BULUD_THEME. */
@@ -233,6 +257,7 @@ export interface ResolvedBuludTheme extends Omit<
   readonly checkbox: BuludCheckboxTheme;
   readonly switch: BuludSwitchTheme;
   readonly dialog: BuludDialogTheme;
+  readonly pagination: BuludPaginationTheme;
 }
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
@@ -264,6 +289,7 @@ export interface BuludThemeConfig {
   readonly checkbox?: Partial<BuludCheckboxTheme>;
   readonly switch?: Partial<BuludSwitchTheme>;
   readonly dialog?: Partial<BuludDialogTheme>;
+  readonly pagination?: Partial<BuludPaginationTheme>;
 }
 
 /** CSS custom properties emitted by the Bulud theme provider. */
@@ -327,6 +353,36 @@ const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
   '--bulud-dialog-viewport-gutter',
   '--bulud-dialog-stack-base',
 ]);
+const BULUD_PAGINATION_GEOMETRY_VARIABLES = new Set([
+  '--bulud-pagination-radius',
+  '--bulud-pagination-size',
+  '--bulud-pagination-page-padding',
+  '--bulud-pagination-direction-icon-size',
+  '--bulud-pagination-gap',
+  '--bulud-pagination-border-width',
+  '--bulud-pagination-focus-width',
+  '--bulud-pagination-focus-offset',
+]);
+const BULUD_PAGINATION_THEME_VARIABLES = {
+  background: '--bulud-pagination-background',
+  backgroundHover: '--bulud-pagination-background-hover',
+  activeBackground: '--bulud-pagination-active-background',
+  border: '--bulud-pagination-border',
+  foreground: '--bulud-pagination-foreground',
+  activeForeground: '--bulud-pagination-active-foreground',
+  mutedForeground: '--bulud-pagination-muted-foreground',
+  focus: '--bulud-pagination-focus',
+  disabledOpacity: '--bulud-pagination-disabled-opacity',
+  radius: '--bulud-pagination-radius',
+  size: '--bulud-pagination-size',
+  pagePadding: '--bulud-pagination-page-padding',
+  directionIconSize: '--bulud-pagination-direction-icon-size',
+  gap: '--bulud-pagination-gap',
+  borderWidth: '--bulud-pagination-border-width',
+  focusWidth: '--bulud-pagination-focus-width',
+  focusOffset: '--bulud-pagination-focus-offset',
+  fontWeight: '--bulud-pagination-font-weight',
+} as const satisfies Record<keyof BuludPaginationTheme, BuludThemeCssVariable>;
 
 /** Concrete defaults retained internally for theme resolution. */
 const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
@@ -522,6 +578,26 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     viewportGutter: '1rem',
     stackBase: '1000',
   },
+  pagination: {
+    background: '#ffffff',
+    backgroundHover: '#f8fafc',
+    activeBackground: '#2563eb',
+    border: '#cbd5e1',
+    foreground: '#0f172a',
+    activeForeground: '#ffffff',
+    mutedForeground: '#64748b',
+    focus: '#93c5fd',
+    disabledOpacity: '0.55',
+    radius: '0.5rem',
+    size: '2.5rem',
+    pagePadding: '0.5rem',
+    directionIconSize: '1.5em',
+    gap: '0.25rem',
+    borderWidth: '1px',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    fontWeight: '600',
+  },
 };
 
 /**
@@ -709,6 +785,10 @@ export function resolveBuludTheme(
       ...RESOLVED_DEFAULT_THEME.dialog,
       ...config.dialog,
     },
+    pagination: {
+      ...RESOLVED_DEFAULT_THEME.pagination,
+      ...config.pagination,
+    },
   };
 }
 
@@ -888,6 +968,25 @@ export function createBuludThemeVariables(
     '--bulud-dialog-focus-offset': theme.dialog.focusOffset,
     '--bulud-dialog-viewport-gutter': theme.dialog.viewportGutter,
     '--bulud-dialog-stack-base': theme.dialog.stackBase,
+    '--bulud-pagination-background': theme.pagination.background,
+    '--bulud-pagination-background-hover': theme.pagination.backgroundHover,
+    '--bulud-pagination-active-background': theme.pagination.activeBackground,
+    '--bulud-pagination-border': theme.pagination.border,
+    '--bulud-pagination-foreground': theme.pagination.foreground,
+    '--bulud-pagination-active-foreground': theme.pagination.activeForeground,
+    '--bulud-pagination-muted-foreground': theme.pagination.mutedForeground,
+    '--bulud-pagination-focus': theme.pagination.focus,
+    '--bulud-pagination-disabled-opacity': theme.pagination.disabledOpacity,
+    '--bulud-pagination-radius': theme.pagination.radius,
+    '--bulud-pagination-size': theme.pagination.size,
+    '--bulud-pagination-page-padding': theme.pagination.pagePadding,
+    '--bulud-pagination-direction-icon-size':
+      theme.pagination.directionIconSize,
+    '--bulud-pagination-gap': theme.pagination.gap,
+    '--bulud-pagination-border-width': theme.pagination.borderWidth,
+    '--bulud-pagination-focus-width': theme.pagination.focusWidth,
+    '--bulud-pagination-focus-offset': theme.pagination.focusOffset,
+    '--bulud-pagination-font-weight': theme.pagination.fontWeight,
   };
 }
 
@@ -910,12 +1009,16 @@ function createBuludThemeCss(
   const dialogGeometry = entries.filter(([property]) =>
     BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
   );
+  const paginationGeometry = entries.filter(([property]) =>
+    BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
+  );
   const lightModeVariables = entries.filter(
     ([property]) =>
       !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property) &&
-      !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
+      !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property) &&
+      !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
   );
   const switchDarkModeVariables = entries.filter(
     ([property]) =>
@@ -927,8 +1030,13 @@ function createBuludThemeCss(
       property.startsWith('--bulud-dialog-') &&
       !BULUD_DIALOG_GEOMETRY_VARIABLES.has(property),
   );
+  const paginationDarkModeVariables = entries.filter(
+    ([property]) =>
+      property.startsWith('--bulud-pagination-') &&
+      !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
+  );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
 }
 
 /**
@@ -938,8 +1046,9 @@ function createBuludThemeCss(
  * dark theme can provide omitted defaults. Explicit Switch and Dialog
  * non-geometry overrides are also emitted in dark mode so they remain global
  * there; omitted tokens stay absent and use the imported dark defaults.
- * Badge, checkbox, Switch, and Dialog geometry remain available because they
- * are not theme-mode specific.
+ * Explicit Pagination non-geometry overrides are emitted in dark mode by the
+ * same rule. Badge, checkbox, Switch, Dialog, and Pagination geometry remain
+ * available because they are not theme-mode specific.
  *
  * The injected `DOCUMENT` and renderer abstractions keep this compatible with
  * browser rendering, server rendering, and zoneless applications.
@@ -1055,6 +1164,14 @@ export function provideBuludTheme(
     ['stackBase', '--bulud-dialog-stack-base'],
   ] as const) {
     if (config.dialog?.[field] === undefined) {
+      delete variables[variable];
+    }
+  }
+
+  for (const [field, variable] of Object.entries(
+    BULUD_PAGINATION_THEME_VARIABLES,
+  ) as Array<[keyof BuludPaginationTheme, BuludThemeCssVariable]>) {
+    if (config.pagination?.[field] === undefined) {
       delete variables[variable];
     }
   }

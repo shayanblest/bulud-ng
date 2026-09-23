@@ -90,6 +90,24 @@
   --bulud-dialog-focus-offset: 2px;
   --bulud-dialog-viewport-gutter: 1rem;
   --bulud-dialog-stack-base: 1000;
+  --bulud-pagination-background: #ffffff;
+  --bulud-pagination-background-hover: #f8fafc;
+  --bulud-pagination-active-background: #2563eb;
+  --bulud-pagination-border: #cbd5e1;
+  --bulud-pagination-foreground: #0f172a;
+  --bulud-pagination-active-foreground: #ffffff;
+  --bulud-pagination-muted-foreground: #64748b;
+  --bulud-pagination-focus: #93c5fd;
+  --bulud-pagination-disabled-opacity: 0.55;
+  --bulud-pagination-radius: 0.5rem;
+  --bulud-pagination-size: 2.5rem;
+  --bulud-pagination-page-padding: 0.5rem;
+  --bulud-pagination-direction-icon-size: 1.5em;
+  --bulud-pagination-gap: 0.25rem;
+  --bulud-pagination-border-width: 1px;
+  --bulud-pagination-focus-width: 3px;
+  --bulud-pagination-focus-offset: 2px;
+  --bulud-pagination-font-weight: 600;
 }
 
 :root.dark,
@@ -170,4 +188,12 @@
   --bulud-dialog-border: #475569;
   --bulud-dialog-shadow: 0 1.5rem 4rem rgb(2 6 23 / 0.5);
   --bulud-dialog-focus: #bfdbfe;
+  --bulud-pagination-background: #0f172a;
+  --bulud-pagination-background-hover: #1e293b;
+  --bulud-pagination-active-background: #2563eb;
+  --bulud-pagination-border: #475569;
+  --bulud-pagination-foreground: #f8fafc;
+  --bulud-pagination-active-foreground: #ffffff;
+  --bulud-pagination-muted-foreground: #cbd5e1;
+  --bulud-pagination-focus: #bfdbfe;
 }

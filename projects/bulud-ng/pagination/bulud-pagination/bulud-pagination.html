@@ -1,0 +1,50 @@
+<nav class="bulud-pagination" [attr.aria-label]="navigationLabel()">
+  <button
+    class="bulud-pagination__control bulud-pagination__control--previous"
+    type="button"
+    [disabled]="disabled() || renderedPage() <= 1 || !safePageCount()"
+    [attr.aria-label]="previousLabel()"
+    (click)="requestPreviousPage()"
+  >
+    <span class="bulud-pagination__direction-icon" aria-hidden="true">‹</span>
+  </button>
+
+  <ol class="bulud-pagination__pages">
+    @for (item of pageItems(); track item) {
+      @if (typeof item === "number") {
+        <li>
+          <button
+            class="bulud-pagination__page"
+            type="button"
+            [class.bulud-pagination__page--current]="item === renderedPage()"
+            [disabled]="disabled()"
+            [attr.aria-current]="item === renderedPage() ? 'page' : null"
+            [attr.aria-label]="pageAccessibleLabel(item)"
+            (click)="requestPage(item)"
+          >
+            {{ item }}
+          </button>
+        </li>
+      } @else {
+        <li
+          class="bulud-pagination__ellipsis"
+          [attr.aria-label]="morePagesLabel()"
+        >
+          …
+        </li>
+      }
+    }
+  </ol>
+
+  <button
+    class="bulud-pagination__control bulud-pagination__control--next"
+    type="button"
+    [disabled]="
+      disabled() || renderedPage() >= safePageCount() || !safePageCount()
+    "
+    [attr.aria-label]="nextLabel()"
+    (click)="requestNextPage()"
+  >
+    <span class="bulud-pagination__direction-icon" aria-hidden="true">›</span>
+  </button>
+</nav>

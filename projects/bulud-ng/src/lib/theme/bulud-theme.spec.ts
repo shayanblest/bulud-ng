@@ -120,6 +120,92 @@ describe('Bulud theme', () => {
     }
   });
 
+  it('keeps Pagination out of legacy defaults while resolving concrete defaults', () => {
+    expect('pagination' in BULUD_DEFAULT_THEME).toBeFalse();
+    expect(resolveBuludTheme().pagination).toEqual(
+      resolveBuludTheme(BULUD_DEFAULT_THEME).pagination,
+    );
+    expect(resolveBuludTheme().pagination.activeBackground).toBe('#2563eb');
+    expect(resolveBuludTheme().pagination.pagePadding).toBe('0.5rem');
+    expect(resolveBuludTheme().pagination.directionIconSize).toBe('1.5em');
+  });
+
+  for (const legacyConfig of [
+    {
+      name: 'direct legacy defaults',
+      value: BULUD_DEFAULT_THEME,
+      themeAttribute: 'dark' as const,
+    },
+    {
+      name: 'spread legacy defaults',
+      value: { ...BULUD_DEFAULT_THEME },
+      themeAttribute: 'data-theme' as const,
+    },
+  ]) {
+    it(`does not pin Pagination light defaults with ${legacyConfig.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const libraryThemeStyle = document.createElement('style');
+      libraryThemeStyle.textContent = `
+        :root {
+          --bulud-pagination-background: #ffffff;
+          --bulud-pagination-active-background: #2563eb;
+        }
+        :root.dark, :root[data-theme="dark"] {
+          --bulud-pagination-background: #0f172a;
+          --bulud-pagination-active-background: #7c3aed;
+        }
+      `;
+      document.head.append(libraryThemeStyle);
+      const environmentInjector = createEnvironmentInjector(
+        [provideBuludTheme(legacyConfig.value)],
+        parentInjector,
+      );
+
+      try {
+        if (legacyConfig.themeAttribute === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.setAttribute('data-theme', 'dark');
+        }
+        const computed = document.defaultView?.getComputedStyle(root);
+        expect(
+          computed?.getPropertyValue('--bulud-pagination-background').trim(),
+        ).toBe('#0f172a');
+        expect(
+          computed
+            ?.getPropertyValue('--bulud-pagination-active-background')
+            .trim(),
+        ).toBe('#7c3aed');
+        const styleText =
+          document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+          '';
+        expect(styleText).not.toContain('--bulud-pagination-background:');
+        expect(styleText).not.toContain(
+          '--bulud-pagination-active-background:',
+        );
+      } finally {
+        root.classList.remove('dark');
+        root.removeAttribute('data-theme');
+        libraryThemeStyle.remove();
+        environmentInjector.destroy();
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
   it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
     const button: BuludButtonTheme = {
       disabledOpacity: '0.4',
@@ -1006,5 +1092,244 @@ describe('Bulud theme', () => {
     expect(createBuludThemeVariables()['--bulud-checkbox-size']).toBe(
       resolveBuludTheme().checkbox.size,
     );
+  });
+
+  it('maps every Pagination token to one CSS variable', () => {
+    const expectedVariables = [
+      '--bulud-pagination-background',
+      '--bulud-pagination-background-hover',
+      '--bulud-pagination-active-background',
+      '--bulud-pagination-border',
+      '--bulud-pagination-foreground',
+      '--bulud-pagination-active-foreground',
+      '--bulud-pagination-muted-foreground',
+      '--bulud-pagination-focus',
+      '--bulud-pagination-disabled-opacity',
+      '--bulud-pagination-radius',
+      '--bulud-pagination-size',
+      '--bulud-pagination-page-padding',
+      '--bulud-pagination-direction-icon-size',
+      '--bulud-pagination-gap',
+      '--bulud-pagination-border-width',
+      '--bulud-pagination-focus-width',
+      '--bulud-pagination-focus-offset',
+      '--bulud-pagination-font-weight',
+    ];
+    const actualVariables = Object.keys(createBuludThemeVariables()).filter(
+      (variable) => variable.startsWith('--bulud-pagination-'),
+    );
+
+    expect(actualVariables.sort()).toEqual(expectedVariables.sort());
+    expect(Object.keys(resolveBuludTheme().pagination).length).toBe(
+      expectedVariables.length,
+    );
+  });
+
+  for (const darkMode of [
+    {
+      name: '.dark',
+      apply: (root: HTMLElement) => root.classList.add('dark'),
+      remove: (root: HTMLElement) => root.classList.remove('dark'),
+    },
+    {
+      name: '[data-theme="dark"]',
+      apply: (root: HTMLElement) => root.setAttribute('data-theme', 'dark'),
+      remove: (root: HTMLElement) => root.removeAttribute('data-theme'),
+    },
+  ]) {
+    it(`preserves explicit Pagination colors in ${darkMode.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const libraryThemeStyle = document.createElement('style');
+      libraryThemeStyle.textContent = `
+        :root { --bulud-pagination-background: #ffffff; }
+        :root.dark, :root[data-theme="dark"] { --bulud-pagination-background: #0f172a; }
+      `;
+      document.head.append(libraryThemeStyle);
+      const pagination = {
+        background: '#101010',
+        backgroundHover: '#202020',
+        activeBackground: '#303030',
+        border: '#404040',
+        foreground: '#505050',
+        activeForeground: '#606060',
+        mutedForeground: '#707070',
+        focus: '#808080',
+        disabledOpacity: '0.31',
+        pagePadding: '0.75rem',
+        directionIconSize: '2em',
+        fontWeight: '700',
+      };
+      const environmentInjector = createEnvironmentInjector(
+        [provideBuludTheme({ pagination })],
+        parentInjector,
+      );
+
+      try {
+        darkMode.apply(root);
+        const computed = document.defaultView?.getComputedStyle(root);
+        for (const [field, value] of Object.entries(pagination)) {
+          const variable = `--bulud-pagination-${field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+          expect(computed?.getPropertyValue(variable).trim()).toBe(value);
+        }
+      } finally {
+        darkMode.remove(root);
+        environmentInjector.destroy();
+        libraryThemeStyle.remove();
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
+  it('omits every unconfigured Pagination token so consumer CSS remains in control', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    root.style.setProperty('--bulud-pagination-font-weight', '400');
+    root.style.setProperty('--bulud-pagination-background-hover', '#abcdef');
+    root.style.setProperty('--bulud-pagination-page-padding', '1rem');
+    root.style.setProperty('--bulud-pagination-direction-icon-size', '2em');
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme({ pagination: { background: '#123456' } })],
+      parentInjector,
+    );
+
+    try {
+      const styleText =
+        document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+        '';
+      expect(styleText).toContain('--bulud-pagination-background: #123456;');
+      expect(styleText).not.toContain('--bulud-pagination-background-hover:');
+      expect(styleText).not.toContain('--bulud-pagination-font-weight:');
+      expect(styleText).not.toContain('--bulud-pagination-page-padding:');
+      expect(styleText).not.toContain(
+        '--bulud-pagination-direction-icon-size:',
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-background-hover')
+          .trim(),
+      ).toBe('#abcdef');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-font-weight')
+          .trim(),
+      ).toBe('400');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-page-padding')
+          .trim(),
+      ).toBe('1rem');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-direction-icon-size')
+          .trim(),
+      ).toBe('2em');
+    } finally {
+      root.style.removeProperty('--bulud-pagination-font-weight');
+      root.style.removeProperty('--bulud-pagination-background-hover');
+      root.style.removeProperty('--bulud-pagination-page-padding');
+      root.style.removeProperty('--bulud-pagination-direction-icon-size');
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps Pagination geometry provider, scoped, and instance precedence', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const consumerStyle = document.createElement('style');
+    consumerStyle.textContent =
+      ':root { --bulud-pagination-size: 1rem; --bulud-pagination-page-padding: 1px; --bulud-pagination-direction-icon-size: 1em; }';
+    document.head.append(consumerStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          pagination: {
+            size: '3rem',
+            pagePadding: '3px',
+            directionIconSize: '1.25em',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      const read = (variable: string) =>
+        document.defaultView
+          ?.getComputedStyle(instance)
+          .getPropertyValue(variable)
+          .trim();
+      expect(read('--bulud-pagination-size')).toBe('3rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('3px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('1.25em');
+      scope.style.setProperty('--bulud-pagination-size', '4rem');
+      scope.style.setProperty('--bulud-pagination-page-padding', '4px');
+      scope.style.setProperty(
+        '--bulud-pagination-direction-icon-size',
+        '1.5em',
+      );
+      expect(read('--bulud-pagination-size')).toBe('4rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('4px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('1.5em');
+      instance.style.setProperty('--bulud-pagination-size', '5rem');
+      instance.style.setProperty('--bulud-pagination-page-padding', '5px');
+      instance.style.setProperty(
+        '--bulud-pagination-direction-icon-size',
+        '2em',
+      );
+      expect(read('--bulud-pagination-size')).toBe('5rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('5px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('2em');
+    } finally {
+      instance.remove();
+      scope.remove();
+      consumerStyle.remove();
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
   });
 });
