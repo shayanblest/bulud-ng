@@ -283,6 +283,7 @@ test.describe('Bulud component demo', () => {
   }) => {
     const target = page.locator('#resize-observer-target');
     const size = page.locator('#resize-observer-size');
+    const notifications = page.locator('#resize-observer-notifications');
     const enabled = page.locator('#resize-observer-enabled');
 
     await expect(target).toHaveAttribute(
@@ -291,6 +292,13 @@ test.describe('Bulud component demo', () => {
     );
     const initialSize = (await size.textContent())?.trim() ?? '';
     expect(initialSize).toMatch(/^Content box: \d+ × \d+px$/);
+    await expect(notifications).toHaveText('Notifications: 1');
+
+    await target.evaluate((element) => {
+      (element as HTMLElement).style.width = '240px';
+      (element as HTMLElement).style.height = '120px';
+    });
+    await expect(notifications).toHaveText('Notifications: 1');
 
     await enabled.uncheck();
     await target.evaluate((element) => {
@@ -298,10 +306,12 @@ test.describe('Bulud component demo', () => {
       (element as HTMLElement).style.height = '160px';
     });
     await expect(size).toHaveText(initialSize);
+    await expect(notifications).toHaveText('Notifications: 1');
 
     await enabled.check();
     await expect(size).not.toHaveText(initialSize);
     await expect(size).toContainText('Content box:');
+    await expect(notifications).toHaveText('Notifications: 2');
   });
 
   test('covers click outside inside, outside, and disabled interaction', async ({
