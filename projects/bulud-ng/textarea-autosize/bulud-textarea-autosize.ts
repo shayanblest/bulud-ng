@@ -134,6 +134,7 @@ export class BuludTextareaAutosize
     const effectiveMaxRows =
       maxRows === null ? null : Math.max(maxRows, minRows ?? 0);
     const boxSizing = styles.boxSizing;
+    textarea.style.overflowY = 'hidden';
     textarea.style.height = '0px';
     const contentHeight = Math.max(0, textarea.scrollHeight - padding);
     const minHeight = minRows === null ? 0 : minRows * lineHeight;
@@ -243,7 +244,10 @@ function getLineHeight(styles: CSSStyleDeclaration): number {
 }
 
 function normalizeRows(value: number | null): number | null {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0
-    ? Math.floor(value)
-    : null;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  const rows = Math.floor(value);
+  return rows >= 1 ? rows : null;
 }

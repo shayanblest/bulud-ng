@@ -537,8 +537,9 @@ export class MessageField {}
 
 The directive measures the textarea's content box after initialization and on
 `input`, then grows or shrinks the native control without polling. Its typed
-inputs are `enabled` (default `true`), `minRows`, and `maxRows`; positive row
-values are rounded down and invalid values are ignored. At `maxRows`, the
+inputs are `enabled` (default `true`), `minRows`, and `maxRows`; finite row
+values of at least `1` are rounded down, while values below `1` and other
+invalid values are ignored. At `maxRows`, the
 textarea keeps its native keyboard semantics and uses vertical scrolling so
 content remains reachable. The calculation accounts for line height, padding,
 border widths, and both `content-box` and `border-box` sizing.

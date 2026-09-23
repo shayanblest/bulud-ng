@@ -180,6 +180,83 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.overflowY).toBe('hidden');
   });
 
+  it('clears stale scrolling before measuring content that shrinks below maxRows', () => {
+    const fixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.maxRows = 2;
+    });
+    const textarea = textareaOf(fixture);
+    Object.defineProperty(textarea, 'scrollHeight', {
+      configurable: true,
+      get: () => contentHeight + (textarea.style.overflowY === 'auto' ? 30 : 0),
+    });
+
+    contentHeight = 100;
+    textarea.value = 'many lines';
+    textarea.dispatchEvent(new Event('input'));
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('auto');
+
+    contentHeight = 20;
+    textarea.value = 'short';
+    textarea.dispatchEvent(new Event('input'));
+
+    expect(textarea.style.height).toBe('20px');
+    expect(textarea.style.overflowY).toBe('hidden');
+    expect(MockResizeObserver.instances).toHaveSize(1);
+  });
+
+  it('rejects row limits below one and normalizes valid fractional values', () => {
+    const invalidValues = [
+      0,
+      -1,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+      0.5,
+    ];
+
+    for (const value of invalidValues) {
+      const fixture = createHost((textarea, host) => {
+        textarea.style.lineHeight = '20px';
+        host.minRows = value;
+        host.maxRows = value;
+      });
+
+      expect(textareaOf(fixture).style.height).toBe('40px');
+      expect(textareaOf(fixture).style.overflowY).toBe('hidden');
+      fixture.destroy();
+    }
+
+    const fractionalFixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.minRows = 1.5;
+      host.maxRows = 1.5;
+    });
+    expect(textareaOf(fractionalFixture).style.height).toBe('20px');
+    expect(textareaOf(fractionalFixture).style.overflowY).toBe('auto');
+    fractionalFixture.destroy();
+
+    contentHeight = 80;
+    const integerFixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.minRows = 2;
+      host.maxRows = 3;
+    });
+    expect(textareaOf(integerFixture).style.height).toBe('60px');
+    expect(textareaOf(integerFixture).style.overflowY).toBe('auto');
+    integerFixture.destroy();
+
+    contentHeight = 40;
+    const interactionFixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.minRows = 3.5;
+      host.maxRows = 2.5;
+    });
+    expect(textareaOf(interactionFixture).style.height).toBe('60px');
+    expect(textareaOf(interactionFixture).style.overflowY).toBe('hidden');
+  });
+
   it('accounts for padding and borders in border-box mode', () => {
     const fixture = createHost((textarea) => {
       textarea.style.boxSizing = 'border-box';
