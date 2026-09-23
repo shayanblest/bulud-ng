@@ -8,7 +8,7 @@ class MockResizeObserver {
   static readonly instances: MockResizeObserver[] = [];
   private readonly callback: ResizeObserverCallback;
   disconnectCount = 0;
-  private observedElement: Element | null = null;
+  private readonly observedElements: Element[] = [];
 
   constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
@@ -16,7 +16,7 @@ class MockResizeObserver {
   }
 
   observe(element: Element): void {
-    this.observedElement = element;
+    this.observedElements.push(element);
   }
 
   disconnect(): void {
@@ -27,8 +27,25 @@ class MockResizeObserver {
     this.callback(
       [
         {
-          target: this.observedElement!,
+          target: this.observedElements[0]!,
           contentRect: { width, height: 0 },
+        } as unknown as ResizeObserverEntry,
+      ],
+      this as unknown as ResizeObserver,
+    );
+  }
+
+  triggerMetrics(): void {
+    const target = this.observedElements.at(-1);
+    if (!target) {
+      return;
+    }
+
+    this.callback(
+      [
+        {
+          target,
+          contentRect: { width: 0, height: 0 },
         } as unknown as ResizeObserverEntry,
       ],
       this as unknown as ResizeObserver,
@@ -105,6 +122,47 @@ describe('BuludTextareaAutosize', () => {
         );
       },
     });
+
+    const cloneNode = textarea.cloneNode.bind(textarea);
+    textarea.cloneNode = ((deep?: boolean) => {
+      const clone = cloneNode(deep) as HTMLTextAreaElement;
+      Object.defineProperty(clone, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => {
+          const styles = getComputedStyle(clone);
+          const padding =
+            Number.parseFloat(styles.paddingTop) +
+            Number.parseFloat(styles.paddingBottom);
+          const borders =
+            Number.parseFloat(styles.borderTopWidth) +
+            Number.parseFloat(styles.borderBottomWidth);
+          const content =
+            clone.value === 'x'
+              ? Number.parseFloat(styles.fontSize) * 1.2
+              : contentHeight;
+          return {
+            width: textarea.getBoundingClientRect().width,
+            height: content + padding + borders,
+          } as DOMRect;
+        },
+      });
+      Object.defineProperty(clone, 'scrollHeight', {
+        configurable: true,
+        get: () => {
+          const styles = getComputedStyle(clone);
+          const content =
+            clone.value === 'x'
+              ? Number.parseFloat(styles.fontSize) * 1.2
+              : contentHeight;
+          return (
+            content +
+            Number.parseFloat(styles.paddingTop) +
+            Number.parseFloat(styles.paddingBottom)
+          );
+        },
+      });
+      return clone;
+    }) as HTMLTextAreaElement['cloneNode'];
   }
 
   it('sets the initial content-box height', () => {
@@ -321,6 +379,45 @@ describe('BuludTextareaAutosize', () => {
 
     expect(textarea.style.height).toBe('70px');
     expect(MockResizeObserver.instances).toHaveSize(1);
+  });
+
+  it('remeasures after text metrics change while value and width stay unchanged', () => {
+    const fixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.minRows = 2;
+      host.maxRows = 3;
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+
+    expect(textarea.style.height).toBe('40px');
+    textarea.style.lineHeight = '30px';
+    observer.triggerMetrics();
+
+    expect(textarea.value).toBe('');
+    expect(textarea.style.height).toBe('60px');
+    expect(textarea.style.overflowY).toBe('hidden');
+  });
+
+  it('preserves fractional row geometry at the maxRows boundary', () => {
+    contentHeight = 95.9;
+    const fixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '19.2px';
+      host.minRows = 1;
+      host.maxRows = 5;
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+
+    expect(textarea.style.height).toBe('95.9px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    contentHeight = 96.1;
+    textarea.value = 'one more fraction';
+    observer.triggerMetrics();
+
+    expect(textarea.style.height).toBe('96px');
+    expect(textarea.style.overflowY).toBe('auto');
   });
 
   it('does not mutate while disabled and remeasures immediately when enabled', async () => {

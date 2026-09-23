@@ -356,6 +356,36 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(initialHeight);
 
+    const widthBeforeMetricChange = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+    await textarea.evaluate((element) => {
+      element.style.fontSize = '28px';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(initialHeight);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().width),
+      )
+      .toBe(widthBeforeMetricChange);
+
+    await textarea.evaluate((element) => {
+      element.style.fontSize = '16px';
+      element.style.lineHeight = '19.2px';
+    });
+    await textarea.fill('one\ntwo\nthree\nfour\nfive');
+    await expect(textarea).toHaveCSS('overflow-y', 'hidden');
+    await textarea.fill('one\ntwo\nthree\nfour\nfive\nsix');
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await textarea.evaluate((element) => {
+      element.style.fontSize = '';
+      element.style.lineHeight = 'normal';
+    });
+
     await page.locator('#textarea-autosize-long').click();
     const longHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,

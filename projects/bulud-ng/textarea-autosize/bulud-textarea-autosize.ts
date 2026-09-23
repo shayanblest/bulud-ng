@@ -16,6 +16,10 @@ type ResizeObserverConstructor = new (
   callback: ResizeObserverCallback,
 ) => ResizeObserver;
 
+type MutationObserverConstructor = new (
+  callback: MutationCallback,
+) => MutationObserver;
+
 interface OriginalStyles {
   readonly height: string;
   readonly overflowY: string;
@@ -43,6 +47,8 @@ export class BuludTextareaAutosize
   private lastValue = '';
   private lastObservedWidth: number | null = null;
   private observer: ResizeObserver | null = null;
+  private mutationObserver: MutationObserver | null = null;
+  private measurementProbe: HTMLTextAreaElement | null = null;
   private destroyed = false;
   private readonly viewInitialized = signal(false);
 
@@ -62,8 +68,10 @@ export class BuludTextareaAutosize
         return;
       }
 
+      this.createMeasurementProbe();
       this.resize();
       this.connectWidthObserver();
+      this.connectMutationObserver();
       const textarea = this.element.nativeElement;
       const inputListener = (): void => {
         if (textarea.value !== this.lastValue) {
@@ -74,6 +82,7 @@ export class BuludTextareaAutosize
       onCleanup(() => {
         textarea.removeEventListener('input', inputListener);
         this.disconnectWidthObserver();
+        this.disconnectMutationObserver();
         this.restoreOriginalStyles();
       });
     });
@@ -107,6 +116,7 @@ export class BuludTextareaAutosize
   ngOnDestroy(): void {
     this.destroyed = true;
     this.disconnectWidthObserver();
+    this.disconnectMutationObserver();
     this.restoreOriginalStyles();
   }
 
@@ -134,9 +144,10 @@ export class BuludTextareaAutosize
     const effectiveMaxRows =
       maxRows === null ? null : Math.max(maxRows, minRows ?? 0);
     const boxSizing = styles.boxSizing;
+    this.syncMeasurementProbe();
     textarea.style.overflowY = 'hidden';
     textarea.style.height = '0px';
-    const contentHeight = Math.max(0, textarea.scrollHeight - padding);
+    const contentHeight = this.measureContentHeight(textarea, padding);
     const minHeight =
       minRows === null || lineHeight === null ? 0 : minRows * lineHeight;
     const maxHeight =
@@ -151,7 +162,7 @@ export class BuludTextareaAutosize
       boxSizing === 'border-box'
         ? targetContentHeight + padding + borders
         : targetContentHeight;
-    const nextHeight = `${Math.ceil(targetHeight)}px`;
+    const nextHeight = `${targetHeight}px`;
     const shouldScroll = contentHeight > maxHeight;
 
     if (textarea.style.height !== nextHeight) {
@@ -163,6 +174,79 @@ export class BuludTextareaAutosize
     }
 
     this.lastValue = textarea.value;
+  }
+
+  private measureContentHeight(
+    textarea: HTMLTextAreaElement,
+    padding: number,
+  ): number {
+    const probe = this.measurementProbe;
+    if (probe) {
+      const probeStyles = getComputedStyle(probe);
+      const probePadding =
+        parsePixels(probeStyles.paddingTop) +
+        parsePixels(probeStyles.paddingBottom);
+      const intrinsicHeight = probe.scrollHeight - probePadding;
+      if (Number.isFinite(intrinsicHeight) && intrinsicHeight > 0) {
+        return intrinsicHeight;
+      }
+    }
+
+    return Math.max(0, textarea.scrollHeight - padding);
+  }
+
+  private createMeasurementProbe(): void {
+    if (this.measurementProbe || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const textarea = this.element.nativeElement;
+    const parent = textarea.parentElement;
+    if (!parent) {
+      return;
+    }
+
+    const probe = textarea.cloneNode(false) as HTMLTextAreaElement;
+    probe.removeAttribute('id');
+    probe.removeAttribute('name');
+    probe.removeAttribute('form');
+    probe.setAttribute('aria-hidden', 'true');
+    probe.tabIndex = -1;
+    probe.rows = 1;
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.pointerEvents = 'none';
+    probe.style.inset = '-9999px auto auto -9999px';
+    probe.style.height = 'auto';
+    probe.style.minHeight = '0px';
+    probe.style.maxHeight = 'none';
+    probe.style.overflow = 'hidden';
+    probe.style.boxSizing = 'border-box';
+    parent.appendChild(probe);
+    this.measurementProbe = probe;
+    this.syncMeasurementProbe();
+  }
+
+  private syncMeasurementProbe(): void {
+    const probe = this.measurementProbe;
+    if (!probe) {
+      return;
+    }
+
+    const textarea = this.element.nativeElement;
+    probe.value = textarea.value;
+    const view = this.document.defaultView;
+    if (view && typeof view.getComputedStyle === 'function') {
+      const styles = view.getComputedStyle(textarea);
+      for (const property of TEXT_METRIC_PROPERTIES) {
+        probe.style.setProperty(property, styles.getPropertyValue(property));
+      }
+    }
+    const width =
+      textarea.clientWidth || textarea.getBoundingClientRect().width;
+    if (width > 0) {
+      probe.style.width = `${width}px`;
+    }
   }
 
   private connectWidthObserver(): void {
@@ -183,6 +267,11 @@ export class BuludTextareaAutosize
       }
 
       for (const entry of entries) {
+        if (entry.target === this.measurementProbe) {
+          this.resize();
+          continue;
+        }
+
         if (entry.target !== textarea) {
           continue;
         }
@@ -197,12 +286,47 @@ export class BuludTextareaAutosize
       }
     });
     this.observer.observe(textarea);
+    if (this.measurementProbe) {
+      this.observer.observe(this.measurementProbe);
+    }
+  }
+
+  private connectMutationObserver(): void {
+    if (this.mutationObserver || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const MutationObserver = getMutationObserverConstructor(this.document);
+    if (!MutationObserver) {
+      return;
+    }
+
+    this.mutationObserver = new MutationObserver(() => {
+      if (!this.destroyed && this.enabled()) {
+        this.syncMeasurementProbe();
+      }
+    });
+    this.mutationObserver.observe(this.element.nativeElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
   }
 
   private disconnectWidthObserver(): void {
     this.observer?.disconnect();
     this.observer = null;
     this.lastObservedWidth = null;
+    this.disconnectMeasurementProbe();
+  }
+
+  private disconnectMutationObserver(): void {
+    this.mutationObserver?.disconnect();
+    this.mutationObserver = null;
+  }
+
+  private disconnectMeasurementProbe(): void {
+    this.measurementProbe?.remove();
+    this.measurementProbe = null;
   }
 
   private restoreOriginalStyles(): void {
@@ -227,6 +351,18 @@ function getResizeObserverConstructor(
     (Window & { readonly ResizeObserver?: ResizeObserverConstructor }) | null;
   const ResizeObserver = view?.ResizeObserver;
   return typeof ResizeObserver === 'function' ? ResizeObserver : null;
+}
+
+function getMutationObserverConstructor(
+  document: Document,
+): MutationObserverConstructor | null {
+  const view = document.defaultView as
+    | (Window & {
+        readonly MutationObserver?: MutationObserverConstructor;
+      })
+    | null;
+  const MutationObserver = view?.MutationObserver;
+  return typeof MutationObserver === 'function' ? MutationObserver : null;
 }
 
 function parsePixels(value: string): number {
@@ -293,7 +429,13 @@ function measureSingleRowHeight(
     const styles = view.getComputedStyle(probe);
     const padding =
       parsePixels(styles.paddingTop) + parsePixels(styles.paddingBottom);
-    const height = probe.scrollHeight - padding;
+    const borders =
+      parsePixels(styles.borderTopWidth) +
+      parsePixels(styles.borderBottomWidth);
+    const preciseHeight =
+      probe.getBoundingClientRect().height - padding - borders;
+    const height =
+      preciseHeight > 0 ? preciseHeight : probe.scrollHeight - padding;
     return Number.isFinite(height) && height > 0 ? height : null;
   } finally {
     probe.remove();
@@ -308,3 +450,21 @@ function normalizeRows(value: number | null): number | null {
   const rows = Math.floor(value);
   return rows >= 1 ? rows : null;
 }
+
+const TEXT_METRIC_PROPERTIES = [
+  'box-sizing',
+  'font-family',
+  'font-size',
+  'font-stretch',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'letter-spacing',
+  'line-height',
+  'padding-bottom',
+  'padding-left',
+  'padding-right',
+  'padding-top',
+  'white-space',
+  'word-spacing',
+] as const;
