@@ -37,7 +37,6 @@
   display: inline-flex;
   font: inherit;
   font-weight: var(--bulud-pagination-font-weight, 600);
-  inline-size: var(--bulud-pagination-size, 2.5rem);
   justify-content: center;
   min-block-size: var(--bulud-pagination-size, 2.5rem);
   padding: 0;
@@ -45,6 +44,16 @@
   transition:
     background-color 120ms ease,
     border-color 120ms ease;
+}
+
+.bulud-pagination__page {
+  inline-size: auto;
+  min-inline-size: var(--bulud-pagination-size, 2.5rem);
+  padding-inline: 0.5rem;
+}
+
+.bulud-pagination__control {
+  inline-size: var(--bulud-pagination-size, 2.5rem);
 }
 
 .bulud-pagination__page:hover:not(:disabled):not(

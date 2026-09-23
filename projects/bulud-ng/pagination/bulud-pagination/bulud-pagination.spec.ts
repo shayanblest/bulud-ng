@@ -175,6 +175,32 @@ describe('BuludPagination', () => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
+  it('grows large page-number controls without clipping or overlap', async () => {
+    fixture.componentInstance.count.set(1000000);
+    fixture.componentInstance.page.set(500000);
+    await fixture.whenStable();
+
+    const page = buttons().find(
+      (button) =>
+        button.classList.contains('bulud-pagination__page') &&
+        button.textContent?.trim() === '500000',
+    );
+    const previous = buttons()[0];
+    const next = buttons().at(-1) as HTMLButtonElement;
+
+    expect(page).toBeDefined();
+    expect(page!.clientWidth).toBeGreaterThanOrEqual(page!.scrollWidth);
+    expect(page!.clientWidth).toBeGreaterThan(40);
+    const pageRect = page!.getBoundingClientRect();
+    for (const control of [previous, next]) {
+      const controlRect = control.getBoundingClientRect();
+      expect(
+        pageRect.right <= controlRect.left ||
+          pageRect.left >= controlRect.right,
+      ).toBeTrue();
+    }
+  });
+
   it('normalizes invalid current pages for rendering and stays silent', async () => {
     fixture.componentInstance.page.set(100);
     fixture.componentInstance.count.set(3);

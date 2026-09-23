@@ -19,29 +19,59 @@ test('is controlled, accessible, bounded, and keyboard operable', async ({
   await expect(navigation.locator('.bulud-pagination__ellipsis')).toHaveCount(
     2,
   );
-  await expect(navigation.getByRole('button')).toHaveCount(9);
+  await expect(navigation.getByRole('button')).toHaveCount(7);
 
-  await navigation.getByRole('button', { name: 'رفتن به صفحه 8' }).click();
+  const currentPage = navigation.getByRole('button', {
+    name: 'صفحه فعلی، 5',
+  });
+  await currentPage.hover();
+  await expect(currentPage).toHaveCSS('background-color', 'rgb(124, 58, 237)');
+
+  const normalPage = navigation.getByRole('button', {
+    name: 'رفتن به صفحه 6',
+  });
+  await normalPage.hover();
+  await expect(normalPage).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+
+  const buttons = navigation.getByRole('button');
+  const buttonNames = await buttons.evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute('aria-label')),
+  );
+  const pageOneIndex = buttonNames.indexOf('رفتن به صفحه 1');
+  const normalPageIndex = buttonNames.indexOf('رفتن به صفحه 6');
+  expect(pageOneIndex).toBeGreaterThanOrEqual(0);
+  expect(normalPageIndex).toBeGreaterThan(pageOneIndex);
+
+  await buttons.nth(pageOneIndex).focus();
+  for (let index = pageOneIndex; index < normalPageIndex; index += 1) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(normalPage).toBeFocused();
+  await expect(normalPage).toHaveCSS('outline-style', 'solid');
+  await expect(normalPage).toHaveCSS('outline-width', '3px');
+  await expect(normalPage).toHaveCSS('outline-offset', '2px');
+
+  await normalPage.click();
   await expect(section.locator('#pagination-current')).toHaveText(
-    'Current page: 8',
+    'Current page: 6',
   );
   await expect(
-    navigation.getByRole('button', { name: 'صفحه فعلی، 8' }),
+    navigation.getByRole('button', { name: 'صفحه فعلی، 6' }),
   ).toHaveAttribute('aria-current', 'page');
   await navigation.getByRole('button', { name: 'صفحه قبلی' }).click();
   await expect(section.locator('#pagination-current')).toHaveText(
-    'Current page: 7',
+    'Current page: 5',
   );
   await navigation.getByRole('button', { name: 'صفحه بعدی' }).press('Enter');
   await expect(section.locator('#pagination-current')).toHaveText(
-    'Current page: 8',
+    'Current page: 6',
   );
   await expect(
     navigation.getByRole('button', { name: 'صفحه بعدی' }),
   ).toBeFocused();
 
   await navigation
-    .getByRole('button', { name: 'رفتن به صفحه 1' })
+    .getByRole('button', { name: 'رفتن به صفحه 1', exact: true })
     .press('Enter');
   await expect(section.locator('#pagination-current')).toHaveText(
     'Current page: 1',
