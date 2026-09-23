@@ -128,7 +128,7 @@ export class BuludTextareaAutosize
     const borders =
       parsePixels(styles.borderTopWidth) +
       parsePixels(styles.borderBottomWidth);
-    const lineHeight = getLineHeight(styles);
+    const lineHeight = getLineHeight(textarea, styles);
     const minRows = normalizeRows(this.minRows());
     const maxRows = normalizeRows(this.maxRows());
     const effectiveMaxRows =
@@ -137,9 +137,10 @@ export class BuludTextareaAutosize
     textarea.style.overflowY = 'hidden';
     textarea.style.height = '0px';
     const contentHeight = Math.max(0, textarea.scrollHeight - padding);
-    const minHeight = minRows === null ? 0 : minRows * lineHeight;
+    const minHeight =
+      minRows === null || lineHeight === null ? 0 : minRows * lineHeight;
     const maxHeight =
-      effectiveMaxRows === null
+      effectiveMaxRows === null || lineHeight === null
         ? Number.POSITIVE_INFINITY
         : effectiveMaxRows * lineHeight;
     const targetContentHeight = Math.min(
@@ -233,14 +234,70 @@ function parsePixels(value: string): number {
   return Number.isFinite(pixels) ? pixels : 0;
 }
 
-function getLineHeight(styles: CSSStyleDeclaration): number {
+function getLineHeight(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): number | null {
   const lineHeight = parsePixels(styles.lineHeight);
   if (lineHeight > 0) {
     return lineHeight;
   }
 
-  const fontSize = parsePixels(styles.fontSize);
-  return fontSize > 0 ? fontSize * 1.2 : 16 * 1.2;
+  return measureSingleRowHeight(textarea, styles);
+}
+
+function measureSingleRowHeight(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): number | null {
+  const document = textarea.ownerDocument;
+  const view = document.defaultView;
+  const body = document.body;
+  if (!view || !body || typeof view.getComputedStyle !== 'function') {
+    return null;
+  }
+
+  const probe = textarea.cloneNode(false) as HTMLTextAreaElement;
+  probe.value = 'x';
+  probe.rows = 1;
+  probe.setAttribute('aria-hidden', 'true');
+  probe.style.position = 'absolute';
+  probe.style.visibility = 'hidden';
+  probe.style.pointerEvents = 'none';
+  probe.style.inset = '-9999px auto auto -9999px';
+  probe.style.height = 'auto';
+  probe.style.minHeight = '0px';
+  probe.style.maxHeight = 'none';
+  probe.style.overflow = 'hidden';
+  for (const property of [
+    'font-family',
+    'font-size',
+    'font-stretch',
+    'font-style',
+    'font-variant',
+    'font-weight',
+    'letter-spacing',
+    'line-height',
+    'word-spacing',
+    'white-space',
+  ]) {
+    probe.style.setProperty(property, styles.getPropertyValue(property));
+  }
+  const width = textarea.getBoundingClientRect().width;
+  if (width > 0) {
+    probe.style.width = `${width}px`;
+  }
+
+  body.appendChild(probe);
+  try {
+    const styles = view.getComputedStyle(probe);
+    const padding =
+      parsePixels(styles.paddingTop) + parsePixels(styles.paddingBottom);
+    const height = probe.scrollHeight - padding;
+    return Number.isFinite(height) && height > 0 ? height : null;
+  } finally {
+    probe.remove();
+  }
 }
 
 function normalizeRows(value: number | null): number | null {

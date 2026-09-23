@@ -338,10 +338,18 @@ test.describe('Bulud component demo', () => {
     const textarea = page.locator('#textarea-autosize-input');
     const enabled = page.locator('#textarea-autosize-enabled');
 
+    await textarea.evaluate((element) => {
+      element.style.lineHeight = 'normal';
+    });
+    await textarea.fill('Short value.');
     const initialHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
-    await textarea.fill('Short value.');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('normal');
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
@@ -354,6 +362,13 @@ test.describe('Bulud component demo', () => {
     );
     expect(longHeight).toBeGreaterThan(initialHeight);
     await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await expect
+      .poll(() =>
+        textarea.evaluate(
+          (element) => element.scrollHeight > element.clientHeight,
+        ),
+      )
+      .toBe(true);
 
     await page.locator('#textarea-autosize-short').click();
     await expect
@@ -362,6 +377,13 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(initialHeight);
     await expect(textarea).toHaveCSS('overflow-y', 'hidden');
+    await expect
+      .poll(() =>
+        textarea.evaluate(
+          (element) => element.scrollHeight <= element.clientHeight,
+        ),
+      )
+      .toBe(true);
 
     await enabled.uncheck();
     await page.locator('#textarea-autosize-long').click();

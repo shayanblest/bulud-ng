@@ -119,6 +119,47 @@ describe('BuludTextareaAutosize', () => {
     expect(textareaOf(fixture).style.overflowY).toBe('hidden');
   });
 
+  it('measures normal line-height and responds to different font sizes', () => {
+    contentHeight = 0;
+    const smallFixture = createHost((textarea, host) => {
+      textarea.style.fontSize = '12px';
+      textarea.style.lineHeight = 'normal';
+      host.minRows = 2;
+      host.maxRows = 3;
+    });
+    const smallHeight = Number.parseFloat(
+      textareaOf(smallFixture).style.height,
+    );
+    expect(smallHeight).toBeGreaterThan(0);
+    expect(textareaOf(smallFixture).style.overflowY).toBe('hidden');
+    smallFixture.destroy();
+
+    const largeFixture = createHost((textarea, host) => {
+      textarea.style.fontSize = '24px';
+      textarea.style.lineHeight = 'normal';
+      host.minRows = 2;
+      host.maxRows = 3;
+    });
+    const largeHeight = Number.parseFloat(
+      textareaOf(largeFixture).style.height,
+    );
+
+    expect(largeHeight).toBeGreaterThan(smallHeight);
+    largeFixture.destroy();
+  });
+
+  it('uses explicit pixel line-height for row constraints', () => {
+    contentHeight = 0;
+    const fixture = createHost((textarea, host) => {
+      textarea.style.fontSize = '24px';
+      textarea.style.lineHeight = '30px';
+      host.minRows = 2;
+      host.maxRows = 3;
+    });
+
+    expect(textareaOf(fixture).style.height).toBe('60px');
+  });
+
   it('grows and shrinks after input', () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);
