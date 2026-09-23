@@ -28,7 +28,7 @@ export class BuludPagination {
   /** Consumer-owned selected page. The component never changes this input. */
   readonly currentPage = input(1);
 
-  /** Total number of pages. Non-finite and non-positive values render empty controls. */
+  /** Total number of pages. Only positive safe integers render page controls. */
   readonly pageCount = input(1);
 
   /** Disables every pagination control. */
@@ -61,7 +61,7 @@ export class BuludPagination {
 
   protected readonly safePageCount = computed(() => {
     const count = this.pageCount();
-    return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+    return Number.isSafeInteger(count) && count > 0 ? count : 0;
   });
 
   protected readonly renderedPage = computed(() => {
@@ -70,10 +70,16 @@ export class BuludPagination {
     if (!count) {
       return 0;
     }
-    if (!Number.isFinite(page)) {
-      return page === Infinity ? count : 1;
+    if (page === Infinity) {
+      return count;
     }
-    return Math.min(Math.max(Math.floor(page), 1), count);
+    if (!Number.isFinite(page) || page <= 0) {
+      return 1;
+    }
+    if (page >= count) {
+      return count;
+    }
+    return Math.max(Math.floor(page), 1);
   });
 
   protected readonly pageItems = computed<readonly BuludPaginationItem[]>(() =>
@@ -109,6 +115,7 @@ export class BuludPagination {
     if (
       this.disabled() ||
       !count ||
+      !Number.isSafeInteger(page) ||
       page < 1 ||
       page > count ||
       page === current
@@ -116,6 +123,21 @@ export class BuludPagination {
       return;
     }
     this.pageChange.emit(page);
+  }
+
+  protected requestPreviousPage(): void {
+    const current = this.renderedPage();
+    if (current > 1) {
+      this.requestPage(current - 1);
+    }
+  }
+
+  protected requestNextPage(): void {
+    const count = this.safePageCount();
+    const current = this.renderedPage();
+    if (current < count) {
+      this.requestPage(current + 1);
+    }
   }
 
   protected pageAccessibleLabel(page: number): string {
@@ -134,7 +156,13 @@ function createPaginationWindow(
   pageCount: number,
   currentPage: number,
 ): readonly BuludPaginationItem[] {
-  if (pageCount < 1) {
+  if (
+    !Number.isSafeInteger(pageCount) ||
+    pageCount < 1 ||
+    !Number.isSafeInteger(currentPage) ||
+    currentPage < 1 ||
+    currentPage > pageCount
+  ) {
     return [];
   }
   if (pageCount <= 7) {

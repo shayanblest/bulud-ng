@@ -608,8 +608,11 @@ export class ResultsPage {
 `currentPage` and `pageCount` are typed number inputs; `disabled` disables the
 whole control; and `pageChange` requests a new page without mutating the input.
 The parent must update `currentPage`, making programmatic input changes silent.
-Non-finite or non-positive page counts render no page buttons. Invalid current
-pages are clamped for safe rendering only; the input itself is never changed.
+Only positive safe-integer page counts render controls; non-integers, non-finite
+values, and values outside JavaScript's safe-integer range render the empty
+state. Invalid current pages are clamped for safe rendering only; the input
+itself is never changed. Finite fractions are floored only when they are below
+the safe page count, and unsafe positive values clamp to the last safe page.
 
 The page window shows all pages through seven pages. Larger collections show
 the first and last pages plus a bounded neighborhood around the current page;

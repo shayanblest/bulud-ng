@@ -4,7 +4,7 @@
     type="button"
     [disabled]="disabled() || renderedPage() <= 1 || !safePageCount()"
     [attr.aria-label]="previousLabel()"
-    (click)="requestPage(renderedPage() - 1)"
+    (click)="requestPreviousPage()"
   >
     <span class="bulud-pagination__direction-icon" aria-hidden="true">‹</span>
   </button>
@@ -43,7 +43,7 @@
       disabled() || renderedPage() >= safePageCount() || !safePageCount()
     "
     [attr.aria-label]="nextLabel()"
-    (click)="requestPage(renderedPage() + 1)"
+    (click)="requestNextPage()"
   >
     <span class="bulud-pagination__direction-icon" aria-hidden="true">›</span>
   </button>

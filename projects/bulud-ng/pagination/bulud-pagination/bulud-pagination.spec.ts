@@ -175,6 +175,124 @@ describe('BuludPagination', () => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
+  it('accepts only positive safe-integer page counts', async () => {
+    const safeMaximum = Number.MAX_SAFE_INTEGER;
+    fixture.componentInstance.count.set(safeMaximum);
+    fixture.componentInstance.page.set(safeMaximum);
+    fixture.componentInstance.pageChange.set(null);
+    await fixture.whenStable();
+
+    const safeLabels = [
+      ...fixture.nativeElement.querySelectorAll('.bulud-pagination__page'),
+    ].map((button: Element) => Number(button.textContent?.trim()));
+    expect(safeLabels).toEqual([
+      1,
+      safeMaximum - 4,
+      safeMaximum - 3,
+      safeMaximum - 2,
+      safeMaximum - 1,
+      safeMaximum,
+    ]);
+    expect(safeLabels.every(Number.isSafeInteger)).toBeTrue();
+    expect(new Set(safeLabels).size).toBe(safeLabels.length);
+    expect(
+      fixture.nativeElement.querySelector('[aria-current="page"]')?.textContent,
+    ).toContain(String(safeMaximum));
+    expect(buttons().at(-1)?.disabled).toBeTrue();
+
+    buttons()[0].click();
+    expect(fixture.componentInstance.pageChange()).toBe(safeMaximum - 1);
+    expect(Number.isSafeInteger(fixture.componentInstance.pageChange())).toBe(
+      true,
+    );
+
+    const invalidCounts = [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+      -1,
+      0,
+      3.5,
+      safeMaximum + 1,
+      1e20,
+    ];
+    for (const count of invalidCounts) {
+      fixture.componentInstance.count.set(count);
+      fixture.componentInstance.pageChange.set(null);
+      await fixture.whenStable();
+
+      expect(
+        fixture.nativeElement.querySelectorAll('.bulud-pagination__page')
+          .length,
+      ).toBe(0);
+      expect(
+        fixture.nativeElement.querySelectorAll('.bulud-pagination__ellipsis')
+          .length,
+      ).toBe(0);
+      expect(buttons()[0].disabled).toBeTrue();
+      expect(buttons().at(-1)?.disabled).toBeTrue();
+      buttons()[0].click();
+      buttons().at(-1)?.click();
+      expect(fixture.componentInstance.pageChange()).toBeNull();
+    }
+  });
+
+  it('normalizes unsafe and fractional current pages without unsafe arithmetic', async () => {
+    fixture.componentInstance.count.set(10);
+    const cases = [
+      { value: Number.NaN, expected: 1 },
+      { value: Number.POSITIVE_INFINITY, expected: 10 },
+      { value: Number.NEGATIVE_INFINITY, expected: 1 },
+      { value: -1, expected: 1 },
+      { value: 0, expected: 1 },
+      { value: 5.9, expected: 5 },
+      { value: Number.MAX_SAFE_INTEGER, expected: 10 },
+      { value: Number.MAX_SAFE_INTEGER + 1, expected: 10 },
+      { value: 1e20, expected: 10 },
+    ];
+
+    for (const { value, expected } of cases) {
+      fixture.componentInstance.page.set(value);
+      fixture.componentInstance.pageChange.set(null);
+      await fixture.whenStable();
+
+      expect(
+        fixture.nativeElement.querySelector('[aria-current="page"]')
+          ?.textContent,
+      ).toContain(String(expected));
+      expect(fixture.componentInstance.pageChange()).toBeNull();
+      const renderedLabels = [
+        ...fixture.nativeElement.querySelectorAll('.bulud-pagination__page'),
+      ].map((button: Element) => Number(button.textContent?.trim()));
+      expect(renderedLabels.every(Number.isSafeInteger)).toBeTrue();
+      expect(new Set(renderedLabels).size).toBe(renderedLabels.length);
+    }
+  });
+
+  it('keeps navigation emissions safe at both maximum page boundaries', async () => {
+    const safeMaximum = Number.MAX_SAFE_INTEGER;
+    fixture.componentInstance.count.set(safeMaximum);
+    fixture.componentInstance.page.set(1);
+    fixture.componentInstance.pageChange.set(null);
+    await fixture.whenStable();
+    expect(buttons()[0].disabled).toBeTrue();
+    buttons().at(-1)?.click();
+    expect(fixture.componentInstance.pageChange()).toBe(2);
+    expect(Number.isSafeInteger(fixture.componentInstance.pageChange())).toBe(
+      true,
+    );
+
+    fixture.componentInstance.page.set(safeMaximum);
+    fixture.componentInstance.pageChange.set(null);
+    await fixture.whenStable();
+    expect(buttons().at(-1)?.disabled).toBeTrue();
+    buttons()[0].click();
+    expect(fixture.componentInstance.pageChange()).toBe(safeMaximum - 1);
+    expect(Number.isSafeInteger(fixture.componentInstance.pageChange())).toBe(
+      true,
+    );
+  });
+
   it('grows large page-number controls without clipping or overlap', async () => {
     fixture.componentInstance.count.set(1000000);
     fixture.componentInstance.page.set(500000);
