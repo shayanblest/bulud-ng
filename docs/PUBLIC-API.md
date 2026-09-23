@@ -7,19 +7,20 @@ supported.
 
 ## Supported entry points
 
-| Package path               | Public symbols                                                                                |
-| -------------------------- | --------------------------------------------------------------------------------------------- |
-| `bulud-ng`                 | Theme and locale providers, types, and token helpers                                          |
-| `bulud-ng/button`          | `BuludButton`, `BuludButtonSize`, `BuludButtonType`, `BuludButtonVariant`                     |
-| `bulud-ng/badge`           | `BuludBadge`, `BuludBadgeSize`, `BuludBadgeVariant`                                           |
-| `bulud-ng/dropdown`        | `BuludDropdown`, `BuludDropdownOptionTemplateContext`, `BuludDropdownSelectedTemplateContext` |
-| `bulud-ng/resize-observer` | `BuludElementSize`, `BuludResizeObserver`                                                     |
-| `bulud-ng/tabs`            | `BuludTab`, `BuludTabId`, `BuludTabPanel`, `BuludTabs`, `BuludTabsOrientation`                |
-| `bulud-ng/accordion`       | `BuludAccordion`, `BuludAccordionId`, `BuludAccordionItem`, `BuludAccordionMode`              |
-| `bulud-ng/checkbox`        | `BuludCheckbox`                                                                               |
-| `bulud-ng/switch`          | `BuludSwitch`                                                                                 |
-| `bulud-ng/dialog`          | `BuludDialog`, `BuludDialogCloseReason`                                                       |
-| `bulud-ng/pagination`      | `BuludPagination`, `BuludPaginationItem`                                                      |
+| Package path                 | Public symbols                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| `bulud-ng`                   | Theme and locale providers, types, and token helpers                                          |
+| `bulud-ng/button`            | `BuludButton`, `BuludButtonSize`, `BuludButtonType`, `BuludButtonVariant`                     |
+| `bulud-ng/badge`             | `BuludBadge`, `BuludBadgeSize`, `BuludBadgeVariant`                                           |
+| `bulud-ng/dropdown`          | `BuludDropdown`, `BuludDropdownOptionTemplateContext`, `BuludDropdownSelectedTemplateContext` |
+| `bulud-ng/resize-observer`   | `BuludElementSize`, `BuludResizeObserver`                                                     |
+| `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                                                                       |
+| `bulud-ng/tabs`              | `BuludTab`, `BuludTabId`, `BuludTabPanel`, `BuludTabs`, `BuludTabsOrientation`                |
+| `bulud-ng/accordion`         | `BuludAccordion`, `BuludAccordionId`, `BuludAccordionItem`, `BuludAccordionMode`              |
+| `bulud-ng/checkbox`          | `BuludCheckbox`                                                                               |
+| `bulud-ng/switch`            | `BuludSwitch`                                                                                 |
+| `bulud-ng/dialog`            | `BuludDialog`, `BuludDialogCloseReason`                                                       |
+| `bulud-ng/pagination`        | `BuludPagination`, `BuludPaginationItem`                                                      |
 
 The root entry point contains shared configuration and locale contracts. UI
 features are imported from their own secondary entry point so unused features

@@ -331,4 +331,47 @@ test.describe('Bulud component demo', () => {
     await outside.click();
     await expect(count).toHaveText('Outside notifications: 2');
   });
+
+  test('covers textarea autosize growth, shrink, max scrolling, and re-enable', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const enabled = page.locator('#textarea-autosize-enabled');
+
+    const initialHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.fill('Short value.');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(initialHeight);
+
+    await page.locator('#textarea-autosize-long').click();
+    const longHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    expect(longHeight).toBeGreaterThan(initialHeight);
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+
+    await page.locator('#textarea-autosize-short').click();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(initialHeight);
+    await expect(textarea).toHaveCSS('overflow-y', 'hidden');
+
+    await enabled.uncheck();
+    await page.locator('#textarea-autosize-long').click();
+    await expect(textarea).toHaveCSS('height', `${initialHeight}px`);
+
+    await enabled.check();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(initialHeight);
+  });
 });
