@@ -118,6 +118,16 @@ function getResizeObserverConstructor(
 }
 
 function readContentBoxSize(entry: ResizeObserverEntry): BuludElementSize {
+  if (
+    Number.isFinite(entry.contentRect.width) &&
+    Number.isFinite(entry.contentRect.height)
+  ) {
+    return {
+      width: entry.contentRect.width,
+      height: entry.contentRect.height,
+    };
+  }
+
   const entryWithSize = entry as ResizeObserverEntryWithContentBoxSize;
   const contentBoxSize = entryWithSize.contentBoxSize;
   const size = Array.isArray(contentBoxSize)
@@ -129,11 +139,22 @@ function readContentBoxSize(entry: ResizeObserverEntry): BuludElementSize {
     Number.isFinite(size.inlineSize) &&
     Number.isFinite(size.blockSize)
   ) {
-    return { width: size.inlineSize, height: size.blockSize };
+    return isVerticalWritingMode(entry.target)
+      ? { width: size.blockSize, height: size.inlineSize }
+      : { width: size.inlineSize, height: size.blockSize };
   }
 
   return {
     width: entry.contentRect.width,
     height: entry.contentRect.height,
   };
+}
+
+function isVerticalWritingMode(element: Element): boolean {
+  const writingMode =
+    element.ownerDocument.defaultView?.getComputedStyle(element).writingMode ??
+    '';
+  return (
+    writingMode.startsWith('vertical-') || writingMode.startsWith('sideways-')
+  );
 }

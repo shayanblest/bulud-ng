@@ -145,7 +145,7 @@ describe('BuludResizeObserver', () => {
     ]);
   });
 
-  it('uses content-box sizes in array and single-object browser shapes', () => {
+  it('uses physical content-box dimensions in horizontal writing mode', () => {
     const fixture = createHost();
     const current = observer();
 
@@ -156,8 +156,40 @@ describe('BuludResizeObserver', () => {
     });
 
     expect(fixture.componentInstance.sizes).toEqual([
+      { width: 300, height: 200 },
+      { width: 400, height: 300 },
+    ]);
+  });
+
+  it('maps logical content-box axes to physical dimensions in vertical-rl mode', () => {
+    const fixture = createHost();
+    const target = fixture.nativeElement.firstElementChild as HTMLElement;
+    target.style.writingMode = 'vertical-rl';
+
+    observer().triggerEntries([
+      {
+        contentBoxSize: { inlineSize: 120, blockSize: 80 },
+        contentRect: { width: Number.NaN, height: Number.NaN },
+      },
+    ]);
+
+    expect(fixture.componentInstance.sizes).toEqual([
+      { width: 80, height: 120 },
+    ]);
+  });
+
+  it('maps logical content-box axes directly in horizontal fallback mode', () => {
+    const fixture = createHost();
+
+    observer().triggerEntries([
+      {
+        contentBoxSize: [{ inlineSize: 120, blockSize: 80 }],
+        contentRect: { width: Number.NaN, height: Number.NaN },
+      },
+    ]);
+
+    expect(fixture.componentInstance.sizes).toEqual([
       { width: 120, height: 80 },
-      { width: 140, height: 90 },
     ]);
   });
 

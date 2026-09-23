@@ -497,7 +497,7 @@ export class ResizablePanel {
 }
 ```
 
-The `sizeChange` output emits typed CSS-pixel `width` and `height` values,
+The `sizeChange` output emits typed CSS-pixel physical `width` and `height` values,
 including the browser's initial asynchronous notification after observation
 starts. Identical consecutive dimensions are suppressed. Set
 `[enabled]="false"` to pause observation; the default is `true`. Re-enabling
@@ -506,8 +506,10 @@ last emitted measurement, so a size change while disabled is reported. A size
 that changes and then returns to the last emitted value before re-enabling is
 not observable and is correctly suppressed.
 
-The directive reads `contentBoxSize` in both array and single-object browser
-shapes and falls back to `contentRect`. If the injected document has no
+The directive prefers the physical `contentRect.width` and `contentRect.height`
+content-box dimensions. When only `contentBoxSize` is available, it reads both
+array and single-object browser shapes and maps logical inline/block axes to
+physical width/height using the host writing mode. If the injected document has no
 `defaultView` or that view has no `ResizeObserver`, it remains inactive without
 emitting a fake measurement. Destroying the directive disconnects observation;
 queued callbacks after disable or destroy are ignored. There is no global
