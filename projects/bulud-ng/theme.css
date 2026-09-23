@@ -101,6 +101,8 @@
   --bulud-pagination-disabled-opacity: 0.55;
   --bulud-pagination-radius: 0.5rem;
   --bulud-pagination-size: 2.5rem;
+  --bulud-pagination-page-padding: 0.5rem;
+  --bulud-pagination-direction-icon-size: 1.5em;
   --bulud-pagination-gap: 0.25rem;
   --bulud-pagination-border-width: 1px;
   --bulud-pagination-focus-width: 3px;

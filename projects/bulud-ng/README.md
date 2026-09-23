@@ -629,9 +629,10 @@ provideBuludLocale({
 
 Previous and next are logical page operations and remain correct in RTL; only
 their directional presentation changes. Import `bulud-ng/theme.css` for the
-default light/dark theme. Pagination CSS variables can be set at root/scope,
-through the typed `pagination` theme provider config, or on an individual host
-with `[style]`; instance styles have the highest precedence. Native buttons
+default light/dark theme. Pagination CSS variables, including `pagePadding` and
+`directionIconSize`, can be set at root/scope, through the typed `pagination`
+theme provider config, or on an individual host with `[style]`; instance styles
+have the highest precedence. Native buttons
 provide keyboard activation, focus-visible indication, disabled semantics, and
 `aria-current="page"` on the selected page. The navigation landmark receives
 an accessible label from the locale or `aria-label`. Non-interactive ellipsis

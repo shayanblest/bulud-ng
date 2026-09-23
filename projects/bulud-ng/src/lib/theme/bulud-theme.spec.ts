@@ -126,6 +126,8 @@ describe('Bulud theme', () => {
       resolveBuludTheme(BULUD_DEFAULT_THEME).pagination,
     );
     expect(resolveBuludTheme().pagination.activeBackground).toBe('#2563eb');
+    expect(resolveBuludTheme().pagination.pagePadding).toBe('0.5rem');
+    expect(resolveBuludTheme().pagination.directionIconSize).toBe('1.5em');
   });
 
   for (const legacyConfig of [
@@ -1105,6 +1107,8 @@ describe('Bulud theme', () => {
       '--bulud-pagination-disabled-opacity',
       '--bulud-pagination-radius',
       '--bulud-pagination-size',
+      '--bulud-pagination-page-padding',
+      '--bulud-pagination-direction-icon-size',
       '--bulud-pagination-gap',
       '--bulud-pagination-border-width',
       '--bulud-pagination-focus-width',
@@ -1160,6 +1164,8 @@ describe('Bulud theme', () => {
         mutedForeground: '#707070',
         focus: '#808080',
         disabledOpacity: '0.31',
+        pagePadding: '0.75rem',
+        directionIconSize: '2em',
         fontWeight: '700',
       };
       const environmentInjector = createEnvironmentInjector(
@@ -1196,6 +1202,8 @@ describe('Bulud theme', () => {
     const root = document.documentElement;
     root.style.setProperty('--bulud-pagination-font-weight', '400');
     root.style.setProperty('--bulud-pagination-background-hover', '#abcdef');
+    root.style.setProperty('--bulud-pagination-page-padding', '1rem');
+    root.style.setProperty('--bulud-pagination-direction-icon-size', '2em');
     const existingStyle = document.head.querySelector(
       'style[data-bulud-theme]',
     );
@@ -1212,6 +1220,10 @@ describe('Bulud theme', () => {
       expect(styleText).toContain('--bulud-pagination-background: #123456;');
       expect(styleText).not.toContain('--bulud-pagination-background-hover:');
       expect(styleText).not.toContain('--bulud-pagination-font-weight:');
+      expect(styleText).not.toContain('--bulud-pagination-page-padding:');
+      expect(styleText).not.toContain(
+        '--bulud-pagination-direction-icon-size:',
+      );
       expect(
         document.defaultView
           ?.getComputedStyle(root)
@@ -1224,9 +1236,23 @@ describe('Bulud theme', () => {
           .getPropertyValue('--bulud-pagination-font-weight')
           .trim(),
       ).toBe('400');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-page-padding')
+          .trim(),
+      ).toBe('1rem');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-direction-icon-size')
+          .trim(),
+      ).toBe('2em');
     } finally {
       root.style.removeProperty('--bulud-pagination-font-weight');
       root.style.removeProperty('--bulud-pagination-background-hover');
+      root.style.removeProperty('--bulud-pagination-page-padding');
+      root.style.removeProperty('--bulud-pagination-direction-icon-size');
       environmentInjector.destroy();
       if (existingStyle) {
         existingStyle.textContent = originalStyleText;
@@ -1251,24 +1277,49 @@ describe('Bulud theme', () => {
     );
     const originalStyleText = existingStyle?.textContent ?? null;
     const consumerStyle = document.createElement('style');
-    consumerStyle.textContent = ':root { --bulud-pagination-size: 1rem; }';
+    consumerStyle.textContent =
+      ':root { --bulud-pagination-size: 1rem; --bulud-pagination-page-padding: 1px; --bulud-pagination-direction-icon-size: 1em; }';
     document.head.append(consumerStyle);
     const environmentInjector = createEnvironmentInjector(
-      [provideBuludTheme({ pagination: { size: '3rem' } })],
+      [
+        provideBuludTheme({
+          pagination: {
+            size: '3rem',
+            pagePadding: '3px',
+            directionIconSize: '1.25em',
+          },
+        }),
+      ],
       parentInjector,
     );
 
     try {
-      const read = () =>
+      const read = (variable: string) =>
         document.defaultView
           ?.getComputedStyle(instance)
-          .getPropertyValue('--bulud-pagination-size')
+          .getPropertyValue(variable)
           .trim();
-      expect(read()).toBe('3rem');
+      expect(read('--bulud-pagination-size')).toBe('3rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('3px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('1.25em');
       scope.style.setProperty('--bulud-pagination-size', '4rem');
-      expect(read()).toBe('4rem');
+      scope.style.setProperty('--bulud-pagination-page-padding', '4px');
+      scope.style.setProperty(
+        '--bulud-pagination-direction-icon-size',
+        '1.5em',
+      );
+      expect(read('--bulud-pagination-size')).toBe('4rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('4px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('1.5em');
       instance.style.setProperty('--bulud-pagination-size', '5rem');
-      expect(read()).toBe('5rem');
+      instance.style.setProperty('--bulud-pagination-page-padding', '5px');
+      instance.style.setProperty(
+        '--bulud-pagination-direction-icon-size',
+        '2em',
+      );
+      expect(read('--bulud-pagination-size')).toBe('5rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('5px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('2em');
     } finally {
       instance.remove();
       scope.remove();

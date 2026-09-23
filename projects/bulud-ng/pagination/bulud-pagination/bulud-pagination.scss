@@ -49,7 +49,7 @@
 .bulud-pagination__page {
   inline-size: auto;
   min-inline-size: var(--bulud-pagination-size, 2.5rem);
-  padding-inline: 0.5rem;
+  padding-inline: var(--bulud-pagination-page-padding, 0.5rem);
 }
 
 .bulud-pagination__control {
@@ -93,7 +93,7 @@
 }
 
 .bulud-pagination__direction-icon {
-  font-size: 1.5em;
+  font-size: var(--bulud-pagination-direction-icon-size, 1.5em);
   line-height: 1;
 }
 

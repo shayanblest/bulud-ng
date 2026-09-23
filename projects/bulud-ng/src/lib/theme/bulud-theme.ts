@@ -219,6 +219,8 @@ export interface BuludPaginationTheme {
   readonly disabledOpacity: string;
   readonly radius: string;
   readonly size: string;
+  readonly pagePadding: string;
+  readonly directionIconSize: string;
   readonly gap: string;
   readonly borderWidth: string;
   readonly focusWidth: string;
@@ -354,6 +356,8 @@ const BULUD_DIALOG_GEOMETRY_VARIABLES = new Set([
 const BULUD_PAGINATION_GEOMETRY_VARIABLES = new Set([
   '--bulud-pagination-radius',
   '--bulud-pagination-size',
+  '--bulud-pagination-page-padding',
+  '--bulud-pagination-direction-icon-size',
   '--bulud-pagination-gap',
   '--bulud-pagination-border-width',
   '--bulud-pagination-focus-width',
@@ -371,6 +375,8 @@ const BULUD_PAGINATION_THEME_VARIABLES = {
   disabledOpacity: '--bulud-pagination-disabled-opacity',
   radius: '--bulud-pagination-radius',
   size: '--bulud-pagination-size',
+  pagePadding: '--bulud-pagination-page-padding',
+  directionIconSize: '--bulud-pagination-direction-icon-size',
   gap: '--bulud-pagination-gap',
   borderWidth: '--bulud-pagination-border-width',
   focusWidth: '--bulud-pagination-focus-width',
@@ -584,6 +590,8 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     disabledOpacity: '0.55',
     radius: '0.5rem',
     size: '2.5rem',
+    pagePadding: '0.5rem',
+    directionIconSize: '1.5em',
     gap: '0.25rem',
     borderWidth: '1px',
     focusWidth: '3px',
@@ -971,6 +979,9 @@ export function createBuludThemeVariables(
     '--bulud-pagination-disabled-opacity': theme.pagination.disabledOpacity,
     '--bulud-pagination-radius': theme.pagination.radius,
     '--bulud-pagination-size': theme.pagination.size,
+    '--bulud-pagination-page-padding': theme.pagination.pagePadding,
+    '--bulud-pagination-direction-icon-size':
+      theme.pagination.directionIconSize,
     '--bulud-pagination-gap': theme.pagination.gap,
     '--bulud-pagination-border-width': theme.pagination.borderWidth,
     '--bulud-pagination-focus-width': theme.pagination.focusWidth,
