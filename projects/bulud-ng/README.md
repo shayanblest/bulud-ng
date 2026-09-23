@@ -498,13 +498,24 @@ export class ResizablePanel {
 ```
 
 The `sizeChange` output emits typed CSS-pixel `width` and `height` values,
-including the browser's initial asynchronous notification. Identical
-dimensions are suppressed. Set `[enabled]="false"` to pause observation; the
-default is `true`. There is no global configuration or theme state for this
-directive, so its `enabled` input is the only configuration and takes direct
-instance precedence. The directive does not add semantics or ARIA; consumers
-must provide the appropriate native element, accessible name, and keyboard
-behavior when observing an interactive element.
+including the browser's initial asynchronous notification after observation
+starts. Identical consecutive dimensions are suppressed. Set
+`[enabled]="false"` to pause observation; the default is `true`. Re-enabling
+observes again and emits its first measurement only when it differs from the
+last emitted measurement, so a size change while disabled is reported. A size
+that changes and then returns to the last emitted value before re-enabling is
+not observable and is correctly suppressed.
+
+The directive reads `contentBoxSize` in both array and single-object browser
+shapes and falls back to `contentRect`. If the injected document has no
+`defaultView` or that view has no `ResizeObserver`, it remains inactive without
+emitting a fake measurement. Destroying the directive disconnects observation;
+queued callbacks after disable or destroy are ignored. There is no global
+configuration or theme state for this directive, so its `enabled` input is the
+only configuration and takes direct instance precedence. The directive does
+not add semantics or ARIA; consumers must provide the appropriate native
+element, accessible name, and keyboard behavior when observing an interactive
+element.
 
 ### Dropdown accessibility
 

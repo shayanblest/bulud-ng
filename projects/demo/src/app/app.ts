@@ -242,6 +242,7 @@ export class App {
   protected readonly dropdownEmpty = signal(false);
   protected readonly resizeObserverEnabled = signal(true);
   protected readonly resizeObserverSize = signal<BuludElementSize | null>(null);
+  protected readonly resizeObserverNotifications = signal(0);
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
   protected readonly activeTab = signal<string | null>(null);
@@ -334,6 +335,7 @@ export class App {
 
   protected updateResizeObserverSize(size: BuludElementSize): void {
     this.resizeObserverSize.set(size);
+    this.resizeObserverNotifications.update((count) => count + 1);
   }
 
   protected recordClickOutside(): void {
