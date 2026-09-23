@@ -185,12 +185,45 @@ test('contains narrow multi-digit pagination overflow and keeps every control re
           .closest('bulud-pagination')
           ?.getBoundingClientRect();
         const control = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const outlineExtent =
+          Number.parseFloat(style.outlineWidth) +
+          Number.parseFloat(style.outlineOffset);
         return Boolean(
-          host && control.right > host.left && control.left < host.right,
+          host &&
+          control.left - outlineExtent >= host.left &&
+          control.right + outlineExtent <= host.right &&
+          control.top - outlineExtent >= host.top &&
+          control.bottom + outlineExtent <= host.bottom,
         );
       }),
     ).toBe(true);
   }
+
+  await page.emulateMedia({ forcedColors: 'active' });
+  const currentPage = navigation.getByRole('button', {
+    name: 'صفحه فعلی، 5',
+  });
+  await currentPage.scrollIntoViewIfNeeded();
+  await navigation.getByRole('button', { name: 'رفتن به صفحه 4' }).focus();
+  await page.keyboard.press('Tab');
+  await expect(currentPage).toBeFocused();
+  await expect(currentPage).toHaveAttribute('aria-current', 'page');
+  const currentStyles = await currentPage.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      borderWidth: style.borderTopWidth,
+      outlineWidth: style.outlineWidth,
+      textDecoration: style.textDecorationLine,
+    };
+  });
+  expect(Number.parseFloat(currentStyles.borderWidth)).toBeGreaterThanOrEqual(
+    2,
+  );
+  expect(Number.parseFloat(currentStyles.outlineWidth)).toBeGreaterThanOrEqual(
+    3,
+  );
+  expect(currentStyles.textDecoration).toContain('underline');
 
   await navigation.getByRole('button', { name: 'رفتن به صفحه 100' }).click();
   await expect(page.locator('#pagination-current')).toHaveText(

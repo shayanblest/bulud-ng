@@ -1,8 +1,13 @@
 :host {
+  box-sizing: border-box;
   display: inline-block;
   max-inline-size: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  padding: calc(
+    var(--bulud-pagination-focus-width, 3px) +
+      var(--bulud-pagination-focus-offset, 2px)
+  );
   vertical-align: middle;
 }
 
@@ -82,6 +87,20 @@
 .bulud-pagination__control:disabled {
   cursor: not-allowed;
   opacity: var(--bulud-pagination-disabled-opacity, 0.55);
+}
+
+@media (forced-colors: active) {
+  .bulud-pagination__page--current {
+    border: 2px solid ButtonText;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+
+  .bulud-pagination__page:focus-visible,
+  .bulud-pagination__control:focus-visible {
+    outline-color: Highlight;
+  }
 }
 
 .bulud-pagination__ellipsis {
