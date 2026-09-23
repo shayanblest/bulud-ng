@@ -1,6 +1,8 @@
 :host {
   display: inline-block;
   max-inline-size: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   vertical-align: middle;
 }
 
@@ -11,7 +13,7 @@
   display: inline-flex;
   font: inherit;
   gap: var(--bulud-pagination-gap, 0.25rem);
-  max-inline-size: 100%;
+  inline-size: max-content;
 }
 
 .bulud-pagination__pages {

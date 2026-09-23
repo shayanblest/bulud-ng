@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.locator('#pagination').scrollIntoViewIfNeeded();
 });
 
@@ -140,4 +140,63 @@ test('exposes the zero-page empty state with disabled navigation controls', asyn
   await expect(controls).toHaveCount(2);
   await expect(controls.nth(0)).toBeDisabled();
   await expect(controls.nth(1)).toBeDisabled();
+});
+
+test('contains narrow multi-digit pagination overflow and keeps every control reachable', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const section = page.locator('#pagination');
+  const pagination = page.locator('#pagination-dynamic');
+  const navigation = pagination.getByRole('navigation');
+
+  await expect(navigation.getByRole('button')).toHaveCount(7);
+  await expect(
+    navigation.getByRole('button', { name: 'رفتن به صفحه 100' }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+
+  await section.getByLabel('RTL').check();
+  await expect(section).toHaveAttribute('dir', 'rtl');
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+
+  const buttons = navigation.getByRole('button');
+  for (let index = 0; index < (await buttons.count()); index += 1) {
+    const button = buttons.nth(index);
+    await button.scrollIntoViewIfNeeded();
+    await button.focus();
+    await expect(button).toBeFocused();
+    expect(
+      await button.evaluate((element) => {
+        const host = element
+          .closest('bulud-pagination')
+          ?.getBoundingClientRect();
+        const control = element.getBoundingClientRect();
+        return Boolean(
+          host && control.right > host.left && control.left < host.right,
+        );
+      }),
+    ).toBe(true);
+  }
+
+  await navigation.getByRole('button', { name: 'رفتن به صفحه 100' }).click();
+  await expect(page.locator('#pagination-current')).toHaveText(
+    'Current page: 100',
+  );
+  await expect(
+    navigation.getByRole('button', { name: 'صفحه بعدی' }),
+  ).toBeDisabled();
 });
