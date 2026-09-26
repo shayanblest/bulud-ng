@@ -399,6 +399,51 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.overflowY).toBe('hidden');
   });
 
+  it('remeasures border-box row constraints after vertical box metrics change', () => {
+    const fixture = createHost((textarea, host) => {
+      textarea.style.boxSizing = 'border-box';
+      textarea.style.lineHeight = '20px';
+      host.minRows = 2;
+      host.maxRows = 3;
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+
+    expect(textarea.style.height).toBe('40px');
+    textarea.style.paddingTop = '5px';
+    textarea.style.paddingBottom = '7px';
+    textarea.style.borderTopStyle = 'solid';
+    textarea.style.borderBottomStyle = 'solid';
+    textarea.style.borderTopWidth = '2px';
+    textarea.style.borderBottomWidth = '3px';
+    observer.triggerMetrics();
+
+    expect(textarea.value).toBe('');
+    expect(textarea.style.height).toBe('57px');
+    expect(textarea.style.overflowY).toBe('hidden');
+  });
+
+  it('keeps only-child and last-child selectors intact and removes the probe', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    const textarea = fixture.nativeElement.querySelector('textarea');
+    expect(textarea.matches(':only-child')).toBeTrue();
+    expect(textarea.matches(':last-child')).toBeTrue();
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+
+    expect(textarea.matches(':only-child')).toBeTrue();
+    expect(textarea.matches(':last-child')).toBeTrue();
+    expect(
+      document.body.querySelectorAll('div[aria-hidden="true"]'),
+    ).toHaveSize(1);
+
+    fixture.destroy();
+
+    expect(
+      document.body.querySelectorAll('div[aria-hidden="true"]'),
+    ).toHaveSize(0);
+  });
+
   it('preserves fractional row geometry at the maxRows boundary', () => {
     contentHeight = 95.9;
     const fixture = createHost((textarea, host) => {

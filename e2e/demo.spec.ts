@@ -356,6 +356,20 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(initialHeight);
 
+    const structure = await textarea.evaluate((element) => ({
+      childCount: element.parentElement?.children.length,
+      firstChild: element.matches(':first-child'),
+      lastChild: element.matches(':last-child'),
+    }));
+    expect(structure).toEqual({
+      childCount: 2,
+      firstChild: true,
+      lastChild: false,
+    });
+    await expect
+      .poll(() => page.locator('body > div[aria-hidden="true"]').count())
+      .toBeGreaterThan(0);
+
     const widthBeforeMetricChange = await textarea.evaluate(
       (element) => element.getBoundingClientRect().width,
     );
@@ -381,10 +395,86 @@ test.describe('Bulud component demo', () => {
     await expect(textarea).toHaveCSS('overflow-y', 'hidden');
     await textarea.fill('one\ntwo\nthree\nfour\nfive\nsix');
     await expect(textarea).toHaveCSS('overflow-y', 'auto');
+
+    const wrapBoundaryValue = '1234567890123456789012345678901234567890';
+    const structuralStyle = await page.addStyleTag({
+      content:
+        '#textarea-autosize-input:first-child { font-family: monospace; }',
+    });
+    for (const boxSizing of ['content-box', 'border-box']) {
+      await textarea.evaluate((element, nextBoxSizing) => {
+        element.style.width = '220px';
+        element.style.boxSizing = nextBoxSizing;
+        element.style.padding = '6px 18px';
+        element.style.border = '2px solid';
+        element.style.lineHeight = '20px';
+        element.style.fontSize = '16px';
+      }, boxSizing);
+      await textarea.fill(wrapBoundaryValue);
+      const layout = await textarea.evaluate((element) => {
+        const styles = getComputedStyle(element);
+        const padding =
+          parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+        const borders =
+          parseFloat(styles.borderTopWidth) +
+          parseFloat(styles.borderBottomWidth);
+        const height = parseFloat(styles.height);
+        const expected =
+          styles.boxSizing === 'border-box'
+            ? element.scrollHeight + borders
+            : element.scrollHeight - padding;
+        return { height, expected };
+      });
+      expect(Math.abs(layout.height - layout.expected)).toBeLessThan(1);
+    }
+
+    const metricsStyle = await page.addStyleTag({
+      content: `
+        #textarea-autosize-input.metrics-regression {
+          padding-top: 22px;
+          padding-bottom: 24px;
+          border-top-width: 5px;
+          border-bottom-width: 6px;
+        }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      element.style.width = '';
+      element.style.boxSizing = 'border-box';
+      element.style.padding = '';
+      element.style.border = '';
+      element.style.lineHeight = '20px';
+      element.style.fontFamily = 'monospace';
+      element.style.fontSize = '16px';
+      element.value = 'short';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const beforeClassHeight = await textarea.evaluate((element) =>
+      parseFloat(getComputedStyle(element).height),
+    );
+    await textarea.evaluate((element) => {
+      element.classList.add('metrics-regression');
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) =>
+          parseFloat(getComputedStyle(element).height),
+        ),
+      )
+      .toBeGreaterThan(beforeClassHeight);
+
     await textarea.evaluate((element) => {
       element.style.fontSize = '';
       element.style.lineHeight = 'normal';
+      element.style.width = '';
+      element.style.boxSizing = '';
+      element.style.padding = '';
+      element.style.border = '';
+      element.style.fontFamily = '';
+      element.classList.remove('metrics-regression');
     });
+    await structuralStyle.evaluate((element) => element.remove());
+    await metricsStyle.evaluate((element) => element.remove());
 
     await page.locator('#textarea-autosize-long').click();
     const longHeight = await textarea.evaluate(
@@ -416,10 +506,14 @@ test.describe('Bulud component demo', () => {
       .toBe(true);
 
     await enabled.uncheck();
+    await expect(page.locator('body > div[aria-hidden="true"]')).toHaveCount(0);
     await page.locator('#textarea-autosize-long').click();
     await expect(textarea).toHaveCSS('height', `${initialHeight}px`);
 
     await enabled.check();
+    await expect
+      .poll(() => page.locator('body > div[aria-hidden="true"]').count())
+      .toBeGreaterThan(0);
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
