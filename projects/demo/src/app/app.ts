@@ -26,6 +26,7 @@ import { BuludCheckbox } from 'bulud-ng/checkbox';
 import { BuludSwitch } from 'bulud-ng/switch';
 import { BuludDialog } from 'bulud-ng/dialog';
 import { BuludPagination } from 'bulud-ng/pagination';
+import { BuludTextareaAutosize } from 'bulud-ng/textarea-autosize';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -61,6 +62,7 @@ interface DemoOption {
     BuludSwitch,
     BuludDialog,
     BuludPagination,
+    BuludTextareaAutosize,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -243,6 +245,12 @@ export class App {
   protected readonly resizeObserverEnabled = signal(true);
   protected readonly resizeObserverSize = signal<BuludElementSize | null>(null);
   protected readonly resizeObserverNotifications = signal(0);
+  protected readonly textareaAutosizeEnabled = signal(true);
+  protected readonly textareaAutosizeValue = signal(
+    'This textarea grows as its content changes.',
+  );
+  protected readonly textareaAutosizeMinRows = signal(2);
+  protected readonly textareaAutosizeMaxRows = signal(5);
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
   protected readonly activeTab = signal<string | null>(null);
@@ -336,6 +344,20 @@ export class App {
   protected updateResizeObserverSize(size: BuludElementSize): void {
     this.resizeObserverSize.set(size);
     this.resizeObserverNotifications.update((count) => count + 1);
+  }
+
+  protected updateTextareaAutosizeValue(event: Event): void {
+    this.textareaAutosizeValue.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected setTextareaAutosizeLongValue(): void {
+    this.textareaAutosizeValue.set(
+      'A programmatic value change also triggers autosizing during Angular change detection.\n\nThe maximum row limit keeps this native textarea usable with scrolling.\n\nAdditional content remains reachable.\n\nThis is another line.\n\nAnd another line.\n\nThe native control remains keyboard accessible.',
+    );
+  }
+
+  protected setTextareaAutosizeShortValue(): void {
+    this.textareaAutosizeValue.set('Short value.');
   }
 
   protected recordClickOutside(): void {

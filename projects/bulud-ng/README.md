@@ -19,20 +19,21 @@ Tailwind CSS 4 is optional. Bulud components work without Tailwind.
 Import shared theme and locale APIs from `bulud-ng`, and each UI feature from
 its documented secondary entry point:
 
-| Package path               | Feature                                              |
-| -------------------------- | ---------------------------------------------------- |
-| `bulud-ng`                 | Theme and locale providers, types, and token helpers |
-| `bulud-ng/button`          | `BuludButton`                                        |
-| `bulud-ng/badge`           | `BuludBadge`                                         |
-| `bulud-ng/dropdown`        | `BuludDropdown`                                      |
-| `bulud-ng/resize-observer` | `BuludResizeObserver` and `BuludElementSize`         |
-| `bulud-ng/clickoutside`    | `BuludClickOutside` and related trigger types        |
-| `bulud-ng/tabs`            | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
-| `bulud-ng/accordion`       | `BuludAccordion` and `BuludAccordionItem`            |
-| `bulud-ng/checkbox`        | `BuludCheckbox`                                      |
-| `bulud-ng/switch`          | `BuludSwitch`                                        |
-| `bulud-ng/dialog`          | `BuludDialog`, `BuludDialogCloseReason`              |
-| `bulud-ng/pagination`      | `BuludPagination`, `BuludPaginationItem`             |
+| Package path                 | Feature                                              |
+| ---------------------------- | ---------------------------------------------------- |
+| `bulud-ng`                   | Theme and locale providers, types, and token helpers |
+| `bulud-ng/button`            | `BuludButton`                                        |
+| `bulud-ng/badge`             | `BuludBadge`                                         |
+| `bulud-ng/dropdown`          | `BuludDropdown`                                      |
+| `bulud-ng/resize-observer`   | `BuludResizeObserver` and `BuludElementSize`         |
+| `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                              |
+| `bulud-ng/clickoutside`      | `BuludClickOutside` and related trigger types        |
+| `bulud-ng/tabs`              | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
+| `bulud-ng/accordion`         | `BuludAccordion` and `BuludAccordionItem`            |
+| `bulud-ng/checkbox`          | `BuludCheckbox`                                      |
+| `bulud-ng/switch`            | `BuludSwitch`                                        |
+| `bulud-ng/dialog`            | `BuludDialog`, `BuludDialogCloseReason`              |
+| `bulud-ng/pagination`        | `BuludPagination`, `BuludPaginationItem`             |
 
 Do not import from library source paths or component implementation files. See
 the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
@@ -518,6 +519,40 @@ only configuration and takes direct instance precedence. The directive does
 not add semantics or ARIA; consumers must provide the appropriate native
 element, accessible name, and keyboard behavior when observing an interactive
 element.
+
+## Textarea autosize
+
+Import `BuludTextareaAutosize` from its secondary entry point and opt in on a
+native textarea:
+
+```ts
+import { BuludTextareaAutosize } from "bulud-ng/textarea-autosize";
+
+@Component({
+  imports: [BuludTextareaAutosize],
+  template: ` <textarea buludTextareaAutosize [minRows]="2" [maxRows]="6" aria-label="Message"></textarea> `,
+})
+export class MessageField {}
+```
+
+The directive measures the textarea's content box after initialization and on
+`input`, then grows or shrinks the native control without polling. Its typed
+inputs are `enabled` (default `true`), `minRows`, and `maxRows`; finite row
+values of at least `1` are rounded down, while values below `1` and other
+invalid values are ignored. At `maxRows`, the
+textarea keeps its native keyboard semantics and uses vertical scrolling so
+content remains reachable. The calculation accounts for line height, padding,
+border widths, and both `content-box` and `border-box` sizing.
+
+Programmatic values assigned through Angular bindings are detected during
+Angular change detection. Direct DOM assignments outside Angular should dispatch
+an `input` event to request a measurement. Width changes are observed when the
+browser provides `ResizeObserver`; the directive reacts only to width changes,
+so its own height writes do not create a feedback loop. Disabling restores the
+textarea's original inline height and overflow styles; re-enabling measures the
+current value immediately. It is a safe no-op during SSR or when layout APIs
+are unavailable, and it removes listeners and observers on destroy. The
+directive preserves native textarea accessibility and does not add ARIA.
 
 ### Dropdown accessibility
 

@@ -1164,6 +1164,86 @@
         </section>
 
         <section
+          id="textarea-autosize"
+          class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <div class="mb-7 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p
+                class="text-sm font-bold uppercase tracking-[0.2em] text-bulud-primary"
+              >
+                Textarea autosize
+              </p>
+              <h3 class="mt-3 text-2xl font-black tracking-tight">
+                Grow, shrink, and scroll naturally
+              </h3>
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                Type into the native textarea or use the deterministic value
+                controls to test programmatic updates and the row limits.
+              </p>
+            </div>
+            <label
+              class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"
+            >
+              <input
+                id="textarea-autosize-enabled"
+                type="checkbox"
+                [checked]="textareaAutosizeEnabled()"
+                (change)="
+                  textareaAutosizeEnabled.set(!textareaAutosizeEnabled())
+                "
+              />
+              Autosize enabled
+            </label>
+          </div>
+
+          <form id="textarea-autosize-form" class="hidden">
+            <button id="textarea-autosize-reset" type="reset">
+              Reset textarea
+            </button>
+          </form>
+          <form id="textarea-autosize-form-b" class="hidden">
+            <button id="textarea-autosize-reset-b" type="reset">
+              Reset textarea B
+            </button>
+          </form>
+          <div
+            class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start"
+          >
+            <textarea
+              id="textarea-autosize-input"
+              form="textarea-autosize-form"
+              buludTextareaAutosize
+              [enabled]="textareaAutosizeEnabled()"
+              [minRows]="textareaAutosizeMinRows()"
+              [maxRows]="textareaAutosizeMaxRows()"
+              [value]="textareaAutosizeValue()"
+              (input)="updateTextareaAutosizeValue($event)"
+              aria-label="Autosizing message"
+              class="w-full rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50 p-4 text-violet-950"
+            ></textarea>
+            <div class="flex flex-wrap gap-2 lg:max-w-56">
+              <button
+                id="textarea-autosize-long"
+                type="button"
+                class="rounded-lg bg-violet-100 px-3 py-2 text-sm font-semibold text-violet-900"
+                (click)="setTextareaAutosizeLongValue()"
+              >
+                Set long value
+              </button>
+              <button
+                id="textarea-autosize-short"
+                type="button"
+                class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700"
+                (click)="setTextareaAutosizeShortValue()"
+              >
+                Set short value
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section
           id="clickoutside"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >

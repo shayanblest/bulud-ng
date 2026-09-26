@@ -25,3 +25,8 @@ pre {
 #resize-observer-target {
   resize: both;
 }
+
+#textarea-autosize-input {
+  min-height: 0;
+  resize: vertical;
+}
