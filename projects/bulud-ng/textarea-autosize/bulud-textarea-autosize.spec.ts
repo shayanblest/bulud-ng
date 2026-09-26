@@ -420,6 +420,29 @@ describe('BuludTextareaAutosize', () => {
     expect(textareaOf(fixture).style.height).toBe('56px');
   });
 
+  it('remeasures immediately when box-sizing changes in either direction', async () => {
+    const fixture = createHost((textarea) => {
+      textarea.style.boxSizing = 'content-box';
+      textarea.style.paddingBlock = '6px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.lineHeight = '20px';
+    });
+    const textarea = textareaOf(fixture);
+
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    textarea.style.boxSizing = 'border-box';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('56px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    textarea.style.boxSizing = 'content-box';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('hidden');
+  });
+
   it('remeasures after a width change without observing its own height loop', () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);

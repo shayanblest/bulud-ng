@@ -148,7 +148,7 @@ export class BuludTextareaAutosize
     textarea.style.overflowY = 'hidden';
     textarea.style.height = '0px';
     const styles = getComputedStyle.call(view, textarea);
-    this.lastMeasurementSignature = getMeasurementSignature(styles);
+    this.lastMeasurementSignature = getMeasurementSignature(textarea, styles);
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
     const lineHeight = getLineHeight(textarea, styles, this.measurementRoot);
@@ -259,6 +259,12 @@ export class BuludTextareaAutosize
 
     const textarea = this.element.nativeElement;
     probe.value = textarea.value;
+    const wrap = textarea.getAttribute('wrap');
+    if (wrap === null) {
+      probe.removeAttribute('wrap');
+    } else {
+      probe.setAttribute('wrap', wrap);
+    }
     const view = this.document.defaultView;
     if (view && typeof view.getComputedStyle === 'function') {
       const styles = view.getComputedStyle(textarea);
@@ -336,7 +342,7 @@ export class BuludTextareaAutosize
         const view = this.document.defaultView;
         const styles = view?.getComputedStyle(this.element.nativeElement);
         const signature = styles
-          ? getMeasurementSignature(styles)
+          ? getMeasurementSignature(this.element.nativeElement, styles)
           : this.lastMeasurementSignature;
         this.syncMeasurementProbe();
         if (signature !== this.lastMeasurementSignature) {
@@ -346,7 +352,7 @@ export class BuludTextareaAutosize
     });
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
-      attributeFilter: ['class', 'style'],
+      attributeFilter: ['class', 'style', 'wrap'],
     });
   }
 
@@ -523,10 +529,17 @@ function copyMeasurementStyles(
   probe.style.boxSizing = 'content-box';
 }
 
-function getMeasurementSignature(styles: CSSStyleDeclaration): string {
-  return TEXT_METRIC_PROPERTIES.map((property) =>
-    styles.getPropertyValue(property),
-  ).join('|');
+function getMeasurementSignature(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): string {
+  return [
+    ...TEXT_METRIC_PROPERTIES.map((property) =>
+      styles.getPropertyValue(property),
+    ),
+    `box-sizing:${styles.boxSizing}`,
+    `wrap:${textarea.getAttribute('wrap') ?? ''}`,
+  ].join('|');
 }
 
 function normalizeRows(value: number | null): number | null {

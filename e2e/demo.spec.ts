@@ -456,6 +456,80 @@ test.describe('Bulud component demo', () => {
       }
     }
 
+    const boxSizingStyle = await page.addStyleTag({
+      content: `
+        #textarea-autosize-input.box-sizing-content { box-sizing: content-box; }
+        #textarea-autosize-input.box-sizing-border { box-sizing: border-box; }
+      `,
+    });
+    const physicalHeightDifference = async (): Promise<number> =>
+      textarea.evaluate((element) => {
+        const styles = getComputedStyle(element);
+        const borders =
+          parseFloat(styles.borderTopWidth) +
+          parseFloat(styles.borderBottomWidth);
+        return Math.abs(
+          element.getBoundingClientRect().height -
+            (element.scrollHeight + borders),
+        );
+      });
+    await textarea.evaluate((element) => {
+      element.style.width = '220px';
+      element.style.padding = '6px 18px';
+      element.style.border = '2px solid';
+      element.style.lineHeight = '20px';
+      element.style.fontSize = '16px';
+      element.style.boxSizing = '';
+      element.classList.add('box-sizing-content');
+      element.classList.remove('box-sizing-border');
+    });
+    await textarea.fill('short');
+    await expect.poll(physicalHeightDifference).toBeLessThan(1);
+    await expect(textarea).toHaveCSS('box-sizing', 'content-box');
+
+    await textarea.evaluate((element) => {
+      element.classList.remove('box-sizing-content');
+      element.classList.add('box-sizing-border');
+    });
+    await expect.poll(physicalHeightDifference).toBeLessThan(1);
+    await expect(textarea).toHaveCSS('box-sizing', 'border-box');
+
+    await textarea.evaluate((element) => {
+      element.classList.remove('box-sizing-border');
+      element.classList.add('box-sizing-content');
+    });
+    await expect.poll(physicalHeightDifference).toBeLessThan(1);
+    await expect(textarea).toHaveCSS('box-sizing', 'content-box');
+
+    const longWrapValue = 'wrap '.repeat(100);
+    await textarea.evaluate((element) => {
+      element.classList.remove('box-sizing-content', 'box-sizing-border');
+      element.style.boxSizing = 'border-box';
+      element.setAttribute('wrap', 'off');
+    });
+    await textarea.fill(longWrapValue);
+    const offWrapHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.evaluate((element) => {
+      element.setAttribute('wrap', 'soft');
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(offWrapHeight);
+
+    await textarea.evaluate((element) => {
+      element.setAttribute('wrap', 'off');
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(offWrapHeight);
+    await boxSizingStyle.evaluate((element) => element.remove());
+
     const metricsStyle = await page.addStyleTag({
       content: `
         #textarea-autosize-input.metrics-regression {
@@ -500,6 +574,7 @@ test.describe('Bulud component demo', () => {
       element.style.border = '';
       element.style.fontFamily = '';
       element.classList.remove('metrics-regression');
+      element.removeAttribute('wrap');
     });
     await structuralStyle.evaluate((element) => element.remove());
     await metricsStyle.evaluate((element) => element.remove());
