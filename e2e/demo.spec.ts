@@ -401,17 +401,8 @@ test.describe('Bulud component demo', () => {
       content:
         '#textarea-autosize-input:first-child { font-family: monospace; }',
     });
-    for (const boxSizing of ['content-box', 'border-box']) {
-      await textarea.evaluate((element, nextBoxSizing) => {
-        element.style.width = '220px';
-        element.style.boxSizing = nextBoxSizing;
-        element.style.padding = '6px 18px';
-        element.style.border = '2px solid';
-        element.style.lineHeight = '20px';
-        element.style.fontSize = '16px';
-      }, boxSizing);
-      await textarea.fill(wrapBoundaryValue);
-      const layout = await textarea.evaluate((element) => {
+    const layoutDifference = async (): Promise<number> =>
+      textarea.evaluate((element) => {
         const styles = getComputedStyle(element);
         const padding =
           parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
@@ -423,9 +414,46 @@ test.describe('Bulud component demo', () => {
           styles.boxSizing === 'border-box'
             ? element.scrollHeight + borders
             : element.scrollHeight - padding;
-        return { height, expected };
+        return Math.abs(height - expected);
       });
-      expect(Math.abs(layout.height - layout.expected)).toBeLessThan(1);
+    for (const boxSizing of ['content-box', 'border-box']) {
+      await textarea.evaluate((element, nextBoxSizing) => {
+        element.style.width = '220px';
+        element.style.boxSizing = nextBoxSizing;
+        element.style.padding = '6px 18px';
+        element.style.border = '2px solid';
+        element.style.lineHeight = '20px';
+        element.style.fontSize = '16px';
+      }, boxSizing);
+      await textarea.fill(wrapBoundaryValue);
+      await expect.poll(layoutDifference).toBeLessThan(1);
+    }
+
+    for (const transformTarget of ['textarea', 'ancestor']) {
+      for (const boxSizing of ['content-box', 'border-box']) {
+        await textarea.evaluate(
+          (element, options) => {
+            element.style.width = '220px';
+            element.style.boxSizing = options.boxSizing;
+            element.style.padding = '6px 18px';
+            element.style.border = '2px solid';
+            element.style.lineHeight = '20px';
+            element.style.fontSize = '16px';
+            if (options.transformTarget === 'textarea') {
+              element.style.transform = 'scale(.5)';
+            } else {
+              element.parentElement!.style.transform = 'scale(.5)';
+            }
+          },
+          { boxSizing, transformTarget },
+        );
+        await textarea.fill(wrapBoundaryValue);
+        await expect.poll(layoutDifference).toBeLessThan(1);
+        await textarea.evaluate((element) => {
+          element.style.transform = '';
+          element.parentElement!.style.transform = '';
+        });
+      }
     }
 
     const metricsStyle = await page.addStyleTag({

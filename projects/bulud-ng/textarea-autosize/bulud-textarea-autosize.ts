@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import {
   booleanAttribute,
+  computed,
   Directive,
   DoCheck,
   effect,
@@ -64,9 +65,18 @@ export class BuludTextareaAutosize
   /** Maximum number of text rows. Invalid or non-positive values are ignored. */
   readonly maxRows = input<number | null>(null);
 
+  private readonly normalizedMinRows = computed(() =>
+    normalizeRows(this.minRows()),
+  );
+  private readonly normalizedMaxRows = computed(() =>
+    normalizeRows(this.maxRows()),
+  );
+
   constructor() {
     effect((onCleanup) => {
       const enabled = this.enabled();
+      this.normalizedMinRows();
+      this.normalizedMaxRows();
       if (!this.viewInitialized() || this.destroyed || !enabled) {
         return;
       }
@@ -142,8 +152,8 @@ export class BuludTextareaAutosize
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
     const lineHeight = getLineHeight(textarea, styles, this.measurementRoot);
-    const minRows = normalizeRows(this.minRows());
-    const maxRows = normalizeRows(this.maxRows());
+    const minRows = this.normalizedMinRows();
+    const maxRows = this.normalizedMaxRows();
     const effectiveMaxRows =
       maxRows === null ? null : Math.max(maxRows, minRows ?? 0);
     const boxSizing = styles.boxSizing;
@@ -268,7 +278,14 @@ export class BuludTextareaAutosize
     }
 
     const textarea = this.element.nativeElement;
-    this.lastObservedWidth = textarea.getBoundingClientRect().width;
+    const view = this.document.defaultView;
+    if (!view || typeof view.getComputedStyle !== 'function') {
+      return;
+    }
+    const styles = view?.getComputedStyle(textarea);
+    this.lastObservedWidth = styles
+      ? getContentBoxWidth(textarea, styles)
+      : null;
     this.observer = new ResizeObserver((entries) => {
       if (this.destroyed || !this.enabled()) {
         return;
@@ -456,13 +473,34 @@ function getContentBoxWidth(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
 ): number {
-  const borderBoxWidth = textarea.getBoundingClientRect().width;
   const horizontalPadding =
     parsePixels(styles.paddingLeft) + parsePixels(styles.paddingRight);
   const horizontalBorders =
     parsePixels(styles.borderLeftWidth) + parsePixels(styles.borderRightWidth);
-  const contentWidth = borderBoxWidth - horizontalPadding - horizontalBorders;
-  return Number.isFinite(contentWidth) ? Math.max(0, contentWidth) : 0;
+  const paddingBoxWidth = textarea.clientWidth;
+  if (paddingBoxWidth > 0) {
+    return Math.max(0, paddingBoxWidth - horizontalPadding);
+  }
+
+  const offsetBorderBoxWidth = textarea.offsetWidth;
+  if (offsetBorderBoxWidth > 0) {
+    return Math.max(
+      0,
+      offsetBorderBoxWidth - horizontalBorders - horizontalPadding,
+    );
+  }
+
+  const declaredWidth = parsePixels(styles.width);
+  if (declaredWidth > 0) {
+    return Math.max(
+      0,
+      styles.boxSizing === 'border-box'
+        ? declaredWidth - horizontalBorders - horizontalPadding
+        : declaredWidth,
+    );
+  }
+
+  return 0;
 }
 
 function getVerticalPadding(styles: CSSStyleDeclaration): number {

@@ -245,6 +245,57 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.height).toBe('100px');
   });
 
+  it('resizes immediately when row bounds change and normalizes equivalent values', async () => {
+    contentHeight = 50;
+    const fixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.minRows = 2;
+      host.maxRows = 4;
+    });
+    const textarea = textareaOf(fixture);
+
+    expect(textarea.style.height).toBe('50px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    fixture.componentInstance.minRows = 4;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    fixture.componentInstance.minRows = 4.9;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    fixture.componentInstance.minRows = 1;
+    fixture.componentInstance.maxRows = 2;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('auto');
+
+    fixture.componentInstance.maxRows = 4;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('50px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    fixture.componentInstance.minRows = 3;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('60px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    fixture.componentInstance.minRows = 1;
+    fixture.componentInstance.maxRows = 2;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('auto');
+  });
+
   it('does not produce a different result for an unchanged input', () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);
