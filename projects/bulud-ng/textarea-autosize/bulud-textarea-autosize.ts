@@ -389,6 +389,10 @@ export class BuludTextareaAutosize
           shouldResize = true;
         }
 
+        if (this.hasMeasurementSignatureChanged()) {
+          shouldResize = true;
+        }
+
         if (this.hasExternalOwnedSizingChange()) {
           shouldResize = true;
         }
@@ -602,9 +606,15 @@ export class BuludTextareaAutosize
       return;
     }
 
+    if (this.hasMeasurementSignatureChanged()) {
+      this.resize();
+    }
+  }
+
+  private hasMeasurementSignatureChanged(): boolean {
     const view = this.document.defaultView;
     if (!view || typeof view.getComputedStyle !== 'function') {
-      return;
+      return false;
     }
 
     const styles = view.getComputedStyle(this.element.nativeElement);
@@ -621,16 +631,14 @@ export class BuludTextareaAutosize
       borders,
       gutter,
     );
-    if (
+    return (
       getMeasurementSignature(
         this.element.nativeElement,
         styles,
         view,
         cssMaxHeight,
       ) !== this.lastMeasurementSignature
-    ) {
-      this.resize();
-    }
+    );
   }
 
   private hasExternalOwnedSizingChange(): boolean {
@@ -1036,6 +1044,7 @@ function getMeasurementSignature(
     `min-height:${styles.minHeight}`,
     `max-height:${styles.maxHeight}`,
     `resolved-max-height:${cssMaxHeight}`,
+    `overflow-x:${getHorizontalOverflowMode(textarea, styles)}`,
   ].join('|');
 }
 
@@ -1053,7 +1062,7 @@ function getCssMaxContentHeight(
 
   const physicalMaxHeight = parsePixelLength(maxHeight);
   if (physicalMaxHeight === null) {
-    const resolvedPhysicalHeight = resolveCssMaxHeight(textarea);
+    const resolvedPhysicalHeight = resolveCssMaxHeight(textarea, styles);
     if (resolvedPhysicalHeight === null) {
       return Number.POSITIVE_INFINITY;
     }
@@ -1072,7 +1081,10 @@ function getCssMaxContentHeight(
     : Math.max(0, physicalMaxHeight - horizontalScrollbarGutter);
 }
 
-function resolveCssMaxHeight(textarea: HTMLTextAreaElement): number | null {
+function resolveCssMaxHeight(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): number | null {
   const resolutionHeight = '10000000px';
   const previousHeight = textarea.style.height;
   const previousOverflowY = textarea.style.overflowY;
@@ -1081,7 +1093,7 @@ function resolveCssMaxHeight(textarea: HTMLTextAreaElement): number | null {
   try {
     textarea.style.height = resolutionHeight;
     textarea.style.overflowY = 'hidden';
-    const physicalHeight = textarea.getBoundingClientRect().height;
+    const physicalHeight = getUntransformedLayoutHeight(textarea, styles);
     return Number.isFinite(physicalHeight) && physicalHeight < 10000000
       ? physicalHeight
       : null;
@@ -1090,6 +1102,21 @@ function resolveCssMaxHeight(textarea: HTMLTextAreaElement): number | null {
     textarea.style.overflowY = previousOverflowY;
     scheduleMicrotask(() => resolvingCssMaxHeight.delete(textarea));
   }
+}
+
+function getUntransformedLayoutHeight(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): number {
+  if (textarea.offsetHeight > 0) {
+    return textarea.offsetHeight;
+  }
+
+  return (
+    textarea.clientHeight +
+    parsePixels(styles.borderTopWidth) +
+    parsePixels(styles.borderBottomWidth)
+  );
 }
 
 const resolvingCssMaxHeight = new WeakSet<HTMLTextAreaElement>();

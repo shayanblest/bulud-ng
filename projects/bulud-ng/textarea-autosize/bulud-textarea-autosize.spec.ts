@@ -1218,6 +1218,75 @@ describe('BuludTextareaAutosize', () => {
     expect(MockResizeObserver.instances).toHaveSize(1);
   });
 
+  it('remeasures percentage max-height after containing-block height changes', async () => {
+    contentHeight = 120;
+    const fixture = createHost((textarea) => {
+      textarea.parentElement!.style.height = '120px';
+      textarea.style.width = '220px';
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () =>
+          Number.parseFloat(textarea.parentElement?.style.height ?? '0') / 2,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+    await fixture.whenStable();
+    const initialHeight = textarea.getBoundingClientRect().height;
+
+    expect(textarea.style.overflowY).toBe('auto');
+    textarea.parentElement!.style.height = '240px';
+    observer.triggerTextareaMetrics();
+    expect(textarea.getBoundingClientRect().height).toBeGreaterThan(
+      initialHeight,
+    );
+
+    textarea.parentElement!.style.height = '80px';
+    contentHeight = 10;
+    observer.triggerTextareaMetrics();
+    expect(textarea.getBoundingClientRect().height).toBeLessThan(initialHeight);
+    expect(textarea.style.overflowY).toBe('hidden');
+    fixture.destroy();
+  });
+
+  it('remeasures when wrap-off horizontal overflow mode changes', () => {
+    const fixture = createHost((textarea) => {
+      textarea.setAttribute('wrap', 'off');
+      textarea.style.lineHeight = '20px';
+      textarea.style.overflowX = 'hidden';
+      Object.defineProperty(textarea, 'scrollWidth', {
+        configurable: true,
+        get: () => 200,
+      });
+      Object.defineProperty(textarea, 'clientWidth', {
+        configurable: true,
+        get: () => 100,
+      });
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => 55,
+      });
+      Object.defineProperty(textarea, 'clientHeight', {
+        configurable: true,
+        get: () => 40,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+
+    expect(textarea.style.height).toBe('40px');
+    textarea.style.overflowX = 'scroll';
+    observer.triggerTextareaMetrics();
+    expect(textarea.style.height).toBe('55px');
+
+    textarea.style.overflowX = 'hidden';
+    observer.triggerTextareaMetrics();
+    expect(textarea.style.height).toBe('40px');
+    fixture.destroy();
+  });
+
   it('remeasures after text metrics change while value and width stay unchanged', () => {
     const fixture = createHost((textarea, host) => {
       textarea.style.lineHeight = '20px';

@@ -594,6 +594,43 @@ test.describe('Bulud component demo', () => {
       element.parentElement!.style.height = '';
     });
 
+    for (const transformTarget of ['textarea', 'ancestor']) {
+      for (const boxSizing of ['content-box', 'border-box']) {
+        await textarea.evaluate(
+          (element, options) => {
+            element.parentElement!.style.height = '160px';
+            element.style.width = '220px';
+            element.style.boxSizing = options.boxSizing;
+            element.style.padding = '6px 18px';
+            element.style.border = '2px solid';
+            element.style.lineHeight = '20px';
+            element.style.maxHeight = '50%';
+            element.style.transform =
+              options.transformTarget === 'textarea' ? 'scale(.5)' : '';
+            element.parentElement!.style.transform =
+              options.transformTarget === 'ancestor' ? 'scale(.5)' : '';
+          },
+          { boxSizing, transformTarget },
+        );
+        await textarea.fill('transformed percentage max-height '.repeat(40));
+        await expect(textarea).toHaveCSS('overflow-y', 'auto');
+        const geometry = await textarea.evaluate((element) => ({
+          layoutHeight: element.offsetHeight,
+          visualHeight: element.getBoundingClientRect().height,
+        }));
+        expect(geometry.layoutHeight).toBe(
+          boxSizing === 'border-box' ? 80 : 96,
+        );
+        expect(geometry.visualHeight).toBeLessThan(geometry.layoutHeight);
+      }
+    }
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '';
+      element.style.transform = '';
+      element.parentElement!.style.height = '';
+      element.parentElement!.style.transform = '';
+    });
+
     for (const transformProperty of ['transform', 'scale']) {
       for (const boxSizing of ['content-box', 'border-box']) {
         await textarea.evaluate((element, nextBoxSizing) => {
