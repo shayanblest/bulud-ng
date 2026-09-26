@@ -21,6 +21,11 @@ type MutationObserverConstructor = new (
   callback: MutationCallback,
 ) => MutationObserver;
 
+interface FontLoadingSet {
+  addEventListener(type: 'loadingdone', listener: EventListener): void;
+  removeEventListener(type: 'loadingdone', listener: EventListener): void;
+}
+
 interface OriginalStyles {
   readonly height: string;
   readonly overflowY: string;
@@ -49,6 +54,8 @@ export class BuludTextareaAutosize
   private lastObservedWidth: number | null = null;
   private observer: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
+  private fontLoadingSet: FontLoadingSet | null = null;
+  private fontLoadingListener: EventListener | null = null;
   private measurementProbe: HTMLTextAreaElement | null = null;
   private measurementHost: HTMLDivElement | null = null;
   private measurementRoot: ShadowRoot | null = null;
@@ -85,6 +92,7 @@ export class BuludTextareaAutosize
       this.resize();
       this.connectWidthObserver();
       this.connectMutationObserver();
+      this.connectFontLoadingObserver();
       const textarea = this.element.nativeElement;
       const inputListener = (): void => {
         if (textarea.value !== this.lastValue) {
@@ -96,6 +104,7 @@ export class BuludTextareaAutosize
         textarea.removeEventListener('input', inputListener);
         this.disconnectWidthObserver();
         this.disconnectMutationObserver();
+        this.disconnectFontLoadingObserver();
         this.restoreOriginalStyles();
       });
     });
@@ -130,6 +139,7 @@ export class BuludTextareaAutosize
     this.destroyed = true;
     this.disconnectWidthObserver();
     this.disconnectMutationObserver();
+    this.disconnectFontLoadingObserver();
     this.restoreOriginalStyles();
   }
 
@@ -159,6 +169,10 @@ export class BuludTextareaAutosize
     const boxSizing = styles.boxSizing;
     this.syncMeasurementProbe();
     const contentHeight = this.measureContentHeight(textarea, padding);
+    const horizontalScrollbarGutter = getHorizontalScrollbarGutter(
+      textarea,
+      styles,
+    );
     const minHeight =
       minRows === null || lineHeight === null ? 0 : minRows * lineHeight;
     const maxHeight =
@@ -169,10 +183,12 @@ export class BuludTextareaAutosize
       maxHeight,
       Math.max(minHeight, contentHeight),
     );
+    const targetContentHeightWithScrollbar =
+      targetContentHeight + horizontalScrollbarGutter;
     const targetHeight =
       boxSizing === 'border-box'
-        ? targetContentHeight + padding + borders
-        : targetContentHeight;
+        ? targetContentHeightWithScrollbar + padding + borders
+        : targetContentHeightWithScrollbar;
     const nextHeight = `${targetHeight}px`;
     const shouldScroll = contentHeight > maxHeight;
 
@@ -270,6 +286,8 @@ export class BuludTextareaAutosize
       const styles = view.getComputedStyle(textarea);
       copyMeasurementStyles(probe, styles);
       probe.style.width = `${getContentBoxWidth(textarea, styles)}px`;
+      probe.style.overflowX = getHorizontalOverflowMode(textarea, styles);
+      probe.style.overflowY = 'hidden';
     }
   }
 
@@ -368,6 +386,37 @@ export class BuludTextareaAutosize
     this.mutationObserver = null;
   }
 
+  private connectFontLoadingObserver(): void {
+    if (this.fontLoadingSet || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const fontLoadingSet = getFontLoadingSet(this.document);
+    if (!fontLoadingSet) {
+      return;
+    }
+
+    const listener: EventListener = () => {
+      if (!this.destroyed && this.enabled()) {
+        this.resize();
+      }
+    };
+    fontLoadingSet.addEventListener('loadingdone', listener);
+    this.fontLoadingSet = fontLoadingSet;
+    this.fontLoadingListener = listener;
+  }
+
+  private disconnectFontLoadingObserver(): void {
+    if (this.fontLoadingSet && this.fontLoadingListener) {
+      this.fontLoadingSet.removeEventListener(
+        'loadingdone',
+        this.fontLoadingListener,
+      );
+    }
+    this.fontLoadingSet = null;
+    this.fontLoadingListener = null;
+  }
+
   private disconnectMeasurementProbe(): void {
     this.measurementProbe?.remove();
     this.measurementHost?.remove();
@@ -411,6 +460,17 @@ function getMutationObserverConstructor(
     | null;
   const MutationObserver = view?.MutationObserver;
   return typeof MutationObserver === 'function' ? MutationObserver : null;
+}
+
+function getFontLoadingSet(document: Document): FontLoadingSet | null {
+  const fontLoadingSet = (
+    document as Document & { readonly fonts?: FontLoadingSet }
+  ).fonts;
+  return fontLoadingSet &&
+    typeof fontLoadingSet.addEventListener === 'function' &&
+    typeof fontLoadingSet.removeEventListener === 'function'
+    ? fontLoadingSet
+    : null;
 }
 
 function parsePixels(value: string): number {
@@ -517,6 +577,36 @@ function getVerticalBorders(styles: CSSStyleDeclaration): number {
   return (
     parsePixels(styles.borderTopWidth) + parsePixels(styles.borderBottomWidth)
   );
+}
+
+function getHorizontalScrollbarGutter(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): number {
+  if (
+    textarea.getAttribute('wrap') !== 'off' ||
+    getHorizontalOverflowMode(textarea, styles) === 'hidden' ||
+    textarea.scrollWidth <= textarea.clientWidth
+  ) {
+    return 0;
+  }
+
+  return Math.max(0, textarea.offsetHeight - textarea.clientHeight - getVerticalBorders(styles));
+}
+
+function getHorizontalOverflowMode(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): 'auto' | 'hidden' | 'scroll' {
+  if (textarea.getAttribute('wrap') !== 'off') {
+    return 'hidden';
+  }
+
+  if (styles.overflowX === 'scroll') {
+    return 'scroll';
+  }
+
+  return styles.overflowX === 'auto' ? 'auto' : 'hidden';
 }
 
 function copyMeasurementStyles(

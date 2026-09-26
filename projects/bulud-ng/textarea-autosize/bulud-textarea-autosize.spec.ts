@@ -53,6 +53,32 @@ class MockResizeObserver {
   }
 }
 
+class MockFontLoadingSet {
+  private readonly listeners = new Set<EventListener>();
+
+  addEventListener(type: 'loadingdone', listener: EventListener): void {
+    if (type === 'loadingdone') {
+      this.listeners.add(listener);
+    }
+  }
+
+  removeEventListener(type: 'loadingdone', listener: EventListener): void {
+    if (type === 'loadingdone') {
+      this.listeners.delete(listener);
+    }
+  }
+
+  triggerLoadingDone(): void {
+    for (const listener of this.listeners) {
+      listener(new Event('loadingdone'));
+    }
+  }
+
+  get listenerCount(): number {
+    return this.listeners.size;
+  }
+}
+
 @Component({
   imports: [BuludTextareaAutosize],
   template: `
@@ -441,6 +467,77 @@ describe('BuludTextareaAutosize', () => {
     await fixture.whenStable();
     expect(textarea.style.height).toBe('40px');
     expect(textarea.style.overflowY).toBe('hidden');
+  });
+
+  it('remeasures after asynchronous font loading completes and cleans up the listener', () => {
+    const injectedDocument = TestBed.inject(DOCUMENT);
+    const descriptor = Object.getOwnPropertyDescriptor(
+      injectedDocument,
+      'fonts',
+    );
+    const fontLoadingSet = new MockFontLoadingSet();
+    Object.defineProperty(injectedDocument, 'fonts', {
+      configurable: true,
+      value: fontLoadingSet,
+    });
+
+    try {
+      contentHeight = 40;
+      const fixture = createHost((textarea, host) => {
+        textarea.style.lineHeight = '20px';
+        host.minRows = 2;
+        host.maxRows = 3;
+      });
+      const textarea = textareaOf(fixture);
+
+      expect(fontLoadingSet.listenerCount).toBe(1);
+      expect(textarea.style.height).toBe('40px');
+
+      contentHeight = 80;
+      fontLoadingSet.triggerLoadingDone();
+
+      expect(textarea.style.height).toBe('60px');
+      expect(textarea.style.overflowY).toBe('auto');
+
+      fixture.destroy();
+      expect(fontLoadingSet.listenerCount).toBe(0);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(injectedDocument, 'fonts', descriptor);
+      } else {
+        delete (injectedDocument as unknown as { fonts?: FontFaceSet }).fonts;
+      }
+    }
+  });
+
+  it('includes a horizontal scrollbar gutter for wrap-off without changing soft wrapping', async () => {
+    const fixture = createHost((textarea) => {
+      textarea.setAttribute('wrap', 'off');
+      textarea.style.lineHeight = '20px';
+      Object.defineProperty(textarea, 'scrollWidth', {
+        configurable: true,
+        get: () => 200,
+      });
+      Object.defineProperty(textarea, 'clientWidth', {
+        configurable: true,
+        get: () => 100,
+      });
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => 55,
+      });
+      Object.defineProperty(textarea, 'clientHeight', {
+        configurable: true,
+        get: () => 40,
+      });
+    });
+    const textarea = textareaOf(fixture);
+
+    expect(textarea.style.height).toBe('55px');
+
+    textarea.setAttribute('wrap', 'soft');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
   });
 
   it('remeasures after a width change without observing its own height loop', () => {

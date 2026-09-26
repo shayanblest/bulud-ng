@@ -528,6 +528,46 @@ test.describe('Bulud component demo', () => {
         textarea.evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBe(offWrapHeight);
+
+    const horizontalValue = '0123456789'.repeat(40);
+    for (const boxSizing of ['content-box', 'border-box']) {
+      await textarea.evaluate((element, nextBoxSizing) => {
+        element.style.width = '220px';
+        element.style.boxSizing = nextBoxSizing;
+        element.style.padding = '6px 18px';
+        element.style.border = '2px solid';
+        element.style.lineHeight = '20px';
+        element.style.fontSize = '16px';
+        element.style.overflowX = 'auto';
+        element.setAttribute('wrap', 'off');
+      }, boxSizing);
+      await textarea.fill(horizontalValue);
+      await expect
+        .poll(() =>
+          textarea.evaluate(
+            (element) => element.scrollWidth > element.clientWidth,
+          ),
+        )
+        .toBe(true);
+      await expect
+        .poll(() =>
+          textarea.evaluate((element) => {
+            const styles = getComputedStyle(element);
+            const borders =
+              parseFloat(styles.borderTopWidth) +
+              parseFloat(styles.borderBottomWidth);
+            const gutter = Math.max(
+              0,
+              element.offsetHeight - element.clientHeight - borders,
+            );
+            const expected = element.scrollHeight + borders + gutter;
+            return Math.abs(
+              element.getBoundingClientRect().height - expected,
+            );
+          }),
+        )
+        .toBeLessThan(1);
+    }
     await boxSizingStyle.evaluate((element) => element.remove());
 
     const metricsStyle = await page.addStyleTag({
