@@ -518,6 +518,45 @@ describe('BuludTextareaAutosize', () => {
     textarea.setAttribute('placeholder', 'A different placeholder');
     await fixture.whenStable();
     expect(textarea.style.height).toBe('60px');
+    fixture.destroy();
+  });
+
+  it('copies effective placeholder typography only while the placeholder is measured', () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      textarea::placeholder {
+        font-size: 24px;
+        line-height: 32px;
+        letter-spacing: 2px;
+      }
+    `;
+    document.head.appendChild(style);
+    const fixture = createHost((textarea) => {
+      textarea.style.boxSizing = 'border-box';
+      textarea.style.width = '220px';
+      textarea.style.padding = '4px 8px';
+      textarea.style.border = '1px solid';
+      textarea.setAttribute('placeholder', 'A long placeholder');
+      textarea.value = '';
+    });
+
+    try {
+      const textarea = textareaOf(fixture);
+      const probe = document
+        .querySelector<HTMLDivElement>('div[aria-hidden="true"]')
+        ?.shadowRoot?.querySelector('textarea');
+      expect(probe?.style.fontSize).toBe('24px');
+      expect(probe?.style.lineHeight).toBe('32px');
+      expect(probe?.style.letterSpacing).toBe('2px');
+
+      textarea.value = 'real value';
+      textarea.dispatchEvent(new Event('input'));
+      expect(probe?.style.fontSize).not.toBe('24px');
+      expect(probe?.style.lineHeight).not.toBe('32px');
+    } finally {
+      fixture.destroy();
+      style.remove();
+    }
   });
 
   it('resizes after native form reset and reconnects exactly once', async () => {
@@ -1075,15 +1114,11 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.matches(':only-child')).toBeTrue();
     expect(textarea.matches(':last-child')).toBeTrue();
     expect([...document.body.children]).toEqual(bodyChildrenBefore);
-    expect(
-      document.documentElement.querySelectorAll('div[aria-hidden="true"]'),
-    ).toHaveSize(1);
+    expect(document.querySelectorAll('div[aria-hidden="true"]')).toHaveSize(1);
 
     fixture.destroy();
 
-    expect(
-      document.documentElement.querySelectorAll('div[aria-hidden="true"]'),
-    ).toHaveSize(0);
+    expect(document.querySelectorAll('div[aria-hidden="true"]')).toHaveSize(0);
     expect([...document.body.children]).toEqual(bodyChildrenBefore);
   });
 

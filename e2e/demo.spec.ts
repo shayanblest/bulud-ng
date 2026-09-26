@@ -342,6 +342,16 @@ test.describe('Bulud component demo', () => {
       firstChild: element.firstElementChild?.tagName,
       lastChild: element.lastElementChild?.tagName,
     }));
+    const documentStructure = await page.evaluate(() => ({
+      htmlChildren: [...document.documentElement.children].map(
+        (element) => element.tagName,
+      ),
+      headBodyAdjacent: document.querySelector('head + body') === document.body,
+      bodySecondChild: document.body.matches(':nth-child(2)'),
+      bodyLastChild: document.body.matches(':last-child'),
+      bodyApplicationRootOnlyChild:
+        document.body.firstElementChild?.matches(':only-child') ?? false,
+    }));
 
     await textarea.evaluate((element) => {
       element.style.lineHeight = 'normal';
@@ -410,28 +420,54 @@ test.describe('Bulud component demo', () => {
       element.setAttribute('placeholder', 'short');
       element.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    const placeholderStyle = await page.addStyleTag({
+      content:
+        '#textarea-autosize-input::placeholder { font-size: 28px; line-height: 36px; letter-spacing: 1px; }',
+    });
     const shortPlaceholderHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
     await textarea.evaluate((element) => {
-      element.setAttribute(
-        'placeholder',
-        'This is a deliberately long localized placeholder that wraps.',
-      );
+      element.setAttribute('placeholder', 'Placeholder text wraps');
     });
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeGreaterThan(shortPlaceholderHeight);
-    await textarea.evaluate((element) =>
-      element.removeAttribute('placeholder'),
+    const longPlaceholderHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
     );
+    const placeholderGeometry = await textarea.evaluate((element) => ({
+      height: element.getBoundingClientRect().height,
+      scrollHeight: element.scrollHeight,
+      borders:
+        parseFloat(getComputedStyle(element).borderTopWidth) +
+        parseFloat(getComputedStyle(element).borderBottomWidth),
+    }));
+    expect(placeholderGeometry.height).toBeGreaterThan(shortPlaceholderHeight);
+    expect(placeholderGeometry.scrollHeight).toBeGreaterThan(
+      await textarea.evaluate((element) => element.clientHeight),
+    );
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await textarea.fill('real value');
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
       )
-      .toBe(shortPlaceholderHeight);
+      .toBeLessThan(longPlaceholderHeight);
+    await textarea.evaluate((element) => {
+      element.value = '';
+      element.removeAttribute('placeholder');
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await placeholderStyle.evaluate((element) => element.remove());
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThan(longPlaceholderHeight);
+    await textarea.fill('Short value.');
 
     await textarea.evaluate((element) => {
       element.style.width = '220px';
@@ -542,8 +578,23 @@ test.describe('Bulud component demo', () => {
       firstChild: true,
       lastChild: false,
     });
+    expect(
+      await page.evaluate(() => ({
+        htmlChildren: [...document.documentElement.children].map(
+          (element) => element.tagName,
+        ),
+        headBodyAdjacent:
+          document.querySelector('head + body') === document.body,
+        bodySecondChild: document.body.matches(':nth-child(2)'),
+        bodyLastChild: document.body.matches(':last-child'),
+        bodyApplicationRootOnlyChild:
+          document.body.firstElementChild?.matches(':only-child') ?? false,
+      })),
+    ).toEqual(documentStructure);
     await expect
-      .poll(() => page.locator('html > div[aria-hidden="true"]').count())
+      .poll(() =>
+        page.locator('div[aria-hidden="true"][style*="-100000px"]').count(),
+      )
       .toBeGreaterThan(0);
 
     const widthBeforeMetricChange = await textarea.evaluate(
@@ -889,7 +940,9 @@ test.describe('Bulud component demo', () => {
     });
 
     await enabled.uncheck();
-    await expect(page.locator('html > div[aria-hidden="true"]')).toHaveCount(0);
+    await expect(
+      page.locator('div[aria-hidden="true"][style*="-100000px"]'),
+    ).toHaveCount(0);
     const bodyStructureAfterDisable = await page
       .locator('body')
       .evaluate((element) => ({
@@ -903,7 +956,9 @@ test.describe('Bulud component demo', () => {
 
     await enabled.check();
     await expect
-      .poll(() => page.locator('html > div[aria-hidden="true"]').count())
+      .poll(() =>
+        page.locator('div[aria-hidden="true"][style*="-100000px"]').count(),
+      )
       .toBeGreaterThan(0);
     const bodyStructureAfter = await page
       .locator('body')
@@ -913,6 +968,19 @@ test.describe('Bulud component demo', () => {
         lastChild: element.lastElementChild?.tagName,
       }));
     expect(bodyStructureAfter).toEqual(bodyStructure);
+    expect(
+      await page.evaluate(() => ({
+        htmlChildren: [...document.documentElement.children].map(
+          (element) => element.tagName,
+        ),
+        headBodyAdjacent:
+          document.querySelector('head + body') === document.body,
+        bodySecondChild: document.body.matches(':nth-child(2)'),
+        bodyLastChild: document.body.matches(':last-child'),
+        bodyApplicationRootOnlyChild:
+          document.body.firstElementChild?.matches(':only-child') ?? false,
+      })),
+    ).toEqual(documentStructure);
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),

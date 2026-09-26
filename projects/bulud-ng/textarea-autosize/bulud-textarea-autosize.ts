@@ -165,14 +165,18 @@ export class BuludTextareaAutosize
     const textarea = this.element.nativeElement;
     const view = this.document.defaultView;
     const getComputedStyle = view?.getComputedStyle;
-    if (typeof getComputedStyle !== 'function') {
+    if (!view || typeof getComputedStyle !== 'function') {
       return;
     }
 
     textarea.style.overflowY = 'hidden';
     textarea.style.height = '0px';
     const styles = getComputedStyle.call(view, textarea);
-    this.lastMeasurementSignature = getMeasurementSignature(textarea, styles);
+    this.lastMeasurementSignature = getMeasurementSignature(
+      textarea,
+      styles,
+      view,
+    );
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
     const lineHeight = getLineHeight(textarea, styles, this.measurementRoot);
@@ -251,9 +255,8 @@ export class BuludTextareaAutosize
     }
 
     const textarea = this.element.nativeElement;
-    const documentElement = textarea.ownerDocument.documentElement;
-    const body = textarea.ownerDocument.body;
-    if (!documentElement || !body) {
+    const hostParent = getMeasurementHostParent(textarea);
+    if (!hostParent) {
       return;
     }
 
@@ -270,7 +273,7 @@ export class BuludTextareaAutosize
       return;
     }
     const root = host.attachShadow({ mode: 'open' });
-    documentElement.insertBefore(host, body);
+    hostParent.appendChild(host);
 
     const probe = textarea.cloneNode(false) as HTMLTextAreaElement;
     probe.removeAttribute('id');
@@ -319,6 +322,7 @@ export class BuludTextareaAutosize
     if (view && typeof view.getComputedStyle === 'function') {
       const styles = view.getComputedStyle(textarea);
       copyMeasurementStyles(probe, styles);
+      copyPlaceholderStyles(probe, textarea, view);
       probe.style.width = `${getContentBoxWidth(textarea, styles)}px`;
       probe.style.overflowX = getHorizontalOverflowMode(textarea, styles);
       probe.style.overflowY = 'hidden';
@@ -586,7 +590,7 @@ export class BuludTextareaAutosize
 
     const styles = view.getComputedStyle(this.element.nativeElement);
     if (
-      getMeasurementSignature(this.element.nativeElement, styles) !==
+      getMeasurementSignature(this.element.nativeElement, styles, view) !==
       this.lastMeasurementSignature
     ) {
       this.resize();
@@ -625,6 +629,36 @@ export class BuludTextareaAutosize
   private hasBrowserView(): boolean {
     return this.document.defaultView !== null;
   }
+}
+
+function getMeasurementHostParent(
+  textarea: HTMLTextAreaElement,
+): HTMLElement | null {
+  const body = textarea.ownerDocument.body;
+  if (!body) {
+    return null;
+  }
+
+  let current = textarea.parentElement;
+  while (current && current.parentElement !== body) {
+    current = current.parentElement;
+  }
+
+  if (current?.parentElement === body) {
+    if (current !== textarea.parentElement) {
+      return current;
+    }
+
+    const existingContainer = [...body.children].find(
+      (child) => child !== textarea && child !== current,
+    );
+    return (
+      (existingContainer as HTMLElement | undefined) ??
+      textarea.ownerDocument.head
+    );
+  }
+
+  return null;
 }
 
 function getResizeObserverConstructor(
@@ -910,10 +944,48 @@ function copyMeasurementStyles(
   probe.style.boxSizing = 'content-box';
 }
 
+function copyPlaceholderStyles(
+  probe: HTMLTextAreaElement,
+  textarea: HTMLTextAreaElement,
+  view: Window,
+): void {
+  if (textarea.value !== '' || !textarea.getAttribute('placeholder')) {
+    return;
+  }
+
+  const styles = getPlaceholderStyles(textarea, view);
+  if (!styles) {
+    return;
+  }
+
+  for (const property of PLACEHOLDER_METRIC_PROPERTIES) {
+    const value = styles.getPropertyValue(property);
+    if (value !== '') {
+      probe.style.setProperty(property, value);
+    }
+  }
+}
+
+function getPlaceholderStyles(
+  textarea: HTMLTextAreaElement,
+  view: Window,
+): CSSStyleDeclaration | null {
+  try {
+    return view.getComputedStyle(textarea, '::placeholder');
+  } catch {
+    return null;
+  }
+}
+
 function getMeasurementSignature(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
+  view: Window,
 ): string {
+  const placeholderStyles =
+    textarea.value === '' && textarea.getAttribute('placeholder')
+      ? getPlaceholderStyles(textarea, view)
+      : null;
   return [
     ...TEXT_METRIC_PROPERTIES.map((property) =>
       styles.getPropertyValue(property),
@@ -921,6 +993,12 @@ function getMeasurementSignature(
     `box-sizing:${styles.boxSizing}`,
     `wrap:${textarea.getAttribute('wrap') ?? ''}`,
     `placeholder:${textarea.getAttribute('placeholder') ?? ''}`,
+    ...(placeholderStyles
+      ? PLACEHOLDER_METRIC_PROPERTIES.map(
+          (property) =>
+            `placeholder-${property}:${placeholderStyles.getPropertyValue(property)}`,
+        )
+      : []),
     `min-height:${styles.minHeight}`,
     `max-height:${styles.maxHeight}`,
   ].join('|');
@@ -993,6 +1071,29 @@ const TEXT_METRIC_PROPERTIES = [
   'padding-left',
   'padding-right',
   'padding-top',
+  'tab-size',
+  'text-indent',
+  'text-rendering',
+  'text-transform',
+  'white-space',
+  'word-break',
+  'word-spacing',
+  'overflow-wrap',
+] as const;
+
+const PLACEHOLDER_METRIC_PROPERTIES = [
+  'direction',
+  'font-family',
+  'font-feature-settings',
+  'font-size',
+  'font-stretch',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'font-variation-settings',
+  'hyphens',
+  'letter-spacing',
+  'line-height',
   'tab-size',
   'text-indent',
   'text-rendering',
