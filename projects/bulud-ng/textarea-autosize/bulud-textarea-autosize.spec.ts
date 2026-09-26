@@ -115,6 +115,25 @@ class FormHostComponent {
   value = '';
 }
 
+@Component({
+  imports: [BuludTextareaAutosize],
+  template: `
+    <form id="form-a"></form>
+    <textarea
+      buludTextareaAutosize
+      [attr.form]="formId"
+      [enabled]="enabled"
+      [value]="value"
+    ></textarea>
+    <form id="form-b"></form>
+  `,
+})
+class DynamicFormHostComponent {
+  enabled = true;
+  formId: string | null = 'form-a';
+  value = '';
+}
+
 describe('BuludTextareaAutosize', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
   let contentHeight = 40;
@@ -461,6 +480,198 @@ describe('BuludTextareaAutosize', () => {
     textarea.dispatchEvent(new Event('input'));
     expect(textarea.style.height).toBe('60px');
     expect(textarea.style.overflowY).toBe('hidden');
+  });
+
+  it('respects CSS max-height and combines it with row limits', async () => {
+    const cssTightFixture = createHost((textarea) => {
+      textarea.style.maxHeight = '50px';
+    });
+    const cssTightTextarea = textareaOf(cssTightFixture);
+    contentHeight = 100;
+    cssTightTextarea.value = 'overflowing';
+    cssTightTextarea.dispatchEvent(new Event('input'));
+    expect(cssTightTextarea.style.height).toBe('50px');
+    expect(cssTightTextarea.style.overflowY).toBe('auto');
+    cssTightFixture.destroy();
+
+    const fittingFixture = createHost((textarea) => {
+      textarea.style.maxHeight = '50px';
+    });
+    const fittingTextarea = textareaOf(fittingFixture);
+    contentHeight = 40;
+    fittingTextarea.value = 'fitting';
+    fittingTextarea.dispatchEvent(new Event('input'));
+    expect(fittingTextarea.style.height).toBe('40px');
+    expect(fittingTextarea.style.overflowY).toBe('hidden');
+    fittingFixture.destroy();
+
+    const noneFixture = createHost((textarea) => {
+      textarea.style.maxHeight = 'none';
+    });
+    const noneTextarea = textareaOf(noneFixture);
+    contentHeight = 100;
+    noneTextarea.value = 'unconstrained';
+    noneTextarea.dispatchEvent(new Event('input'));
+    expect(noneTextarea.style.height).toBe('100px');
+    expect(noneTextarea.style.overflowY).toBe('hidden');
+    noneFixture.destroy();
+
+    contentHeight = 100;
+    const combinedFixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      textarea.style.maxHeight = '80px';
+      host.maxRows = 5;
+    });
+    const combinedTextarea = textareaOf(combinedFixture);
+    combinedTextarea.value = 'combined';
+    combinedTextarea.dispatchEvent(new Event('input'));
+    expect(combinedTextarea.style.height).toBe('80px');
+    expect(combinedTextarea.style.overflowY).toBe('auto');
+
+    combinedTextarea.style.maxHeight = '120px';
+    await combinedFixture.whenStable();
+    expect(combinedTextarea.style.height).toBe('100px');
+    expect(combinedTextarea.style.overflowY).toBe('hidden');
+
+    combinedTextarea.style.maxHeight = '40px';
+    await combinedFixture.whenStable();
+    expect(combinedTextarea.style.height).toBe('40px');
+    expect(combinedTextarea.style.overflowY).toBe('auto');
+    combinedFixture.destroy();
+  });
+
+  it('applies CSS max-height in content-box and border-box modes', () => {
+    const contentBoxFixture = createHost((textarea) => {
+      textarea.style.boxSizing = 'content-box';
+      textarea.style.paddingBlock = '6px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.maxHeight = '80px';
+    });
+    const contentBoxTextarea = textareaOf(contentBoxFixture);
+    contentHeight = 100;
+    contentBoxTextarea.value = 'content-box';
+    contentBoxTextarea.dispatchEvent(new Event('input'));
+    expect(contentBoxTextarea.style.height).toBe('80px');
+    expect(contentBoxTextarea.style.overflowY).toBe('auto');
+    contentBoxFixture.destroy();
+
+    const borderBoxFixture = createHost((textarea) => {
+      textarea.style.boxSizing = 'border-box';
+      textarea.style.paddingBlock = '6px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.maxHeight = '80px';
+    });
+    const borderBoxTextarea = textareaOf(borderBoxFixture);
+    contentHeight = 100;
+    borderBoxTextarea.value = 'border-box';
+    borderBoxTextarea.dispatchEvent(new Event('input'));
+    expect(borderBoxTextarea.style.height).toBe('80px');
+    expect(borderBoxTextarea.style.overflowY).toBe('auto');
+    borderBoxFixture.destroy();
+  });
+
+  it('rebinds reset handling across dynamic form associations', async () => {
+    contentHeight = 80;
+    const fixture = TestBed.createComponent(DynamicFormHostComponent);
+    const textarea = fixture.nativeElement.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    const formA = fixture.nativeElement.querySelector(
+      '#form-a',
+    ) as HTMLFormElement;
+    const formB = fixture.nativeElement.querySelector(
+      '#form-b',
+    ) as HTMLFormElement;
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    fixture.componentInstance.value = 'long current';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+
+    textarea.defaultValue = 'short A';
+    contentHeight = 20;
+    formA.reset();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('20px');
+
+    fixture.componentInstance.formId = null;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    formA.appendChild(textarea);
+    await fixture.whenStable();
+    expect(textarea.form).toBe(formA);
+    formB.appendChild(textarea);
+    await fixture.whenStable();
+    expect(textarea.form).toBe(formB);
+
+    contentHeight = 80;
+    textarea.value = 'long B';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.componentInstance.formId = 'form-b';
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.form).toBe(formB);
+
+    textarea.defaultValue = 'short B';
+    formA.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('long B');
+    expect(textarea.style.height).toBe('80px');
+
+    contentHeight = 20;
+    formB.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('short B');
+    expect(textarea.style.height).toBe('20px');
+
+    formA.appendChild(textarea);
+    formB.remove();
+    await fixture.whenStable();
+    expect(textarea.form).toBeNull();
+
+    const replacement = document.createElement('form');
+    replacement.id = 'form-b';
+    document.body.appendChild(replacement);
+    await fixture.whenStable();
+    expect(textarea.form).toBe(replacement);
+
+    contentHeight = 80;
+    textarea.value = 'long without form';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.nativeElement.appendChild(textarea);
+    fixture.componentInstance.formId = null;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.form).toBeNull();
+    textarea.defaultValue = 'short without form';
+    formB.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('long without form');
+    expect(textarea.style.height).toBe('80px');
+
+    fixture.componentInstance.formId = 'form-b';
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.form).toBe(replacement);
+
+    contentHeight = 20;
+    textarea.defaultValue = 'replacement default';
+    replacement.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('replacement default');
+    expect(textarea.style.height).toBe('20px');
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    fixture.destroy();
+    replacement.reset();
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('');
+    replacement.remove();
   });
 
   it('clears stale scrolling before measuring content that shrinks below maxRows', () => {

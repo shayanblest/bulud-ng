@@ -184,8 +184,15 @@ export class BuludTextareaAutosize
       effectiveMaxRows === null || lineHeight === null
         ? Number.POSITIVE_INFINITY
         : effectiveMaxRows * lineHeight;
+    const cssMaxHeight = getCssMaxContentHeight(
+      styles,
+      padding,
+      borders,
+      horizontalScrollbarGutter,
+    );
+    const effectiveMaxHeight = Math.min(maxHeight, cssMaxHeight);
     const targetContentHeight = Math.min(
-      maxHeight,
+      effectiveMaxHeight,
       Math.max(minHeight, contentHeight),
     );
     const targetContentHeightWithScrollbar =
@@ -195,7 +202,7 @@ export class BuludTextareaAutosize
         ? targetContentHeightWithScrollbar + padding + borders
         : targetContentHeightWithScrollbar;
     const nextHeight = `${targetHeight}px`;
-    const shouldScroll = contentHeight > maxHeight;
+    const shouldScroll = contentHeight > effectiveMaxHeight;
 
     if (textarea.style.height !== nextHeight) {
       textarea.style.height = nextHeight;
@@ -373,6 +380,7 @@ export class BuludTextareaAutosize
 
     this.mutationObserver = new MutationObserver(() => {
       if (!this.destroyed && this.enabled()) {
+        this.connectFormResetListener();
         const view = this.document.defaultView;
         const styles = view?.getComputedStyle(this.element.nativeElement);
         const signature = styles
@@ -387,6 +395,12 @@ export class BuludTextareaAutosize
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
       attributeFilter: ['class', 'style', 'wrap', 'placeholder'],
+    });
+    this.mutationObserver.observe(this.element.nativeElement.ownerDocument, {
+      attributes: true,
+      attributeFilter: ['form', 'id'],
+      childList: true,
+      subtree: true,
     });
   }
 
@@ -434,11 +448,16 @@ export class BuludTextareaAutosize
   }
 
   private connectFormResetListener(): void {
-    if (this.resetForm || this.destroyed || !this.hasBrowserView()) {
+    if (this.destroyed || !this.hasBrowserView()) {
       return;
     }
 
     const form = this.element.nativeElement.form;
+    if (form === this.resetForm) {
+      return;
+    }
+
+    this.disconnectFormResetListener();
     if (!form) {
       return;
     }
@@ -699,7 +718,33 @@ function getMeasurementSignature(
     `box-sizing:${styles.boxSizing}`,
     `wrap:${textarea.getAttribute('wrap') ?? ''}`,
     `placeholder:${textarea.getAttribute('placeholder') ?? ''}`,
+    `min-height:${styles.minHeight}`,
+    `max-height:${styles.maxHeight}`,
   ].join('|');
+}
+
+function getCssMaxContentHeight(
+  styles: CSSStyleDeclaration,
+  padding: number,
+  borders: number,
+  horizontalScrollbarGutter: number,
+): number {
+  const maxHeight = styles.maxHeight.trim();
+  if (maxHeight === '' || maxHeight === 'none') {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const physicalMaxHeight = parsePixels(maxHeight);
+  if (!Number.isFinite(physicalMaxHeight)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return styles.boxSizing === 'border-box'
+    ? Math.max(
+        0,
+        physicalMaxHeight - padding - borders - horizontalScrollbarGutter,
+      )
+    : Math.max(0, physicalMaxHeight);
 }
 
 function scheduleMicrotask(callback: () => void): void {

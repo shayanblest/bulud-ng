@@ -386,6 +386,32 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(shortPlaceholderHeight);
 
+    await textarea.evaluate((element) => {
+      element.style.width = '220px';
+      element.style.boxSizing = 'border-box';
+      element.style.padding = '6px 18px';
+      element.style.border = '2px solid';
+      element.style.lineHeight = '20px';
+      element.style.maxHeight = '60px';
+    });
+    await textarea.fill('css max-height '.repeat(40));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThanOrEqual(60);
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await expect
+      .poll(() =>
+        textarea.evaluate(
+          (element) => element.scrollHeight > element.clientHeight,
+        ),
+      )
+      .toBe(true);
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '';
+    });
+
     for (const transformProperty of ['transform', 'scale']) {
       for (const boxSizing of ['content-box', 'border-box']) {
         await textarea.evaluate((element, nextBoxSizing) => {
@@ -767,6 +793,53 @@ test.describe('Bulud component demo', () => {
         textarea.evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeLessThan(beforeResetHeight);
+
+    const dynamicValue = 'dynamic reassociation value '.repeat(20);
+    await textarea.fill(dynamicValue);
+    const dynamicLongHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.evaluate((element) => {
+      element.defaultValue = 'dynamic form B default';
+      element.setAttribute('form', 'textarea-autosize-form-b');
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.form?.id ?? null))
+      .toBe('textarea-autosize-form-b');
+    await page.locator('#textarea-autosize-reset').evaluate((button) => {
+      (button as HTMLButtonElement).click();
+    });
+    await expect(textarea).toHaveValue(dynamicValue);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(dynamicLongHeight);
+    await page.locator('#textarea-autosize-reset-b').evaluate((button) => {
+      (button as HTMLButtonElement).click();
+    });
+    await expect(textarea).toHaveValue('dynamic form B default');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThan(dynamicLongHeight);
+
+    await textarea.fill(dynamicValue);
+    await textarea.evaluate((element) => {
+      element.defaultValue = 'unassociated default';
+      element.removeAttribute('form');
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.form?.id ?? null))
+      .toBe(null);
+    await page.locator('#textarea-autosize-reset-b').evaluate((button) => {
+      (button as HTMLButtonElement).click();
+    });
+    await expect(textarea).toHaveValue(dynamicValue);
+    await textarea.evaluate((element) => {
+      element.setAttribute('form', 'textarea-autosize-form');
+    });
 
     await enabled.uncheck();
     await expect(page.locator('html > div[aria-hidden="true"]')).toHaveCount(0);
