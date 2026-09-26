@@ -438,7 +438,6 @@ export class BuludTextareaAutosize
     });
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
-      attributeFilter: ['class', 'style', 'wrap', 'placeholder'],
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const ancestor of this.metricAncestors) {
@@ -599,7 +598,6 @@ export class BuludTextareaAutosize
     this.mutationObserver.disconnect();
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
-      attributeFilter: ['class', 'style', 'wrap', 'placeholder'],
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const ancestor of this.metricAncestors) {
@@ -780,12 +778,29 @@ function getFontLoadingSet(document: Document): FontLoadingSet | null {
 
 function getMetricAncestors(textarea: HTMLTextAreaElement): Element[] {
   const ancestors: Element[] = [];
-  let current = textarea.parentElement;
+  const seen = new Set<Element>();
+  let current = textarea.parentElement ?? getShadowRootHost(textarea);
   while (current) {
+    if (seen.has(current)) {
+      break;
+    }
+    seen.add(current);
     ancestors.push(current);
-    current = current.parentElement;
+    if (current.parentElement) {
+      current = current.parentElement;
+      continue;
+    }
+
+    current = getShadowRootHost(current);
   }
   return ancestors;
+}
+
+function getShadowRootHost(element: Element): HTMLElement | null {
+  const root = element.getRootNode();
+  return root.nodeType === Node.DOCUMENT_FRAGMENT_NODE
+    ? ((root as ShadowRoot).host as HTMLElement | null)
+    : null;
 }
 
 function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {
@@ -1032,10 +1047,18 @@ function copyMeasurementStyles(
   probe: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
 ): void {
+  clearMeasurementWidthConstraints(probe);
   for (const property of TEXT_METRIC_PROPERTIES) {
     probe.style.setProperty(property, styles.getPropertyValue(property));
   }
   probe.style.boxSizing = 'content-box';
+}
+
+function clearMeasurementWidthConstraints(probe: HTMLTextAreaElement): void {
+  probe.style.minWidth = '0px';
+  probe.style.maxWidth = 'none';
+  probe.style.minInlineSize = '0px';
+  probe.style.maxInlineSize = 'none';
 }
 
 function copyPlaceholderStyles(

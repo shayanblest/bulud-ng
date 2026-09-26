@@ -378,6 +378,33 @@ test.describe('Bulud component demo', () => {
     expect(probeGeometry.height).toBeGreaterThan(0);
 
     await textarea.evaluate((element) => {
+      element.style.width = '220px';
+      element.style.minWidth = '0px';
+      element.style.maxWidth = '100%';
+      element.style.minInlineSize = '0px';
+      element.style.maxInlineSize = '100%';
+      element.style.lineHeight = '20px';
+    });
+    await textarea.fill('width constraints '.repeat(40));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          width: element.getBoundingClientRect().width,
+          height: element.getBoundingClientRect().height,
+        })),
+      )
+      .toMatchObject({ width: 220 });
+    await textarea.evaluate((element) => {
+      element.style.width = '';
+      element.style.minWidth = '';
+      element.style.maxWidth = '';
+      element.style.minInlineSize = '';
+      element.style.maxInlineSize = '';
+      element.style.lineHeight = 'normal';
+    });
+    await textarea.fill('Short value.');
+
+    await textarea.evaluate((element) => {
       element.style.height = '20px';
     });
     await expect
