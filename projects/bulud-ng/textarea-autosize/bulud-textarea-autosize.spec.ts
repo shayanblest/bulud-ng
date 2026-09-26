@@ -51,6 +51,23 @@ class MockResizeObserver {
       this as unknown as ResizeObserver,
     );
   }
+
+  triggerTextareaMetrics(): void {
+    const target = this.observedElements[0];
+    if (!target) {
+      return;
+    }
+
+    this.callback(
+      [
+        {
+          target,
+          contentRect: { width: 0, height: 0 },
+        } as unknown as ResizeObserverEntry,
+      ],
+      this as unknown as ResizeObserver,
+    );
+  }
 }
 
 class MockFontLoadingSet {
@@ -293,6 +310,114 @@ describe('BuludTextareaAutosize', () => {
     textarea.value = 'one line';
     textarea.dispatchEvent(new Event('input'));
     expect(textarea.style.height).toBe('20px');
+  });
+
+  it('reasserts externally changed owned sizing without a resize loop', async () => {
+    contentHeight = 80;
+    const fixture = createHost();
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+
+    expect(textarea.style.height).toBe('80px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    textarea.style.height = '20px';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+
+    textarea.style.overflowY = 'scroll';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    textarea.style.height = '10px';
+    textarea.style.overflowY = 'scroll';
+    observer.triggerTextareaMetrics();
+    expect(textarea.style.height).toBe('80px');
+    expect(textarea.style.overflowY).toBe('hidden');
+    expect(MockResizeObserver.instances).toHaveSize(1);
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('');
+    expect(textarea.style.overflowY).toBe('');
+
+    textarea.style.height = '12px';
+    textarea.style.overflowY = 'scroll';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('12px');
+    expect(textarea.style.overflowY).toBe('scroll');
+
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    fixture.destroy();
+    textarea.style.height = '14px';
+    textarea.style.overflowY = 'scroll';
+    observer.triggerTextareaMetrics();
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('14px');
+    expect(textarea.style.overflowY).toBe('scroll');
+  });
+
+  it('remeasures inherited typography changes without a width or value change', async () => {
+    contentHeight = 0;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      host.maxRows = 3;
+      const ancestor = textarea.parentElement!;
+      ancestor.style.setProperty('--textarea-line-height', '20px');
+      textarea.style.lineHeight = 'var(--textarea-line-height)';
+    });
+    const textarea = textareaOf(fixture);
+    const ancestor = textarea.parentElement!;
+
+    expect(textarea.style.height).toBe('40px');
+    const width = textarea.getBoundingClientRect().width;
+    ancestor.style.setProperty('--textarea-line-height', '30px');
+    await fixture.whenStable();
+
+    expect(textarea.value).toBe('');
+    expect(textarea.getBoundingClientRect().width).toBe(width);
+    expect(textarea.style.height).toBe('60px');
+    fixture.destroy();
+  });
+
+  it('ignores unrelated document churn while retaining relevant observers', async () => {
+    const view = document.defaultView!;
+    const originalGetComputedStyle = view.getComputedStyle;
+    let computedStyleCalls = 0;
+    Object.defineProperty(view, 'getComputedStyle', {
+      configurable: true,
+      value: (...args: Parameters<typeof getComputedStyle>) => {
+        computedStyleCalls += 1;
+        return originalGetComputedStyle.apply(view, args);
+      },
+    });
+
+    try {
+      const fixture = createHost((textarea) => {
+        textarea.style.lineHeight = '20px';
+      });
+      const callsAfterInit = computedStyleCalls;
+      const unrelated = document.createElement('div');
+      unrelated.textContent = 'unrelated mutation';
+      document.body.appendChild(unrelated);
+      await fixture.whenStable();
+
+      expect(computedStyleCalls).toBe(callsAfterInit);
+      unrelated.remove();
+      fixture.destroy();
+    } finally {
+      Object.defineProperty(view, 'getComputedStyle', {
+        configurable: true,
+        value: originalGetComputedStyle,
+      });
+    }
   });
 
   it('resizes after an Angular-bound programmatic value change', async () => {

@@ -352,6 +352,53 @@ test.describe('Bulud component demo', () => {
     );
 
     await textarea.evaluate((element) => {
+      element.style.height = '20px';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(initialHeight);
+    await textarea.evaluate((element) => {
+      element.style.overflowY = 'scroll';
+    });
+    await expect(textarea).toHaveCSS('overflow-y', 'hidden');
+
+    const inheritedWidth = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+    await textarea.evaluate((element) => {
+      element.style.lineHeight = 'var(--textarea-e2e-line-height)';
+      element.parentElement!.style.setProperty(
+        '--textarea-e2e-line-height',
+        '20px',
+      );
+    });
+    const inheritedHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.setProperty(
+        '--textarea-e2e-line-height',
+        '30px',
+      );
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(inheritedHeight);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().width),
+      )
+      .toBe(inheritedWidth);
+    await textarea.evaluate((element) => {
+      element.style.lineHeight = 'normal';
+      element.parentElement!.style.removeProperty('--textarea-e2e-line-height');
+    });
+
+    await textarea.evaluate((element) => {
       element.style.width = '220px';
       element.style.boxSizing = 'border-box';
       element.style.padding = '6px 18px';

@@ -52,8 +52,14 @@ export class BuludTextareaAutosize
   private originalStyles: OriginalStyles | null = null;
   private lastValue = '';
   private lastObservedWidth: number | null = null;
+  private lastObservedProbeWidth: number | null = null;
+  private ownedHeight: string | null = null;
+  private ownedOverflowY: string | null = null;
   private observer: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
+  private formMutationObserver: MutationObserver | null = null;
+  private metricAncestors: Element[] = [];
+  private viewportResizeListener: EventListener | null = null;
   private fontLoadingSet: FontLoadingSet | null = null;
   private fontLoadingListener: EventListener | null = null;
   private resetForm: HTMLFormElement | null = null;
@@ -96,6 +102,7 @@ export class BuludTextareaAutosize
       this.connectMutationObserver();
       this.connectFontLoadingObserver();
       this.connectFormResetListener();
+      this.connectViewportResizeListener();
       const textarea = this.element.nativeElement;
       const inputListener = (): void => {
         if (textarea.value !== this.lastValue) {
@@ -109,6 +116,7 @@ export class BuludTextareaAutosize
         this.disconnectMutationObserver();
         this.disconnectFontLoadingObserver();
         this.disconnectFormResetListener();
+        this.disconnectViewportResizeListener();
         this.restoreOriginalStyles();
       });
     });
@@ -145,6 +153,7 @@ export class BuludTextareaAutosize
     this.disconnectMutationObserver();
     this.disconnectFontLoadingObserver();
     this.disconnectFormResetListener();
+    this.disconnectViewportResizeListener();
     this.restoreOriginalStyles();
   }
 
@@ -212,6 +221,8 @@ export class BuludTextareaAutosize
       textarea.style.overflowY = nextOverflowY;
     }
 
+    this.ownedHeight = nextHeight;
+    this.ownedOverflowY = nextOverflowY;
     this.lastValue = textarea.value;
   }
 
@@ -341,7 +352,11 @@ export class BuludTextareaAutosize
       let shouldResize = false;
       for (const entry of entries) {
         if (entry.target === this.measurementProbe) {
-          shouldResize = true;
+          const width = entry.contentRect.width;
+          if (Number.isFinite(width) && width !== this.lastObservedProbeWidth) {
+            this.lastObservedProbeWidth = width;
+            shouldResize = true;
+          }
           continue;
         }
 
@@ -350,12 +365,14 @@ export class BuludTextareaAutosize
         }
 
         const width = entry.contentRect.width;
-        if (!Number.isFinite(width) || width === this.lastObservedWidth) {
-          continue;
+        if (Number.isFinite(width) && width !== this.lastObservedWidth) {
+          this.lastObservedWidth = width;
+          shouldResize = true;
         }
 
-        this.lastObservedWidth = width;
-        shouldResize = true;
+        if (this.hasExternalOwnedSizingChange()) {
+          shouldResize = true;
+        }
       }
 
       if (shouldResize) {
@@ -380,40 +397,64 @@ export class BuludTextareaAutosize
 
     this.mutationObserver = new MutationObserver(() => {
       if (!this.destroyed && this.enabled()) {
-        this.connectFormResetListener();
-        const view = this.document.defaultView;
-        const styles = view?.getComputedStyle(this.element.nativeElement);
-        const signature = styles
-          ? getMeasurementSignature(this.element.nativeElement, styles)
-          : this.lastMeasurementSignature;
-        this.syncMeasurementProbe();
-        if (signature !== this.lastMeasurementSignature) {
-          this.resize();
-        }
+        this.remeasureIfNeeded();
       }
     });
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
       attributeFilter: ['class', 'style', 'wrap', 'placeholder'],
     });
-    this.mutationObserver.observe(this.element.nativeElement.ownerDocument, {
-      attributes: true,
-      attributeFilter: ['form', 'id'],
-      childList: true,
-      subtree: true,
+    this.metricAncestors = getMetricAncestors(this.element.nativeElement);
+    for (const ancestor of this.metricAncestors) {
+      this.mutationObserver.observe(ancestor, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+      });
+    }
+
+    this.formMutationObserver = new MutationObserver((records) => {
+      if (
+        !this.destroyed &&
+        this.enabled() &&
+        formMutationMayAffectTextarea(this.element.nativeElement, records)
+      ) {
+        this.connectFormResetListener();
+        if (
+          records.some((record) =>
+            recordTouchesTextarea(record, this.element.nativeElement),
+          )
+        ) {
+          this.reconnectMetricAncestors();
+        }
+      }
     });
+    this.formMutationObserver.observe(
+      this.element.nativeElement.ownerDocument,
+      {
+        attributes: true,
+        attributeFilter: ['form', 'id'],
+        childList: true,
+        subtree: true,
+      },
+    );
   }
 
   private disconnectWidthObserver(): void {
     this.observer?.disconnect();
     this.observer = null;
     this.lastObservedWidth = null;
+    this.lastObservedProbeWidth = null;
+    this.ownedHeight = null;
+    this.ownedOverflowY = null;
     this.disconnectMeasurementProbe();
   }
 
   private disconnectMutationObserver(): void {
     this.mutationObserver?.disconnect();
     this.mutationObserver = null;
+    this.formMutationObserver?.disconnect();
+    this.formMutationObserver = null;
+    this.metricAncestors = [];
   }
 
   private connectFontLoadingObserver(): void {
@@ -486,6 +527,82 @@ export class BuludTextareaAutosize
     this.resetListener = null;
   }
 
+  private connectViewportResizeListener(): void {
+    if (this.viewportResizeListener || this.destroyed) {
+      return;
+    }
+
+    const view = this.document.defaultView;
+    if (!view) {
+      return;
+    }
+
+    const listener: EventListener = () => {
+      if (!this.destroyed && this.enabled()) {
+        this.remeasureIfNeeded();
+      }
+    };
+    view.addEventListener('resize', listener);
+    this.viewportResizeListener = listener;
+  }
+
+  private disconnectViewportResizeListener(): void {
+    const view = this.document.defaultView;
+    if (view && this.viewportResizeListener) {
+      view.removeEventListener('resize', this.viewportResizeListener);
+    }
+    this.viewportResizeListener = null;
+  }
+
+  private reconnectMetricAncestors(): void {
+    if (!this.mutationObserver) {
+      return;
+    }
+
+    this.mutationObserver.disconnect();
+    this.mutationObserver.observe(this.element.nativeElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style', 'wrap', 'placeholder'],
+    });
+    this.metricAncestors = getMetricAncestors(this.element.nativeElement);
+    for (const ancestor of this.metricAncestors) {
+      this.mutationObserver.observe(ancestor, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+      });
+    }
+  }
+
+  private remeasureIfNeeded(): void {
+    if (this.hasExternalOwnedSizingChange()) {
+      this.resize();
+      return;
+    }
+
+    const view = this.document.defaultView;
+    if (!view || typeof view.getComputedStyle !== 'function') {
+      return;
+    }
+
+    const styles = view.getComputedStyle(this.element.nativeElement);
+    if (
+      getMeasurementSignature(this.element.nativeElement, styles) !==
+      this.lastMeasurementSignature
+    ) {
+      this.resize();
+    }
+  }
+
+  private hasExternalOwnedSizingChange(): boolean {
+    const textarea = this.element.nativeElement;
+    return (
+      (this.ownedHeight !== null &&
+        textarea.style.height !== this.ownedHeight) ||
+      (this.ownedOverflowY !== null &&
+        textarea.style.overflowY !== this.ownedOverflowY)
+    );
+  }
+
   private disconnectMeasurementProbe(): void {
     this.measurementProbe?.remove();
     this.measurementHost?.remove();
@@ -540,6 +657,92 @@ function getFontLoadingSet(document: Document): FontLoadingSet | null {
     typeof fontLoadingSet.removeEventListener === 'function'
     ? fontLoadingSet
     : null;
+}
+
+function getMetricAncestors(textarea: HTMLTextAreaElement): Element[] {
+  const ancestors: Element[] = [];
+  let current = textarea.parentElement;
+  while (current) {
+    ancestors.push(current);
+    current = current.parentElement;
+  }
+  return ancestors;
+}
+
+function formMutationMayAffectTextarea(
+  textarea: HTMLTextAreaElement,
+  records: readonly MutationRecord[],
+): boolean {
+  const associatedId = textarea.getAttribute('form');
+  const currentForm = textarea.form;
+
+  return records.some((record) => {
+    if (record.target === textarea) {
+      return true;
+    }
+
+    if (record.type === 'attributes') {
+      return (
+        record.target === currentForm ||
+        (record.attributeName === 'id' &&
+          associatedId !== null &&
+          (record.target as Element).id === associatedId)
+      );
+    }
+
+    if (record.type !== 'childList') {
+      return false;
+    }
+
+    if (recordTouchesTextarea(record, textarea)) {
+      return true;
+    }
+
+    return [...record.addedNodes, ...record.removedNodes].some((node) =>
+      nodeContainsRelevantForm(node, associatedId, currentForm),
+    );
+  });
+}
+
+function recordTouchesTextarea(
+  record: MutationRecord,
+  textarea: HTMLTextAreaElement,
+): boolean {
+  return [...record.addedNodes, ...record.removedNodes].some((node) =>
+    nodeContains(node, textarea),
+  );
+}
+
+function nodeContains(node: Node, target: Node): boolean {
+  return (
+    node === target ||
+    (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(target))
+  );
+}
+
+function nodeContainsRelevantForm(
+  node: Node,
+  associatedId: string | null,
+  currentForm: HTMLFormElement | null,
+): boolean {
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return false;
+  }
+
+  const element = node as Element;
+  if (
+    element instanceof HTMLFormElement &&
+    (element === currentForm ||
+      (associatedId !== null && element.id === associatedId))
+  ) {
+    return true;
+  }
+
+  return [...element.querySelectorAll('form')].some(
+    (form) =>
+      form === currentForm ||
+      (associatedId !== null && form.id === associatedId),
+  );
 }
 
 function parsePixels(value: string): number {
