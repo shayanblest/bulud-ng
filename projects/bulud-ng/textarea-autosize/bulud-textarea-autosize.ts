@@ -110,8 +110,17 @@ export class BuludTextareaAutosize
         }
       };
       textarea.addEventListener('input', inputListener);
+      const pseudoStateListener = (): void => {
+        this.remeasureIfNeeded();
+      };
+      for (const type of PSEUDO_STATE_EVENTS) {
+        textarea.addEventListener(type, pseudoStateListener);
+      }
       onCleanup(() => {
         textarea.removeEventListener('input', inputListener);
+        for (const type of PSEUDO_STATE_EVENTS) {
+          textarea.removeEventListener(type, pseudoStateListener);
+        }
         this.disconnectWidthObserver();
         this.disconnectMutationObserver();
         this.disconnectFontLoadingObserver();
@@ -169,16 +178,28 @@ export class BuludTextareaAutosize
       return;
     }
 
+    const styles = getComputedStyle.call(view, textarea);
+    const padding = getVerticalPadding(styles);
+    const borders = getVerticalBorders(styles);
+    const horizontalScrollbarGutter = getHorizontalScrollbarGutter(
+      textarea,
+      styles,
+    );
+    const cssMaxHeight = getCssMaxContentHeight(
+      textarea,
+      styles,
+      padding,
+      borders,
+      horizontalScrollbarGutter,
+    );
     textarea.style.overflowY = 'hidden';
     textarea.style.height = '0px';
-    const styles = getComputedStyle.call(view, textarea);
     this.lastMeasurementSignature = getMeasurementSignature(
       textarea,
       styles,
       view,
+      cssMaxHeight,
     );
-    const padding = getVerticalPadding(styles);
-    const borders = getVerticalBorders(styles);
     const lineHeight = getLineHeight(textarea, styles, this.measurementRoot);
     const minRows = this.normalizedMinRows();
     const maxRows = this.normalizedMaxRows();
@@ -187,22 +208,12 @@ export class BuludTextareaAutosize
     const boxSizing = styles.boxSizing;
     this.syncMeasurementProbe();
     const contentHeight = this.measureContentHeight(textarea, padding);
-    const horizontalScrollbarGutter = getHorizontalScrollbarGutter(
-      textarea,
-      styles,
-    );
     const minHeight =
       minRows === null || lineHeight === null ? 0 : minRows * lineHeight;
     const maxHeight =
       effectiveMaxRows === null || lineHeight === null
         ? Number.POSITIVE_INFINITY
         : effectiveMaxRows * lineHeight;
-    const cssMaxHeight = getCssMaxContentHeight(
-      styles,
-      padding,
-      borders,
-      horizontalScrollbarGutter,
-    );
     const effectiveMaxHeight = Math.min(maxHeight, cssMaxHeight);
     const targetContentHeight = Math.min(
       effectiveMaxHeight,
@@ -349,7 +360,11 @@ export class BuludTextareaAutosize
       ? getContentBoxWidth(textarea, styles)
       : null;
     this.observer = new ResizeObserver((entries) => {
-      if (this.destroyed || !this.enabled()) {
+      if (
+        this.destroyed ||
+        !this.enabled() ||
+        isResolvingCssMaxHeight(textarea)
+      ) {
         return;
       }
 
@@ -400,7 +415,11 @@ export class BuludTextareaAutosize
     }
 
     this.mutationObserver = new MutationObserver(() => {
-      if (!this.destroyed && this.enabled()) {
+      if (
+        !this.destroyed &&
+        this.enabled() &&
+        !isResolvingCssMaxHeight(this.element.nativeElement)
+      ) {
         this.remeasureIfNeeded();
       }
     });
@@ -589,9 +608,26 @@ export class BuludTextareaAutosize
     }
 
     const styles = view.getComputedStyle(this.element.nativeElement);
+    const padding = getVerticalPadding(styles);
+    const borders = getVerticalBorders(styles);
+    const gutter = getHorizontalScrollbarGutter(
+      this.element.nativeElement,
+      styles,
+    );
+    const cssMaxHeight = getCssMaxContentHeight(
+      this.element.nativeElement,
+      styles,
+      padding,
+      borders,
+      gutter,
+    );
     if (
-      getMeasurementSignature(this.element.nativeElement, styles, view) !==
-      this.lastMeasurementSignature
+      getMeasurementSignature(
+        this.element.nativeElement,
+        styles,
+        view,
+        cssMaxHeight,
+      ) !== this.lastMeasurementSignature
     ) {
       this.resize();
     }
@@ -631,9 +667,16 @@ export class BuludTextareaAutosize
   }
 }
 
-function getMeasurementHostParent(
-  textarea: HTMLTextAreaElement,
-): HTMLElement | null {
+function getMeasurementHostParent(element: Element): HTMLElement | null {
+  const root = element.getRootNode();
+  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+    const host = (root as ShadowRoot).host;
+    if (host) {
+      return getMeasurementHostParent(host) ?? (host as HTMLElement);
+    }
+  }
+
+  const textarea = element as HTMLTextAreaElement;
   const body = textarea.ownerDocument.body;
   if (!body) {
     return null;
@@ -971,6 +1014,7 @@ function getMeasurementSignature(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
   view: Window,
+  cssMaxHeight: number,
 ): string {
   const placeholderStyles =
     textarea.value === '' && textarea.getAttribute('placeholder')
@@ -991,10 +1035,12 @@ function getMeasurementSignature(
       : []),
     `min-height:${styles.minHeight}`,
     `max-height:${styles.maxHeight}`,
+    `resolved-max-height:${cssMaxHeight}`,
   ].join('|');
 }
 
 function getCssMaxContentHeight(
+  textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
   padding: number,
   borders: number,
@@ -1005,9 +1051,17 @@ function getCssMaxContentHeight(
     return Number.POSITIVE_INFINITY;
   }
 
-  const physicalMaxHeight = parsePixels(maxHeight);
-  if (!Number.isFinite(physicalMaxHeight)) {
-    return Number.POSITIVE_INFINITY;
+  const physicalMaxHeight = parsePixelLength(maxHeight);
+  if (physicalMaxHeight === null) {
+    const resolvedPhysicalHeight = resolveCssMaxHeight(textarea);
+    if (resolvedPhysicalHeight === null) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return Math.max(
+      0,
+      resolvedPhysicalHeight - padding - borders - horizontalScrollbarGutter,
+    );
   }
 
   return styles.boxSizing === 'border-box'
@@ -1016,6 +1070,42 @@ function getCssMaxContentHeight(
         physicalMaxHeight - padding - borders - horizontalScrollbarGutter,
       )
     : Math.max(0, physicalMaxHeight - horizontalScrollbarGutter);
+}
+
+function resolveCssMaxHeight(textarea: HTMLTextAreaElement): number | null {
+  const resolutionHeight = '10000000px';
+  const previousHeight = textarea.style.height;
+  const previousOverflowY = textarea.style.overflowY;
+  resolvingCssMaxHeight.add(textarea);
+
+  try {
+    textarea.style.height = resolutionHeight;
+    textarea.style.overflowY = 'hidden';
+    const physicalHeight = textarea.getBoundingClientRect().height;
+    return Number.isFinite(physicalHeight) && physicalHeight < 10000000
+      ? physicalHeight
+      : null;
+  } finally {
+    textarea.style.height = previousHeight;
+    textarea.style.overflowY = previousOverflowY;
+    scheduleMicrotask(() => resolvingCssMaxHeight.delete(textarea));
+  }
+}
+
+const resolvingCssMaxHeight = new WeakSet<HTMLTextAreaElement>();
+
+function isResolvingCssMaxHeight(textarea: HTMLTextAreaElement): boolean {
+  return resolvingCssMaxHeight.has(textarea);
+}
+
+function parsePixelLength(value: string): number | null {
+  const match = /^(-?(?:\d+\.?\d*|\.\d+))px$/i.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+
+  const pixels = Number(match[1]);
+  return Number.isFinite(pixels) ? pixels : null;
 }
 
 function scheduleMicrotask(callback: () => void): void {
@@ -1092,4 +1182,14 @@ const PLACEHOLDER_METRIC_PROPERTIES = [
   'word-break',
   'word-spacing',
   'overflow-wrap',
+] as const;
+
+const PSEUDO_STATE_EVENTS = [
+  'focus',
+  'blur',
+  'pointerenter',
+  'pointerleave',
+  'pointerdown',
+  'pointerup',
+  'pointercancel',
 ] as const;

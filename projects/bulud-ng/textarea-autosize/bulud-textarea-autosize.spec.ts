@@ -1,5 +1,9 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ViewEncapsulation,
+} from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BuludTextareaAutosize } from './bulud-textarea-autosize';
@@ -165,6 +169,22 @@ class DynamicFormHostComponent {
   `,
 })
 class ApplicationRootHostComponent {
+  minRows = 2;
+  maxRows = 3;
+}
+
+@Component({
+  imports: [BuludTextareaAutosize],
+  encapsulation: ViewEncapsulation.ShadowDom,
+  template: `
+    <textarea
+      buludTextareaAutosize
+      [minRows]="minRows"
+      [maxRows]="maxRows"
+    ></textarea>
+  `,
+})
+class ShadowRootHostComponent {
   minRows = 2;
   maxRows = 3;
 }
@@ -828,6 +848,44 @@ describe('BuludTextareaAutosize', () => {
 
     fixture.componentInstance.minRows = 1;
     fixture.componentInstance.maxRows = 2;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.overflowY).toBe('hidden');
+    fixture.destroy();
+  });
+
+  it('measures normal line-height row limits inside a ShadowRoot', async () => {
+    contentHeight = 20;
+    const fixture = TestBed.createComponent(ShadowRootHostComponent);
+    const textarea = fixture.nativeElement.shadowRoot.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.style.width = '220px';
+    textarea.style.lineHeight = 'normal';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const probe = document.querySelector(
+      'div[aria-hidden="true"]',
+    ) as HTMLDivElement | null;
+    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
+    expect(probeTextarea?.getBoundingClientRect().width).toBeGreaterThan(0);
+    expect(probeTextarea?.getBoundingClientRect().height).toBeGreaterThan(0);
+    const minRowsHeight = textarea.getBoundingClientRect().height;
+
+    fixture.componentInstance.minRows = 3;
+    fixture.componentInstance.maxRows = 3;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.getBoundingClientRect().height).toBeGreaterThan(
+      minRowsHeight,
+    );
+
+    fixture.componentInstance.minRows = 1;
+    fixture.componentInstance.maxRows = 1;
+    contentHeight = 10;
+    textarea.dispatchEvent(new Event('input'));
     fixture.changeDetectorRef.markForCheck();
     await fixture.whenStable();
     expect(textarea.style.overflowY).toBe('hidden');

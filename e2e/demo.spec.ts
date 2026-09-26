@@ -420,6 +420,52 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(inheritedWidth);
     await textarea.evaluate((element) => {
+      element.parentElement!.style.setProperty(
+        '--textarea-e2e-line-height',
+        '20px',
+      );
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThan(96);
+    await textarea.blur();
+    const pseudoStateStyle = await page.addStyleTag({
+      content:
+        '#textarea-autosize-input:focus { padding-top: 32px; padding-bottom: 28px; border-top-width: 6px; border-bottom-width: 7px; }',
+    });
+    const pseudoStateWidth = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+    const pseudoStateHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.focus();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(pseudoStateHeight);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().width),
+      )
+      .toBe(pseudoStateWidth);
+    await textarea.blur();
+    await pseudoStateStyle.evaluate((element) => element.remove());
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.setProperty(
+        '--textarea-e2e-line-height',
+        '20px',
+      );
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThan(96);
+    await textarea.evaluate((element) => {
       element.style.lineHeight = 'normal';
       element.parentElement!.style.removeProperty('--textarea-e2e-line-height');
     });
@@ -509,6 +555,43 @@ test.describe('Bulud component demo', () => {
       .toBe(true);
     await textarea.evaluate((element) => {
       element.style.maxHeight = '';
+    });
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.height = '160px';
+      element.style.boxSizing = 'content-box';
+      element.style.maxHeight = '50%';
+      element.style.padding = '6px 18px';
+      element.style.border = '2px solid';
+      element.style.lineHeight = '20px';
+    });
+    await textarea.fill('percentage max-height '.repeat(40));
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          physicalHeight: element.getBoundingClientRect().height,
+          maxHeight: parseFloat(getComputedStyle(element).maxHeight),
+        })),
+      )
+      .toEqual({ physicalHeight: 96, maxHeight: 50 });
+    for (const maxHeight of ['calc(80px - 10px)', 'var(--e2e-max-height)']) {
+      await textarea.evaluate((element, value) => {
+        element.style.setProperty('--e2e-max-height', '70px');
+        element.style.maxHeight = value;
+      }, maxHeight);
+      await expect
+        .poll(() =>
+          textarea.evaluate((element) => ({
+            physicalHeight: element.getBoundingClientRect().height,
+            maxHeight: parseFloat(getComputedStyle(element).maxHeight),
+            overflowY: getComputedStyle(element).overflowY,
+          })),
+        )
+        .toEqual({ physicalHeight: 86, maxHeight: 70, overflowY: 'auto' });
+    }
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '';
+      element.parentElement!.style.height = '';
     });
 
     for (const transformProperty of ['transform', 'scale']) {
