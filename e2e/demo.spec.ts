@@ -337,6 +337,11 @@ test.describe('Bulud component demo', () => {
   }) => {
     const textarea = page.locator('#textarea-autosize-input');
     const enabled = page.locator('#textarea-autosize-enabled');
+    const bodyStructure = await page.locator('body').evaluate((element) => ({
+      childCount: element.children.length,
+      firstChild: element.firstElementChild?.tagName,
+      lastChild: element.lastElementChild?.tagName,
+    }));
 
     await textarea.evaluate((element) => {
       element.style.lineHeight = 'normal';
@@ -345,6 +350,67 @@ test.describe('Bulud component demo', () => {
     const initialHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
+    for (const transformProperty of ['transform', 'scale']) {
+      for (const boxSizing of ['content-box', 'border-box']) {
+        await textarea.evaluate((element, nextBoxSizing) => {
+          element.style.width = '220px';
+          element.style.boxSizing = nextBoxSizing;
+          element.style.padding = '6px 18px';
+          element.style.border = '2px solid';
+          element.style.lineHeight = 'normal';
+          element.style.fontSize = '16px';
+          element.style.setProperty('transform', 'none');
+          element.style.setProperty('scale', 'none');
+        }, boxSizing);
+        await textarea.fill('short');
+        const minHeight = await textarea.evaluate((element) =>
+          parseFloat(getComputedStyle(element).height),
+        );
+        await textarea.evaluate((element, property) => {
+          element.style.setProperty(property, 'scale(.5)');
+        }, transformProperty);
+        await expect
+          .poll(() =>
+            textarea.evaluate((element) =>
+              parseFloat(getComputedStyle(element).height),
+            ),
+          )
+          .toBe(minHeight);
+
+        await textarea.evaluate((element, property) => {
+          element.style.setProperty(property, 'none');
+        }, transformProperty);
+        await textarea.fill('line\n'.repeat(20));
+        const maxHeight = await textarea.evaluate((element) =>
+          parseFloat(getComputedStyle(element).height),
+        );
+        await textarea.evaluate((element, property) => {
+          element.style.setProperty(property, 'scale(.5)');
+        }, transformProperty);
+        await expect
+          .poll(() =>
+            textarea.evaluate((element) =>
+              parseFloat(getComputedStyle(element).height),
+            ),
+          )
+          .toBe(maxHeight);
+        await textarea.evaluate((element) => {
+          element.style.setProperty('transform', 'none');
+          element.style.setProperty('scale', 'none');
+        });
+      }
+    }
+    await textarea.evaluate((element) => {
+      element.style.width = '';
+      element.style.boxSizing = '';
+      element.style.padding = '';
+      element.style.border = '';
+      element.style.lineHeight = 'normal';
+      element.style.fontSize = '';
+      element.style.setProperty('transform', 'none');
+      element.style.setProperty('scale', 'none');
+    });
+    await textarea.fill('Short value.');
     await expect
       .poll(() =>
         textarea.evaluate((element) => getComputedStyle(element).lineHeight),
@@ -367,7 +433,7 @@ test.describe('Bulud component demo', () => {
       lastChild: false,
     });
     await expect
-      .poll(() => page.locator('body > div[aria-hidden="true"]').count())
+      .poll(() => page.locator('html > div[aria-hidden="true"]').count())
       .toBeGreaterThan(0);
 
     const widthBeforeMetricChange = await textarea.evaluate(
@@ -649,14 +715,28 @@ test.describe('Bulud component demo', () => {
       .toBe(true);
 
     await enabled.uncheck();
-    await expect(page.locator('body > div[aria-hidden="true"]')).toHaveCount(0);
+    await expect(page.locator('html > div[aria-hidden="true"]')).toHaveCount(0);
+    const bodyStructureAfterDisable = await page.locator('body').evaluate(
+      (element) => ({
+        childCount: element.children.length,
+        firstChild: element.firstElementChild?.tagName,
+        lastChild: element.lastElementChild?.tagName,
+      }),
+    );
+    expect(bodyStructureAfterDisable).toEqual(bodyStructure);
     await page.locator('#textarea-autosize-long').click();
     await expect(textarea).toHaveCSS('height', `${initialHeight}px`);
 
     await enabled.check();
     await expect
-      .poll(() => page.locator('body > div[aria-hidden="true"]').count())
+      .poll(() => page.locator('html > div[aria-hidden="true"]').count())
       .toBeGreaterThan(0);
+    const bodyStructureAfter = await page.locator('body').evaluate((element) => ({
+      childCount: element.children.length,
+      firstChild: element.firstElementChild?.tagName,
+      lastChild: element.lastElementChild?.tagName,
+    }));
+    expect(bodyStructureAfter).toEqual(bodyStructure);
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),

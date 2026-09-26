@@ -510,7 +510,43 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
-  it('includes a horizontal scrollbar gutter for wrap-off without changing soft wrapping', async () => {
+  it('handles horizontal scrollbar gutters for wrap-off and preserves soft wrapping', async () => {
+    const cases = [
+      { overflowX: 'scroll', overflowing: false, expectedHeight: '55px' },
+      { overflowX: 'scroll', overflowing: true, expectedHeight: '55px' },
+      { overflowX: 'auto', overflowing: false, expectedHeight: '40px' },
+      { overflowX: 'auto', overflowing: true, expectedHeight: '55px' },
+      { overflowX: 'hidden', overflowing: true, expectedHeight: '40px' },
+    ] as const;
+
+    for (const testCase of cases) {
+      const fixture = createHost((textarea) => {
+        textarea.setAttribute('wrap', 'off');
+        textarea.style.lineHeight = '20px';
+        textarea.style.overflowX = testCase.overflowX;
+        Object.defineProperty(textarea, 'scrollWidth', {
+          configurable: true,
+          get: () => (testCase.overflowing ? 200 : 100),
+        });
+        Object.defineProperty(textarea, 'clientWidth', {
+          configurable: true,
+          get: () => 100,
+        });
+        Object.defineProperty(textarea, 'offsetHeight', {
+          configurable: true,
+          get: () => (testCase.overflowX === 'scroll' || testCase.overflowing ? 55 : 40),
+        });
+        Object.defineProperty(textarea, 'clientHeight', {
+          configurable: true,
+          get: () => 40,
+        });
+      });
+      const textarea = textareaOf(fixture);
+
+      expect(textarea.style.height).toBe(testCase.expectedHeight);
+      fixture.destroy();
+    }
+
     const fixture = createHost((textarea) => {
       textarea.setAttribute('wrap', 'off');
       textarea.style.lineHeight = '20px';
@@ -522,19 +558,8 @@ describe('BuludTextareaAutosize', () => {
         configurable: true,
         get: () => 100,
       });
-      Object.defineProperty(textarea, 'offsetHeight', {
-        configurable: true,
-        get: () => 55,
-      });
-      Object.defineProperty(textarea, 'clientHeight', {
-        configurable: true,
-        get: () => 40,
-      });
     });
     const textarea = textareaOf(fixture);
-
-    expect(textarea.style.height).toBe('55px');
-
     textarea.setAttribute('wrap', 'soft');
     await fixture.whenStable();
     expect(textarea.style.height).toBe('40px');
@@ -596,6 +621,7 @@ describe('BuludTextareaAutosize', () => {
 
   it('keeps only-child and last-child selectors intact and removes the probe', () => {
     const fixture = TestBed.createComponent(HostComponent);
+    const bodyChildrenBefore = [...document.body.children];
     const textarea = fixture.nativeElement.querySelector('textarea');
     expect(textarea.matches(':only-child')).toBeTrue();
     expect(textarea.matches(':last-child')).toBeTrue();
@@ -604,15 +630,17 @@ describe('BuludTextareaAutosize', () => {
 
     expect(textarea.matches(':only-child')).toBeTrue();
     expect(textarea.matches(':last-child')).toBeTrue();
+    expect([...document.body.children]).toEqual(bodyChildrenBefore);
     expect(
-      document.body.querySelectorAll('div[aria-hidden="true"]'),
+      document.documentElement.querySelectorAll('div[aria-hidden="true"]'),
     ).toHaveSize(1);
 
     fixture.destroy();
 
     expect(
-      document.body.querySelectorAll('div[aria-hidden="true"]'),
+      document.documentElement.querySelectorAll('div[aria-hidden="true"]'),
     ).toHaveSize(0);
+    expect([...document.body.children]).toEqual(bodyChildrenBefore);
   });
 
   it('preserves fractional row geometry at the maxRows boundary', () => {

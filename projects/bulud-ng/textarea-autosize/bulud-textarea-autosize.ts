@@ -228,8 +228,12 @@ export class BuludTextareaAutosize
     }
 
     const textarea = this.element.nativeElement;
+    const documentElement = textarea.ownerDocument.documentElement;
     const body = textarea.ownerDocument.body;
-    if (!body || typeof body.attachShadow !== 'function') {
+    if (
+      !documentElement ||
+      !body
+    ) {
       return;
     }
 
@@ -242,8 +246,11 @@ export class BuludTextareaAutosize
     host.style.overflow = 'visible';
     host.style.visibility = 'hidden';
     host.style.pointerEvents = 'none';
+    if (typeof host.attachShadow !== 'function') {
+      return;
+    }
     const root = host.attachShadow({ mode: 'open' });
-    body.appendChild(host);
+    documentElement.insertBefore(host, body);
 
     const probe = textarea.cloneNode(false) as HTMLTextAreaElement;
     probe.removeAttribute('id');
@@ -260,6 +267,7 @@ export class BuludTextareaAutosize
     probe.style.minHeight = '0px';
     probe.style.maxHeight = 'none';
     probe.style.overflow = 'hidden';
+    clearMeasurementTransforms(probe);
     root.appendChild(probe);
     this.measurementHost = host;
     this.measurementRoot = root;
@@ -517,6 +525,7 @@ function measureSingleRowHeight(
   probe.style.minHeight = '0px';
   probe.style.maxHeight = 'none';
   probe.style.overflow = 'hidden';
+  clearMeasurementTransforms(probe);
   copyMeasurementStyles(probe, styles);
   probe.style.width = `${getContentBoxWidth(textarea, styles)}px`;
 
@@ -585,13 +594,28 @@ function getHorizontalScrollbarGutter(
 ): number {
   if (
     textarea.getAttribute('wrap') !== 'off' ||
-    getHorizontalOverflowMode(textarea, styles) === 'hidden' ||
+    getHorizontalOverflowMode(textarea, styles) === 'hidden'
+  ) {
+    return 0;
+  }
+
+  if (
+    getHorizontalOverflowMode(textarea, styles) === 'auto' &&
     textarea.scrollWidth <= textarea.clientWidth
   ) {
     return 0;
   }
 
   return Math.max(0, textarea.offsetHeight - textarea.clientHeight - getVerticalBorders(styles));
+}
+
+function clearMeasurementTransforms(element: HTMLTextAreaElement): void {
+  element.style.setProperty('transform', 'none');
+  element.style.setProperty('transform-origin', '0 0');
+  element.style.setProperty('scale', 'none');
+  element.style.setProperty('rotate', 'none');
+  element.style.setProperty('translate', 'none');
+  element.style.setProperty('perspective', 'none');
 }
 
 function getHorizontalOverflowMode(
