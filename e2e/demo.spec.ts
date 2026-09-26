@@ -360,6 +360,22 @@ test.describe('Bulud component demo', () => {
     const initialHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
+    const probeGeometry = await textarea.evaluate((element) => {
+      const host = [
+        ...document.querySelectorAll('div[aria-hidden="true"]'),
+      ].find((candidate) => candidate.shadowRoot?.querySelector('textarea'));
+      const probe = host?.shadowRoot?.querySelector('textarea');
+      return {
+        hostInBody: host?.parentElement?.closest('body') !== null,
+        width: probe?.getBoundingClientRect().width ?? 0,
+        height: probe?.getBoundingClientRect().height ?? 0,
+        applicationRoot: element.closest('app-root') !== null,
+      };
+    });
+    expect(probeGeometry.applicationRoot).toBe(true);
+    expect(probeGeometry.hostInBody).toBe(true);
+    expect(probeGeometry.width).toBeGreaterThan(0);
+    expect(probeGeometry.height).toBeGreaterThan(0);
 
     await textarea.evaluate((element) => {
       element.style.height = '20px';
@@ -655,6 +671,66 @@ test.describe('Bulud component demo', () => {
       await textarea.fill(wrapBoundaryValue);
       await expect.poll(layoutDifference).toBeLessThan(1);
     }
+
+    for (const overflowX of ['scroll', 'auto', 'hidden'] as const) {
+      await textarea.evaluate((element, mode) => {
+        element.style.width = '220px';
+        element.style.boxSizing = 'content-box';
+        element.style.padding = '6px 18px';
+        element.style.border = '2px solid';
+        element.style.lineHeight = '20px';
+        element.style.maxHeight = '80px';
+        element.style.overflowX = mode;
+        element.setAttribute('wrap', 'off');
+      }, overflowX);
+      await textarea.fill(
+        overflowX === 'hidden'
+          ? 'short'
+          : `${'line\n'.repeat(10)}${'0123456789'.repeat(40)}`,
+      );
+      if (overflowX === 'hidden') {
+        await expect(textarea).toHaveCSS('overflow-y', 'hidden');
+        continue;
+      }
+
+      await expect
+        .poll(() =>
+          textarea.evaluate((element) => ({
+            horizontalOverflow: element.scrollWidth > element.clientWidth,
+            physicalHeight: element.getBoundingClientRect().height,
+            cssHeight: parseFloat(getComputedStyle(element).height),
+            scrollable: getComputedStyle(element).overflowY,
+          })),
+        )
+        .toMatchObject({
+          horizontalOverflow: true,
+          scrollable: 'auto',
+        });
+      const maxGeometry = await textarea.evaluate((element) => {
+        const styles = getComputedStyle(element);
+        return {
+          physicalHeight: element.getBoundingClientRect().height,
+          cssHeight: parseFloat(styles.height),
+          maxHeight: parseFloat(styles.maxHeight),
+          padding:
+            parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom),
+          borders:
+            parseFloat(styles.borderTopWidth) +
+            parseFloat(styles.borderBottomWidth),
+        };
+      });
+      expect(maxGeometry.cssHeight).toBeLessThanOrEqual(
+        maxGeometry.maxHeight + 1,
+      );
+      expect(maxGeometry.physicalHeight).toBeLessThanOrEqual(
+        maxGeometry.maxHeight + maxGeometry.padding + maxGeometry.borders + 1,
+      );
+    }
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '';
+      element.style.overflowX = '';
+      element.setAttribute('wrap', 'soft');
+    });
 
     for (const transformTarget of ['textarea', 'ancestor']) {
       for (const boxSizing of ['content-box', 'border-box']) {

@@ -99,13 +99,15 @@ class MockFontLoadingSet {
 @Component({
   imports: [BuludTextareaAutosize],
   template: `
-    <textarea
-      buludTextareaAutosize
-      [enabled]="enabled"
-      [minRows]="minRows"
-      [maxRows]="maxRows"
-      [value]="value"
-    ></textarea>
+    <div class="textarea-host">
+      <textarea
+        buludTextareaAutosize
+        [enabled]="enabled"
+        [minRows]="minRows"
+        [maxRows]="maxRows"
+        [value]="value"
+      ></textarea>
+    </div>
   `,
 })
 class HostComponent {
@@ -149,6 +151,22 @@ class DynamicFormHostComponent {
   enabled = true;
   formId: string | null = 'form-a';
   value = '';
+}
+
+@Component({
+  selector: 'app-root',
+  imports: [BuludTextareaAutosize],
+  template: `
+    <textarea
+      buludTextareaAutosize
+      [minRows]="minRows"
+      [maxRows]="maxRows"
+    ></textarea>
+  `,
+})
+class ApplicationRootHostComponent {
+  minRows = 2;
+  maxRows = 3;
 }
 
 describe('BuludTextareaAutosize', () => {
@@ -732,6 +750,88 @@ describe('BuludTextareaAutosize', () => {
     expect(borderBoxTextarea.style.height).toBe('80px');
     expect(borderBoxTextarea.style.overflowY).toBe('auto');
     borderBoxFixture.destroy();
+  });
+
+  it('subtracts the horizontal gutter from content-box CSS max-height', () => {
+    for (const boxSizing of ['content-box', 'border-box'] as const) {
+      contentHeight = 70;
+      const fixture = createHost((textarea) => {
+        textarea.setAttribute('wrap', 'off');
+        textarea.style.boxSizing = boxSizing;
+        if (boxSizing === 'border-box') {
+          textarea.style.paddingBlock = '6px';
+          textarea.style.borderBlock = '2px solid';
+        }
+        textarea.style.maxHeight = '80px';
+        textarea.style.overflowX = 'scroll';
+        Object.defineProperty(textarea, 'scrollWidth', {
+          configurable: true,
+          get: () => 200,
+        });
+        Object.defineProperty(textarea, 'clientWidth', {
+          configurable: true,
+          get: () => 100,
+        });
+        Object.defineProperty(textarea, 'offsetHeight', {
+          configurable: true,
+          get: () => (boxSizing === 'border-box' ? 59 : 55),
+        });
+        Object.defineProperty(textarea, 'clientHeight', {
+          configurable: true,
+          get: () => 40,
+        });
+      });
+      const textarea = textareaOf(fixture);
+
+      expect(textarea.style.height).toBe('80px');
+      expect(textarea.style.overflowY).toBe('auto');
+
+      contentHeight = 40;
+      textarea.value = 'fitting';
+      textarea.dispatchEvent(new Event('input'));
+      expect(textarea.style.height).toBe(
+        boxSizing === 'border-box' ? '71px' : '55px',
+      );
+      expect(textarea.style.overflowY).toBe('hidden');
+      fixture.destroy();
+    }
+  });
+
+  it('keeps the probe measurable inside a body-level application root', async () => {
+    contentHeight = 20;
+    const fixture = TestBed.createComponent(ApplicationRootHostComponent);
+    const textarea = fixture.nativeElement.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.style.width = '220px';
+    textarea.style.lineHeight = 'normal';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const probe = fixture.nativeElement.querySelector(
+      'div[aria-hidden="true"]',
+    ) as HTMLDivElement | null;
+    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
+    expect(probeTextarea?.getBoundingClientRect().width).toBeGreaterThan(0);
+    expect(probeTextarea?.getBoundingClientRect().height).toBeGreaterThan(0);
+    const minRowsHeight = textarea.getBoundingClientRect().height;
+    expect(minRowsHeight).toBeGreaterThan(0);
+
+    fixture.componentInstance.minRows = 3;
+    fixture.componentInstance.maxRows = 3;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.getBoundingClientRect().height).toBeGreaterThan(
+      minRowsHeight,
+    );
+
+    fixture.componentInstance.minRows = 1;
+    fixture.componentInstance.maxRows = 2;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.overflowY).toBe('hidden');
+    fixture.destroy();
   });
 
   it('rebinds reset handling across dynamic form associations', async () => {

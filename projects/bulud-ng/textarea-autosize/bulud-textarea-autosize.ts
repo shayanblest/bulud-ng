@@ -645,17 +645,7 @@ function getMeasurementHostParent(
   }
 
   if (current?.parentElement === body) {
-    if (current !== textarea.parentElement) {
-      return current;
-    }
-
-    const existingContainer = [...body.children].find(
-      (child) => child !== textarea && child !== current,
-    );
-    return (
-      (existingContainer as HTMLElement | undefined) ??
-      textarea.ownerDocument.head
-    );
+    return current;
   }
 
   return null;
@@ -1025,7 +1015,7 @@ function getCssMaxContentHeight(
         0,
         physicalMaxHeight - padding - borders - horizontalScrollbarGutter,
       )
-    : Math.max(0, physicalMaxHeight);
+    : Math.max(0, physicalMaxHeight - horizontalScrollbarGutter);
 }
 
 function scheduleMicrotask(callback: () => void): void {
