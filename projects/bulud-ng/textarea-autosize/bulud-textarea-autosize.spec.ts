@@ -425,6 +425,38 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('remeasures ancestor dir and data-theme attribute metric changes', async () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-attribute-metrics textarea { line-height: 20px; }
+      .textarea-attribute-metrics[dir='rtl'] textarea { line-height: 25px; }
+      .textarea-attribute-metrics[data-theme='dark'] textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      contentHeight = 0;
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        host.maxRows = 3;
+        textarea.parentElement!.classList.add('textarea-attribute-metrics');
+      });
+      const textarea = textareaOf(fixture);
+      const ancestor = textarea.parentElement!;
+
+      expect(textarea.style.height).toBe('40px');
+      ancestor.setAttribute('dir', 'rtl');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('50px');
+
+      ancestor.setAttribute('data-theme', 'dark');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('ignores unrelated document churn while retaining relevant observers', async () => {
     const view = document.defaultView!;
     const originalGetComputedStyle = view.getComputedStyle;
@@ -890,6 +922,37 @@ describe('BuludTextareaAutosize', () => {
     await fixture.whenStable();
     expect(textarea.style.overflowY).toBe('hidden');
     fixture.destroy();
+  });
+
+  it('creates a measurable probe for a textarea directly under body', async () => {
+    contentHeight = 20;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      host.maxRows = 3;
+      textarea.style.width = '220px';
+      textarea.style.lineHeight = 'normal';
+    });
+    const textarea = textareaOf(fixture);
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    textarea.parentElement!.removeChild(textarea);
+    document.body.appendChild(textarea);
+    expect(textarea.parentElement).toBe(document.body);
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+
+    const probe = document.querySelector(
+      'div[aria-hidden="true"]',
+    ) as HTMLDivElement | null;
+    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
+    expect(probeTextarea?.getBoundingClientRect().width).toBeGreaterThan(0);
+    expect(probeTextarea?.getBoundingClientRect().height).toBeGreaterThan(0);
+    expect(textarea.getBoundingClientRect().height).toBeGreaterThan(0);
+    fixture.destroy();
+    expect(document.querySelectorAll('div[aria-hidden="true"]')).toHaveSize(0);
+    textarea.remove();
   });
 
   it('rebinds reset handling across dynamic form associations', async () => {

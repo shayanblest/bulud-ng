@@ -53,6 +53,7 @@ export class BuludTextareaAutosize
   private lastValue = '';
   private lastObservedWidth: number | null = null;
   private lastObservedProbeWidth: number | null = null;
+  private constraintContainer: Element | null = null;
   private ownedHeight: string | null = null;
   private ownedOverflowY: string | null = null;
   private observer: ResizeObserver | null = null;
@@ -379,6 +380,13 @@ export class BuludTextareaAutosize
           continue;
         }
 
+        if (entry.target === this.constraintContainer) {
+          if (this.hasMeasurementSignatureChanged()) {
+            shouldResize = true;
+          }
+          continue;
+        }
+
         if (entry.target !== textarea) {
           continue;
         }
@@ -406,6 +414,7 @@ export class BuludTextareaAutosize
     if (this.measurementProbe) {
       this.observer.observe(this.measurementProbe);
     }
+    this.updateConstraintObservation();
   }
 
   private connectMutationObserver(): void {
@@ -435,7 +444,7 @@ export class BuludTextareaAutosize
     for (const ancestor of this.metricAncestors) {
       this.mutationObserver.observe(ancestor, {
         attributes: true,
-        attributeFilter: ['class', 'style'],
+        attributeFilter: ['class', 'style', 'dir', 'data-theme'],
       });
     }
 
@@ -471,6 +480,7 @@ export class BuludTextareaAutosize
     this.observer = null;
     this.lastObservedWidth = null;
     this.lastObservedProbeWidth = null;
+    this.constraintContainer = null;
     this.ownedHeight = null;
     this.ownedOverflowY = null;
     this.disconnectMeasurementProbe();
@@ -595,9 +605,10 @@ export class BuludTextareaAutosize
     for (const ancestor of this.metricAncestors) {
       this.mutationObserver.observe(ancestor, {
         attributes: true,
-        attributeFilter: ['class', 'style'],
+        attributeFilter: ['class', 'style', 'dir', 'data-theme'],
       });
     }
+    this.updateConstraintObservation();
   }
 
   private remeasureIfNeeded(): void {
@@ -608,6 +619,35 @@ export class BuludTextareaAutosize
 
     if (this.hasMeasurementSignatureChanged()) {
       this.resize();
+      this.updateConstraintObservation();
+    }
+  }
+
+  private updateConstraintObservation(): void {
+    if (!this.observer || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const textarea = this.element.nativeElement;
+    const view = this.document.defaultView;
+    if (!view || typeof view.getComputedStyle !== 'function') {
+      return;
+    }
+
+    const styles = view.getComputedStyle(textarea);
+    const nextContainer = hasRelativeMaxHeight(styles)
+      ? textarea.parentElement
+      : null;
+    if (nextContainer === this.constraintContainer) {
+      return;
+    }
+
+    if (this.constraintContainer) {
+      this.observer.unobserve(this.constraintContainer);
+    }
+    this.constraintContainer = nextContainer;
+    if (nextContainer) {
+      this.observer.observe(nextContainer);
     }
   }
 
@@ -690,6 +730,10 @@ function getMeasurementHostParent(element: Element): HTMLElement | null {
     return null;
   }
 
+  if (textarea.parentElement === body) {
+    return body;
+  }
+
   let current = textarea.parentElement;
   while (current && current.parentElement !== body) {
     current = current.parentElement;
@@ -742,6 +786,15 @@ function getMetricAncestors(textarea: HTMLTextAreaElement): Element[] {
     current = current.parentElement;
   }
   return ancestors;
+}
+
+function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {
+  const maxHeight = styles.maxHeight.trim();
+  return (
+    maxHeight !== '' &&
+    maxHeight !== 'none' &&
+    parsePixelLength(maxHeight) === null
+  );
 }
 
 function formMutationMayAffectTextarea(

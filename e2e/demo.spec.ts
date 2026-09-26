@@ -574,6 +574,22 @@ test.describe('Bulud component demo', () => {
         })),
       )
       .toEqual({ physicalHeight: 96, maxHeight: 50 });
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.height = '80px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeLessThan(96);
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    const shrunkLayoutHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.height = '240px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(shrunkLayoutHeight);
     for (const maxHeight of ['calc(80px - 10px)', 'var(--e2e-max-height)']) {
       await textarea.evaluate((element, value) => {
         element.style.setProperty('--e2e-max-height', '70px');
