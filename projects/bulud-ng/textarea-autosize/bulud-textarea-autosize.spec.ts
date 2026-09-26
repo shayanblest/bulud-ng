@@ -98,6 +98,23 @@ class HostComponent {
   value = '';
 }
 
+@Component({
+  imports: [BuludTextareaAutosize],
+  template: `
+    <form>
+      <textarea
+        buludTextareaAutosize
+        [enabled]="enabled"
+        [value]="value"
+      ></textarea>
+    </form>
+  `,
+})
+class FormHostComponent {
+  enabled = true;
+  value = '';
+}
+
 describe('BuludTextareaAutosize', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
   let contentHeight = 40;
@@ -322,6 +339,96 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.overflowY).toBe('auto');
   });
 
+  it('remeasures empty placeholders and removes stale probe placeholders', async () => {
+    contentHeight = 40;
+    const fixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      textarea.setAttribute('placeholder', 'Short');
+      host.value = '';
+    });
+    const textarea = textareaOf(fixture);
+
+    expect(textarea.style.height).toBe('40px');
+
+    contentHeight = 80;
+    textarea.setAttribute('placeholder', 'A much longer localized placeholder');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+
+    const probe = document.documentElement
+      .querySelector<HTMLDivElement>('div[aria-hidden="true"]')
+      ?.shadowRoot?.querySelector('textarea');
+    expect(probe?.getAttribute('placeholder')).toBe(
+      'A much longer localized placeholder',
+    );
+
+    contentHeight = 20;
+    textarea.removeAttribute('placeholder');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('20px');
+    expect(probe?.hasAttribute('placeholder')).toBeFalse();
+
+    contentHeight = 60;
+    textarea.value = 'non-empty';
+    textarea.dispatchEvent(new Event('input'));
+    textarea.setAttribute('placeholder', 'A different placeholder');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('60px');
+  });
+
+  it('resizes after native form reset and reconnects exactly once', async () => {
+    contentHeight = 80;
+    const fixture = TestBed.createComponent(FormHostComponent);
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const textarea = fixture.nativeElement.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    textarea.style.height = '33px';
+    fixture.componentInstance.value = 'long current value';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+
+    expect(textarea.style.height).toBe('80px');
+
+    textarea.defaultValue = 'short default value';
+    contentHeight = 20;
+    form.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('short default value');
+    expect(textarea.style.height).toBe('20px');
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('33px');
+
+    textarea.defaultValue = 'disabled reset';
+    contentHeight = 80;
+    form.reset();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('33px');
+
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+
+    textarea.defaultValue = 're-enabled reset';
+    contentHeight = 20;
+    form.reset();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('20px');
+
+    fixture.destroy();
+    textarea.defaultValue = 'after destroy';
+    contentHeight = 80;
+    form.reset();
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('33px');
+  });
+
   it('does not produce a different result for an unchanged input', () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);
@@ -534,7 +641,8 @@ describe('BuludTextareaAutosize', () => {
         });
         Object.defineProperty(textarea, 'offsetHeight', {
           configurable: true,
-          get: () => (testCase.overflowX === 'scroll' || testCase.overflowing ? 55 : 40),
+          get: () =>
+            testCase.overflowX === 'scroll' || testCase.overflowing ? 55 : 40,
         });
         Object.defineProperty(textarea, 'clientHeight', {
           configurable: true,

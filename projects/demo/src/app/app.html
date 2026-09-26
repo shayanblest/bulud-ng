@@ -1197,11 +1197,17 @@
             </label>
           </div>
 
+          <form id="textarea-autosize-form" class="hidden">
+            <button id="textarea-autosize-reset" type="reset">
+              Reset textarea
+            </button>
+          </form>
           <div
             class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start"
           >
             <textarea
               id="textarea-autosize-input"
+              form="textarea-autosize-form"
               buludTextareaAutosize
               [enabled]="textareaAutosizeEnabled()"
               [minRows]="textareaAutosizeMinRows()"

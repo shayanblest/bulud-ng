@@ -56,6 +56,8 @@ export class BuludTextareaAutosize
   private mutationObserver: MutationObserver | null = null;
   private fontLoadingSet: FontLoadingSet | null = null;
   private fontLoadingListener: EventListener | null = null;
+  private resetForm: HTMLFormElement | null = null;
+  private resetListener: EventListener | null = null;
   private measurementProbe: HTMLTextAreaElement | null = null;
   private measurementHost: HTMLDivElement | null = null;
   private measurementRoot: ShadowRoot | null = null;
@@ -93,6 +95,7 @@ export class BuludTextareaAutosize
       this.connectWidthObserver();
       this.connectMutationObserver();
       this.connectFontLoadingObserver();
+      this.connectFormResetListener();
       const textarea = this.element.nativeElement;
       const inputListener = (): void => {
         if (textarea.value !== this.lastValue) {
@@ -105,6 +108,7 @@ export class BuludTextareaAutosize
         this.disconnectWidthObserver();
         this.disconnectMutationObserver();
         this.disconnectFontLoadingObserver();
+        this.disconnectFormResetListener();
         this.restoreOriginalStyles();
       });
     });
@@ -140,6 +144,7 @@ export class BuludTextareaAutosize
     this.disconnectWidthObserver();
     this.disconnectMutationObserver();
     this.disconnectFontLoadingObserver();
+    this.disconnectFormResetListener();
     this.restoreOriginalStyles();
   }
 
@@ -230,10 +235,7 @@ export class BuludTextareaAutosize
     const textarea = this.element.nativeElement;
     const documentElement = textarea.ownerDocument.documentElement;
     const body = textarea.ownerDocument.body;
-    if (
-      !documentElement ||
-      !body
-    ) {
+    if (!documentElement || !body) {
       return;
     }
 
@@ -288,6 +290,12 @@ export class BuludTextareaAutosize
       probe.removeAttribute('wrap');
     } else {
       probe.setAttribute('wrap', wrap);
+    }
+    const placeholder = textarea.getAttribute('placeholder');
+    if (placeholder === null) {
+      probe.removeAttribute('placeholder');
+    } else {
+      probe.setAttribute('placeholder', placeholder);
     }
     const view = this.document.defaultView;
     if (view && typeof view.getComputedStyle === 'function') {
@@ -378,7 +386,7 @@ export class BuludTextareaAutosize
     });
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
-      attributeFilter: ['class', 'style', 'wrap'],
+      attributeFilter: ['class', 'style', 'wrap', 'placeholder'],
     });
   }
 
@@ -423,6 +431,40 @@ export class BuludTextareaAutosize
     }
     this.fontLoadingSet = null;
     this.fontLoadingListener = null;
+  }
+
+  private connectFormResetListener(): void {
+    if (this.resetForm || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const form = this.element.nativeElement.form;
+    if (!form) {
+      return;
+    }
+
+    const listener: EventListener = () => {
+      scheduleMicrotask(() => {
+        if (
+          !this.destroyed &&
+          this.enabled() &&
+          this.element.nativeElement.value !== this.lastValue
+        ) {
+          this.resize();
+        }
+      });
+    };
+    form.addEventListener('reset', listener);
+    this.resetForm = form;
+    this.resetListener = listener;
+  }
+
+  private disconnectFormResetListener(): void {
+    if (this.resetForm && this.resetListener) {
+      this.resetForm.removeEventListener('reset', this.resetListener);
+    }
+    this.resetForm = null;
+    this.resetListener = null;
   }
 
   private disconnectMeasurementProbe(): void {
@@ -606,7 +648,10 @@ function getHorizontalScrollbarGutter(
     return 0;
   }
 
-  return Math.max(0, textarea.offsetHeight - textarea.clientHeight - getVerticalBorders(styles));
+  return Math.max(
+    0,
+    textarea.offsetHeight - textarea.clientHeight - getVerticalBorders(styles),
+  );
 }
 
 function clearMeasurementTransforms(element: HTMLTextAreaElement): void {
@@ -653,7 +698,17 @@ function getMeasurementSignature(
     ),
     `box-sizing:${styles.boxSizing}`,
     `wrap:${textarea.getAttribute('wrap') ?? ''}`,
+    `placeholder:${textarea.getAttribute('placeholder') ?? ''}`,
   ].join('|');
+}
+
+function scheduleMicrotask(callback: () => void): void {
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(callback);
+    return;
+  }
+
+  void Promise.resolve().then(callback);
 }
 
 function normalizeRows(value: number | null): number | null {

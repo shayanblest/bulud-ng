@@ -350,6 +350,42 @@ test.describe('Bulud component demo', () => {
     const initialHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
+
+    await textarea.evaluate((element) => {
+      element.style.width = '220px';
+      element.style.boxSizing = 'border-box';
+      element.style.padding = '6px 18px';
+      element.style.border = '2px solid';
+      element.style.lineHeight = '20px';
+      element.style.fontFamily = 'monospace';
+      element.style.fontSize = '16px';
+      element.value = '';
+      element.setAttribute('placeholder', 'short');
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const shortPlaceholderHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.evaluate((element) => {
+      element.setAttribute(
+        'placeholder',
+        'This is a deliberately long localized placeholder that wraps.',
+      );
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(shortPlaceholderHeight);
+    await textarea.evaluate((element) =>
+      element.removeAttribute('placeholder'),
+    );
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(shortPlaceholderHeight);
+
     for (const transformProperty of ['transform', 'scale']) {
       for (const boxSizing of ['content-box', 'border-box']) {
         await textarea.evaluate((element, nextBoxSizing) => {
@@ -407,6 +443,7 @@ test.describe('Bulud component demo', () => {
       element.style.border = '';
       element.style.lineHeight = 'normal';
       element.style.fontSize = '';
+      element.style.fontFamily = '';
       element.style.setProperty('transform', 'none');
       element.style.setProperty('scale', 'none');
     });
@@ -627,9 +664,7 @@ test.describe('Bulud component demo', () => {
               element.offsetHeight - element.clientHeight - borders,
             );
             const expected = element.scrollHeight + borders + gutter;
-            return Math.abs(
-              element.getBoundingClientRect().height - expected,
-            );
+            return Math.abs(element.getBoundingClientRect().height - expected);
           }),
         )
         .toBeLessThan(1);
@@ -714,15 +749,34 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(true);
 
+    await textarea.fill(
+      'current value that is long enough to autosize before reset '.repeat(20),
+    );
+    const beforeResetHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await textarea.evaluate((element) => {
+      element.defaultValue = 'reset default';
+    });
+    await page.locator('#textarea-autosize-reset').evaluate((button) => {
+      (button as HTMLButtonElement).click();
+    });
+    await expect(textarea).toHaveValue('reset default');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThan(beforeResetHeight);
+
     await enabled.uncheck();
     await expect(page.locator('html > div[aria-hidden="true"]')).toHaveCount(0);
-    const bodyStructureAfterDisable = await page.locator('body').evaluate(
-      (element) => ({
+    const bodyStructureAfterDisable = await page
+      .locator('body')
+      .evaluate((element) => ({
         childCount: element.children.length,
         firstChild: element.firstElementChild?.tagName,
         lastChild: element.lastElementChild?.tagName,
-      }),
-    );
+      }));
     expect(bodyStructureAfterDisable).toEqual(bodyStructure);
     await page.locator('#textarea-autosize-long').click();
     await expect(textarea).toHaveCSS('height', `${initialHeight}px`);
@@ -731,11 +785,13 @@ test.describe('Bulud component demo', () => {
     await expect
       .poll(() => page.locator('html > div[aria-hidden="true"]').count())
       .toBeGreaterThan(0);
-    const bodyStructureAfter = await page.locator('body').evaluate((element) => ({
-      childCount: element.children.length,
-      firstChild: element.firstElementChild?.tagName,
-      lastChild: element.lastElementChild?.tagName,
-    }));
+    const bodyStructureAfter = await page
+      .locator('body')
+      .evaluate((element) => ({
+        childCount: element.children.length,
+        firstChild: element.firstElementChild?.tagName,
+        lastChild: element.lastElementChild?.tagName,
+      }));
     expect(bodyStructureAfter).toEqual(bodyStructure);
     await expect
       .poll(() =>
