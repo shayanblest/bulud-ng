@@ -1537,17 +1537,22 @@ test.describe('Bulud component demo', () => {
     const longHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
+    await expect(textarea).toHaveAttribute(
+      'placeholder',
+      'wrapping placeholder '.repeat(80),
+    );
     expect(longHeight).toBeGreaterThan(30);
     expect(longHeight).toBeLessThan(180);
 
     await textarea.evaluate((element) => {
       element.setAttribute('placeholder', 'short');
     });
+    await expect(textarea).toHaveAttribute('placeholder', 'short');
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
       )
-      .toBe(longHeight);
+      .toBeLessThan(longHeight);
     const shortHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
@@ -1555,10 +1560,11 @@ test.describe('Bulud component demo', () => {
     await textarea.evaluate((element) => {
       element.removeAttribute('placeholder');
     });
+    await expect(textarea).not.toHaveAttribute('placeholder');
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
       )
-      .toBe(shortHeight);
+      .toBeLessThanOrEqual(shortHeight);
   });
 });

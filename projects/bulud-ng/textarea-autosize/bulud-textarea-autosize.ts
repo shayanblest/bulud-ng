@@ -33,6 +33,7 @@ interface OriginalStyles {
 
 interface MeasurementState {
   readonly value: string;
+  readonly placeholder: string | null;
   readonly rows: string | null;
   readonly style: string | null;
   readonly selectionStart: number | null;
@@ -1152,6 +1153,7 @@ function captureMeasurementState(
 ): MeasurementState {
   return {
     value: textarea.value,
+    placeholder: textarea.getAttribute('placeholder'),
     rows: textarea.getAttribute('rows'),
     style: textarea.getAttribute('style'),
     selectionStart: textarea.selectionStart,
@@ -1184,17 +1186,25 @@ function restoreMeasurementState(
         }
       } finally {
         try {
-          if (state.selectionStart !== null && state.selectionEnd !== null) {
-            restoreSelection(
-              textarea,
-              state.selectionStart,
-              state.selectionEnd,
-              state.selectionDirection,
-            );
+          if (state.placeholder === null) {
+            textarea.removeAttribute('placeholder');
+          } else {
+            textarea.setAttribute('placeholder', state.placeholder);
           }
         } finally {
-          textarea.scrollTop = state.scrollTop;
-          textarea.scrollLeft = state.scrollLeft;
+          try {
+            if (state.selectionStart !== null && state.selectionEnd !== null) {
+              restoreSelection(
+                textarea,
+                state.selectionStart,
+                state.selectionEnd,
+                state.selectionDirection,
+              );
+            }
+          } finally {
+            textarea.scrollTop = state.scrollTop;
+            textarea.scrollLeft = state.scrollLeft;
+          }
         }
       }
     }

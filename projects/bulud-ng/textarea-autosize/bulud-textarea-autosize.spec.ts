@@ -449,6 +449,49 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('restores every placeholder state after normal-line-height measurement', async () => {
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      host.maxRows = 3;
+      textarea.style.width = '140px';
+      textarea.style.lineHeight = 'normal';
+      textarea.setAttribute('placeholder', 'Initial placeholder');
+    });
+    const textarea = textareaOf(fixture);
+    delete (textarea as unknown as { scrollHeight?: number }).scrollHeight;
+    await fixture.whenStable();
+
+    expect(textarea.hasAttribute('placeholder')).toBeTrue();
+    expect(textarea.getAttribute('placeholder')).toBe('Initial placeholder');
+    expect(textarea.getBoundingClientRect().height).toBeGreaterThan(0);
+
+    const longPlaceholder = 'Long wrapping placeholder '.repeat(40);
+    textarea.setAttribute('placeholder', longPlaceholder);
+    await fixture.whenStable();
+    expect(textarea.getAttribute('placeholder')).toBe(longPlaceholder);
+
+    textarea.setAttribute('placeholder', '');
+    await fixture.whenStable();
+    expect(textarea.hasAttribute('placeholder')).toBeTrue();
+    expect(textarea.getAttribute('placeholder')).toBe('');
+
+    textarea.removeAttribute('placeholder');
+    await fixture.whenStable();
+    expect(textarea.hasAttribute('placeholder')).toBeFalse();
+    expect(textarea.getAttribute('placeholder')).toBeNull();
+
+    textarea.setAttribute('placeholder', 'Repeated placeholder');
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      textarea.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(textarea.getAttribute('placeholder')).toBe(
+        'Repeated placeholder',
+      );
+    }
+
+    fixture.destroy();
+  });
+
   it('uses explicit pixel line-height for row constraints', () => {
     contentHeight = 0;
     const fixture = createHost((textarea, host) => {
