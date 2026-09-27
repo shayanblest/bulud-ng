@@ -52,7 +52,6 @@ export class BuludTextareaAutosize
   private originalStyles: OriginalStyles | null = null;
   private lastValue = '';
   private lastObservedWidth: number | null = null;
-  private lastObservedProbeWidth: number | null = null;
   private constraintContainer: Element | null = null;
   private ownedHeight: string | null = null;
   private ownedOverflowY: string | null = null;
@@ -67,9 +66,6 @@ export class BuludTextareaAutosize
   private fontLoadingListener: EventListener | null = null;
   private resetForm: HTMLFormElement | null = null;
   private resetListener: EventListener | null = null;
-  private measurementProbe: HTMLTextAreaElement | null = null;
-  private measurementHost: HTMLDivElement | null = null;
-  private measurementRoot: ShadowRoot | null = null;
   private lastMeasurementSignature: string | null = null;
   private pseudoStateListeners: Array<{
     readonly target: EventTarget;
@@ -106,7 +102,6 @@ export class BuludTextareaAutosize
       }
 
       this.refreshRestoreBaseline();
-      this.createMeasurementProbe();
       this.resize();
       this.connectWidthObserver();
       this.connectMutationObserver();
@@ -206,13 +201,12 @@ export class BuludTextareaAutosize
       view,
       cssMaxHeight,
     );
-    const lineHeight = getLineHeight(textarea, styles, this.measurementRoot);
+    const lineHeight = getLineHeight(textarea, styles);
     const minRows = this.normalizedMinRows();
     const maxRows = this.normalizedMaxRows();
     const effectiveMaxRows =
       maxRows === null ? null : Math.max(maxRows, minRows ?? 0);
     const boxSizing = styles.boxSizing;
-    this.syncMeasurementProbe();
     const contentHeight = this.measureContentHeight(textarea, padding);
     const minHeight =
       minRows === null || lineHeight === null ? 0 : minRows * lineHeight;
@@ -251,99 +245,7 @@ export class BuludTextareaAutosize
     textarea: HTMLTextAreaElement,
     padding: number,
   ): number {
-    const probe = this.measurementProbe;
-    if (probe) {
-      const probeStyles = getComputedStyle(probe);
-      const probePadding =
-        parsePixels(probeStyles.paddingTop) +
-        parsePixels(probeStyles.paddingBottom);
-      const intrinsicHeight = probe.scrollHeight - probePadding;
-      if (Number.isFinite(intrinsicHeight) && intrinsicHeight > 0) {
-        return intrinsicHeight;
-      }
-    }
-
     return Math.max(0, textarea.scrollHeight - padding);
-  }
-
-  private createMeasurementProbe(): void {
-    if (this.measurementProbe || this.destroyed || !this.hasBrowserView()) {
-      return;
-    }
-
-    const textarea = this.element.nativeElement;
-    const hostParent = getMeasurementHostParent(textarea);
-    if (!hostParent) {
-      return;
-    }
-
-    const host = textarea.ownerDocument.createElement('div');
-    host.setAttribute('aria-hidden', 'true');
-    host.style.position = 'fixed';
-    host.style.inset = '0 auto auto -100000px';
-    host.style.width = '0px';
-    host.style.height = '0px';
-    host.style.overflow = 'visible';
-    host.style.visibility = 'hidden';
-    host.style.pointerEvents = 'none';
-    if (typeof host.attachShadow !== 'function') {
-      return;
-    }
-    const root = host.attachShadow({ mode: 'open' });
-    hostParent.appendChild(host);
-
-    const probe = textarea.cloneNode(false) as HTMLTextAreaElement;
-    probe.removeAttribute('id');
-    probe.removeAttribute('name');
-    probe.removeAttribute('form');
-    probe.setAttribute('aria-hidden', 'true');
-    probe.tabIndex = -1;
-    probe.rows = 1;
-    probe.style.position = 'absolute';
-    probe.style.visibility = 'hidden';
-    probe.style.pointerEvents = 'none';
-    probe.style.inset = '-9999px auto auto -9999px';
-    probe.style.height = 'auto';
-    probe.style.minHeight = '0px';
-    probe.style.maxHeight = 'none';
-    probe.style.overflow = 'hidden';
-    clearMeasurementTransforms(probe);
-    root.appendChild(probe);
-    this.measurementHost = host;
-    this.measurementRoot = root;
-    this.measurementProbe = probe;
-    this.syncMeasurementProbe();
-  }
-
-  private syncMeasurementProbe(): void {
-    const probe = this.measurementProbe;
-    if (!probe) {
-      return;
-    }
-
-    const textarea = this.element.nativeElement;
-    probe.value = textarea.value;
-    const wrap = textarea.getAttribute('wrap');
-    if (wrap === null) {
-      probe.removeAttribute('wrap');
-    } else {
-      probe.setAttribute('wrap', wrap);
-    }
-    const placeholder = textarea.getAttribute('placeholder');
-    if (placeholder === null) {
-      probe.removeAttribute('placeholder');
-    } else {
-      probe.setAttribute('placeholder', placeholder);
-    }
-    const view = this.document.defaultView;
-    if (view && typeof view.getComputedStyle === 'function') {
-      const styles = view.getComputedStyle(textarea);
-      copyMeasurementStyles(probe, styles);
-      copyPlaceholderStyles(probe, textarea, view);
-      probe.style.width = `${getContentBoxWidth(textarea, styles)}px`;
-      probe.style.overflowX = getHorizontalOverflowMode(textarea, styles);
-      probe.style.overflowY = 'hidden';
-    }
   }
 
   private connectWidthObserver(): void {
@@ -376,15 +278,6 @@ export class BuludTextareaAutosize
 
       let shouldResize = false;
       for (const entry of entries) {
-        if (entry.target === this.measurementProbe) {
-          const width = entry.contentRect.width;
-          if (Number.isFinite(width) && width !== this.lastObservedProbeWidth) {
-            this.lastObservedProbeWidth = width;
-            shouldResize = true;
-          }
-          continue;
-        }
-
         if (entry.target === this.constraintContainer) {
           if (this.hasMeasurementSignatureChanged()) {
             shouldResize = true;
@@ -416,9 +309,6 @@ export class BuludTextareaAutosize
       }
     });
     this.observer.observe(textarea);
-    if (this.measurementProbe) {
-      this.observer.observe(this.measurementProbe);
-    }
     this.updateConstraintObservation();
   }
 
@@ -509,11 +399,10 @@ export class BuludTextareaAutosize
     this.observer?.disconnect();
     this.observer = null;
     this.lastObservedWidth = null;
-    this.lastObservedProbeWidth = null;
     this.constraintContainer = null;
     this.ownedHeight = null;
     this.ownedOverflowY = null;
-    this.disconnectMeasurementProbe();
+    this.resetMeasurementSignature();
   }
 
   private disconnectMutationObserver(): void {
@@ -662,12 +551,18 @@ export class BuludTextareaAutosize
     for (const ancestor of this.metricAncestors) {
       this.addPseudoStateListener(ancestor, 'focus', listener, true);
       this.addPseudoStateListener(ancestor, 'blur', listener, true);
+      for (const type of POINTER_STATE_EVENTS) {
+        this.addPseudoStateListener(ancestor, type, listener, true);
+      }
     }
 
     const root = textarea.getRootNode();
     if (root instanceof ShadowRoot) {
       this.addPseudoStateListener(root, 'focus', listener, true);
       this.addPseudoStateListener(root, 'blur', listener, true);
+      for (const type of POINTER_STATE_EVENTS) {
+        this.addPseudoStateListener(root, type, listener, true);
+      }
     }
   }
 
@@ -714,7 +609,7 @@ export class BuludTextareaAutosize
 
     const styles = view.getComputedStyle(textarea);
     const nextContainer = hasRelativeMaxHeight(styles)
-      ? getBlockSizeContainingBlock(textarea, styles)
+      ? findConstraintContainingBlock(textarea, styles)
       : null;
     if (nextContainer === this.constraintContainer) {
       return;
@@ -769,12 +664,7 @@ export class BuludTextareaAutosize
     );
   }
 
-  private disconnectMeasurementProbe(): void {
-    this.measurementProbe?.remove();
-    this.measurementHost?.remove();
-    this.measurementHost = null;
-    this.measurementRoot = null;
-    this.measurementProbe = null;
+  private resetMeasurementSignature(): void {
     this.lastMeasurementSignature = null;
   }
 
@@ -832,37 +722,6 @@ export class BuludTextareaAutosize
   private hasBrowserView(): boolean {
     return this.document.defaultView !== null;
   }
-}
-
-function getMeasurementHostParent(element: Element): HTMLElement | null {
-  const root = element.getRootNode();
-  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-    const host = (root as ShadowRoot).host;
-    if (host) {
-      return getMeasurementHostParent(host) ?? (host as HTMLElement);
-    }
-  }
-
-  const textarea = element as HTMLTextAreaElement;
-  const body = textarea.ownerDocument.body;
-  if (!body) {
-    return null;
-  }
-
-  if (textarea.parentElement === body) {
-    return body;
-  }
-
-  let current = textarea.parentElement;
-  while (current && current.parentElement !== body) {
-    current = current.parentElement;
-  }
-
-  if (current?.parentElement === body) {
-    return current;
-  }
-
-  return null;
 }
 
 function getResizeObserverConstructor(
@@ -975,7 +834,7 @@ function recordTouchesNode(record: MutationRecord, target: Node): boolean {
   );
 }
 
-function getBlockSizeContainingBlock(
+function findConstraintContainingBlock(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
 ): Element | null {
@@ -992,10 +851,10 @@ function getBlockSizeContainingBlock(
   while (current) {
     const ancestorStyles = view.getComputedStyle(current);
     if (
-      ancestorStyles.position !== 'static' ||
-      ancestorStyles.transform !== 'none' ||
-      ancestorStyles.perspective !== 'none' ||
-      ancestorStyles.contain !== 'none'
+      establishesConstraintContainingBlock(
+        ancestorStyles,
+        styles.position === 'absolute',
+      )
     ) {
       return current;
     }
@@ -1004,6 +863,59 @@ function getBlockSizeContainingBlock(
   }
 
   return null;
+}
+
+/** CSS properties that establish the containing block used by positioned descendants. */
+function establishesConstraintContainingBlock(
+  styles: CSSStyleDeclaration,
+  positionedDescendantUsesPosition: boolean,
+): boolean {
+  if (
+    (positionedDescendantUsesPosition && styles.position !== 'static') ||
+    styles.transform !== 'none' ||
+    styles.perspective !== 'none' ||
+    styles.filter !== 'none' ||
+    getStyleValue(styles, 'backdrop-filter') !== 'none' ||
+    establishesContainingBlockViaContain(styles.contain) ||
+    establishesContainingBlockViaWillChange(styles.willChange) ||
+    getStyleValue(styles, 'container-type') !== 'normal'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function establishesContainingBlockViaContain(contain: string): boolean {
+  return contain
+    .trim()
+    .split(/\s+/)
+    .some(
+      (token) =>
+        token === 'layout' ||
+        token === 'paint' ||
+        token === 'content' ||
+        token === 'strict',
+    );
+}
+
+function establishesContainingBlockViaWillChange(willChange: string): boolean {
+  return willChange
+    .trim()
+    .split(/\s*,\s*/)
+    .some((property) =>
+      [
+        'transform',
+        'perspective',
+        'filter',
+        'backdrop-filter',
+        'contain',
+      ].includes(property),
+    );
+}
+
+function getStyleValue(styles: CSSStyleDeclaration, property: string): string {
+  return styles.getPropertyValue(property).trim();
 }
 
 function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {
@@ -1104,58 +1016,48 @@ function parsePixels(value: string): number {
 function getLineHeight(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
-  measurementRoot: ShadowRoot | null,
 ): number | null {
   const lineHeight = parsePixels(styles.lineHeight);
   if (lineHeight > 0) {
     return lineHeight;
   }
 
-  return measureSingleRowHeight(textarea, styles, measurementRoot);
+  return measureSingleRowHeight(textarea, styles);
 }
 
 function measureSingleRowHeight(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
-  measurementRoot: ShadowRoot | null,
 ): number | null {
-  const view = textarea.ownerDocument.defaultView;
-  if (
-    !view ||
-    !measurementRoot ||
-    typeof view.getComputedStyle !== 'function'
-  ) {
-    return null;
-  }
-
-  const probe = textarea.cloneNode(false) as HTMLTextAreaElement;
-  probe.value = 'x';
-  probe.rows = 1;
-  probe.setAttribute('aria-hidden', 'true');
-  probe.style.position = 'absolute';
-  probe.style.visibility = 'hidden';
-  probe.style.pointerEvents = 'none';
-  probe.style.inset = '-9999px auto auto -9999px';
-  probe.style.height = 'auto';
-  probe.style.minHeight = '0px';
-  probe.style.maxHeight = 'none';
-  probe.style.overflow = 'hidden';
-  clearMeasurementTransforms(probe);
-  copyMeasurementStyles(probe, styles);
-  probe.style.width = `${getContentBoxWidth(textarea, styles)}px`;
-
-  measurementRoot.appendChild(probe);
+  const previousValue = textarea.value;
+  const previousRows = textarea.getAttribute('rows');
+  const previousStyle = textarea.getAttribute('style');
+  textarea.value =
+    previousValue === '' && textarea.getAttribute('placeholder') ? '' : 'x';
+  textarea.setAttribute('rows', '1');
+  textarea.style.height = 'auto';
+  textarea.style.minHeight = '0px';
+  textarea.style.maxHeight = 'none';
+  textarea.style.overflow = 'hidden';
   try {
-    const styles = view.getComputedStyle(probe);
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
-    const preciseHeight =
-      probe.getBoundingClientRect().height - padding - borders;
-    const height =
-      preciseHeight > 0 ? preciseHeight : probe.scrollHeight - padding;
+    const heightFromScroll = textarea.scrollHeight - padding;
+    const heightFromLayout = textarea.offsetHeight - padding - borders;
+    const height = heightFromScroll > 0 ? heightFromScroll : heightFromLayout;
     return Number.isFinite(height) && height > 0 ? height : null;
   } finally {
-    probe.remove();
+    textarea.value = previousValue;
+    if (previousRows === null) {
+      textarea.removeAttribute('rows');
+    } else {
+      textarea.setAttribute('rows', previousRows);
+    }
+    if (previousStyle === null) {
+      textarea.removeAttribute('style');
+    } else {
+      textarea.setAttribute('style', previousStyle);
+    }
   }
 }
 
@@ -1227,15 +1129,6 @@ function getHorizontalScrollbarGutter(
   );
 }
 
-function clearMeasurementTransforms(element: HTMLTextAreaElement): void {
-  element.style.setProperty('transform', 'none');
-  element.style.setProperty('transform-origin', '0 0');
-  element.style.setProperty('scale', 'none');
-  element.style.setProperty('rotate', 'none');
-  element.style.setProperty('translate', 'none');
-  element.style.setProperty('perspective', 'none');
-}
-
 function getHorizontalOverflowMode(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
@@ -1249,46 +1142,6 @@ function getHorizontalOverflowMode(
   }
 
   return styles.overflowX === 'auto' ? 'auto' : 'hidden';
-}
-
-function copyMeasurementStyles(
-  probe: HTMLTextAreaElement,
-  styles: CSSStyleDeclaration,
-): void {
-  clearMeasurementWidthConstraints(probe);
-  for (const property of TEXT_METRIC_PROPERTIES) {
-    probe.style.setProperty(property, styles.getPropertyValue(property));
-  }
-  probe.style.boxSizing = 'content-box';
-}
-
-function clearMeasurementWidthConstraints(probe: HTMLTextAreaElement): void {
-  probe.style.minWidth = '0px';
-  probe.style.maxWidth = 'none';
-  probe.style.minInlineSize = '0px';
-  probe.style.maxInlineSize = 'none';
-}
-
-function copyPlaceholderStyles(
-  probe: HTMLTextAreaElement,
-  textarea: HTMLTextAreaElement,
-  view: Window,
-): void {
-  if (textarea.value !== '' || !textarea.getAttribute('placeholder')) {
-    return;
-  }
-
-  const styles = getPlaceholderStyles(textarea, view);
-  if (!styles) {
-    return;
-  }
-
-  for (const property of PLACEHOLDER_METRIC_PROPERTIES) {
-    const value = styles.getPropertyValue(property);
-    if (value !== '') {
-      probe.style.setProperty(property, value);
-    }
-  }
 }
 
 function getPlaceholderStyles(
@@ -1558,6 +1411,14 @@ const PSEUDO_STATE_EVENTS = [
   'blur',
   'pointerenter',
   'pointerleave',
+  'pointerdown',
+  'pointerup',
+  'pointercancel',
+] as const;
+
+const POINTER_STATE_EVENTS = [
+  'pointerover',
+  'pointerout',
   'pointerdown',
   'pointerup',
   'pointercancel',

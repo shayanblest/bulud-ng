@@ -346,11 +346,17 @@ test.describe('Bulud component demo', () => {
       htmlChildren: [...document.documentElement.children].map(
         (element) => element.tagName,
       ),
+      applicationRootChildren: [
+        ...(document.body.firstElementChild?.children ?? []),
+      ].map((element) => element.tagName),
       headBodyAdjacent: document.querySelector('head + body') === document.body,
       bodySecondChild: document.body.matches(':nth-child(2)'),
       bodyLastChild: document.body.matches(':last-child'),
       bodyApplicationRootOnlyChild:
         document.body.firstElementChild?.matches(':only-child') ?? false,
+      mainLastChild:
+        document.querySelector('app-root > main')?.matches(':last-child') ??
+        false,
     }));
 
     await textarea.evaluate((element) => {
@@ -360,22 +366,9 @@ test.describe('Bulud component demo', () => {
     const initialHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );
-    const probeGeometry = await textarea.evaluate((element) => {
-      const host = [
-        ...document.querySelectorAll('div[aria-hidden="true"]'),
-      ].find((candidate) => candidate.shadowRoot?.querySelector('textarea'));
-      const probe = host?.shadowRoot?.querySelector('textarea');
-      return {
-        hostInBody: host?.parentElement?.closest('body') !== null,
-        width: probe?.getBoundingClientRect().width ?? 0,
-        height: probe?.getBoundingClientRect().height ?? 0,
-        applicationRoot: element.closest('app-root') !== null,
-      };
-    });
-    expect(probeGeometry.applicationRoot).toBe(true);
-    expect(probeGeometry.hostInBody).toBe(true);
-    expect(probeGeometry.width).toBeGreaterThan(0);
-    expect(probeGeometry.height).toBeGreaterThan(0);
+    expect(
+      await textarea.evaluate((element) => element.closest('app-root')),
+    ).not.toBeNull();
 
     await textarea.evaluate((element) => {
       element.style.boxSizing = 'border-box';
@@ -909,19 +902,23 @@ test.describe('Bulud component demo', () => {
         htmlChildren: [...document.documentElement.children].map(
           (element) => element.tagName,
         ),
+        applicationRootChildren: [
+          ...(document.body.firstElementChild?.children ?? []),
+        ].map((element) => element.tagName),
         headBodyAdjacent:
           document.querySelector('head + body') === document.body,
         bodySecondChild: document.body.matches(':nth-child(2)'),
         bodyLastChild: document.body.matches(':last-child'),
         bodyApplicationRootOnlyChild:
           document.body.firstElementChild?.matches(':only-child') ?? false,
+        mainLastChild:
+          document.querySelector('app-root > main')?.matches(':last-child') ??
+          false,
       })),
     ).toEqual(documentStructure);
-    await expect
-      .poll(() =>
-        page.locator('div[aria-hidden="true"][style*="-100000px"]').count(),
-      )
-      .toBeGreaterThan(0);
+    await expect(
+      page.locator('div[aria-hidden="true"][style*="-100000px"]'),
+    ).toHaveCount(0);
 
     const widthBeforeMetricChange = await textarea.evaluate(
       (element) => element.getBoundingClientRect().width,
@@ -1341,11 +1338,9 @@ test.describe('Bulud component demo', () => {
     await expect(textarea).toHaveCSS('height', `${initialHeight}px`);
 
     await enabled.check();
-    await expect
-      .poll(() =>
-        page.locator('div[aria-hidden="true"][style*="-100000px"]').count(),
-      )
-      .toBeGreaterThan(0);
+    await expect(
+      page.locator('div[aria-hidden="true"][style*="-100000px"]'),
+    ).toHaveCount(0);
     const bodyStructureAfter = await page
       .locator('body')
       .evaluate((element) => ({
@@ -1359,12 +1354,18 @@ test.describe('Bulud component demo', () => {
         htmlChildren: [...document.documentElement.children].map(
           (element) => element.tagName,
         ),
+        applicationRootChildren: [
+          ...(document.body.firstElementChild?.children ?? []),
+        ].map((element) => element.tagName),
         headBodyAdjacent:
           document.querySelector('head + body') === document.body,
         bodySecondChild: document.body.matches(':nth-child(2)'),
         bodyLastChild: document.body.matches(':last-child'),
         bodyApplicationRootOnlyChild:
           document.body.firstElementChild?.matches(':only-child') ?? false,
+        mainLastChild:
+          document.querySelector('app-root > main')?.matches(':last-child') ??
+          false,
       })),
     ).toEqual(documentStructure);
     await expect
@@ -1423,17 +1424,9 @@ test.describe('Bulud component demo', () => {
     });
     await expect
       .poll(() =>
-        textarea.evaluate(() => {
-          const host = [
-            ...document.querySelectorAll('div[aria-hidden="true"]'),
-          ].find((candidate) =>
-            candidate.shadowRoot?.querySelector('textarea'),
-          );
-          return host?.shadowRoot?.querySelector('textarea')
-            ? getComputedStyle(host.shadowRoot.querySelector('textarea')!)
-                .fontSizeAdjust
-            : '';
-        }),
+        textarea.evaluate(
+          (element) => getComputedStyle(element).fontSizeAdjust,
+        ),
       )
       .toBe(realFontSizeAdjust);
     await textarea.evaluate((element) => {
@@ -1441,19 +1434,59 @@ test.describe('Bulud component demo', () => {
     });
     await expect
       .poll(() =>
-        textarea.evaluate(() => {
-          const host = [
-            ...document.querySelectorAll('div[aria-hidden="true"]'),
-          ].find((candidate) =>
-            candidate.shadowRoot?.querySelector('textarea'),
-          );
-          return host?.shadowRoot?.querySelector('textarea')
-            ? getComputedStyle(host.shadowRoot.querySelector('textarea')!)
-                .fontSizeAdjust
-            : '';
-        }),
+        textarea.evaluate(
+          (element) => getComputedStyle(element).fontSizeAdjust,
+        ),
       )
       .toBe('1.5');
+    await style.evaluate((element) => element.remove());
+  });
+
+  test('textarea autosize remeasures real ancestor hover typography and ignores unchanged pointer transitions', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-hover-shell textarea { line-height: 20px !important; }
+        .e2e-hover-shell:hover textarea { line-height: 30px !important; }
+      `,
+    });
+    const initial = await textarea.evaluate((element) => {
+      element.parentElement!.classList.add('e2e-hover-shell');
+      element.style.minHeight = '0';
+      element.style.maxHeight = 'none';
+      element.value = '';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      return element.getBoundingClientRect().height;
+    });
+    const shell = textarea.locator('xpath=..');
+    await expect(shell).toBeVisible();
+    await shell.hover();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('30px');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(initial);
+
+    await page.mouse.move(2, 2);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(initial);
+
+    await page.mouse.move(2, 2);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(initial);
     await style.evaluate((element) => element.remove());
   });
 });

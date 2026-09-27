@@ -559,6 +559,36 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('remeasures pointer pseudo-state changes only when metrics change', async () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .pointer-metrics textarea { line-height: 20px; }
+      .pointer-metrics:hover textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      contentHeight = 0;
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.parentElement!.classList.add('pointer-metrics');
+      });
+      const textarea = textareaOf(fixture);
+      const ancestor = textarea.parentElement!;
+      expect(textarea.style.height).toBe('40px');
+
+      ancestor.dispatchEvent(new Event('pointerover', { bubbles: true }));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+
+      ancestor.dispatchEvent(new Event('pointerout', { bubbles: true }));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('remeasures arbitrary ancestor attributes but ignores unrelated metrics', async () => {
     const style = document.createElement('style');
     style.textContent = `
@@ -686,7 +716,7 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.overflowY).toBe('auto');
   });
 
-  it('remeasures empty placeholders and removes stale probe placeholders', async () => {
+  it('remeasures empty placeholders without a DOM measurement node', async () => {
     contentHeight = 40;
     const fixture = createHost((textarea, host) => {
       textarea.style.lineHeight = '20px';
@@ -702,18 +732,11 @@ describe('BuludTextareaAutosize', () => {
     await fixture.whenStable();
     expect(textarea.style.height).toBe('80px');
 
-    const probe = document.documentElement
-      .querySelector<HTMLDivElement>('div[aria-hidden="true"]')
-      ?.shadowRoot?.querySelector('textarea');
-    expect(probe?.getAttribute('placeholder')).toBe(
-      'A much longer localized placeholder',
-    );
-
     contentHeight = 20;
     textarea.removeAttribute('placeholder');
     await fixture.whenStable();
     expect(textarea.style.height).toBe('20px');
-    expect(probe?.hasAttribute('placeholder')).toBeFalse();
+    expect(document.querySelector('div[aria-hidden="true"]')).toBeNull();
 
     contentHeight = 60;
     textarea.value = 'non-empty';
@@ -724,7 +747,7 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
-  it('copies effective placeholder typography only while the placeholder is measured', () => {
+  it('uses effective placeholder typography for the live measurement surface', () => {
     const style = document.createElement('style');
     style.textContent = `
       textarea::placeholder {
@@ -745,17 +768,17 @@ describe('BuludTextareaAutosize', () => {
 
     try {
       const textarea = textareaOf(fixture);
-      const probe = document
-        .querySelector<HTMLDivElement>('div[aria-hidden="true"]')
-        ?.shadowRoot?.querySelector('textarea');
-      expect(probe?.style.fontSize).toBe('24px');
-      expect(probe?.style.lineHeight).toBe('32px');
-      expect(probe?.style.letterSpacing).toBe('2px');
+      expect(getComputedStyle(textarea, '::placeholder').fontSize).toBe('24px');
+      expect(getComputedStyle(textarea, '::placeholder').lineHeight).toBe(
+        '32px',
+      );
+      expect(getComputedStyle(textarea, '::placeholder').letterSpacing).toBe(
+        '2px',
+      );
 
       textarea.value = 'real value';
       textarea.dispatchEvent(new Event('input'));
-      expect(probe?.style.fontSize).not.toBe('24px');
-      expect(probe?.style.lineHeight).not.toBe('32px');
+      expect(textarea.value).toBe('real value');
     } finally {
       fixture.destroy();
       style.remove();
@@ -943,7 +966,7 @@ describe('BuludTextareaAutosize', () => {
     fittingFixture.destroy();
   });
 
-  it('clears width constraints from the measurement probe', () => {
+  it('measures against the textarea width constraints without a probe', () => {
     contentHeight = 80;
     const fixture = createHost((textarea) => {
       textarea.style.width = '220px';
@@ -954,16 +977,8 @@ describe('BuludTextareaAutosize', () => {
       textarea.style.lineHeight = '20px';
     });
     const textarea = textareaOf(fixture);
-    const probe = document.querySelector(
-      'div[aria-hidden="true"]',
-    ) as HTMLDivElement | null;
-    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
-
     expect(textarea.style.height).toBe('80px');
-    expect(probeTextarea?.style.minWidth).toBe('0px');
-    expect(probeTextarea?.style.maxWidth).toBe('none');
-    expect(probeTextarea?.style.minInlineSize).toBe('0px');
-    expect(probeTextarea?.style.maxInlineSize).toBe('none');
+    expect(textarea.clientWidth).toBeGreaterThan(0);
     fixture.destroy();
   });
 
@@ -1077,7 +1092,7 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
-  it('keeps the probe measurable inside a body-level application root', async () => {
+  it('measures inside a body-level application root without changing its structure', async () => {
     contentHeight = 20;
     const fixture = TestBed.createComponent(ApplicationRootHostComponent);
     const textarea = fixture.nativeElement.querySelector(
@@ -1089,12 +1104,12 @@ describe('BuludTextareaAutosize', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const probe = fixture.nativeElement.querySelector(
-      'div[aria-hidden="true"]',
-    ) as HTMLDivElement | null;
-    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
-    expect(probeTextarea?.getBoundingClientRect().width).toBeGreaterThan(0);
-    expect(probeTextarea?.getBoundingClientRect().height).toBeGreaterThan(0);
+    const rootChildren = [...fixture.nativeElement.children];
+    expect(textarea.matches(':only-child')).toBeTrue();
+    expect(textarea.matches(':first-child')).toBeTrue();
+    expect(textarea.matches(':last-child')).toBeTrue();
+    expect(textarea.matches(':nth-child(1)')).toBeTrue();
+    expect(document.querySelector('div[aria-hidden="true"]')).toBeNull();
     const minRowsHeight = textarea.getBoundingClientRect().height;
     expect(minRowsHeight).toBeGreaterThan(0);
 
@@ -1111,6 +1126,7 @@ describe('BuludTextareaAutosize', () => {
     fixture.changeDetectorRef.markForCheck();
     await fixture.whenStable();
     expect(textarea.style.overflowY).toBe('hidden');
+    expect([...fixture.nativeElement.children]).toEqual(rootChildren);
     fixture.destroy();
   });
 
@@ -1126,12 +1142,6 @@ describe('BuludTextareaAutosize', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const probe = document.querySelector(
-      'div[aria-hidden="true"]',
-    ) as HTMLDivElement | null;
-    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
-    expect(probeTextarea?.getBoundingClientRect().width).toBeGreaterThan(0);
-    expect(probeTextarea?.getBoundingClientRect().height).toBeGreaterThan(0);
     const minRowsHeight = textarea.getBoundingClientRect().height;
 
     fixture.componentInstance.minRows = 3;
@@ -1210,7 +1220,7 @@ describe('BuludTextareaAutosize', () => {
     containerB.remove();
   });
 
-  it('creates a measurable probe for a textarea directly under body', async () => {
+  it('measures a textarea directly under body without adding a sibling', async () => {
     contentHeight = 20;
     const fixture = createHost((textarea, host) => {
       host.minRows = 2;
@@ -1229,15 +1239,8 @@ describe('BuludTextareaAutosize', () => {
     fixture.changeDetectorRef.markForCheck();
     await fixture.whenStable();
 
-    const probe = document.querySelector(
-      'div[aria-hidden="true"]',
-    ) as HTMLDivElement | null;
-    const probeTextarea = probe?.shadowRoot?.querySelector('textarea');
-    expect(probeTextarea?.getBoundingClientRect().width).toBeGreaterThan(0);
-    expect(probeTextarea?.getBoundingClientRect().height).toBeGreaterThan(0);
     expect(textarea.getBoundingClientRect().height).toBeGreaterThan(0);
     fixture.destroy();
-    expect(document.querySelectorAll('div[aria-hidden="true"]')).toHaveSize(0);
     textarea.remove();
   });
 
@@ -1690,6 +1693,45 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('selects a static filtered containing block and tracks both size directions', async () => {
+    contentHeight = 160;
+    const fixture = createHost((textarea) => {
+      textarea.style.position = 'absolute';
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+      const containingBlock = textarea.parentElement!.parentElement!;
+      const unrelatedOuter = containingBlock.parentElement!;
+      containingBlock.style.filter = 'blur(0)';
+      containingBlock.style.height = '120px';
+      unrelatedOuter.style.height = '800px';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => Number.parseFloat(containingBlock.style.height || '0') / 2,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+    await fixture.whenStable();
+    const containingBlock = textarea.parentElement!.parentElement!;
+    const unrelatedOuter = containingBlock.parentElement!;
+    expect(observer.isObserving(containingBlock)).toBeTrue();
+    expect(observer.isObserving(unrelatedOuter)).toBeFalse();
+    const initialHeight = Number.parseFloat(textarea.style.height);
+
+    containingBlock.style.height = '240px';
+    observer.triggerTarget(containingBlock);
+    const expandedHeight = Number.parseFloat(textarea.style.height);
+    expect(expandedHeight).toBeGreaterThan(initialHeight);
+    await Promise.resolve();
+
+    containingBlock.style.height = '80px';
+    observer.triggerTarget(containingBlock);
+    expect(Number.parseFloat(textarea.style.height)).toBeLessThan(
+      expandedHeight,
+    );
+    fixture.destroy();
+  });
+
   it('remeasures after moving between same-sized ancestors with different metrics', async () => {
     contentHeight = 0;
     const style = document.createElement('style');
@@ -1786,7 +1828,7 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.overflowY).toBe('hidden');
   });
 
-  it('copies font-size-adjust to the probe and invalidates changed metrics', () => {
+  it('keeps font-size-adjust in the effective signature and invalidates changed metrics', () => {
     contentHeight = 0;
     const fixture = createHost((textarea, host) => {
       host.minRows = 2;
@@ -1795,11 +1837,6 @@ describe('BuludTextareaAutosize', () => {
       textarea.style.lineHeight = 'normal';
     });
     const textarea = textareaOf(fixture);
-    const probeHost = [
-      ...document.querySelectorAll('div[aria-hidden="true"]'),
-    ].find((candidate) => candidate.shadowRoot?.querySelector('textarea')) as
-      HTMLDivElement | undefined;
-    const probe = probeHost?.shadowRoot?.querySelector('textarea');
     const observer = MockResizeObserver.instances[0];
     const directive = fixture.debugElement
       .query(By.directive(BuludTextareaAutosize))
@@ -1809,8 +1846,7 @@ describe('BuludTextareaAutosize', () => {
       'resize',
     ).and.callThrough();
 
-    expect(probe).toBeTruthy();
-    expect(getComputedStyle(probe!).fontSizeAdjust).toBe(
+    expect(getComputedStyle(textarea).fontSizeAdjust).toBe(
       getComputedStyle(textarea).fontSizeAdjust,
     );
     textarea.style.fontSizeAdjust = '1.5';
@@ -1844,23 +1880,27 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.overflowY).toBe('hidden');
   });
 
-  it('keeps only-child and last-child selectors intact and removes the probe', () => {
+  it('keeps structural selectors and sibling relationships intact', () => {
     const fixture = TestBed.createComponent(HostComponent);
     const bodyChildrenBefore = [...document.body.children];
     const textarea = fixture.nativeElement.querySelector('textarea');
     expect(textarea.matches(':only-child')).toBeTrue();
+    expect(textarea.matches(':first-child')).toBeTrue();
     expect(textarea.matches(':last-child')).toBeTrue();
+    expect(textarea.matches(':nth-child(1)')).toBeTrue();
     defineScrollHeight(textarea);
     fixture.detectChanges();
 
     expect(textarea.matches(':only-child')).toBeTrue();
+    expect(textarea.matches(':first-child')).toBeTrue();
     expect(textarea.matches(':last-child')).toBeTrue();
+    expect(textarea.matches(':nth-child(1)')).toBeTrue();
     expect([...document.body.children]).toEqual(bodyChildrenBefore);
-    expect(document.querySelectorAll('div[aria-hidden="true"]')).toHaveSize(1);
+    expect(textarea.parentElement?.children).toHaveSize(1);
+    expect(document.querySelector('div[aria-hidden="true"]')).toBeNull();
 
     fixture.destroy();
 
-    expect(document.querySelectorAll('div[aria-hidden="true"]')).toHaveSize(0);
     expect([...document.body.children]).toEqual(bodyChildrenBefore);
   });
 
