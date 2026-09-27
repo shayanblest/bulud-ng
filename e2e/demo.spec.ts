@@ -1633,6 +1633,122 @@ test.describe('Bulud component demo', () => {
       .toBe(state.autoHeight);
   });
 
+  test('textarea percentage caps follow native containing-block semantics', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const parent = textarea.locator('..');
+    const style = await page.addStyleTag({
+      content: `
+        .textarea-cb-content-box {
+          display: block;
+          height: 120px;
+          padding-block: 20px;
+          border-block: 2px solid transparent;
+          box-sizing: content-box;
+        }
+        .textarea-cb-border-box {
+          display: block;
+          height: 120px;
+          padding-block: 20px;
+          border-block: 2px solid transparent;
+          box-sizing: border-box;
+        }
+        .textarea-cb-positioned {
+          display: block;
+          position: relative;
+          height: 120px;
+          padding-block: 20px;
+          box-sizing: content-box;
+        }
+        .textarea-cb-stylesheet { display: block; height: 240px; }
+        .textarea-cb-variable { display: block; height: var(--textarea-cb-height); }
+        .textarea-cb-auto { display: block; height: auto; }
+      `,
+    });
+
+    const measure = async () =>
+      textarea.evaluate((element) => ({
+        layoutHeight: element.offsetHeight,
+      }));
+
+    await textarea.evaluate((element) => {
+      element.style.position = '';
+      element.style.boxSizing = 'content-box';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.lineHeight = '30px';
+      element.style.maxHeight = '50%';
+      element.value = 'native containing block '.repeat(1000);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await parent.evaluate((element) => {
+      element.classList.add('textarea-cb-content-box');
+    });
+    await expect.poll(measure).toEqual({ layoutHeight: 60 });
+
+    await parent.evaluate((element) => {
+      element.classList.replace(
+        'textarea-cb-content-box',
+        'textarea-cb-border-box',
+      );
+    });
+    await expect.poll(measure).toEqual({ layoutHeight: 38 });
+
+    await textarea.evaluate((element) => {
+      element.style.position = 'absolute';
+    });
+    await parent.evaluate((element) => {
+      element.classList.replace(
+        'textarea-cb-border-box',
+        'textarea-cb-positioned',
+      );
+    });
+    await expect.poll(measure).toEqual({ layoutHeight: 80 });
+
+    await textarea.evaluate((element) => {
+      element.style.position = '';
+    });
+    await parent.evaluate((element) => {
+      element.classList.replace(
+        'textarea-cb-positioned',
+        'textarea-cb-stylesheet',
+      );
+    });
+    expect(await parent.evaluate((element) => element.style.height)).toBe('');
+    await expect.poll(measure).toEqual({ layoutHeight: 120 });
+
+    await parent.evaluate((element) => {
+      element.classList.replace(
+        'textarea-cb-stylesheet',
+        'textarea-cb-variable',
+      );
+      element.style.setProperty('--textarea-cb-height', '120px');
+    });
+    await expect.poll(measure).toEqual({ layoutHeight: 60 });
+
+    await parent.evaluate((element) => {
+      element.style.setProperty('--textarea-cb-height', '240px');
+    });
+    await expect.poll(measure).toEqual({ layoutHeight: 120 });
+
+    await parent.evaluate((element) => {
+      element.classList.replace('textarea-cb-variable', 'textarea-cb-auto');
+      element.style.removeProperty('--textarea-cb-height');
+    });
+    const autoHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await textarea.dispatchEvent('input');
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(autoHeight);
+    }
+
+    await style.evaluate((element) => element.remove());
+  });
+
   test('textarea autosize measures one row for a long wrapping normal placeholder', async ({
     page,
   }) => {

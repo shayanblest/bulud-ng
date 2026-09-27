@@ -338,7 +338,7 @@ export class BuludTextareaAutosize
       let shouldResize = false;
       for (const entry of entries) {
         if (entry.target === this.constraintContainer) {
-          shouldResize = true;
+          shouldResize = this.hasMeasurementSignatureChanged();
           continue;
         }
 
@@ -701,7 +701,7 @@ export class BuludTextareaAutosize
       : null;
     const nextContainer =
       container && hasContainingBlockPercentage(styles)
-        ? hasDefiniteContainingBlockBlockSize(container)
+        ? shouldObserveContainingBlock(container)
           ? container
           : null
         : null;
@@ -1072,41 +1072,76 @@ function hasContainingBlockPercentage(styles: CSSStyleDeclaration): boolean {
   );
 }
 
-function hasDefiniteContainingBlockBlockSize(container: Element): boolean {
-  const view = container.ownerDocument.defaultView;
-  if (!view || typeof view.getComputedStyle !== 'function') {
-    return false;
-  }
-
-  const specifiedHeight = (container as HTMLElement).style
-    .getPropertyValue('height')
-    .trim();
-  if (
-    specifiedHeight === '' ||
-    specifiedHeight.toLowerCase() === 'auto' ||
-    specifiedHeight.includes('%')
-  ) {
-    return false;
-  }
-
-  const styles = view.getComputedStyle(container);
-  return isDefiniteCssBlockSize(styles.height);
+interface CssUnitValueLike {
+  readonly unit: string;
+  readonly value: number;
 }
 
-function isDefiniteCssBlockSize(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
-  if (
-    normalized === '' ||
-    normalized === 'auto' ||
-    normalized === 'fit-content' ||
-    normalized === 'max-content' ||
-    normalized === 'min-content' ||
-    normalized === 'stretch'
-  ) {
+function hasDefiniteContainingBlockBlockSize(container: Element): boolean {
+  return getCssPixelBlockSize(container) !== null;
+}
+
+function shouldObserveContainingBlock(container: Element): boolean {
+  const state = getContainingBlockBlockSizeState(container);
+  return state !== 'indefinite';
+}
+
+function getContainingBlockBlockSizeState(
+  container: Element,
+): 'definite' | 'indefinite' | 'unknown' {
+  const elementWithStyleMap = container as Element & {
+    computedStyleMap?: () => StylePropertyMapReadOnly;
+  };
+  if (typeof elementWithStyleMap.computedStyleMap !== 'function') {
+    return 'unknown';
+  }
+
+  const value = elementWithStyleMap.computedStyleMap().get('height');
+  if (isCssPixelValue(value)) {
+    return 'definite';
+  }
+
+  if (isCssKeywordValue(value) && value.value === 'auto') {
+    return 'indefinite';
+  }
+
+  return 'unknown';
+}
+
+function getCssPixelBlockSize(container: Element): number | null {
+  const elementWithStyleMap = container as Element & {
+    computedStyleMap?: () => StylePropertyMapReadOnly;
+  };
+  if (typeof elementWithStyleMap.computedStyleMap !== 'function') {
+    return null;
+  }
+
+  const value = elementWithStyleMap.computedStyleMap().get('height');
+  if (!isCssPixelValue(value)) {
+    return null;
+  }
+
+  return value.value;
+}
+
+function isCssPixelValue(value: unknown): value is CssUnitValueLike {
+  if (typeof value !== 'object' || value === null || !('unit' in value)) {
     return false;
   }
 
-  return parsePixelLength(normalized) !== null;
+  const candidate = value as { unit?: unknown; value?: unknown };
+  return candidate.unit === 'px' && typeof candidate.value === 'number';
+}
+
+function isCssKeywordValue(
+  value: unknown,
+): value is { readonly value: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'value' in value &&
+    typeof value.value === 'string'
+  );
 }
 
 function formMutationMayAffectTextarea(
@@ -1578,7 +1613,10 @@ function resolveCssMaxSize(
   );
   if (percentage !== null) {
     const container = findConstraintContainingBlock(textarea, styles);
-    const containerHeight = getDefiniteContainingBlockHeight(container);
+    const containerHeight = getDefiniteContainingBlockHeight(
+      container,
+      styles.position,
+    );
     if (containerHeight !== null) {
       return containerHeight * percentage;
     }
@@ -1699,8 +1737,17 @@ function parsePercentageLength(value: string): number | null {
 
 function getDefiniteContainingBlockHeight(
   container: Element | null,
+  textareaPosition: string,
 ): number | null {
   if (!container) {
+    return null;
+  }
+
+  if (!hasDefiniteContainingBlockBlockSize(container)) {
+    return null;
+  }
+  const declaredHeight = getCssPixelBlockSize(container);
+  if (declaredHeight === null) {
     return null;
   }
 
@@ -1709,25 +1756,17 @@ function getDefiniteContainingBlockHeight(
     return null;
   }
 
-  if (!hasDefiniteContainingBlockBlockSize(container)) {
-    return null;
-  }
-
   const styles = view.getComputedStyle(container);
-  if (!isDefiniteCssBlockSize(styles.height)) {
-    return null;
-  }
-
-  const declaredHeight = parsePixelLength(styles.height);
-  if (declaredHeight === null) {
-    return null;
-  }
-
   const padding = getVerticalPadding(styles);
   const borders = getVerticalBorders(styles);
-  return styles.boxSizing === 'border-box'
-    ? Math.max(0, declaredHeight - borders)
-    : declaredHeight + padding;
+  const contentBoxHeight =
+    styles.boxSizing === 'border-box'
+      ? Math.max(0, declaredHeight - padding - borders)
+      : declaredHeight;
+
+  return textareaPosition === 'absolute' || textareaPosition === 'fixed'
+    ? contentBoxHeight + padding
+    : contentBoxHeight;
 }
 
 function scheduleMicrotask(callback: () => void): void {

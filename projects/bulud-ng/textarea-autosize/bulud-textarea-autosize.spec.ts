@@ -1920,6 +1920,88 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('uses browser CSS semantics for padded in-flow and positioned percentage bases', async () => {
+    contentHeight = 200;
+    const fixture = createHost((textarea) => {
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+      textarea.parentElement!.style.height = '120px';
+      textarea.parentElement!.style.paddingBlock = '20px';
+      textarea.parentElement!.style.borderBlock = '2px solid';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => Number.parseFloat(textarea.style.height || '0'),
+      });
+    });
+    const textarea = textareaOf(fixture);
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('60px');
+
+    textarea.parentElement!.style.boxSizing = 'border-box';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('38px');
+
+    textarea.style.position = 'absolute';
+    textarea.parentElement!.style.position = 'relative';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('58px');
+    fixture.destroy();
+  });
+
+  it('observes stylesheet and CSS-variable definite containing blocks', async () => {
+    contentHeight = 200;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-definite-height { height: 240px; }
+      .textarea-variable-height { height: var(--textarea-height); }
+      .textarea-auto-height { height: auto; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea) => {
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+        textarea.parentElement!.classList.add('textarea-definite-height');
+      });
+      const textarea = textareaOf(fixture);
+      const parent = textarea.parentElement!;
+      const observer = MockResizeObserver.instances[0];
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      expect(textarea.style.height).toBe('120px');
+
+      parent.classList.replace(
+        'textarea-definite-height',
+        'textarea-variable-height',
+      );
+      parent.style.setProperty('--textarea-height', '120px');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+
+      parent.classList.replace(
+        'textarea-variable-height',
+        'textarea-auto-height',
+      );
+      await fixture.whenStable();
+      const autoHeight = textarea.style.height;
+      textarea.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe(autoHeight);
+      expect(observer.isObserving(parent)).toBeFalse();
+
+      parent.classList.replace(
+        'textarea-auto-height',
+        'textarea-definite-height',
+      );
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      expect(textarea.style.height).toBe('120px');
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('does not manually resolve percentage caps against auto-height parents', async () => {
     contentHeight = 120;
     const fixture = createHost((textarea) => {
