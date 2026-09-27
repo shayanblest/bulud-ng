@@ -1518,6 +1518,61 @@ test.describe('Bulud component demo', () => {
       });
   });
 
+  test('textarea autosize does not write the live value during composition', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const state = await textarea.evaluate((element) => {
+      const valueDescriptor = Object.getOwnPropertyDescriptor(
+        HTMLTextAreaElement.prototype,
+        'value',
+      )!;
+      let writes = 0;
+      Object.defineProperty(element, 'value', {
+        configurable: true,
+        get: () => valueDescriptor.get!.call(element),
+        set: (value: string) => {
+          writes += 1;
+          valueDescriptor.set!.call(element, value);
+        },
+      });
+      element.style.lineHeight = 'normal';
+      element.setAttribute('placeholder', 'Compose here');
+      valueDescriptor.set!.call(element, 'before after');
+      element.focus();
+      element.setSelectionRange(7, 7, 'none');
+      element.dispatchEvent(
+        new CompositionEvent('compositionstart', { bubbles: true }),
+      );
+      valueDescriptor.set!.call(element, 'before あ after');
+      element.setSelectionRange(7, 7, 'none');
+      const composingInput = new InputEvent('input', {
+        bubbles: true,
+        isComposing: true,
+      });
+      element.dispatchEvent(composingInput);
+      const duringComposition = {
+        writes,
+        value: element.value,
+        selectionStart: element.selectionStart,
+        placeholder: element.getAttribute('placeholder'),
+      };
+      writes = 0;
+      element.dispatchEvent(
+        new CompositionEvent('compositionend', { bubbles: true }),
+      );
+      return { duringComposition, writesAfterEnd: writes };
+    });
+
+    expect(state.duringComposition).toEqual({
+      writes: 0,
+      value: 'before あ after',
+      selectionStart: 7,
+      placeholder: 'Compose here',
+    });
+    expect(state.writesAfterEnd).toBe(0);
+  });
+
   test('textarea autosize measures one row for a long wrapping normal placeholder', async ({
     page,
   }) => {

@@ -26,21 +26,15 @@ interface FontLoadingSet {
   removeEventListener(type: 'loadingdone', listener: EventListener): void;
 }
 
-interface OriginalStyles {
-  readonly height: string;
-  readonly overflowY: string;
+interface InlineStyleValue {
+  readonly present: boolean;
+  readonly value: string;
+  readonly priority: string;
 }
 
-interface MeasurementState {
-  readonly value: string;
-  readonly placeholder: string | null;
-  readonly rows: string | null;
-  readonly style: string | null;
-  readonly selectionStart: number | null;
-  readonly selectionEnd: number | null;
-  readonly selectionDirection: 'forward' | 'backward' | 'none' | null;
-  readonly scrollTop: number;
-  readonly scrollLeft: number;
+interface OriginalStyles {
+  readonly height: InlineStyleValue;
+  readonly overflowY: InlineStyleValue;
 }
 
 interface TextareaInteractionState {
@@ -75,7 +69,9 @@ export class BuludTextareaAutosize
   private lastObservedWidth: number | null = null;
   private constraintContainer: Element | null = null;
   private ownedHeight: string | null = null;
+  private ownedHeightPriority = '';
   private ownedOverflowY: string | null = null;
+  private ownedOverflowYPriority = '';
   private observer: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
   private formMutationObserver: MutationObserver | null = null;
@@ -96,6 +92,8 @@ export class BuludTextareaAutosize
   }> = [];
   private pointerInvalidationGeneration = 0;
   private pointerInvalidationScheduled = false;
+  private composing = false;
+  private resizeAfterComposition = false;
   private destroyed = false;
   private readonly viewInitialized = signal(false);
 
@@ -132,15 +130,35 @@ export class BuludTextareaAutosize
       this.connectFormResetListener();
       this.connectViewportResizeListener();
       const textarea = this.element.nativeElement;
-      const inputListener = (): void => {
+      const inputListener = (event: Event): void => {
+        if (eventIsComposing(event)) {
+          this.composing = true;
+        }
         if (textarea.value !== this.lastValue) {
+          this.requestResize();
+        }
+      };
+      const compositionStartListener = (): void => {
+        this.composing = true;
+      };
+      const compositionEndListener = (): void => {
+        this.composing = false;
+        if (this.resizeAfterComposition || textarea.value !== this.lastValue) {
+          this.resizeAfterComposition = false;
           this.resize();
         }
       };
       textarea.addEventListener('input', inputListener);
+      textarea.addEventListener('compositionstart', compositionStartListener);
+      textarea.addEventListener('compositionend', compositionEndListener);
       this.connectPseudoStateListeners();
       onCleanup(() => {
         textarea.removeEventListener('input', inputListener);
+        textarea.removeEventListener(
+          'compositionstart',
+          compositionStartListener,
+        );
+        textarea.removeEventListener('compositionend', compositionEndListener);
         this.disconnectPseudoStateListeners();
         this.disconnectWidthObserver();
         this.disconnectMutationObserver();
@@ -155,8 +173,8 @@ export class BuludTextareaAutosize
   ngAfterViewInit(): void {
     const textarea = this.element.nativeElement;
     this.originalStyles = {
-      height: textarea.style.height,
-      overflowY: textarea.style.overflowY,
+      height: captureInlineStyle(textarea.style, 'height'),
+      overflowY: captureInlineStyle(textarea.style, 'overflow-y'),
     };
     this.connectRestoreBaselineObserver();
     this.viewInitialized.set(true);
@@ -174,7 +192,7 @@ export class BuludTextareaAutosize
 
     const value = this.element.nativeElement.value;
     if (value !== this.lastValue) {
-      this.resize();
+      this.requestResize();
     }
   }
 
@@ -192,6 +210,11 @@ export class BuludTextareaAutosize
 
   private resize(): void {
     if (this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    if (this.composing) {
+      this.resizeAfterComposition = true;
       return;
     }
 
@@ -217,8 +240,8 @@ export class BuludTextareaAutosize
       borders,
       horizontalScrollbarGutter,
     );
-    textarea.style.overflowY = 'hidden';
-    textarea.style.height = '0px';
+    this.setOwnedStyle('overflow-y', 'hidden');
+    this.setOwnedStyle('height', '0px');
     this.lastMeasurementSignature = getMeasurementSignature(
       textarea,
       styles,
@@ -253,15 +276,17 @@ export class BuludTextareaAutosize
     const shouldScroll = contentHeight > effectiveMaxHeight;
 
     if (textarea.style.height !== nextHeight) {
-      textarea.style.height = nextHeight;
+      this.setOwnedStyle('height', nextHeight);
     }
     const nextOverflowY = shouldScroll ? 'auto' : 'hidden';
     if (textarea.style.overflowY !== nextOverflowY) {
-      textarea.style.overflowY = nextOverflowY;
+      this.setOwnedStyle('overflow-y', nextOverflowY);
     }
 
     this.ownedHeight = nextHeight;
+    this.ownedHeightPriority = this.originalStyles?.height.priority ?? '';
     this.ownedOverflowY = nextOverflowY;
+    this.ownedOverflowYPriority = this.originalStyles?.overflowY.priority ?? '';
     this.lastValue = textarea.value;
     restoreTextareaInteractionState(textarea, interactionState);
   }
@@ -293,20 +318,25 @@ export class BuludTextareaAutosize
       ? getContentBoxWidth(textarea, styles)
       : null;
     this.observer = new ResizeObserver((entries) => {
-      if (
-        this.destroyed ||
-        !this.enabled() ||
-        isResolvingCssMaxHeight(textarea)
-      ) {
+      if (this.destroyed || !this.enabled()) {
         return;
       }
+
+      if (isResolvingCssMaxHeight(textarea)) {
+        scheduleMicrotask(() => {
+          if (!this.destroyed && this.enabled()) {
+            this.remeasureIfNeeded();
+          }
+        });
+        return;
+      }
+
+      this.updateConstraintObservation();
 
       let shouldResize = false;
       for (const entry of entries) {
         if (entry.target === this.constraintContainer) {
-          if (this.hasMeasurementSignatureChanged()) {
-            shouldResize = true;
-          }
+          shouldResize = true;
           continue;
         }
 
@@ -349,6 +379,7 @@ export class BuludTextareaAutosize
 
     this.mutationObserver = new MutationObserver((records) => {
       if (!this.destroyed && this.enabled()) {
+        this.updateConstraintObservation();
         if (metricObservationWasMoved(records, this.element.nativeElement)) {
           this.reconnectMetricAncestors();
           this.connectFormResetListener();
@@ -426,7 +457,9 @@ export class BuludTextareaAutosize
     this.lastObservedWidth = null;
     this.constraintContainer = null;
     this.ownedHeight = null;
+    this.ownedHeightPriority = '';
     this.ownedOverflowY = null;
+    this.ownedOverflowYPriority = '';
     this.resetMeasurementSignature();
   }
 
@@ -638,6 +671,7 @@ export class BuludTextareaAutosize
   }
 
   private remeasureIfNeeded(): void {
+    this.updateConstraintObservation();
     if (this.hasExternalOwnedSizingChange()) {
       this.resize();
       return;
@@ -645,7 +679,6 @@ export class BuludTextareaAutosize
 
     if (this.hasMeasurementSignatureChanged()) {
       this.resize();
-      this.updateConstraintObservation();
     }
   }
 
@@ -711,9 +744,13 @@ export class BuludTextareaAutosize
     const textarea = this.element.nativeElement;
     return (
       (this.ownedHeight !== null &&
-        textarea.style.height !== this.ownedHeight) ||
+        (textarea.style.height !== this.ownedHeight ||
+          textarea.style.getPropertyPriority('height') !==
+            this.ownedHeightPriority)) ||
       (this.ownedOverflowY !== null &&
-        textarea.style.overflowY !== this.ownedOverflowY)
+        (textarea.style.overflowY !== this.ownedOverflowY ||
+          textarea.style.getPropertyPriority('overflow-y') !==
+            this.ownedOverflowYPriority))
     );
   }
 
@@ -727,8 +764,12 @@ export class BuludTextareaAutosize
     }
 
     const textarea = this.element.nativeElement;
-    textarea.style.height = this.originalStyles.height;
-    textarea.style.overflowY = this.originalStyles.overflowY;
+    restoreInlineStyle(textarea.style, 'height', this.originalStyles.height);
+    restoreInlineStyle(
+      textarea.style,
+      'overflow-y',
+      this.originalStyles.overflowY,
+    );
   }
 
   private refreshRestoreBaseline(): void {
@@ -742,9 +783,26 @@ export class BuludTextareaAutosize
 
     const textarea = this.element.nativeElement;
     this.originalStyles = {
-      height: textarea.style.height,
-      overflowY: textarea.style.overflowY,
+      height: captureInlineStyle(textarea.style, 'height'),
+      overflowY: captureInlineStyle(textarea.style, 'overflow-y'),
     };
+  }
+
+  private requestResize(): void {
+    if (this.composing) {
+      this.resizeAfterComposition = true;
+      return;
+    }
+    this.resize();
+  }
+
+  private setOwnedStyle(property: string, value: string): void {
+    const textarea = this.element.nativeElement;
+    const priority =
+      property === 'height'
+        ? (this.originalStyles?.height.priority ?? '')
+        : (this.originalStyles?.overflowY.priority ?? '');
+    textarea.style.setProperty(property, value, priority);
   }
 
   private connectRestoreBaselineObserver(): void {
@@ -831,9 +889,12 @@ function getMetricAncestors(textarea: HTMLTextAreaElement): Element[] {
 
 function getShadowRootHost(element: Element): HTMLElement | null {
   const root = element.getRootNode();
-  return root.nodeType === Node.DOCUMENT_FRAGMENT_NODE
-    ? ((root as ShadowRoot).host as HTMLElement | null)
-    : null;
+  if (root.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
+    return null;
+  }
+
+  const host = (root as ShadowRoot).host;
+  return host instanceof HTMLElement ? host : null;
 }
 
 function metricObservationWasMoved(
@@ -892,7 +953,7 @@ function findConstraintContainingBlock(
   styles: CSSStyleDeclaration,
 ): Element | null {
   if (styles.position !== 'absolute' && styles.position !== 'fixed') {
-    return textarea.parentElement;
+    return getContainingBlockTraversalParent(textarea);
   }
 
   const view = textarea.ownerDocument.defaultView;
@@ -900,7 +961,7 @@ function findConstraintContainingBlock(
     return textarea.parentElement;
   }
 
-  let current = textarea.parentElement ?? getShadowRootHost(textarea);
+  let current = getContainingBlockTraversalParent(textarea);
   while (current) {
     const ancestorStyles = view.getComputedStyle(current);
     if (
@@ -912,10 +973,14 @@ function findConstraintContainingBlock(
       return current;
     }
 
-    current = current.parentElement ?? getShadowRootHost(current);
+    current = getContainingBlockTraversalParent(current);
   }
 
   return null;
+}
+
+function getContainingBlockTraversalParent(element: Element): Element | null {
+  return element.parentElement ?? getShadowRootHost(element);
 }
 
 /** CSS properties that establish the containing block used by positioned descendants. */
@@ -1082,34 +1147,100 @@ function measureSingleRowHeight(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
 ): number | null {
-  const state = captureMeasurementState(textarea);
-  const placeholder = textarea.getAttribute('placeholder');
-  if (state.value === '' && placeholder !== null) {
-    const view = textarea.ownerDocument.defaultView;
-    if (view && typeof view.getComputedStyle === 'function') {
-      copyPlaceholderMeasurementStyles(
-        textarea,
-        getPlaceholderStyles(textarea, view),
-      );
-    }
-    textarea.removeAttribute('placeholder');
+  const view = textarea.ownerDocument.defaultView;
+  if (!view || typeof view.getComputedStyle !== 'function') {
+    return null;
   }
-  textarea.value = 'x';
-  textarea.setAttribute('rows', '1');
-  textarea.style.height = 'auto';
-  textarea.style.minHeight = '0px';
-  textarea.style.maxHeight = 'none';
-  textarea.style.overflow = 'hidden';
+
+  const clone = textarea.cloneNode(false) as HTMLTextAreaElement;
+  clone.value = 'x';
+  clone.setAttribute('rows', '1');
+  clone.removeAttribute('placeholder');
+  clone.style.cssText = textarea.style.cssText;
+  copyMetricStyles(clone, styles);
+  const placeholder = textarea.getAttribute('placeholder');
+  if (textarea.value === '' && placeholder !== null) {
+    copyPlaceholderMeasurementStyles(
+      clone,
+      getPlaceholderStyles(textarea, view),
+    );
+  }
+  clone.style.position = 'fixed';
+  clone.style.left = '-100000px';
+  clone.style.top = '-100000px';
+  clone.style.visibility = 'hidden';
+  clone.style.pointerEvents = 'none';
+  clone.style.height = 'auto';
+  clone.style.minHeight = '0px';
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'hidden';
+  clone.style.width = `${getMeasurementWidth(textarea, styles)}px`;
+  clone.tabIndex = -1;
+
+  const root = textarea.getRootNode();
+  const container =
+    root instanceof ShadowRoot ? root : textarea.ownerDocument.body;
+  if (!container) {
+    return fallbackNormalLineHeight(styles);
+  }
+
+  container.append(clone);
   try {
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
-    const heightFromScroll = textarea.scrollHeight - padding;
-    const heightFromLayout = textarea.offsetHeight - padding - borders;
+    const heightFromScroll = clone.scrollHeight - padding;
+    const heightFromLayout = clone.offsetHeight - padding - borders;
     const height = heightFromScroll > 0 ? heightFromScroll : heightFromLayout;
-    return Number.isFinite(height) && height > 0 ? height : null;
+    return Number.isFinite(height) && height > 0
+      ? height
+      : fallbackNormalLineHeight(styles);
   } finally {
-    restoreMeasurementState(textarea, state);
+    clone.remove();
   }
+}
+
+function copyMetricStyles(
+  target: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): void {
+  for (const property of TEXT_METRIC_PROPERTIES) {
+    const value = styles.getPropertyValue(property);
+    if (value !== '') {
+      target.style.setProperty(property, value);
+    }
+  }
+  for (const property of [
+    'box-sizing',
+    'display',
+    'margin',
+    'padding',
+    'border-style',
+    'border-width',
+    'width',
+  ]) {
+    const value = styles.getPropertyValue(property);
+    if (value !== '') {
+      target.style.setProperty(property, value);
+    }
+  }
+}
+
+function getMeasurementWidth(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): number {
+  const rectWidth = textarea.getBoundingClientRect().width;
+  if (rectWidth > 0) {
+    return rectWidth;
+  }
+
+  const declaredWidth = parsePixels(styles.width);
+  return declaredWidth > 0 ? declaredWidth : 1;
+}
+
+function fallbackNormalLineHeight(styles: CSSStyleDeclaration): number | null {
+  const fontSize = parsePixels(styles.fontSize);
+  return fontSize > 0 ? fontSize * 1.2 : null;
 }
 
 function captureTextareaInteractionState(
@@ -1130,7 +1261,9 @@ function restoreTextareaInteractionState(
   state: TextareaInteractionState,
 ): void {
   try {
-    textarea.value = state.value;
+    if (textarea.value !== state.value) {
+      textarea.value = state.value;
+    }
   } finally {
     try {
       if (state.selectionStart !== null && state.selectionEnd !== null) {
@@ -1144,69 +1277,6 @@ function restoreTextareaInteractionState(
     } finally {
       textarea.scrollTop = state.scrollTop;
       textarea.scrollLeft = state.scrollLeft;
-    }
-  }
-}
-
-function captureMeasurementState(
-  textarea: HTMLTextAreaElement,
-): MeasurementState {
-  return {
-    value: textarea.value,
-    placeholder: textarea.getAttribute('placeholder'),
-    rows: textarea.getAttribute('rows'),
-    style: textarea.getAttribute('style'),
-    selectionStart: textarea.selectionStart,
-    selectionEnd: textarea.selectionEnd,
-    selectionDirection: textarea.selectionDirection,
-    scrollTop: textarea.scrollTop,
-    scrollLeft: textarea.scrollLeft,
-  };
-}
-
-function restoreMeasurementState(
-  textarea: HTMLTextAreaElement,
-  state: MeasurementState,
-): void {
-  try {
-    textarea.value = state.value;
-  } finally {
-    try {
-      if (state.rows === null) {
-        textarea.removeAttribute('rows');
-      } else {
-        textarea.setAttribute('rows', state.rows);
-      }
-    } finally {
-      try {
-        if (state.style === null) {
-          textarea.removeAttribute('style');
-        } else {
-          textarea.setAttribute('style', state.style);
-        }
-      } finally {
-        try {
-          if (state.placeholder === null) {
-            textarea.removeAttribute('placeholder');
-          } else {
-            textarea.setAttribute('placeholder', state.placeholder);
-          }
-        } finally {
-          try {
-            if (state.selectionStart !== null && state.selectionEnd !== null) {
-              restoreSelection(
-                textarea,
-                state.selectionStart,
-                state.selectionEnd,
-                state.selectionDirection,
-              );
-            }
-          } finally {
-            textarea.scrollTop = state.scrollTop;
-            textarea.scrollLeft = state.scrollLeft;
-          }
-        }
-      }
     }
   }
 }
@@ -1334,6 +1404,10 @@ function getPlaceholderStyles(
   }
 }
 
+function eventIsComposing(event: Event): boolean {
+  return 'isComposing' in event && event.isComposing === true;
+}
+
 function getMeasurementSignature(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
@@ -1438,40 +1512,57 @@ function resolveCssMaxSize(
   styles: CSSStyleDeclaration,
   sizeProperty: 'height' | 'block-size',
 ): number | null {
+  const percentage = parsePercentageLength(
+    sizeProperty === 'height'
+      ? styles.maxHeight
+      : styles.getPropertyValue('max-block-size'),
+  );
+  if (percentage !== null) {
+    const container = findConstraintContainingBlock(textarea, styles);
+    const containerHeight = getContainingBlockHeight(container);
+    if (containerHeight !== null) {
+      return containerHeight * percentage;
+    }
+  }
+
   const resolutionHeight = '10000000px';
-  const previousHeight = textarea.style.height;
-  const previousBlockSize = textarea.style.getPropertyValue('block-size');
-  const previousMaxHeight = textarea.style.maxHeight;
-  const previousMaxBlockSize =
-    textarea.style.getPropertyValue('max-block-size');
-  const previousOverflowY = textarea.style.overflowY;
+  const previousHeight = captureInlineStyle(textarea.style, 'height');
+  const previousBlockSize = captureInlineStyle(textarea.style, 'block-size');
+  const previousMaxHeight = captureInlineStyle(textarea.style, 'max-height');
+  const previousMaxBlockSize = captureInlineStyle(
+    textarea.style,
+    'max-block-size',
+  );
+  const previousOverflowY = captureInlineStyle(textarea.style, 'overflow-y');
   resolvingCssMaxHeight.add(textarea);
 
   try {
-    textarea.style.maxHeight =
-      sizeProperty === 'height' ? styles.maxHeight : 'none';
+    textarea.style.setProperty(
+      'max-height',
+      sizeProperty === 'height' ? styles.maxHeight : 'none',
+    );
     textarea.style.setProperty(
       'max-block-size',
       sizeProperty === 'block-size'
         ? styles.getPropertyValue('max-block-size')
         : 'none',
     );
-    textarea.style.height = resolutionHeight;
+    textarea.style.setProperty('height', resolutionHeight);
     textarea.style.setProperty(
       'block-size',
       sizeProperty === 'block-size' ? resolutionHeight : '',
     );
-    textarea.style.overflowY = 'hidden';
+    textarea.style.setProperty('overflow-y', 'hidden');
     const physicalHeight = getUntransformedLayoutHeight(textarea, styles);
     return Number.isFinite(physicalHeight) && physicalHeight < 10000000
       ? physicalHeight
       : null;
   } finally {
-    textarea.style.height = previousHeight;
-    textarea.style.setProperty('block-size', previousBlockSize);
-    textarea.style.maxHeight = previousMaxHeight;
-    textarea.style.setProperty('max-block-size', previousMaxBlockSize);
-    textarea.style.overflowY = previousOverflowY;
+    restoreInlineStyle(textarea.style, 'height', previousHeight);
+    restoreInlineStyle(textarea.style, 'block-size', previousBlockSize);
+    restoreInlineStyle(textarea.style, 'max-height', previousMaxHeight);
+    restoreInlineStyle(textarea.style, 'max-block-size', previousMaxBlockSize);
+    restoreInlineStyle(textarea.style, 'overflow-y', previousOverflowY);
     scheduleMicrotask(() => resolvingCssMaxHeight.delete(textarea));
   }
 }
@@ -1493,6 +1584,36 @@ function getUntransformedLayoutHeight(
 
 const resolvingCssMaxHeight = new WeakSet<HTMLTextAreaElement>();
 
+function captureInlineStyle(
+  styles: CSSStyleDeclaration,
+  property: string,
+): InlineStyleValue {
+  let present = false;
+  for (let index = 0; index < styles.length; index += 1) {
+    if (styles.item(index) === property) {
+      present = true;
+      break;
+    }
+  }
+  return {
+    present,
+    value: styles.getPropertyValue(property),
+    priority: styles.getPropertyPriority(property),
+  };
+}
+
+function restoreInlineStyle(
+  styles: CSSStyleDeclaration,
+  property: string,
+  state: InlineStyleValue,
+): void {
+  if (!state.present) {
+    styles.removeProperty(property);
+    return;
+  }
+  styles.setProperty(property, state.value, state.priority);
+}
+
 function isResolvingCssMaxHeight(textarea: HTMLTextAreaElement): boolean {
   return resolvingCssMaxHeight.has(textarea);
 }
@@ -1505,6 +1626,30 @@ function parsePixelLength(value: string): number | null {
 
   const pixels = Number(match[1]);
   return Number.isFinite(pixels) ? pixels : null;
+}
+
+function parsePercentageLength(value: string): number | null {
+  const match = /^(-?(?:\d+\.?\d*|\.\d+))%$/.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+
+  const percentage = Number(match[1]);
+  return Number.isFinite(percentage) ? percentage / 100 : null;
+}
+
+function getContainingBlockHeight(container: Element | null): number | null {
+  if (!container) {
+    return null;
+  }
+
+  const rectHeight = container.getBoundingClientRect().height;
+  if (rectHeight > 0) {
+    return rectHeight;
+  }
+
+  const offsetHeight = (container as HTMLElement).offsetHeight;
+  return offsetHeight > 0 ? offsetHeight : null;
 }
 
 function scheduleMicrotask(callback: () => void): void {

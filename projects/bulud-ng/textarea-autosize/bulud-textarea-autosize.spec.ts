@@ -13,7 +13,7 @@ class MockResizeObserver {
   static readonly instances: MockResizeObserver[] = [];
   private readonly callback: ResizeObserverCallback;
   disconnectCount = 0;
-  private readonly observedElements: Element[] = [];
+  private readonly observedElements = new Set<Element>();
 
   constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
@@ -21,18 +21,23 @@ class MockResizeObserver {
   }
 
   observe(element: Element): void {
-    this.observedElements.push(element);
+    this.observedElements.add(element);
+  }
+
+  unobserve(element: Element): void {
+    this.observedElements.delete(element);
   }
 
   disconnect(): void {
     this.disconnectCount += 1;
+    this.observedElements.clear();
   }
 
   triggerWidth(width: number): void {
     this.callback(
       [
         {
-          target: this.observedElements[0]!,
+          target: [...this.observedElements][0]!,
           contentRect: { width, height: 0 },
         } as unknown as ResizeObserverEntry,
       ],
@@ -41,7 +46,7 @@ class MockResizeObserver {
   }
 
   triggerMetrics(): void {
-    const target = this.observedElements.at(-1);
+    const target = [...this.observedElements].at(-1);
     if (!target) {
       return;
     }
@@ -70,11 +75,11 @@ class MockResizeObserver {
   }
 
   isObserving(target: Element): boolean {
-    return this.observedElements.includes(target);
+    return this.observedElements.has(target);
   }
 
   triggerTextareaMetrics(): void {
-    const target = this.observedElements[0];
+    const target = [...this.observedElements][0];
     if (!target) {
       return;
     }
@@ -421,6 +426,58 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('defers normal-line-height measurement throughout IME composition', async () => {
+    contentHeight = 20;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.style.lineHeight = 'normal';
+      textarea.setAttribute('placeholder', 'Compose here');
+    });
+    const textarea = textareaOf(fixture);
+    const valueDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'value',
+    )!;
+    let valueWrites = 0;
+    Object.defineProperty(textarea, 'value', {
+      configurable: true,
+      get: () => valueDescriptor.get!.call(textarea),
+      set: (value: string) => {
+        valueWrites += 1;
+        valueDescriptor.set!.call(textarea, value);
+      },
+    });
+
+    textarea.focus();
+    textarea.value = 'before after';
+    textarea.setSelectionRange(7, 7, 'none');
+    valueWrites = 0;
+    textarea.dispatchEvent(new CompositionEvent('compositionstart'));
+    textarea.value = 'before あ after';
+    textarea.setSelectionRange(7, 7, 'none');
+    const composingInput = new Event('input', { bubbles: true });
+    Object.defineProperty(composingInput, 'isComposing', { value: true });
+    textarea.dispatchEvent(composingInput);
+
+    expect(valueWrites).toBe(1);
+    expect(textarea.value).toBe('before あ after');
+    expect(textarea.getAttribute('placeholder')).toBe('Compose here');
+    expect(textarea.selectionStart).toBe(7);
+    expect(textarea.selectionEnd).toBe(7);
+
+    valueWrites = 0;
+    contentHeight = 80;
+    textarea.dispatchEvent(new CompositionEvent('compositionend'));
+    await fixture.whenStable();
+
+    expect(valueWrites).toBe(0);
+    expect(textarea.value).toBe('before あ after');
+    expect(textarea.selectionStart).toBe(7);
+    expect(textarea.selectionEnd).toBe(7);
+    expect(textarea.style.height).toBe('80px');
+    fixture.destroy();
+  });
+
   it('measures one row for a long wrapping normal-line-height placeholder', async () => {
     const fixture = createHost((textarea, host) => {
       host.minRows = 2;
@@ -484,9 +541,7 @@ describe('BuludTextareaAutosize', () => {
     for (let cycle = 0; cycle < 3; cycle += 1) {
       textarea.dispatchEvent(new Event('input'));
       await fixture.whenStable();
-      expect(textarea.getAttribute('placeholder')).toBe(
-        'Repeated placeholder',
-      );
+      expect(textarea.getAttribute('placeholder')).toBe('Repeated placeholder');
     }
 
     fixture.destroy();
@@ -1827,6 +1882,46 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('refreshes constraint observation when positioning changes with equal-sized containers', async () => {
+    contentHeight = 160;
+    const fixture = createHost((textarea) => {
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+      textarea.parentElement!.style.height = '120px';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () =>
+          Number.parseFloat(textarea.parentElement?.style.height ?? '0') / 2,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    const oldContainer = textarea.parentElement!;
+    const newContainer = document.createElement('div');
+    newContainer.style.height = '120px';
+    newContainer.style.position = 'relative';
+    oldContainer.append(newContainer);
+    const observer = MockResizeObserver.instances[0];
+    await fixture.whenStable();
+
+    textarea.style.position = 'absolute';
+    newContainer.append(textarea);
+    await fixture.whenStable();
+
+    expect(observer.isObserving(newContainer)).toBeTrue();
+    expect(observer.isObserving(oldContainer)).toBeFalse();
+    const initialHeight = textarea.style.height;
+
+    newContainer.style.height = '240px';
+    observer.triggerTarget(newContainer);
+    expect(textarea.style.height).toBe('120px');
+
+    oldContainer.style.height = '240px';
+    observer.triggerTarget(oldContainer);
+    expect(textarea.style.height).toBe('120px');
+    expect(initialHeight).toBe('60px');
+    fixture.destroy();
+  });
+
   it('selects a static filtered containing block and tracks both size directions', async () => {
     contentHeight = 160;
     const fixture = createHost((textarea) => {
@@ -1864,6 +1959,44 @@ describe('BuludTextareaAutosize', () => {
       expandedHeight,
     );
     fixture.destroy();
+  });
+
+  it('observes a ShadowRoot host for direct-child relative constraints', async () => {
+    contentHeight = 160;
+    const fixture = TestBed.createComponent(ReparentedShadowHostComponent);
+    const host = fixture.nativeElement as HTMLElement;
+    const textarea = host.shadowRoot!.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.style.maxHeight = '50%';
+    textarea.style.lineHeight = '20px';
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    host.style.height = '120px';
+    Object.defineProperty(textarea, 'offsetHeight', {
+      configurable: true,
+      get: () => Number.parseFloat(host.style.height || '0') / 2,
+    });
+    Object.defineProperty(textarea, 'scrollHeight', {
+      configurable: true,
+      get: () => contentHeight,
+    });
+    fixture.detectChanges();
+    const observer = MockResizeObserver.instances[0];
+    expect(observer.isObserving(host)).toBeTrue();
+    const initialHeight = textarea.style.height;
+
+    host.style.height = '240px';
+    observer.triggerTarget(host);
+    expect(textarea.style.height).toBe('120px');
+
+    host.style.height = '80px';
+    contentHeight = 10;
+    observer.triggerTarget(host);
+    expect(textarea.style.height).toBe('40px');
+    expect(initialHeight).toBe('60px');
+    fixture.destroy();
+    expect(observer.isObserving(host)).toBeFalse();
   });
 
   it('remeasures after moving between same-sized ancestors with different metrics', async () => {
@@ -2113,6 +2246,49 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
     expect(textarea.style.height).toBe('12px');
     expect(textarea.style.overflowY).toBe('auto');
+  });
+
+  it('restores inline values and priorities across enable, disable, and destroy', async () => {
+    const fixture = createHost((textarea) => {
+      textarea.style.setProperty('height', '80px', 'important');
+      textarea.style.setProperty('overflow-y', 'scroll', 'important');
+    });
+    const textarea = textareaOf(fixture);
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.getPropertyValue('height')).toBe('80px');
+    expect(textarea.style.getPropertyPriority('height')).toBe('important');
+    expect(textarea.style.getPropertyValue('overflow-y')).toBe('scroll');
+    expect(textarea.style.getPropertyPriority('overflow-y')).toBe('important');
+
+    textarea.style.setProperty('height', '12px');
+    textarea.style.setProperty('overflow-y', 'auto');
+    await fixture.whenStable();
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+
+    expect(textarea.style.getPropertyValue('height')).toBe('12px');
+    expect(textarea.style.getPropertyPriority('height')).toBe('');
+    expect(textarea.style.getPropertyValue('overflow-y')).toBe('auto');
+    expect(textarea.style.getPropertyPriority('overflow-y')).toBe('');
+    fixture.destroy();
+
+    const absentFixture = createHost();
+    const absentTextarea = textareaOf(absentFixture);
+    absentFixture.componentInstance.enabled = false;
+    absentFixture.changeDetectorRef.markForCheck();
+    await absentFixture.whenStable();
+    expect(absentTextarea.style.getPropertyValue('height')).toBe('');
+    expect(absentTextarea.style.getPropertyPriority('height')).toBe('');
+    expect(absentTextarea.style.getPropertyValue('overflow-y')).toBe('');
+    expect(absentTextarea.style.getPropertyPriority('overflow-y')).toBe('');
+    absentFixture.destroy();
   });
 
   it('disconnects listeners and restores styles on destroy', () => {
