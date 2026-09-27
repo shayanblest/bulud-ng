@@ -286,6 +286,7 @@ export class BuludAccordion implements BuludAccordionContext {
       // required input. Ignore that transient state until the next render.
       return undefined;
     }
+
   }
 
   private toDomSegment(id: BuludAccordionId): string {

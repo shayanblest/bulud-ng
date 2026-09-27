@@ -1489,4 +1489,76 @@ test.describe('Bulud component demo', () => {
       .toBe(initial);
     await style.evaluate((element) => element.remove());
   });
+
+  test('textarea autosize preserves the caret while editing in the middle', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      element.style.lineHeight = 'normal';
+      element.value = 'text before the insertion point';
+      element.focus();
+      element.setSelectionRange(11, 11, 'none');
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    await textarea.press('X');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          value: element.value,
+          selectionStart: element.selectionStart,
+          selectionEnd: element.selectionEnd,
+        })),
+      )
+      .toEqual({
+        value: 'text beforeX the insertion point',
+        selectionStart: 12,
+        selectionEnd: 12,
+      });
+  });
+
+  test('textarea autosize measures one row for a long wrapping normal placeholder', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      element.style.width = '180px';
+      element.style.boxSizing = 'border-box';
+      element.style.padding = '4px';
+      element.style.border = '1px solid';
+      element.style.fontSize = '16px';
+      element.style.lineHeight = 'normal';
+      element.value = '';
+      element.setAttribute('placeholder', 'wrapping placeholder '.repeat(80));
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const longHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    expect(longHeight).toBeGreaterThan(30);
+    expect(longHeight).toBeLessThan(180);
+
+    await textarea.evaluate((element) => {
+      element.setAttribute('placeholder', 'short');
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(longHeight);
+    const shortHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+
+    await textarea.evaluate((element) => {
+      element.removeAttribute('placeholder');
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBe(shortHeight);
+  });
 });

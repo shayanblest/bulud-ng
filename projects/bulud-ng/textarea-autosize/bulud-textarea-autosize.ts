@@ -31,6 +31,26 @@ interface OriginalStyles {
   readonly overflowY: string;
 }
 
+interface MeasurementState {
+  readonly value: string;
+  readonly rows: string | null;
+  readonly style: string | null;
+  readonly selectionStart: number | null;
+  readonly selectionEnd: number | null;
+  readonly selectionDirection: 'forward' | 'backward' | 'none' | null;
+  readonly scrollTop: number;
+  readonly scrollLeft: number;
+}
+
+interface TextareaInteractionState {
+  readonly value: string;
+  readonly selectionStart: number | null;
+  readonly selectionEnd: number | null;
+  readonly selectionDirection: 'forward' | 'backward' | 'none' | null;
+  readonly scrollTop: number;
+  readonly scrollLeft: number;
+}
+
 /**
  * Resizes a native textarea to fit its value without polling.
  *
@@ -73,6 +93,8 @@ export class BuludTextareaAutosize
     readonly listener: EventListener;
     readonly capture: boolean;
   }> = [];
+  private pointerInvalidationGeneration = 0;
+  private pointerInvalidationScheduled = false;
   private destroyed = false;
   private readonly viewInitialized = signal(false);
 
@@ -179,6 +201,7 @@ export class BuludTextareaAutosize
       return;
     }
 
+    const interactionState = captureTextareaInteractionState(textarea);
     const styles = getComputedStyle.call(view, textarea);
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
@@ -239,6 +262,7 @@ export class BuludTextareaAutosize
     this.ownedHeight = nextHeight;
     this.ownedOverflowY = nextOverflowY;
     this.lastValue = textarea.value;
+    restoreTextareaInteractionState(textarea, interactionState);
   }
 
   private measureContentHeight(
@@ -543,16 +567,23 @@ export class BuludTextareaAutosize
     const listener: EventListener = () => {
       this.remeasureIfNeeded();
     };
+    const pointerListener: EventListener = () => {
+      this.schedulePointerRemeasurement();
+    };
     const textarea = this.element.nativeElement;
     for (const type of PSEUDO_STATE_EVENTS) {
-      this.addPseudoStateListener(textarea, type, listener);
+      this.addPseudoStateListener(
+        textarea,
+        type,
+        isPointerStateEvent(type) ? pointerListener : listener,
+      );
     }
 
     for (const ancestor of this.metricAncestors) {
       this.addPseudoStateListener(ancestor, 'focus', listener, true);
       this.addPseudoStateListener(ancestor, 'blur', listener, true);
       for (const type of POINTER_STATE_EVENTS) {
-        this.addPseudoStateListener(ancestor, type, listener, true);
+        this.addPseudoStateListener(ancestor, type, pointerListener, true);
       }
     }
 
@@ -561,7 +592,7 @@ export class BuludTextareaAutosize
       this.addPseudoStateListener(root, 'focus', listener, true);
       this.addPseudoStateListener(root, 'blur', listener, true);
       for (const type of POINTER_STATE_EVENTS) {
-        this.addPseudoStateListener(root, type, listener, true);
+        this.addPseudoStateListener(root, type, pointerListener, true);
       }
     }
   }
@@ -577,11 +608,32 @@ export class BuludTextareaAutosize
   }
 
   private disconnectPseudoStateListeners(): void {
+    this.pointerInvalidationGeneration += 1;
+    this.pointerInvalidationScheduled = false;
     for (const { target, type, listener, capture } of this
       .pseudoStateListeners) {
       target.removeEventListener(type, listener, capture);
     }
     this.pseudoStateListeners = [];
+  }
+
+  private schedulePointerRemeasurement(): void {
+    if (this.pointerInvalidationScheduled) {
+      return;
+    }
+
+    this.pointerInvalidationScheduled = true;
+    const generation = this.pointerInvalidationGeneration;
+    scheduleMicrotask(() => {
+      if (generation !== this.pointerInvalidationGeneration) {
+        return;
+      }
+
+      this.pointerInvalidationScheduled = false;
+      if (!this.destroyed && this.enabled()) {
+        this.remeasureIfNeeded();
+      }
+    });
   }
 
   private remeasureIfNeeded(): void {
@@ -1029,11 +1081,19 @@ function measureSingleRowHeight(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
 ): number | null {
-  const previousValue = textarea.value;
-  const previousRows = textarea.getAttribute('rows');
-  const previousStyle = textarea.getAttribute('style');
-  textarea.value =
-    previousValue === '' && textarea.getAttribute('placeholder') ? '' : 'x';
+  const state = captureMeasurementState(textarea);
+  const placeholder = textarea.getAttribute('placeholder');
+  if (state.value === '' && placeholder !== null) {
+    const view = textarea.ownerDocument.defaultView;
+    if (view && typeof view.getComputedStyle === 'function') {
+      copyPlaceholderMeasurementStyles(
+        textarea,
+        getPlaceholderStyles(textarea, view),
+      );
+    }
+    textarea.removeAttribute('placeholder');
+  }
+  textarea.value = 'x';
   textarea.setAttribute('rows', '1');
   textarea.style.height = 'auto';
   textarea.style.minHeight = '0px';
@@ -1047,16 +1107,125 @@ function measureSingleRowHeight(
     const height = heightFromScroll > 0 ? heightFromScroll : heightFromLayout;
     return Number.isFinite(height) && height > 0 ? height : null;
   } finally {
-    textarea.value = previousValue;
-    if (previousRows === null) {
-      textarea.removeAttribute('rows');
-    } else {
-      textarea.setAttribute('rows', previousRows);
+    restoreMeasurementState(textarea, state);
+  }
+}
+
+function captureTextareaInteractionState(
+  textarea: HTMLTextAreaElement,
+): TextareaInteractionState {
+  return {
+    value: textarea.value,
+    selectionStart: textarea.selectionStart,
+    selectionEnd: textarea.selectionEnd,
+    selectionDirection: textarea.selectionDirection,
+    scrollTop: textarea.scrollTop,
+    scrollLeft: textarea.scrollLeft,
+  };
+}
+
+function restoreTextareaInteractionState(
+  textarea: HTMLTextAreaElement,
+  state: TextareaInteractionState,
+): void {
+  try {
+    textarea.value = state.value;
+  } finally {
+    try {
+      if (state.selectionStart !== null && state.selectionEnd !== null) {
+        restoreSelection(
+          textarea,
+          state.selectionStart,
+          state.selectionEnd,
+          state.selectionDirection,
+        );
+      }
+    } finally {
+      textarea.scrollTop = state.scrollTop;
+      textarea.scrollLeft = state.scrollLeft;
     }
-    if (previousStyle === null) {
-      textarea.removeAttribute('style');
-    } else {
-      textarea.setAttribute('style', previousStyle);
+  }
+}
+
+function captureMeasurementState(
+  textarea: HTMLTextAreaElement,
+): MeasurementState {
+  return {
+    value: textarea.value,
+    rows: textarea.getAttribute('rows'),
+    style: textarea.getAttribute('style'),
+    selectionStart: textarea.selectionStart,
+    selectionEnd: textarea.selectionEnd,
+    selectionDirection: textarea.selectionDirection,
+    scrollTop: textarea.scrollTop,
+    scrollLeft: textarea.scrollLeft,
+  };
+}
+
+function restoreMeasurementState(
+  textarea: HTMLTextAreaElement,
+  state: MeasurementState,
+): void {
+  try {
+    textarea.value = state.value;
+  } finally {
+    try {
+      if (state.rows === null) {
+        textarea.removeAttribute('rows');
+      } else {
+        textarea.setAttribute('rows', state.rows);
+      }
+    } finally {
+      try {
+        if (state.style === null) {
+          textarea.removeAttribute('style');
+        } else {
+          textarea.setAttribute('style', state.style);
+        }
+      } finally {
+        try {
+          if (state.selectionStart !== null && state.selectionEnd !== null) {
+            restoreSelection(
+              textarea,
+              state.selectionStart,
+              state.selectionEnd,
+              state.selectionDirection,
+            );
+          }
+        } finally {
+          textarea.scrollTop = state.scrollTop;
+          textarea.scrollLeft = state.scrollLeft;
+        }
+      }
+    }
+  }
+}
+
+function restoreSelection(
+  textarea: HTMLTextAreaElement,
+  selectionStart: number,
+  selectionEnd: number,
+  selectionDirection: 'forward' | 'backward' | 'none' | null,
+): void {
+  textarea.setSelectionRange(
+    selectionStart,
+    selectionEnd,
+    selectionDirection ?? 'none',
+  );
+}
+
+function copyPlaceholderMeasurementStyles(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration | null,
+): void {
+  if (!styles) {
+    return;
+  }
+
+  for (const property of PLACEHOLDER_METRIC_PROPERTIES) {
+    const value = styles.getPropertyValue(property);
+    if (value !== '') {
+      textarea.style.setProperty(property, value);
     }
   }
 }
@@ -1423,3 +1592,7 @@ const POINTER_STATE_EVENTS = [
   'pointerup',
   'pointercancel',
 ] as const;
+
+function isPointerStateEvent(type: string): boolean {
+  return type.startsWith('pointer');
+}

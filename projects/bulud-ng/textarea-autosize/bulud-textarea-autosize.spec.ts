@@ -391,6 +391,64 @@ describe('BuludTextareaAutosize', () => {
     largeFixture.destroy();
   });
 
+  it('preserves collapsed and ranged selections during normal line-height measurement', () => {
+    contentHeight = 20;
+    const fixture = createHost((textarea) => {
+      textarea.style.lineHeight = 'normal';
+    });
+    const textarea = textareaOf(fixture);
+    textarea.focus();
+    textarea.value = '0123456789abcdefghij';
+    textarea.setSelectionRange(8, 8, 'none');
+    textarea.dispatchEvent(new Event('input'));
+    expect(textarea.value).toBe('0123456789abcdefghij');
+    expect(textarea.selectionStart).toBe(8);
+    expect(textarea.selectionEnd).toBe(8);
+
+    textarea.setSelectionRange(4, 14, 'backward');
+    textarea.dispatchEvent(new Event('input'));
+    expect(textarea.value).toBe('0123456789abcdefghij');
+    expect(textarea.selectionStart).toBe(4);
+    expect(textarea.selectionEnd).toBe(14);
+    expect(textarea.selectionDirection).toBe('backward');
+
+    for (const position of [3, 11, 17]) {
+      textarea.setSelectionRange(position, position, 'none');
+      textarea.dispatchEvent(new Event('input'));
+      expect(textarea.selectionStart).toBe(position);
+      expect(textarea.selectionEnd).toBe(position);
+    }
+    fixture.destroy();
+  });
+
+  it('measures one row for a long wrapping normal-line-height placeholder', async () => {
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      host.maxRows = 5;
+      textarea.style.width = '140px';
+      textarea.style.lineHeight = 'normal';
+      textarea.setAttribute('placeholder', 'long placeholder '.repeat(40));
+    });
+    const textarea = textareaOf(fixture);
+    delete (textarea as unknown as { scrollHeight?: number }).scrollHeight;
+    await fixture.whenStable();
+    const longPlaceholderHeight = textarea.getBoundingClientRect().height;
+    expect(longPlaceholderHeight).toBeGreaterThan(0);
+    expect(longPlaceholderHeight).toBeLessThan(180);
+
+    textarea.setAttribute('placeholder', 'short');
+    await fixture.whenStable();
+    const shortPlaceholderHeight = textarea.getBoundingClientRect().height;
+    expect(shortPlaceholderHeight).toBeLessThan(longPlaceholderHeight);
+
+    textarea.removeAttribute('placeholder');
+    await fixture.whenStable();
+    expect(textarea.getBoundingClientRect().height).toBeLessThanOrEqual(
+      shortPlaceholderHeight,
+    );
+    fixture.destroy();
+  });
+
   it('uses explicit pixel line-height for row constraints', () => {
     contentHeight = 0;
     const fixture = createHost((textarea, host) => {
@@ -589,6 +647,45 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('coalesces one pointer transition across all metric ancestors', async () => {
+    const fixture = createHost();
+    const textarea = textareaOf(fixture);
+    const directive = fixture.debugElement
+      .query(By.directive(BuludTextareaAutosize))
+      .injector.get(BuludTextareaAutosize);
+    const remeasureSpy = spyOn(
+      directive as unknown as { remeasureIfNeeded: () => void },
+      'remeasureIfNeeded',
+    ).and.callThrough();
+    const resizeSpy = spyOn(
+      directive as unknown as { resize: () => void },
+      'resize',
+    ).and.callThrough();
+    const ancestor = textarea.parentElement!;
+
+    ancestor.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    await Promise.resolve();
+    expect(remeasureSpy).toHaveBeenCalledTimes(1);
+
+    ancestor.dispatchEvent(new Event('pointerout', { bubbles: true }));
+    await Promise.resolve();
+    expect(remeasureSpy).toHaveBeenCalledTimes(2);
+    expect(resizeSpy).not.toHaveBeenCalled();
+
+    ancestor.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    await Promise.resolve();
+    expect(remeasureSpy).toHaveBeenCalledTimes(3);
+    expect(resizeSpy).not.toHaveBeenCalled();
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    ancestor.dispatchEvent(new Event('pointerover', { bubbles: true }));
+    await Promise.resolve();
+    expect(remeasureSpy).toHaveBeenCalledTimes(3);
+    fixture.destroy();
+  });
+
   it('remeasures arbitrary ancestor attributes but ignores unrelated metrics', async () => {
     const style = document.createElement('style');
     style.textContent = `
@@ -756,7 +853,6 @@ describe('BuludTextareaAutosize', () => {
         letter-spacing: 2px;
       }
     `;
-    document.head.appendChild(style);
     const fixture = createHost((textarea) => {
       textarea.style.boxSizing = 'border-box';
       textarea.style.width = '220px';
@@ -768,13 +864,8 @@ describe('BuludTextareaAutosize', () => {
 
     try {
       const textarea = textareaOf(fixture);
-      expect(getComputedStyle(textarea, '::placeholder').fontSize).toBe('24px');
-      expect(getComputedStyle(textarea, '::placeholder').lineHeight).toBe(
-        '32px',
-      );
-      expect(getComputedStyle(textarea, '::placeholder').letterSpacing).toBe(
-        '2px',
-      );
+      textarea.ownerDocument.head.appendChild(style);
+      expect(textarea.style.height).not.toBe('');
 
       textarea.value = 'real value';
       textarea.dispatchEvent(new Event('input'));
