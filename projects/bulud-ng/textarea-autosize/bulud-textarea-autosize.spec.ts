@@ -434,6 +434,13 @@ describe('BuludTextareaAutosize', () => {
       textarea.setAttribute('placeholder', 'Compose here');
     });
     const textarea = textareaOf(fixture);
+    const directive = fixture.debugElement
+      .query(By.directive(BuludTextareaAutosize))
+      .injector.get(BuludTextareaAutosize);
+    const resizeSpy = spyOn(
+      directive as unknown as { resize: () => void },
+      'resize',
+    ).and.callThrough();
     const valueDescriptor = Object.getOwnPropertyDescriptor(
       HTMLTextAreaElement.prototype,
       'value',
@@ -467,6 +474,7 @@ describe('BuludTextareaAutosize', () => {
 
     valueWrites = 0;
     contentHeight = 80;
+    const resizeCallsBeforeCompositionEnd = resizeSpy.calls.count();
     textarea.dispatchEvent(new CompositionEvent('compositionend'));
     await fixture.whenStable();
 
@@ -475,7 +483,71 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.selectionStart).toBe(7);
     expect(textarea.selectionEnd).toBe(7);
     expect(textarea.style.height).toBe('80px');
+    expect(resizeSpy.calls.count() - resizeCallsBeforeCompositionEnd).toBe(1);
     fixture.destroy();
+  });
+
+  it('resets composition bookkeeping across disable and re-enable', async () => {
+    contentHeight = 20;
+    const fixture = createHost((textarea) => {
+      textarea.style.lineHeight = '20px';
+    });
+    const textarea = textareaOf(fixture);
+
+    textarea.dispatchEvent(new CompositionEvent('compositionstart'));
+    textarea.value = 'composing value';
+    const composingInput = new Event('input', { bubbles: true });
+    Object.defineProperty(composingInput, 'isComposing', { value: true });
+    textarea.dispatchEvent(composingInput);
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    contentHeight = 80;
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('80px');
+
+    for (const nextHeight of [90, 100]) {
+      textarea.dispatchEvent(new CompositionEvent('compositionstart'));
+      textarea.value = `composition cycle ${nextHeight}`;
+      const cycleInput = new Event('input', { bubbles: true });
+      Object.defineProperty(cycleInput, 'isComposing', { value: true });
+      textarea.dispatchEvent(cycleInput);
+
+      fixture.componentInstance.enabled = false;
+      fixture.changeDetectorRef.markForCheck();
+      await fixture.whenStable();
+      contentHeight = nextHeight;
+      fixture.componentInstance.enabled = true;
+      fixture.changeDetectorRef.markForCheck();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe(`${nextHeight}px`);
+    }
+
+    contentHeight = 110;
+    textarea.value = 'completed next input';
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(textarea.style.height).toBe('110px');
+
+    fixture.destroy();
+  });
+
+  it('cleans composition bookkeeping when destroyed before compositionend', () => {
+    const fixture = createHost((textarea) => {
+      textarea.style.lineHeight = '20px';
+    });
+    const textarea = textareaOf(fixture);
+    textarea.dispatchEvent(new CompositionEvent('compositionstart'));
+    textarea.value = 'active composition';
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(() => {
+      fixture.destroy();
+      textarea.dispatchEvent(new CompositionEvent('compositionend'));
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }).not.toThrow();
   });
 
   it('measures one row for a long wrapping normal-line-height placeholder', async () => {
@@ -1845,6 +1917,40 @@ describe('BuludTextareaAutosize', () => {
     observer.triggerTextareaMetrics();
     expect(textarea.getBoundingClientRect().height).toBeLessThan(initialHeight);
     expect(textarea.style.overflowY).toBe('hidden');
+    fixture.destroy();
+  });
+
+  it('does not manually resolve percentage caps against auto-height parents', async () => {
+    contentHeight = 120;
+    const fixture = createHost((textarea) => {
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () =>
+          Number.parseFloat(textarea.parentElement?.style.height ?? '0') / 2,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    const parent = textarea.parentElement!;
+    const observer = MockResizeObserver.instances[0];
+
+    expect(observer.isObserving(parent)).toBeFalse();
+    const firstHeight = textarea.style.height;
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      textarea.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe(firstHeight);
+    }
+
+    parent.style.height = '120px';
+    await fixture.whenStable();
+    expect(observer.isObserving(parent)).toBeTrue();
+    expect(textarea.style.height).toBe('60px');
+
+    parent.style.height = '';
+    await fixture.whenStable();
+    expect(observer.isObserving(parent)).toBeFalse();
     fixture.destroy();
   });
 

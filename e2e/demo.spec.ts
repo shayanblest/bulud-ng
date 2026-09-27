@@ -1573,6 +1573,66 @@ test.describe('Bulud component demo', () => {
     expect(state.writesAfterEnd).toBe(0);
   });
 
+  test('textarea autosize follows definite percentage caps without collapsing auto parents', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const state = await textarea.evaluate((element) => {
+      const parent = element.parentElement!;
+      element.style.boxSizing = 'content-box';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.lineHeight = '20px';
+      element.style.maxHeight = '50%';
+      element.value = 'auto parent '.repeat(100);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      return {
+        autoHeight: element.getBoundingClientRect().height,
+        autoParentHeight: parent.getBoundingClientRect().height,
+        contentReachable:
+          getComputedStyle(element).overflowY === 'auto' &&
+          element.scrollHeight > element.clientHeight,
+      };
+    });
+
+    const repeatedHeights: number[] = [];
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await textarea.dispatchEvent('input');
+      repeatedHeights.push(
+        await textarea.evaluate(
+          (element) => element.getBoundingClientRect().height,
+        ),
+      );
+    }
+    expect(repeatedHeights.every((height) => height === state.autoHeight)).toBe(
+      true,
+    );
+    expect(state.autoParentHeight).toBeGreaterThan(0);
+    expect(state.contentReachable).toBe(true);
+
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.height = '160px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(80);
+
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = 'calc(50% - 10px)';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(70);
+
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '50%';
+      element.parentElement!.style.height = '';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(state.autoHeight);
+  });
+
   test('textarea autosize measures one row for a long wrapping normal placeholder', async ({
     page,
   }) => {

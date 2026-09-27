@@ -153,6 +153,7 @@ export class BuludTextareaAutosize
       textarea.addEventListener('compositionend', compositionEndListener);
       this.connectPseudoStateListeners();
       onCleanup(() => {
+        this.resetCompositionState();
         textarea.removeEventListener('input', inputListener);
         textarea.removeEventListener(
           'compositionstart',
@@ -198,6 +199,7 @@ export class BuludTextareaAutosize
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    this.resetCompositionState();
     this.disconnectWidthObserver();
     this.disconnectMutationObserver();
     this.disconnectFontLoadingObserver();
@@ -614,8 +616,8 @@ export class BuludTextareaAutosize
     }
 
     for (const ancestor of this.metricAncestors) {
-      this.addPseudoStateListener(ancestor, 'focus', listener, true);
-      this.addPseudoStateListener(ancestor, 'blur', listener, true);
+      this.addPseudoStateListener(ancestor, 'focusin', listener);
+      this.addPseudoStateListener(ancestor, 'focusout', listener);
       for (const type of POINTER_STATE_EVENTS) {
         this.addPseudoStateListener(ancestor, type, pointerListener, true);
       }
@@ -623,8 +625,8 @@ export class BuludTextareaAutosize
 
     const root = textarea.getRootNode();
     if (root instanceof ShadowRoot) {
-      this.addPseudoStateListener(root, 'focus', listener, true);
-      this.addPseudoStateListener(root, 'blur', listener, true);
+      this.addPseudoStateListener(root, 'focusin', listener);
+      this.addPseudoStateListener(root, 'focusout', listener);
       for (const type of POINTER_STATE_EVENTS) {
         this.addPseudoStateListener(root, type, pointerListener, true);
       }
@@ -694,9 +696,15 @@ export class BuludTextareaAutosize
     }
 
     const styles = view.getComputedStyle(textarea);
-    const nextContainer = hasRelativeMaxHeight(styles)
+    const container = hasRelativeMaxHeight(styles)
       ? findConstraintContainingBlock(textarea, styles)
       : null;
+    const nextContainer =
+      container && hasContainingBlockPercentage(styles)
+        ? hasDefiniteContainingBlockBlockSize(container)
+          ? container
+          : null
+        : null;
     if (nextContainer === this.constraintContainer) {
       return;
     }
@@ -803,6 +811,11 @@ export class BuludTextareaAutosize
         ? (this.originalStyles?.height.priority ?? '')
         : (this.originalStyles?.overflowY.priority ?? '');
     textarea.style.setProperty(property, value, priority);
+  }
+
+  private resetCompositionState(): void {
+    this.composing = false;
+    this.resizeAfterComposition = false;
   }
 
   private connectRestoreBaselineObserver(): void {
@@ -1048,6 +1061,52 @@ function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {
       maxBlockSize !== 'none' &&
       parsePixelLength(maxBlockSize) === null)
   );
+}
+
+function hasContainingBlockPercentage(styles: CSSStyleDeclaration): boolean {
+  const maxHeight = styles.maxHeight.trim();
+  const maxBlockSize = styles.getPropertyValue('max-block-size').trim();
+  return (
+    maxHeight.includes('%') ||
+    (isHorizontalWritingMode(styles) && maxBlockSize.includes('%'))
+  );
+}
+
+function hasDefiniteContainingBlockBlockSize(container: Element): boolean {
+  const view = container.ownerDocument.defaultView;
+  if (!view || typeof view.getComputedStyle !== 'function') {
+    return false;
+  }
+
+  const specifiedHeight = (container as HTMLElement).style
+    .getPropertyValue('height')
+    .trim();
+  if (
+    specifiedHeight === '' ||
+    specifiedHeight.toLowerCase() === 'auto' ||
+    specifiedHeight.includes('%')
+  ) {
+    return false;
+  }
+
+  const styles = view.getComputedStyle(container);
+  return isDefiniteCssBlockSize(styles.height);
+}
+
+function isDefiniteCssBlockSize(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  if (
+    normalized === '' ||
+    normalized === 'auto' ||
+    normalized === 'fit-content' ||
+    normalized === 'max-content' ||
+    normalized === 'min-content' ||
+    normalized === 'stretch'
+  ) {
+    return false;
+  }
+
+  return parsePixelLength(normalized) !== null;
 }
 
 function formMutationMayAffectTextarea(
@@ -1519,7 +1578,7 @@ function resolveCssMaxSize(
   );
   if (percentage !== null) {
     const container = findConstraintContainingBlock(textarea, styles);
-    const containerHeight = getContainingBlockHeight(container);
+    const containerHeight = getDefiniteContainingBlockHeight(container);
     if (containerHeight !== null) {
       return containerHeight * percentage;
     }
@@ -1638,18 +1697,37 @@ function parsePercentageLength(value: string): number | null {
   return Number.isFinite(percentage) ? percentage / 100 : null;
 }
 
-function getContainingBlockHeight(container: Element | null): number | null {
+function getDefiniteContainingBlockHeight(
+  container: Element | null,
+): number | null {
   if (!container) {
     return null;
   }
 
-  const rectHeight = container.getBoundingClientRect().height;
-  if (rectHeight > 0) {
-    return rectHeight;
+  const view = container.ownerDocument.defaultView;
+  if (!view || typeof view.getComputedStyle !== 'function') {
+    return null;
   }
 
-  const offsetHeight = (container as HTMLElement).offsetHeight;
-  return offsetHeight > 0 ? offsetHeight : null;
+  if (!hasDefiniteContainingBlockBlockSize(container)) {
+    return null;
+  }
+
+  const styles = view.getComputedStyle(container);
+  if (!isDefiniteCssBlockSize(styles.height)) {
+    return null;
+  }
+
+  const declaredHeight = parsePixelLength(styles.height);
+  if (declaredHeight === null) {
+    return null;
+  }
+
+  const padding = getVerticalPadding(styles);
+  const borders = getVerticalBorders(styles);
+  return styles.boxSizing === 'border-box'
+    ? Math.max(0, declaredHeight - borders)
+    : declaredHeight + padding;
 }
 
 function scheduleMicrotask(callback: () => void): void {
