@@ -624,12 +624,54 @@ export class BuludTextareaAutosize
     }
 
     const root = textarea.getRootNode();
-    if (root instanceof ShadowRoot) {
+    if (isShadowRoot(root, textarea.ownerDocument)) {
       this.addPseudoStateListener(root, 'focusin', listener);
       this.addPseudoStateListener(root, 'focusout', listener);
       for (const type of POINTER_STATE_EVENTS) {
         this.addPseudoStateListener(root, type, pointerListener, true);
       }
+    }
+
+    const transitionListener: EventListener = (event) => {
+      if (isMetricTransitionEvent(event)) {
+        this.scheduleTransitionRemeasurement();
+      }
+    };
+    const animationListener: EventListener = () => {
+      this.scheduleTransitionRemeasurement();
+    };
+    const transitionTargets: EventTarget[] = [
+      textarea,
+      ...this.metricAncestors,
+    ];
+    if (isShadowRoot(root, textarea.ownerDocument)) {
+      transitionTargets.push(root);
+    }
+    for (const target of new Set(transitionTargets)) {
+      this.addPseudoStateListener(
+        target,
+        'transitionend',
+        transitionListener,
+        true,
+      );
+      this.addPseudoStateListener(
+        target,
+        'transitioncancel',
+        transitionListener,
+        true,
+      );
+      this.addPseudoStateListener(
+        target,
+        'animationend',
+        animationListener,
+        true,
+      );
+      this.addPseudoStateListener(
+        target,
+        'animationcancel',
+        animationListener,
+        true,
+      );
     }
   }
 
@@ -654,6 +696,14 @@ export class BuludTextareaAutosize
   }
 
   private schedulePointerRemeasurement(): void {
+    this.scheduleInvalidationRemeasurement();
+  }
+
+  private scheduleTransitionRemeasurement(): void {
+    this.scheduleInvalidationRemeasurement();
+  }
+
+  private scheduleInvalidationRemeasurement(): void {
     if (this.pointerInvalidationScheduled) {
       return;
     }
@@ -902,12 +952,42 @@ function getMetricAncestors(textarea: HTMLTextAreaElement): Element[] {
 
 function getShadowRootHost(element: Element): HTMLElement | null {
   const root = element.getRootNode();
-  if (root.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) {
+  if (!isShadowRoot(root, element.ownerDocument)) {
     return null;
   }
 
-  const host = (root as ShadowRoot).host;
-  return host instanceof HTMLElement ? host : null;
+  const host = root.host;
+  return isElement(host, element.ownerDocument) ? (host as HTMLElement) : null;
+}
+
+function isShadowRoot(root: Node, document: Document): root is ShadowRoot {
+  if (root.nodeType !== 11 || !('host' in root)) {
+    return false;
+  }
+
+  const view = document.defaultView as
+    (Window & { readonly ShadowRoot?: typeof ShadowRoot }) | null;
+  if (!view) {
+    return false;
+  }
+
+  const ShadowRootConstructor = view?.ShadowRoot;
+  return typeof ShadowRootConstructor === 'function'
+    ? root instanceof ShadowRootConstructor
+    : true;
+}
+
+function isElement(value: unknown, document: Document): value is Element {
+  if (typeof value !== 'object' || value === null || !('nodeType' in value)) {
+    return false;
+  }
+
+  const view = document.defaultView as
+    (Window & { readonly Element?: typeof Element }) | null;
+  const ElementConstructor = view?.Element;
+  return typeof ElementConstructor === 'function'
+    ? value instanceof ElementConstructor
+    : (value as { nodeType: number }).nodeType === 1;
 }
 
 function metricObservationWasMoved(
@@ -945,8 +1025,9 @@ function getShadowHostReparentObservers(textarea: HTMLTextAreaElement): Node[] {
   const seen = new Set<Node>();
   for (const host of getShadowHostChain(textarea)) {
     const root = host.getRootNode();
-    const parent =
-      root.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? root : host.parentElement;
+    const parent = isShadowRoot(root, host.ownerDocument)
+      ? root
+      : host.parentElement;
     if (parent && !seen.has(parent)) {
       seen.add(parent);
       observers.push(parent);
@@ -1191,7 +1272,7 @@ function recordTouchesTextarea(
 function nodeContains(node: Node, target: Node): boolean {
   return (
     node === target ||
-    (node.nodeType === Node.ELEMENT_NODE && (node as Element).contains(target))
+    (node.nodeType === 1 && (node as Element).contains(target))
   );
 }
 
@@ -1200,13 +1281,13 @@ function nodeContainsRelevantForm(
   associatedId: string | null,
   currentForm: HTMLFormElement | null,
 ): boolean {
-  if (node.nodeType !== Node.ELEMENT_NODE) {
+  if (node.nodeType !== 1) {
     return false;
   }
 
   const element = node as Element;
   if (
-    element instanceof HTMLFormElement &&
+    element.tagName.toLowerCase() === 'form' &&
     (element === currentForm ||
       (associatedId !== null && element.id === associatedId))
   ) {
@@ -1272,8 +1353,9 @@ function measureSingleRowHeight(
   clone.tabIndex = -1;
 
   const root = textarea.getRootNode();
-  const container =
-    root instanceof ShadowRoot ? root : textarea.ownerDocument.body;
+  const container = isShadowRoot(root, textarea.ownerDocument)
+    ? root
+    : textarea.ownerDocument.body;
   if (!container) {
     return fallbackNormalLineHeight(styles);
   }
@@ -1500,6 +1582,14 @@ function getPlaceholderStyles(
 
 function eventIsComposing(event: Event): boolean {
   return 'isComposing' in event && event.isComposing === true;
+}
+
+function isMetricTransitionEvent(event: Event): boolean {
+  const propertyName = (event as Event & { readonly propertyName?: string })
+    .propertyName;
+  return (
+    propertyName === undefined || METRIC_TRANSITION_PROPERTIES.has(propertyName)
+  );
 }
 
 function getMeasurementSignature(
@@ -1864,6 +1954,13 @@ const POINTER_STATE_EVENTS = [
   'pointerup',
   'pointercancel',
 ] as const;
+
+const METRIC_TRANSITION_PROPERTIES = new Set([
+  ...TEXT_METRIC_PROPERTIES,
+  'border',
+  'font',
+  'padding',
+]);
 
 function isPointerStateEvent(type: string): boolean {
   return type.startsWith('pointer');

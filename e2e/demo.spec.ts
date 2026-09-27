@@ -1490,6 +1490,112 @@ test.describe('Bulud component demo', () => {
     await style.evaluate((element) => element.remove());
   });
 
+  test('textarea autosize reaches final textarea and ancestor transition metrics', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-autosize-transition-ancestor {
+          line-height: 20px;
+          transition: line-height 120ms linear;
+        }
+        .e2e-autosize-transition-ancestor.final {
+          line-height: 40px;
+        }
+      `,
+    });
+
+    try {
+      const initial = await textarea.evaluate((element) => {
+        const target = element as HTMLTextAreaElement;
+        target.value = 'first line\\nsecond line';
+        target.style.minHeight = '0';
+        target.style.maxHeight = 'none';
+        target.style.maxBlockSize = 'none';
+        target.style.lineHeight = '20px';
+        target.style.transition = 'line-height 120ms linear';
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+        return target.getBoundingClientRect().height;
+      });
+
+      await textarea.evaluate((element) => {
+        (element as HTMLTextAreaElement).style.lineHeight = '30px';
+      });
+      await expect
+        .poll(() =>
+          textarea.evaluate((element) =>
+            Number.parseFloat(getComputedStyle(element).lineHeight),
+          ),
+        )
+        .toBe(30);
+      await expect
+        .poll(() =>
+          textarea.evaluate(
+            (element) => element.getBoundingClientRect().height,
+          ),
+        )
+        .toBeGreaterThan(initial);
+      const textareaFinalHeight = await textarea.evaluate(
+        (element) => element.getBoundingClientRect().height,
+      );
+
+      await textarea.evaluate((element) => {
+        const target = element as HTMLTextAreaElement;
+        target.style.lineHeight = 'inherit';
+        target.style.transition = 'none';
+        const ancestor = element.parentElement!;
+        ancestor.classList.add('e2e-autosize-transition-ancestor');
+      });
+      await expect
+        .poll(() =>
+          textarea.evaluate((element) =>
+            Number.parseFloat(getComputedStyle(element).lineHeight),
+          ),
+        )
+        .toBe(20);
+      await textarea.evaluate((element) => {
+        element.parentElement!.classList.add('final');
+      });
+      await expect
+        .poll(() =>
+          textarea.evaluate(
+            (element) => element.getBoundingClientRect().height,
+          ),
+        )
+        .toBeGreaterThan(textareaFinalHeight);
+
+      await textarea.evaluate((element) => {
+        const target = element as HTMLTextAreaElement;
+        target.style.transition = 'font-size 120ms linear';
+        target.style.lineHeight = '1.2';
+        target.style.fontSize = '16px';
+      });
+      const beforeFontTransition = await textarea.evaluate(
+        (element) => element.getBoundingClientRect().height,
+      );
+      await textarea.evaluate((element) => {
+        (element as HTMLTextAreaElement).style.fontSize = '28px';
+      });
+      await expect
+        .poll(() =>
+          textarea.evaluate((element) =>
+            Number.parseFloat(getComputedStyle(element).fontSize),
+          ),
+        )
+        .toBe(28);
+      await expect
+        .poll(() =>
+          textarea.evaluate(
+            (element) => element.getBoundingClientRect().height,
+          ),
+        )
+        .toBeGreaterThan(beforeFontTransition);
+    } finally {
+      await style.evaluate((element) => element.remove());
+    }
+  });
+
   test('textarea autosize preserves the caret while editing in the middle', async ({
     page,
   }) => {

@@ -2525,6 +2525,10 @@ describe('BuludTextareaAutosize', () => {
 
   it('is safe when the injected document has no defaultView', () => {
     const injectedDocument = TestBed.inject(DOCUMENT);
+    const shadowRootDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'ShadowRoot',
+    );
     const descriptor = Object.getOwnPropertyDescriptor(
       injectedDocument,
       'defaultView',
@@ -2533,13 +2537,34 @@ describe('BuludTextareaAutosize', () => {
       configurable: true,
       value: null,
     });
+    Object.defineProperty(globalThis, 'ShadowRoot', {
+      configurable: true,
+      value: undefined,
+    });
 
     try {
       expect(() => {
         const fixture = TestBed.createComponent(HostComponent);
+        const textarea = fixture.nativeElement.querySelector(
+          'textarea',
+        ) as HTMLTextAreaElement;
+        const shadowRootLike = document.createDocumentFragment();
+        Object.defineProperty(shadowRootLike, 'host', {
+          configurable: true,
+          value: textarea.parentElement,
+        });
+        Object.defineProperty(textarea, 'getRootNode', {
+          configurable: true,
+          value: () => shadowRootLike,
+        });
         fixture.detectChanges();
       }).not.toThrow();
     } finally {
+      if (shadowRootDescriptor) {
+        Object.defineProperty(globalThis, 'ShadowRoot', shadowRootDescriptor);
+      } else {
+        delete (globalThis as { ShadowRoot?: unknown }).ShadowRoot;
+      }
       if (descriptor) {
         Object.defineProperty(injectedDocument, 'defaultView', descriptor);
       } else {
@@ -2548,4 +2573,107 @@ describe('BuludTextareaAutosize', () => {
       }
     }
   });
+
+  it('remeasures after metric transition completion and coalesces close events', async () => {
+    contentHeight = 0;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.style.lineHeight = '20px';
+    });
+    const textarea = textareaOf(fixture);
+    expect(textarea.style.height).toBe('40px');
+
+    textarea.style.lineHeight = '30px';
+    dispatchTransitionEvent(textarea, 'transitionend', 'line-height');
+    dispatchTransitionEvent(textarea, 'transitioncancel', 'line-height');
+    dispatchAnimationEvent(textarea, 'animationend');
+    dispatchAnimationEvent(textarea, 'animationcancel');
+    await Promise.resolve();
+
+    expect(textarea.style.height).toBe('60px');
+    fixture.destroy();
+  });
+
+  it('remeasures font-size transitions and ignores irrelevant transitions', async () => {
+    contentHeight = 0;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.style.fontSize = '12px';
+      textarea.style.lineHeight = 'normal';
+    });
+    const textarea = textareaOf(fixture);
+    const directive = fixture.debugElement
+      .query(By.directive(BuludTextareaAutosize))
+      .injector.get(BuludTextareaAutosize);
+    const resizeSpy = spyOn(
+      directive as unknown as { resize: () => void },
+      'resize',
+    ).and.callThrough();
+    const initialHeight = textarea.style.height;
+
+    dispatchTransitionEvent(textarea, 'transitionend', 'opacity');
+    await Promise.resolve();
+    expect(resizeSpy).not.toHaveBeenCalled();
+
+    textarea.style.fontSize = '24px';
+    dispatchTransitionEvent(textarea, 'transitionend', 'font-size');
+    await Promise.resolve();
+    await fixture.whenStable();
+
+    expect(Number.parseFloat(textarea.style.height)).toBeGreaterThan(
+      Number.parseFloat(initialHeight),
+    );
+    fixture.destroy();
+  });
+
+  it('remeasures transitions on metric ancestors and cleans completion listeners', async () => {
+    contentHeight = 0;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.parentElement!.style.lineHeight = '20px';
+      textarea.style.lineHeight = 'inherit';
+    });
+    const textarea = textareaOf(fixture);
+    const ancestor = textarea.parentElement!;
+    expect(textarea.style.height).toBe('40px');
+
+    ancestor.style.lineHeight = '30px';
+    dispatchTransitionEvent(ancestor, 'transitionend', 'line-height');
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('60px');
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    ancestor.style.lineHeight = '40px';
+    dispatchTransitionEvent(ancestor, 'transitionend', 'line-height');
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('');
+
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    fixture.destroy();
+    ancestor.style.lineHeight = '50px';
+    expect(() =>
+      dispatchTransitionEvent(ancestor, 'transitionend', 'line-height'),
+    ).not.toThrow();
+  });
 });
+
+function dispatchTransitionEvent(
+  target: EventTarget,
+  type: 'transitionend' | 'transitioncancel',
+  propertyName: string,
+): void {
+  const event = new Event(type, { bubbles: true });
+  Object.defineProperty(event, 'propertyName', { value: propertyName });
+  target.dispatchEvent(event);
+}
+
+function dispatchAnimationEvent(
+  target: EventTarget,
+  type: 'animationend' | 'animationcancel',
+): void {
+  target.dispatchEvent(new Event(type, { bubbles: true }));
+}
