@@ -433,23 +433,26 @@ export class BuludTextareaAutosize
       return;
     }
 
-    this.mutationObserver = new MutationObserver(() => {
-      if (
-        !this.destroyed &&
-        this.enabled() &&
-        !isResolvingCssMaxHeight(this.element.nativeElement)
-      ) {
-        this.remeasureIfNeeded();
+    this.mutationObserver = new MutationObserver((records) => {
+      if (!this.destroyed && this.enabled()) {
+        if (textareaWasMoved(records, this.element.nativeElement)) {
+          this.reconnectMetricAncestors();
+          this.connectFormResetListener();
+          this.connectFormMutationObserver();
+        }
+        if (!isResolvingCssMaxHeight(this.element.nativeElement)) {
+          this.remeasureIfNeeded();
+        }
       }
     });
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
-    for (const ancestor of this.metricAncestors) {
+    for (const [index, ancestor] of this.metricAncestors.entries()) {
       this.mutationObserver.observe(ancestor, {
         attributes: true,
-        attributeFilter: ['class', 'style', 'dir', 'data-theme'],
+        ...(index === 0 ? { childList: true, subtree: true } : {}),
       });
     }
 
@@ -484,7 +487,6 @@ export class BuludTextareaAutosize
         );
         this.connectFormResetListener();
         if (textareaWasMoved) {
-          this.reconnectMetricAncestors();
           this.connectFormMutationObserver();
         }
       }
@@ -625,10 +627,10 @@ export class BuludTextareaAutosize
       attributes: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
-    for (const ancestor of this.metricAncestors) {
+    for (const [index, ancestor] of this.metricAncestors.entries()) {
       this.mutationObserver.observe(ancestor, {
         attributes: true,
-        attributeFilter: ['class', 'style', 'dir', 'data-theme'],
+        ...(index === 0 ? { childList: true, subtree: true } : {}),
       });
     }
     this.updateConstraintObservation();
@@ -659,7 +661,7 @@ export class BuludTextareaAutosize
 
     const styles = view.getComputedStyle(textarea);
     const nextContainer = hasRelativeMaxHeight(styles)
-      ? textarea.parentElement
+      ? getBlockSizeContainingBlock(textarea, styles)
       : null;
     if (nextContainer === this.constraintContainer) {
       return;
@@ -867,6 +869,47 @@ function getShadowRootHost(element: Element): HTMLElement | null {
   return root.nodeType === Node.DOCUMENT_FRAGMENT_NODE
     ? ((root as ShadowRoot).host as HTMLElement | null)
     : null;
+}
+
+function textareaWasMoved(
+  records: readonly MutationRecord[],
+  textarea: HTMLTextAreaElement,
+): boolean {
+  return records.some(
+    (record) =>
+      record.type === 'childList' && recordTouchesTextarea(record, textarea),
+  );
+}
+
+function getBlockSizeContainingBlock(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+): Element | null {
+  if (styles.position !== 'absolute' && styles.position !== 'fixed') {
+    return textarea.parentElement;
+  }
+
+  const view = textarea.ownerDocument.defaultView;
+  if (!view || typeof view.getComputedStyle !== 'function') {
+    return textarea.parentElement;
+  }
+
+  let current = textarea.parentElement ?? getShadowRootHost(textarea);
+  while (current) {
+    const ancestorStyles = view.getComputedStyle(current);
+    if (
+      ancestorStyles.position !== 'static' ||
+      ancestorStyles.transform !== 'none' ||
+      ancestorStyles.perspective !== 'none' ||
+      ancestorStyles.contain !== 'none'
+    ) {
+      return current;
+    }
+
+    current = current.parentElement ?? getShadowRootHost(current);
+  }
+
+  return null;
 }
 
 function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {

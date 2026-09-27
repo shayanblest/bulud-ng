@@ -690,6 +690,100 @@ test.describe('Bulud component demo', () => {
       element.parentElement!.style.height = '';
     });
 
+    const observerMoveStyle = await page.addStyleTag({
+      content: `
+        [data-e2e-move-a] textarea { line-height: 20px; }
+        [data-e2e-move-b] textarea { line-height: 30px; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      const originalParent = element.parentElement!;
+      originalParent.setAttribute('data-e2e-original-parent', 'true');
+      const first = document.createElement('div');
+      first.setAttribute('data-e2e-move-a', 'true');
+      first.style.width = '420px';
+      const second = document.createElement('div');
+      second.setAttribute('data-e2e-move-b', 'true');
+      second.style.width = '420px';
+      originalParent.append(first, second);
+      first.append(element);
+      element.style.maxHeight = '';
+      element.style.position = '';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.lineHeight = '';
+    });
+    await textarea.fill('reparented value');
+    await expect(textarea).toHaveCSS('height', '40px');
+    await textarea.evaluate((element) => {
+      const second =
+        element.parentElement!.parentElement!.querySelector(
+          '[data-e2e-move-b]',
+        )!;
+      second.append(element);
+    });
+    await expect(textarea).toHaveCSS('height', '60px');
+
+    await textarea.evaluate((element) => {
+      const originalParent = document.querySelector(
+        '[data-e2e-original-parent]',
+      )!;
+      const unchanged = document.createElement('div');
+      unchanged.setAttribute('data-e2e-move-b', 'true');
+      unchanged.style.width = '420px';
+      originalParent.append(unchanged);
+      unchanged.append(element);
+    });
+    await expect(textarea).toHaveCSS('height', '60px');
+
+    await textarea.evaluate((element) => {
+      const originalParent = document.querySelector(
+        '[data-e2e-original-parent]',
+      )!;
+      const containingBlock = document.createElement('div');
+      containingBlock.style.position = 'relative';
+      containingBlock.style.height = '160px';
+      const unpositionedWrapper = document.createElement('div');
+      unpositionedWrapper.style.height = '40px';
+      containingBlock.append(unpositionedWrapper);
+      originalParent.append(containingBlock);
+      unpositionedWrapper.append(element);
+      element.style.position = 'absolute';
+      element.style.maxHeight = '50%';
+      element.style.lineHeight = '20px';
+      element.style.padding = '0';
+      element.style.border = '0';
+    });
+    await textarea.fill('positioned containing block '.repeat(40));
+    await expect(textarea).toHaveJSProperty('offsetHeight', 80);
+    await textarea.evaluate((element) => {
+      element.parentElement!.parentElement!.style.height = '240px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(100);
+
+    await textarea.evaluate((element) => {
+      const originalParent = document.querySelector(
+        '[data-e2e-original-parent]',
+      )!;
+      originalParent.prepend(element);
+      originalParent
+        .querySelectorAll('[data-e2e-move-a], [data-e2e-move-b]')
+        .forEach((container) => container.remove());
+      originalParent
+        .querySelectorAll('[style*="position: relative"]')
+        .forEach((container) => container.remove());
+      originalParent.removeAttribute('data-e2e-original-parent');
+      element.style.position = '';
+      element.style.maxHeight = '';
+      element.style.lineHeight = '';
+      element.style.padding = '';
+      element.style.border = '';
+    });
+    await observerMoveStyle.evaluate((element) => element.remove());
+    await textarea.fill('Short value.');
+
     for (const transformTarget of ['textarea', 'ancestor']) {
       for (const boxSizing of ['content-box', 'border-box']) {
         await textarea.evaluate(

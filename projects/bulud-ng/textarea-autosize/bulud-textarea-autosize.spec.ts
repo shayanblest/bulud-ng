@@ -56,6 +56,22 @@ class MockResizeObserver {
     );
   }
 
+  triggerTarget(target: Element): void {
+    this.callback(
+      [
+        {
+          target,
+          contentRect: { width: 0, height: 0 },
+        } as unknown as ResizeObserverEntry,
+      ],
+      this as unknown as ResizeObserver,
+    );
+  }
+
+  isObserving(target: Element): boolean {
+    return this.observedElements.includes(target);
+  }
+
   triggerTextareaMetrics(): void {
     const target = this.observedElements[0];
     if (!target) {
@@ -207,6 +223,9 @@ class ApplicationRootHostComponent {
       }
       :host([dir='rtl']) textarea {
         line-height: 25px;
+      }
+      :host([data-density='compact']) textarea {
+        line-height: 35px;
       }
     </style>
     <textarea
@@ -402,7 +421,7 @@ describe('BuludTextareaAutosize', () => {
 
     textarea.style.height = '10px';
     textarea.style.overflowY = 'scroll';
-    observer.triggerTextareaMetrics();
+    observer.triggerMetrics();
     expect(textarea.style.height).toBe('80px');
     expect(textarea.style.overflowY).toBe('hidden');
     expect(MockResizeObserver.instances).toHaveSize(1);
@@ -428,7 +447,7 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
     textarea.style.height = '14px';
     textarea.style.overflowY = 'scroll';
-    observer.triggerTextareaMetrics();
+    observer.triggerMetrics();
     await Promise.resolve();
     expect(textarea.style.height).toBe('14px');
     expect(textarea.style.overflowY).toBe('scroll');
@@ -483,6 +502,37 @@ describe('BuludTextareaAutosize', () => {
       ancestor.setAttribute('data-theme', 'dark');
       await fixture.whenStable();
       expect(textarea.style.height).toBe('60px');
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('remeasures arbitrary ancestor attributes but ignores unrelated metrics', async () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-density-metrics textarea { line-height: 20px; }
+      .textarea-density-metrics[data-density='compact'] textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      contentHeight = 0;
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.parentElement!.classList.add('textarea-density-metrics');
+      });
+      const textarea = textareaOf(fixture);
+      const ancestor = textarea.parentElement!;
+      expect(textarea.style.height).toBe('40px');
+
+      ancestor.setAttribute('data-density', 'compact');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+
+      const heightBeforeUnrelatedAttribute = textarea.style.height;
+      ancestor.setAttribute('data-unrelated', 'true');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe(heightBeforeUnrelatedAttribute);
       fixture.destroy();
     } finally {
       style.remove();
@@ -1071,6 +1121,10 @@ describe('BuludTextareaAutosize', () => {
     host.setAttribute('data-theme', 'dark');
     await fixture.whenStable();
     expect(textarea.style.height).toBe('60px');
+
+    host.setAttribute('data-density', 'compact');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('70px');
     fixture.destroy();
   });
 
@@ -1518,6 +1572,82 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.getBoundingClientRect().height).toBeLessThan(initialHeight);
     expect(textarea.style.overflowY).toBe('hidden');
     fixture.destroy();
+  });
+
+  it('observes the positioned containing block for absolute percentage max-height', async () => {
+    contentHeight = 160;
+    const fixture = createHost((textarea) => {
+      textarea.style.position = 'absolute';
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+      const containingBlock = textarea.parentElement!.parentElement!;
+      containingBlock.style.position = 'relative';
+      containingBlock.style.height = '120px';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => Number.parseFloat(containingBlock.style.height || '0') / 2,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    const observer = MockResizeObserver.instances[0];
+    await fixture.whenStable();
+    const containingBlock = textarea.parentElement!.parentElement!;
+    expect(observer.isObserving(containingBlock)).toBeTrue();
+    const initialHeight = Number.parseFloat(textarea.style.height);
+
+    containingBlock.style.height = '240px';
+    observer.triggerTarget(containingBlock);
+    expect(Number.parseFloat(textarea.style.height)).toBeGreaterThan(
+      initialHeight,
+    );
+
+    const heightAfterExpansion = textarea.style.height;
+    textarea.parentElement!.style.height = '20px';
+    observer.triggerTarget(textarea.parentElement!);
+    expect(textarea.style.height).toBe(heightAfterExpansion);
+    fixture.destroy();
+  });
+
+  it('remeasures after moving between same-sized ancestors with different metrics', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-move-a textarea { line-height: 20px; }
+      .textarea-move-b textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        textarea.parentElement!.classList.add('textarea-move-a');
+        textarea.style.minHeight = '0';
+        host.minRows = 2;
+      });
+      const textarea = textareaOf(fixture);
+      const firstContainer = textarea.parentElement!;
+      const secondContainer = document.createElement('div');
+      secondContainer.className = 'textarea-move-b';
+      secondContainer.style.width = `${firstContainer.offsetWidth}px`;
+      document.body.appendChild(secondContainer);
+
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+      secondContainer.appendChild(textarea);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+
+      const unchangedContainer = document.createElement('div');
+      unchangedContainer.className = 'textarea-move-b';
+      document.body.appendChild(unchangedContainer);
+      unchangedContainer.appendChild(textarea);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+
+      fixture.destroy();
+      secondContainer.remove();
+      unchangedContainer.remove();
+    } finally {
+      style.remove();
+    }
   });
 
   it('remeasures when wrap-off horizontal overflow mode changes', () => {
