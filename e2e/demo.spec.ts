@@ -1373,4 +1373,87 @@ test.describe('Bulud component demo', () => {
       )
       .toBeGreaterThan(initialHeight);
   });
+
+  test('remeasures ancestor focus-within metrics and synchronizes font-size-adjust', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-focus-within-shell textarea { line-height: 20px; }
+        .e2e-focus-within-shell:focus-within textarea { line-height: 30px; }
+      `,
+    });
+    const initial = await textarea.evaluate((element) => {
+      element.parentElement!.classList.add('e2e-focus-within-shell');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'focus sibling';
+      element.parentElement!.append(button);
+      element.value = 'unchanged value';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      return {
+        value: element.value,
+        width: element.getBoundingClientRect().width,
+        height: element.getBoundingClientRect().height,
+      };
+    });
+    const button = textarea
+      .locator('xpath=..')
+      .getByRole('button', { name: 'focus sibling' });
+    await button.focus();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(initial.height);
+    await expect(textarea).toHaveValue(initial.value);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().width),
+      )
+      .toBe(initial.width);
+
+    const realFontSizeAdjust = await textarea.evaluate((element) => {
+      element.style.fontSizeAdjust = '0.5';
+      element.style.fontSize = '20px';
+      element.style.lineHeight = 'normal';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      return getComputedStyle(element).fontSizeAdjust;
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate(() => {
+          const host = [
+            ...document.querySelectorAll('div[aria-hidden="true"]'),
+          ].find((candidate) =>
+            candidate.shadowRoot?.querySelector('textarea'),
+          );
+          return host?.shadowRoot?.querySelector('textarea')
+            ? getComputedStyle(host.shadowRoot.querySelector('textarea')!)
+                .fontSizeAdjust
+            : '';
+        }),
+      )
+      .toBe(realFontSizeAdjust);
+    await textarea.evaluate((element) => {
+      element.style.fontSizeAdjust = '1.5';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate(() => {
+          const host = [
+            ...document.querySelectorAll('div[aria-hidden="true"]'),
+          ].find((candidate) =>
+            candidate.shadowRoot?.querySelector('textarea'),
+          );
+          return host?.shadowRoot?.querySelector('textarea')
+            ? getComputedStyle(host.shadowRoot.querySelector('textarea')!)
+                .fontSizeAdjust
+            : '';
+        }),
+      )
+      .toBe('1.5');
+    await style.evaluate((element) => element.remove());
+  });
 });

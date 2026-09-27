@@ -71,6 +71,12 @@ export class BuludTextareaAutosize
   private measurementHost: HTMLDivElement | null = null;
   private measurementRoot: ShadowRoot | null = null;
   private lastMeasurementSignature: string | null = null;
+  private pseudoStateListeners: Array<{
+    readonly target: EventTarget;
+    readonly type: string;
+    readonly listener: EventListener;
+    readonly capture: boolean;
+  }> = [];
   private destroyed = false;
   private readonly viewInitialized = signal(false);
 
@@ -114,17 +120,10 @@ export class BuludTextareaAutosize
         }
       };
       textarea.addEventListener('input', inputListener);
-      const pseudoStateListener = (): void => {
-        this.remeasureIfNeeded();
-      };
-      for (const type of PSEUDO_STATE_EVENTS) {
-        textarea.addEventListener(type, pseudoStateListener);
-      }
+      this.connectPseudoStateListeners();
       onCleanup(() => {
         textarea.removeEventListener('input', inputListener);
-        for (const type of PSEUDO_STATE_EVENTS) {
-          textarea.removeEventListener(type, pseudoStateListener);
-        }
+        this.disconnectPseudoStateListeners();
         this.disconnectWidthObserver();
         this.disconnectMutationObserver();
         this.disconnectFontLoadingObserver();
@@ -435,7 +434,7 @@ export class BuludTextareaAutosize
 
     this.mutationObserver = new MutationObserver((records) => {
       if (!this.destroyed && this.enabled()) {
-        if (textareaWasMoved(records, this.element.nativeElement)) {
+        if (metricObservationWasMoved(records, this.element.nativeElement)) {
           this.reconnectMetricAncestors();
           this.connectFormResetListener();
           this.connectFormMutationObserver();
@@ -455,6 +454,12 @@ export class BuludTextareaAutosize
         ...(index === 0 ? { childList: true, subtree: true } : {}),
       });
     }
+    for (const ancestor of getShadowHostReparentObservers(
+      this.element.nativeElement,
+    )) {
+      this.mutationObserver.observe(ancestor, { childList: true });
+    }
+    this.connectPseudoStateListeners();
 
     this.connectFormMutationObserver();
   }
@@ -518,6 +523,7 @@ export class BuludTextareaAutosize
     this.formMutationObserver = null;
     this.formMutationRoot = null;
     this.metricAncestors = [];
+    this.disconnectPseudoStateListeners();
   }
 
   private connectFontLoadingObserver(): void {
@@ -633,7 +639,54 @@ export class BuludTextareaAutosize
         ...(index === 0 ? { childList: true, subtree: true } : {}),
       });
     }
+    for (const ancestor of getShadowHostReparentObservers(
+      this.element.nativeElement,
+    )) {
+      this.mutationObserver.observe(ancestor, { childList: true });
+    }
+    this.connectPseudoStateListeners();
     this.updateConstraintObservation();
+  }
+
+  private connectPseudoStateListeners(): void {
+    this.disconnectPseudoStateListeners();
+
+    const listener: EventListener = () => {
+      this.remeasureIfNeeded();
+    };
+    const textarea = this.element.nativeElement;
+    for (const type of PSEUDO_STATE_EVENTS) {
+      this.addPseudoStateListener(textarea, type, listener);
+    }
+
+    for (const ancestor of this.metricAncestors) {
+      this.addPseudoStateListener(ancestor, 'focus', listener, true);
+      this.addPseudoStateListener(ancestor, 'blur', listener, true);
+    }
+
+    const root = textarea.getRootNode();
+    if (root instanceof ShadowRoot) {
+      this.addPseudoStateListener(root, 'focus', listener, true);
+      this.addPseudoStateListener(root, 'blur', listener, true);
+    }
+  }
+
+  private addPseudoStateListener(
+    target: EventTarget,
+    type: string,
+    listener: EventListener,
+    capture = false,
+  ): void {
+    target.addEventListener(type, listener, capture);
+    this.pseudoStateListeners.push({ target, type, listener, capture });
+  }
+
+  private disconnectPseudoStateListeners(): void {
+    for (const { target, type, listener, capture } of this
+      .pseudoStateListeners) {
+      target.removeEventListener(type, listener, capture);
+    }
+    this.pseudoStateListeners = [];
   }
 
   private remeasureIfNeeded(): void {
@@ -871,13 +924,54 @@ function getShadowRootHost(element: Element): HTMLElement | null {
     : null;
 }
 
-function textareaWasMoved(
+function metricObservationWasMoved(
   records: readonly MutationRecord[],
   textarea: HTMLTextAreaElement,
 ): boolean {
-  return records.some(
-    (record) =>
-      record.type === 'childList' && recordTouchesTextarea(record, textarea),
+  const movedElements = [textarea, ...getShadowHostChain(textarea)];
+  return records.some((record) => {
+    if (record.type !== 'childList') {
+      return false;
+    }
+
+    return movedElements.some((element) => recordTouchesNode(record, element));
+  });
+}
+
+function getShadowHostChain(textarea: HTMLTextAreaElement): HTMLElement[] {
+  const hosts: HTMLElement[] = [];
+  let current: Element = textarea;
+  const seen = new Set<Element>();
+  while (!seen.has(current)) {
+    seen.add(current);
+    const host = getShadowRootHost(current);
+    if (!host) {
+      break;
+    }
+    hosts.push(host);
+    current = host;
+  }
+  return hosts;
+}
+
+function getShadowHostReparentObservers(textarea: HTMLTextAreaElement): Node[] {
+  const observers: Node[] = [];
+  const seen = new Set<Node>();
+  for (const host of getShadowHostChain(textarea)) {
+    const root = host.getRootNode();
+    const parent =
+      root.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? root : host.parentElement;
+    if (parent && !seen.has(parent)) {
+      seen.add(parent);
+      observers.push(parent);
+    }
+  }
+  return observers;
+}
+
+function recordTouchesNode(record: MutationRecord, target: Node): boolean {
+  return [...record.addedNodes, ...record.removedNodes].some((node) =>
+    nodeContains(node, target),
   );
 }
 
@@ -1412,6 +1506,7 @@ const TEXT_METRIC_PROPERTIES = [
   'font-family',
   'font-feature-settings',
   'font-size',
+  'font-size-adjust',
   'font-stretch',
   'font-style',
   'font-variant',
@@ -1439,6 +1534,7 @@ const PLACEHOLDER_METRIC_PROPERTIES = [
   'font-family',
   'font-feature-settings',
   'font-size',
+  'font-size-adjust',
   'font-stretch',
   'font-style',
   'font-variant',
