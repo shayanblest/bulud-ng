@@ -59,6 +59,8 @@ export class BuludTextareaAutosize
   private observer: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
   private formMutationObserver: MutationObserver | null = null;
+  private formMutationRoot: Node | null = null;
+  private restoreBaselineObserver: MutationObserver | null = null;
   private metricAncestors: Element[] = [];
   private viewportResizeListener: EventListener | null = null;
   private fontLoadingSet: FontLoadingSet | null = null;
@@ -97,6 +99,7 @@ export class BuludTextareaAutosize
         return;
       }
 
+      this.refreshRestoreBaseline();
       this.createMeasurementProbe();
       this.resize();
       this.connectWidthObserver();
@@ -138,6 +141,7 @@ export class BuludTextareaAutosize
       height: textarea.style.height,
       overflowY: textarea.style.overflowY,
     };
+    this.connectRestoreBaselineObserver();
     this.viewInitialized.set(true);
   }
 
@@ -164,6 +168,8 @@ export class BuludTextareaAutosize
     this.disconnectFontLoadingObserver();
     this.disconnectFormResetListener();
     this.disconnectViewportResizeListener();
+    this.restoreBaselineObserver?.disconnect();
+    this.restoreBaselineObserver = null;
     this.restoreOriginalStyles();
   }
 
@@ -447,31 +453,49 @@ export class BuludTextareaAutosize
       });
     }
 
+    this.connectFormMutationObserver();
+  }
+
+  private connectFormMutationObserver(): void {
+    const MutationObserver = getMutationObserverConstructor(this.document);
+    if (
+      !MutationObserver ||
+      this.destroyed ||
+      !this.hasBrowserView() ||
+      !this.enabled()
+    ) {
+      return;
+    }
+
+    const root = this.element.nativeElement.getRootNode();
+    if (this.formMutationObserver && this.formMutationRoot === root) {
+      return;
+    }
+
+    this.formMutationObserver?.disconnect();
     this.formMutationObserver = new MutationObserver((records) => {
       if (
         !this.destroyed &&
         this.enabled() &&
         formMutationMayAffectTextarea(this.element.nativeElement, records)
       ) {
+        const textareaWasMoved = records.some((record) =>
+          recordTouchesTextarea(record, this.element.nativeElement),
+        );
         this.connectFormResetListener();
-        if (
-          records.some((record) =>
-            recordTouchesTextarea(record, this.element.nativeElement),
-          )
-        ) {
+        if (textareaWasMoved) {
           this.reconnectMetricAncestors();
+          this.connectFormMutationObserver();
         }
       }
     });
-    this.formMutationObserver.observe(
-      this.element.nativeElement.ownerDocument,
-      {
-        attributes: true,
-        attributeFilter: ['form', 'id'],
-        childList: true,
-        subtree: true,
-      },
-    );
+    this.formMutationRoot = root;
+    this.formMutationObserver.observe(root, {
+      attributes: true,
+      attributeFilter: ['form', 'id'],
+      childList: true,
+      subtree: true,
+    });
   }
 
   private disconnectWidthObserver(): void {
@@ -490,6 +514,7 @@ export class BuludTextareaAutosize
     this.mutationObserver = null;
     this.formMutationObserver?.disconnect();
     this.formMutationObserver = null;
+    this.formMutationRoot = null;
     this.metricAncestors = [];
   }
 
@@ -708,6 +733,47 @@ export class BuludTextareaAutosize
     textarea.style.overflowY = this.originalStyles.overflowY;
   }
 
+  private refreshRestoreBaseline(): void {
+    if (
+      !this.originalStyles ||
+      this.ownedHeight !== null ||
+      this.ownedOverflowY !== null
+    ) {
+      return;
+    }
+
+    const textarea = this.element.nativeElement;
+    this.originalStyles = {
+      height: textarea.style.height,
+      overflowY: textarea.style.overflowY,
+    };
+  }
+
+  private connectRestoreBaselineObserver(): void {
+    if (this.restoreBaselineObserver || this.destroyed) {
+      return;
+    }
+
+    const MutationObserver = getMutationObserverConstructor(this.document);
+    if (!MutationObserver) {
+      return;
+    }
+
+    this.restoreBaselineObserver = new MutationObserver(() => {
+      if (
+        !this.destroyed &&
+        this.ownedHeight === null &&
+        this.ownedOverflowY === null
+      ) {
+        this.refreshRestoreBaseline();
+      }
+    });
+    this.restoreBaselineObserver.observe(this.element.nativeElement, {
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+  }
+
   private hasBrowserView(): boolean {
     return this.document.defaultView !== null;
   }
@@ -805,10 +871,15 @@ function getShadowRootHost(element: Element): HTMLElement | null {
 
 function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {
   const maxHeight = styles.maxHeight.trim();
+  const maxBlockSize = styles.getPropertyValue('max-block-size').trim();
   return (
-    maxHeight !== '' &&
-    maxHeight !== 'none' &&
-    parsePixelLength(maxHeight) === null
+    (maxHeight !== '' &&
+      maxHeight !== 'none' &&
+      parsePixelLength(maxHeight) === null) ||
+    (isHorizontalWritingMode(styles) &&
+      maxBlockSize !== '' &&
+      maxBlockSize !== 'none' &&
+      parsePixelLength(maxBlockSize) === null)
   );
 }
 
@@ -1119,6 +1190,7 @@ function getMeasurementSignature(
       : []),
     `min-height:${styles.minHeight}`,
     `max-height:${styles.maxHeight}`,
+    `max-block-size:${styles.getPropertyValue('max-block-size')}`,
     `resolved-max-height:${cssMaxHeight}`,
     `overflow-x:${getHorizontalOverflowMode(textarea, styles)}`,
   ].join('|');
@@ -1131,43 +1203,95 @@ function getCssMaxContentHeight(
   borders: number,
   horizontalScrollbarGutter: number,
 ): number {
-  const maxHeight = styles.maxHeight.trim();
-  if (maxHeight === '' || maxHeight === 'none') {
+  const physicalMaxHeight = getCssMaxContentHeightForProperty(
+    textarea,
+    styles,
+    styles.maxHeight,
+    'height',
+    padding,
+    borders,
+    horizontalScrollbarGutter,
+  );
+  const logicalMaxBlockSize = isHorizontalWritingMode(styles)
+    ? getCssMaxContentHeightForProperty(
+        textarea,
+        styles,
+        styles.getPropertyValue('max-block-size'),
+        'block-size',
+        padding,
+        borders,
+        horizontalScrollbarGutter,
+      )
+    : Number.POSITIVE_INFINITY;
+
+  return Math.min(physicalMaxHeight, logicalMaxBlockSize);
+}
+
+function getCssMaxContentHeightForProperty(
+  textarea: HTMLTextAreaElement,
+  styles: CSSStyleDeclaration,
+  value: string,
+  sizeProperty: 'height' | 'block-size',
+  padding: number,
+  borders: number,
+  horizontalScrollbarGutter: number,
+): number {
+  const maxSize = value.trim();
+  if (maxSize === '' || maxSize === 'none') {
     return Number.POSITIVE_INFINITY;
   }
 
-  const physicalMaxHeight = parsePixelLength(maxHeight);
-  if (physicalMaxHeight === null) {
-    const resolvedPhysicalHeight = resolveCssMaxHeight(textarea, styles);
-    if (resolvedPhysicalHeight === null) {
+  const pixelMaxSize = parsePixelLength(maxSize);
+  if (pixelMaxSize === null) {
+    const resolvedSize = resolveCssMaxSize(textarea, styles, sizeProperty);
+    if (resolvedSize === null) {
       return Number.POSITIVE_INFINITY;
     }
 
     return Math.max(
       0,
-      resolvedPhysicalHeight - padding - borders - horizontalScrollbarGutter,
+      resolvedSize - padding - borders - horizontalScrollbarGutter,
     );
   }
 
   return styles.boxSizing === 'border-box'
-    ? Math.max(
-        0,
-        physicalMaxHeight - padding - borders - horizontalScrollbarGutter,
-      )
-    : Math.max(0, physicalMaxHeight - horizontalScrollbarGutter);
+    ? Math.max(0, pixelMaxSize - padding - borders - horizontalScrollbarGutter)
+    : Math.max(0, pixelMaxSize - horizontalScrollbarGutter);
 }
 
-function resolveCssMaxHeight(
+function isHorizontalWritingMode(styles: CSSStyleDeclaration): boolean {
+  const writingMode = styles.getPropertyValue('writing-mode').trim();
+  return writingMode === '' || writingMode === 'horizontal-tb';
+}
+
+function resolveCssMaxSize(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
+  sizeProperty: 'height' | 'block-size',
 ): number | null {
   const resolutionHeight = '10000000px';
   const previousHeight = textarea.style.height;
+  const previousBlockSize = textarea.style.getPropertyValue('block-size');
+  const previousMaxHeight = textarea.style.maxHeight;
+  const previousMaxBlockSize =
+    textarea.style.getPropertyValue('max-block-size');
   const previousOverflowY = textarea.style.overflowY;
   resolvingCssMaxHeight.add(textarea);
 
   try {
+    textarea.style.maxHeight =
+      sizeProperty === 'height' ? styles.maxHeight : 'none';
+    textarea.style.setProperty(
+      'max-block-size',
+      sizeProperty === 'block-size'
+        ? styles.getPropertyValue('max-block-size')
+        : 'none',
+    );
     textarea.style.height = resolutionHeight;
+    textarea.style.setProperty(
+      'block-size',
+      sizeProperty === 'block-size' ? resolutionHeight : '',
+    );
     textarea.style.overflowY = 'hidden';
     const physicalHeight = getUntransformedLayoutHeight(textarea, styles);
     return Number.isFinite(physicalHeight) && physicalHeight < 10000000
@@ -1175,6 +1299,9 @@ function resolveCssMaxHeight(
       : null;
   } finally {
     textarea.style.height = previousHeight;
+    textarea.style.setProperty('block-size', previousBlockSize);
+    textarea.style.maxHeight = previousMaxHeight;
+    textarea.style.setProperty('max-block-size', previousMaxBlockSize);
     textarea.style.overflowY = previousOverflowY;
     scheduleMicrotask(() => resolvingCssMaxHeight.delete(textarea));
   }

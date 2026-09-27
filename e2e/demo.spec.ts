@@ -378,6 +378,59 @@ test.describe('Bulud component demo', () => {
     expect(probeGeometry.height).toBeGreaterThan(0);
 
     await textarea.evaluate((element) => {
+      element.style.boxSizing = 'border-box';
+      element.style.maxHeight = '120px';
+      element.style.maxBlockSize = '80px';
+      element.style.lineHeight = '20px';
+    });
+    await textarea.fill('logical block cap '.repeat(80));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          height: element.getBoundingClientRect().height,
+          overflowY: getComputedStyle(element).overflowY,
+          overflowing: element.scrollHeight > element.clientHeight,
+        })),
+      )
+      .toEqual({ height: 80, overflowY: 'auto', overflowing: true });
+
+    await textarea.fill('fitting content');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          height: element.getBoundingClientRect().height,
+          overflowY: getComputedStyle(element).overflowY,
+          overflowing: element.scrollHeight > element.clientHeight,
+        })),
+      )
+      .toMatchObject({ overflowY: 'hidden', overflowing: false });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeLessThan(80);
+
+    await textarea.evaluate((element) => {
+      element.style.maxBlockSize = '100px';
+      element.style.maxHeight = '60px';
+    });
+    await textarea.fill('physical max-height wins '.repeat(80));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          height: element.getBoundingClientRect().height,
+          overflowY: getComputedStyle(element).overflowY,
+        })),
+      )
+      .toEqual({ height: 60, overflowY: 'auto' });
+    await textarea.evaluate((element) => {
+      element.style.boxSizing = '';
+      element.style.maxHeight = '';
+      element.style.maxBlockSize = '';
+    });
+    await textarea.fill('Short value.');
+
+    await textarea.evaluate((element) => {
       element.style.width = '220px';
       element.style.minWidth = '0px';
       element.style.maxWidth = '100%';

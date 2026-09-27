@@ -158,6 +158,27 @@ class DynamicFormHostComponent {
 }
 
 @Component({
+  imports: [BuludTextareaAutosize],
+  encapsulation: ViewEncapsulation.ShadowDom,
+  template: `
+    <form id="form-a">
+      <textarea
+        buludTextareaAutosize
+        [attr.form]="formId"
+        [enabled]="enabled"
+        [value]="value"
+      ></textarea>
+    </form>
+    <form id="form-b"></form>
+  `,
+})
+class ShadowRootFormHostComponent {
+  enabled = true;
+  formId: string | null = 'form-a';
+  value = 'long current';
+}
+
+@Component({
   selector: 'app-root',
   imports: [BuludTextareaAutosize],
   template: `
@@ -785,6 +806,42 @@ describe('BuludTextareaAutosize', () => {
     combinedFixture.destroy();
   });
 
+  it('respects max-block-size together with max-height and box sizing', () => {
+    contentHeight = 120;
+    const contentBoxFixture = createHost((textarea) => {
+      textarea.style.lineHeight = '20px';
+      textarea.style.paddingBlock = '6px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.boxSizing = 'content-box';
+      textarea.style.maxHeight = '80px';
+      textarea.style.maxBlockSize = '50px';
+    });
+    const contentBoxTextarea = textareaOf(contentBoxFixture);
+    expect(contentBoxTextarea.style.height).toBe('50px');
+    expect(contentBoxTextarea.style.overflowY).toBe('auto');
+    contentBoxFixture.destroy();
+
+    const borderBoxFixture = createHost((textarea) => {
+      textarea.style.lineHeight = '20px';
+      textarea.style.paddingBlock = '6px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.boxSizing = 'border-box';
+      textarea.style.maxHeight = '80px';
+      textarea.style.maxBlockSize = '50px';
+    });
+    const borderBoxTextarea = textareaOf(borderBoxFixture);
+    expect(borderBoxTextarea.style.height).toBe('50px');
+    expect(borderBoxTextarea.style.overflowY).toBe('auto');
+    borderBoxFixture.destroy();
+
+    contentHeight = 40;
+    const fittingFixture = createHost((textarea) => {
+      textarea.style.maxBlockSize = '50px';
+    });
+    expect(textareaOf(fittingFixture).style.overflowY).toBe('hidden');
+    fittingFixture.destroy();
+  });
+
   it('clears width constraints from the measurement probe', () => {
     contentHeight = 80;
     const fixture = createHost((textarea) => {
@@ -1150,6 +1207,62 @@ describe('BuludTextareaAutosize', () => {
     await Promise.resolve();
     expect(textarea.style.height).toBe('');
     replacement.remove();
+  });
+
+  it('rebinds reset handling across form associations inside a ShadowRoot', async () => {
+    contentHeight = 80;
+    const fixture = TestBed.createComponent(ShadowRootFormHostComponent);
+    const shadowRoot = fixture.nativeElement.shadowRoot as ShadowRoot;
+    const textarea = shadowRoot.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    const formA = shadowRoot.querySelector('#form-a') as HTMLFormElement;
+    const formB = shadowRoot.querySelector('#form-b') as HTMLFormElement;
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(textarea.form).toBe(formA);
+
+    contentHeight = 80;
+    textarea.value = 'long B';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.componentInstance.formId = 'form-b';
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.form).toBe(formB);
+
+    contentHeight = 20;
+    textarea.value = 'untracked value';
+    formA.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('untracked value');
+    expect(textarea.style.height).toBe('80px');
+
+    textarea.defaultValue = 'short B';
+    textarea.value = 'short B';
+    formB.dispatchEvent(new Event('reset'));
+    await fixture.whenStable();
+    expect(textarea.value).toBe('short B');
+    expect(textarea.style.height).toBe('20px');
+
+    fixture.componentInstance.formId = null;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    textarea.value = 'without form';
+    formB.reset();
+    await fixture.whenStable();
+    expect(textarea.value).toBe('without form');
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    fixture.destroy();
+    formB.reset();
+    await Promise.resolve();
+    expect(textarea.value).toBe('without form');
   });
 
   it('clears stale scrolling before measuring content that shrinks below maxRows', () => {
@@ -1545,6 +1658,41 @@ describe('BuludTextareaAutosize', () => {
     await fixture.whenStable();
     expect(textarea.style.height).toBe('90px');
     expect(MockResizeObserver.instances).toHaveSize(1);
+  });
+
+  it('restores the latest external styles after repeated enable cycles', async () => {
+    const fixture = createHost((textarea) => {
+      textarea.style.height = '33px';
+      textarea.style.overflowY = 'scroll';
+    });
+    const textarea = textareaOf(fixture);
+
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('33px');
+    expect(textarea.style.overflowY).toBe('scroll');
+
+    textarea.style.height = '12px';
+    textarea.style.overflowY = 'auto';
+    await fixture.whenStable();
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    fixture.componentInstance.enabled = false;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+
+    expect(textarea.style.height).toBe('12px');
+    expect(textarea.style.overflowY).toBe('auto');
+
+    fixture.componentInstance.enabled = true;
+    fixture.changeDetectorRef.markForCheck();
+    await fixture.whenStable();
+    expect(textarea.style.height).not.toBe('12px');
+    fixture.destroy();
+    expect(textarea.style.height).toBe('12px');
+    expect(textarea.style.overflowY).toBe('auto');
   });
 
   it('disconnects listeners and restores styles on destroy', () => {
