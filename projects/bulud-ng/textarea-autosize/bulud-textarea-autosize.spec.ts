@@ -1019,6 +1019,106 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('observes nested metric descendants when their state changes effective metrics', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .nested-metric-wrapper textarea { line-height: 20px; }
+      .nested-metric-wrapper:has(.state.expanded) textarea { line-height: 32px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        const wrapper = textarea.parentElement!;
+        wrapper.classList.add('nested-metric-wrapper');
+        const stateContainer = document.createElement('div');
+        const state = document.createElement('span');
+        state.className = 'state';
+        stateContainer.append(state);
+        const nestedParent = document.createElement('div');
+        nestedParent.append(textarea);
+        wrapper.append(stateContainer, nestedParent);
+      });
+      const textarea = textareaOf(fixture);
+      const directive = fixture.debugElement
+        .query(By.directive(BuludTextareaAutosize))
+        .injector.get(BuludTextareaAutosize);
+      const resizeSpy = spyOn(
+        directive as unknown as { resize: () => void },
+        'resize',
+      ).and.callThrough();
+      const state = fixture.nativeElement.querySelector('.state');
+      const stateContainer = state.parentElement!;
+
+      expect(textarea.style.height).toBe('40px');
+      state.classList.add('expanded');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('64px');
+      const resizeCount = resizeSpy.calls.count();
+
+      stateContainer.append(document.createElement('span'));
+      await fixture.whenStable();
+      expect(resizeSpy.calls.count()).toBe(resizeCount);
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('finds the block containing block through inline and contents wrappers', async () => {
+    for (const display of ['inline', 'contents']) {
+      contentHeight = 120;
+      const fixture = createHost((textarea) => {
+        const wrapper = document.createElement('span');
+        wrapper.style.display = display;
+        textarea.replaceWith(wrapper);
+        wrapper.append(textarea);
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+        wrapper.parentElement!.style.height = '120px';
+      });
+      const textarea = textareaOf(fixture);
+      const block = textarea.parentElement!.parentElement!;
+      const wrapper = textarea.parentElement!;
+      const observer = MockResizeObserver.instances.at(-1)!;
+
+      await fixture.whenStable();
+      expect(observer.isObserving(block)).toBeTrue();
+      expect(observer.isObserving(wrapper)).toBeFalse();
+      expect(textarea.style.height).toBe('60px');
+
+      block.style.height = '240px';
+      observer.triggerTarget(block);
+      expect(textarea.style.height).toBe('120px');
+      fixture.destroy();
+    }
+  });
+
+  it('recognizes individual transform containing blocks without identity checks', async () => {
+    for (const property of ['scale', 'rotate', 'translate']) {
+      contentHeight = 160;
+      const fixture = createHost((textarea) => {
+        textarea.style.position = 'absolute';
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+        const containingBlock = textarea.parentElement!.parentElement!;
+        containingBlock.style.height = '120px';
+        containingBlock.style.setProperty(
+          property,
+          property === 'rotate' ? '0deg' : property === 'scale' ? '1' : '0',
+        );
+      });
+      const textarea = textareaOf(fixture);
+      const containingBlock = textarea.parentElement!.parentElement!;
+      const observer = MockResizeObserver.instances.at(-1)!;
+
+      await fixture.whenStable();
+      expect(observer.isObserving(containingBlock)).toBeTrue();
+      fixture.destroy();
+    }
+  });
+
   it('resizes after an Angular-bound programmatic value change', async () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);

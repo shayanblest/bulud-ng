@@ -1931,6 +1931,181 @@ test.describe('Bulud component demo', () => {
     await style.evaluate((element) => element.remove());
   });
 
+  test('textarea observes individual-transform positioned containing blocks', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      const originalParent = element.parentElement!;
+      const containingBlock = document.createElement('div');
+      containingBlock.dataset.e2eIndividualTransformCb = 'true';
+      containingBlock.style.cssText =
+        'height: 120px; position: static; overflow: visible;';
+      const wrapper = document.createElement('div');
+      containingBlock.append(wrapper);
+      originalParent.append(containingBlock);
+      wrapper.append(element);
+      element.style.position = 'absolute';
+      element.style.maxHeight = '50%';
+      element.style.lineHeight = '20px';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.boxSizing = 'border-box';
+      element.value = 'individual transform containing block '.repeat(80);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const containingBlock = page.locator('[data-e2e-individual-transform-cb]');
+    for (const [property, value] of [
+      ['scale', '1'],
+      ['rotate', '0deg'],
+      ['translate', '0'],
+    ] as const) {
+      await containingBlock.evaluate(
+        (element, next) => element.style.setProperty(next.property, next.value),
+        { property, value },
+      );
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(60);
+
+      await containingBlock.evaluate((element) => {
+        element.style.height = '240px';
+      });
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(120);
+      await containingBlock.evaluate((element) => {
+        element.style.height = '120px';
+      });
+    }
+
+    await containingBlock.evaluate((element) => {
+      element.style.setProperty('will-change', 'scale');
+      element.style.height = '240px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(120);
+    await textarea.evaluate((element) =>
+      element.parentElement?.parentElement?.remove(),
+    );
+  });
+
+  test('textarea follows the actual in-flow containing block through wrappers', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      const originalParent = element.parentElement!;
+      const containingBlock = document.createElement('div');
+      containingBlock.dataset.e2eInFlowCb = 'true';
+      containingBlock.style.cssText = 'height: 120px; display: block;';
+      const wrapper = document.createElement('span');
+      containingBlock.append(wrapper);
+      originalParent.append(containingBlock);
+      wrapper.append(element);
+      element.style.position = '';
+      element.style.maxHeight = '50%';
+      element.style.lineHeight = '20px';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.boxSizing = 'border-box';
+      element.value = 'in-flow containing block '.repeat(80);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const containingBlock = page.locator('[data-e2e-in-flow-cb]');
+    const wrapper = containingBlock.locator('span');
+    for (const display of ['inline', 'contents', 'block'] as const) {
+      await wrapper.evaluate((element, nextDisplay) => {
+        element.style.display = nextDisplay;
+      }, display);
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(60);
+      await containingBlock.evaluate((element) => {
+        element.style.height = '240px';
+      });
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(120);
+      await containingBlock.evaluate((element) => {
+        element.style.height = '120px';
+      });
+    }
+    await textarea.evaluate((element) =>
+      element.parentElement?.parentElement?.remove(),
+    );
+  });
+
+  test('textarea remeasures nested metric mutations by effective signature', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-nested-metric-wrapper textarea { line-height: 20px; }
+        .e2e-nested-metric-wrapper:has(.state.expanded) textarea { line-height: 32px; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      const originalParent = element.parentElement!;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'e2e-nested-metric-wrapper';
+      const stateContainer = document.createElement('div');
+      const state = document.createElement('span');
+      state.className = 'state';
+      stateContainer.append(state);
+      const nestedParent = document.createElement('div');
+      nestedParent.append(element);
+      wrapper.append(stateContainer, nestedParent);
+      originalParent.append(wrapper);
+      element.style.minHeight = '0';
+      element.style.width = '260px';
+      element.value = 'nested metric mutation '.repeat(40);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const state = page.locator('.e2e-nested-metric-wrapper .state');
+    const nestedTextarea = page.locator('.e2e-nested-metric-wrapper textarea');
+    const initial = await nestedTextarea.evaluate((element) => ({
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+      lineHeight: getComputedStyle(element).lineHeight,
+    }));
+    await state.evaluate((element) => element.classList.add('expanded'));
+    await expect
+      .poll(() =>
+        nestedTextarea.evaluate((element) => ({
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+          lineHeight: getComputedStyle(element).lineHeight,
+        })),
+      )
+      .toMatchObject({ width: initial.width, lineHeight: '32px' });
+    expect(
+      await nestedTextarea.evaluate((element) => element.offsetHeight),
+    ).toBeGreaterThan(initial.height);
+
+    const expanded = await nestedTextarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    await state.evaluate((element) =>
+      element.append(document.createElement('i')),
+    );
+    await expect
+      .poll(() => nestedTextarea.evaluate((element) => element.offsetHeight))
+      .toBe(expanded);
+    expect(
+      await nestedTextarea.evaluate((element) => element.offsetWidth),
+    ).toBe(initial.width);
+    await style.evaluate((element) => element.remove());
+    await textarea.evaluate((element) =>
+      element.parentElement?.parentElement?.remove(),
+    );
+  });
+
   test('textarea percentage caps preserve native content and border box geometry', async ({
     page,
   }) => {

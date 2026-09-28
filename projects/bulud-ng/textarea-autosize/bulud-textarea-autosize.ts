@@ -422,16 +422,14 @@ export class BuludTextareaAutosize
       attributes: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
-    for (const [index, ancestor] of this.metricAncestors.entries()) {
+    for (const ancestor of this.metricAncestors) {
       const observeChildList = ancestor !== this.document.documentElement;
       this.mutationObserver.observe(ancestor, {
         attributes: true,
         ...(observeChildList
           ? {
               childList: true,
-              ...(index === 0 && ancestor !== this.document.body
-                ? { subtree: true }
-                : {}),
+              ...(ancestor !== this.document.body ? { subtree: true } : {}),
             }
           : {}),
       });
@@ -619,16 +617,14 @@ export class BuludTextareaAutosize
       attributes: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
-    for (const [index, ancestor] of this.metricAncestors.entries()) {
+    for (const ancestor of this.metricAncestors) {
       const observeChildList = ancestor !== this.document.documentElement;
       this.mutationObserver.observe(ancestor, {
         attributes: true,
         ...(observeChildList
           ? {
               childList: true,
-              ...(index === 0 && ancestor !== this.document.body
-                ? { subtree: true }
-                : {}),
+              ...(ancestor !== this.document.body ? { subtree: true } : {}),
             }
           : {}),
       });
@@ -1160,7 +1156,21 @@ function findConstraintContainingBlock(
   styles: CSSStyleDeclaration,
 ): Element | null {
   if (styles.position !== 'absolute' && styles.position !== 'fixed') {
-    return getContainingBlockTraversalParent(textarea);
+    const view = textarea.ownerDocument.defaultView;
+    if (!view || typeof view.getComputedStyle !== 'function') {
+      return textarea.parentElement;
+    }
+
+    let current = getContainingBlockTraversalParent(textarea);
+    while (current) {
+      const currentStyles = view.getComputedStyle(current);
+      if (establishesInFlowContainingBlock(currentStyles)) {
+        return current;
+      }
+      current = getContainingBlockTraversalParent(current);
+    }
+
+    return null;
   }
 
   const view = textarea.ownerDocument.defaultView;
@@ -1190,6 +1200,25 @@ function getContainingBlockTraversalParent(element: Element): Element | null {
   return element.parentElement ?? getShadowRootHost(element);
 }
 
+function establishesInFlowContainingBlock(
+  styles: CSSStyleDeclaration,
+): boolean {
+  const display = styles.display.trim();
+  return (
+    display !== 'contents' &&
+    display !== 'inline' &&
+    !display.startsWith('ruby') &&
+    ![
+      'table-row',
+      'table-row-group',
+      'table-header-group',
+      'table-footer-group',
+      'table-column',
+      'table-column-group',
+    ].includes(display)
+  );
+}
+
 /** CSS properties that establish the containing block used by positioned descendants. */
 function establishesConstraintContainingBlock(
   styles: CSSStyleDeclaration,
@@ -1198,6 +1227,9 @@ function establishesConstraintContainingBlock(
   if (
     (positionedDescendantUsesPosition && styles.position !== 'static') ||
     styles.transform !== 'none' ||
+    getStyleValue(styles, 'scale') !== 'none' ||
+    getStyleValue(styles, 'rotate') !== 'none' ||
+    getStyleValue(styles, 'translate') !== 'none' ||
     styles.perspective !== 'none' ||
     styles.filter !== 'none' ||
     getStyleValue(styles, 'backdrop-filter') !== 'none' ||
@@ -1232,6 +1264,9 @@ function establishesContainingBlockViaWillChange(willChange: string): boolean {
     .some((property) =>
       [
         'transform',
+        'scale',
+        'rotate',
+        'translate',
         'perspective',
         'filter',
         'backdrop-filter',
