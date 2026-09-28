@@ -965,6 +965,60 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('remeasures observed ancestor child-list metric changes by signature', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .ancestor-childlist-metrics textarea { line-height: 20px; }
+      .ancestor-childlist-metrics:has(.expanded) textarea { line-height: 32px; }
+      .ancestor-childlist-metrics textarea:only-child { line-height: 28px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.style.width = '220px';
+        textarea.parentElement!.classList.add('ancestor-childlist-metrics');
+      });
+      const textarea = textareaOf(fixture);
+      const wrapper = textarea.parentElement!;
+      const directive = fixture.debugElement
+        .query(By.directive(BuludTextareaAutosize))
+        .injector.get(BuludTextareaAutosize);
+      const resizeSpy = spyOn(
+        directive as unknown as { resize: () => void },
+        'resize',
+      ).and.callThrough();
+
+      expect(textarea.style.height).toBe('56px');
+      const expanded = document.createElement('span');
+      expanded.className = 'expanded';
+      wrapper.append(expanded);
+      await fixture.whenStable();
+      expect(textarea.value).toBe('');
+      expect(textarea.style.width).toBe('220px');
+      expect(textarea.style.height).toBe('64px');
+      expect(resizeSpy).toHaveBeenCalled();
+
+      expanded.remove();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('56px');
+
+      const sibling = document.createElement('span');
+      wrapper.append(sibling);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+      const resizeCount = resizeSpy.calls.count();
+      const irrelevant = document.createElement('span');
+      wrapper.append(irrelevant);
+      await fixture.whenStable();
+      expect(resizeSpy.calls.count()).toBe(resizeCount);
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('resizes after an Angular-bound programmatic value change', async () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);
@@ -3226,6 +3280,37 @@ describe('BuludTextareaAutosize', () => {
     expect(Number.parseFloat(textarea.style.height)).toBeGreaterThan(
       Number.parseFloat(initialHeight),
     );
+    fixture.destroy();
+  });
+
+  it('remeasures max-height and max-block-size transition completion', async () => {
+    contentHeight = 200;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 1;
+      textarea.style.maxHeight = '40px';
+      textarea.style.lineHeight = '20px';
+    });
+    const textarea = textareaOf(fixture);
+    expect(textarea.style.height).toBe('40px');
+
+    textarea.style.maxHeight = '80px';
+    dispatchTransitionEvent(textarea, 'transitionend', 'max-height');
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('80px');
+
+    textarea.style.maxHeight = '30px';
+    dispatchTransitionEvent(textarea, 'transitioncancel', 'max-height');
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('30px');
+
+    textarea.style.maxHeight = '';
+    textarea.style.maxBlockSize = '50px';
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('50px');
+    textarea.style.maxBlockSize = '90px';
+    dispatchTransitionEvent(textarea, 'transitionend', 'max-block-size');
+    await Promise.resolve();
+    expect(textarea.style.height).toBe('90px');
     fixture.destroy();
   });
 

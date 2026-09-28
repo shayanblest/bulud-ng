@@ -1622,6 +1622,56 @@ test.describe('Bulud component demo', () => {
     }
   });
 
+  test('textarea autosize reaches the final max-height transition constraint', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      const target = element as HTMLTextAreaElement;
+      target.style.minHeight = '0';
+      target.style.maxHeight = '40px';
+      target.style.maxBlockSize = 'none';
+      target.style.lineHeight = '20px';
+      target.value = 'max-height transition '.repeat(100);
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const initialHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    expect(initialHeight).toBeLessThanOrEqual(40);
+
+    await textarea.evaluate((element) => {
+      const target = element as HTMLTextAreaElement;
+      target.style.transition = 'max-height 120ms linear';
+      target.style.maxHeight = '100px';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) =>
+          Number.parseFloat(getComputedStyle(element).maxHeight),
+        ),
+      )
+      .toBe(100);
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(initialHeight);
+
+    await textarea.evaluate((element) => {
+      const target = element as HTMLTextAreaElement;
+      target.style.maxHeight = '30px';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) =>
+          Number.parseFloat(getComputedStyle(element).maxHeight),
+        ),
+      )
+      .toBe(30);
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeLessThanOrEqual(30);
+  });
+
   test('textarea autosize preserves the caret while editing in the middle', async ({
     page,
   }) => {

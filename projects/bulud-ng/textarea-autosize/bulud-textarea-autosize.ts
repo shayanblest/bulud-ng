@@ -1102,7 +1102,13 @@ function mutationMayAffectMeasurement(
 
   const body = textarea.ownerDocument.body;
   return records.some(
-    (record) => record.type !== 'childList' || record.target === body,
+    (record) =>
+      record.type !== 'childList' ||
+      record.target === body ||
+      getMetricAncestors(textarea).some(
+        (ancestor) =>
+          record.target === ancestor || ancestor.contains(record.target),
+      ),
   );
 }
 
@@ -2200,6 +2206,8 @@ const METRIC_TRANSITION_PROPERTIES = new Set([
   ...TEXT_METRIC_PROPERTIES,
   'border',
   'font',
+  'max-height',
+  'max-block-size',
   'padding',
 ]);
 
