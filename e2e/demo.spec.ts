@@ -2034,6 +2034,53 @@ test.describe('Bulud component demo', () => {
       .toBeGreaterThan(0);
   });
 
+  test('textarea autosize reconnects a wrapper moved from body', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await page.addStyleTag({
+      content: `
+        .e2e-body-reparent-a textarea { line-height: 20px; }
+        .e2e-body-reparent-b textarea { line-height: 30px; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'e2e-body-reparent-a';
+      wrapper.append(element);
+      document.body.append(wrapper);
+      const newParent = document.createElement('div');
+      newParent.className = 'e2e-body-reparent-b';
+      newParent.style.width = '300px';
+      document.body.append(newParent);
+      element.style.minHeight = '0';
+      element.value = 'body wrapper '.repeat(20);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const initialHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    await textarea.evaluate(() => {
+      document
+        .querySelector('.e2e-body-reparent-b')!
+        .append(document.querySelector('.e2e-body-reparent-a')!);
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(initialHeight);
+
+    await textarea.evaluate(() => {
+      document.body.append(document.querySelector('.e2e-body-reparent-a')!);
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeLessThanOrEqual(initialHeight);
+    await textarea.evaluate((element) => {
+      element.parentElement?.remove();
+      document.querySelector('.e2e-body-reparent-b')?.remove();
+    });
+  });
+
   test('textarea autosize observes stretched layout items and query containers', async ({
     page,
   }) => {

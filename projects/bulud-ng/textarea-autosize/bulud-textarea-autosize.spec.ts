@@ -2556,6 +2556,89 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('reconnects a wrapper moved from a direct body child position', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-body-reparent-a textarea { line-height: 20px; }
+      .textarea-body-reparent-b textarea { line-height: 30px; }
+      .textarea-body-reparent-a.changed textarea,
+      .textarea-body-reparent-b.changed textarea { line-height: 40px; }
+    `;
+    document.head.appendChild(style);
+    let wrapper: HTMLDivElement | undefined;
+    let newParent: HTMLDivElement | undefined;
+    let movedTextarea: HTMLTextAreaElement | undefined;
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        movedTextarea = textarea;
+        textarea.style.minHeight = '0';
+        wrapper = document.createElement('div');
+        wrapper.className = 'textarea-body-reparent-a';
+        wrapper.append(textarea);
+        document.body.append(wrapper);
+      });
+      newParent = document.createElement('div');
+      newParent.className = 'textarea-body-reparent-b';
+      newParent.style.width = '300px';
+      document.body.append(newParent);
+      await fixture.whenStable();
+      expect(movedTextarea!.style.height).toBe('40px');
+
+      newParent.append(wrapper!);
+      await fixture.whenStable();
+      expect(movedTextarea!.style.height).toBe('60px');
+
+      newParent.classList.add('changed');
+      await fixture.whenStable();
+      expect(movedTextarea!.style.height).toBe('80px');
+
+      newParent.classList.remove('changed');
+      document.body.append(wrapper!);
+      await fixture.whenStable();
+      expect(movedTextarea!.style.height).toBe('40px');
+
+      fixture.destroy();
+    } finally {
+      wrapper?.remove();
+      newParent?.remove();
+      style.remove();
+    }
+  });
+
+  it('observes a content-visibility containing block for percentage constraints', async () => {
+    contentHeight = 200;
+    let containingBlock: HTMLDivElement | undefined;
+    let movedTextarea: HTMLTextAreaElement | undefined;
+    const fixture = createHost((textarea) => {
+      movedTextarea = textarea;
+      const outer = document.createElement('div');
+      outer.style.height = '400px';
+      containingBlock = document.createElement('div');
+      containingBlock.style.height = '120px';
+      containingBlock.style.contentVisibility = 'auto';
+      outer.append(containingBlock);
+      containingBlock.append(textarea);
+      document.body.append(outer);
+      textarea.style.position = 'absolute';
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+    });
+    const observer = MockResizeObserver.instances[0];
+
+    await fixture.whenStable();
+    expect(observer.isObserving(containingBlock!)).toBeTrue();
+    const initialHeight = Number.parseFloat(movedTextarea!.style.height);
+    containingBlock!.style.height = '200px';
+    observer.triggerTarget(containingBlock!);
+    expect(Number.parseFloat(movedTextarea!.style.height)).toBeGreaterThan(
+      initialHeight,
+    );
+    fixture.destroy();
+    containingBlock!.parentElement?.remove();
+  });
+
   it('observes browser-resolved percentage, calc, and variable containing blocks', async () => {
     contentHeight = 200;
     const style = document.createElement('style');
@@ -2756,6 +2839,38 @@ describe('BuludTextareaAutosize', () => {
 
     expect(resizeSpy).toHaveBeenCalledTimes(1);
     fixture.destroy();
+  });
+
+  it('keeps font-kerning and line-break in the effective signature', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-shaping-a textarea { font-kerning: none; line-break: auto; }
+      .textarea-shaping-b textarea { font-kerning: normal; line-break: strict; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.parentElement!.classList.add('textarea-shaping-a');
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const directive = fixture.debugElement
+        .query(By.directive(BuludTextareaAutosize))
+        .injector.get(BuludTextareaAutosize);
+      const resizeSpy = spyOn(
+        directive as unknown as { resize: () => void },
+        'resize',
+      ).and.callThrough();
+
+      textarea.parentElement!.className = 'textarea-shaping-b';
+      await fixture.whenStable();
+      expect(resizeSpy).toHaveBeenCalled();
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
   });
 
   it('remeasures border-box row constraints after vertical box metrics change', () => {

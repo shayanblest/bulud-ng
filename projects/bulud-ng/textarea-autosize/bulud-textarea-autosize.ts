@@ -392,14 +392,28 @@ export class BuludTextareaAutosize
 
     this.mutationObserver = new MutationObserver((records) => {
       if (!this.destroyed && this.enabled()) {
-        this.updateConstraintObservation();
-        if (metricObservationWasMoved(records, this.element.nativeElement)) {
+        const ancestorChainMoved = metricObservationWasMoved(
+          records,
+          this.element.nativeElement,
+        );
+        const measurementMayBeAffected = mutationMayAffectMeasurement(
+          records,
+          this.element.nativeElement,
+          ancestorChainMoved,
+        );
+        if (ancestorChainMoved) {
           this.reconnectMetricAncestors();
           this.connectFormResetListener();
           this.connectFormMutationObserver();
         }
-        this.updateQueryContainerObservation();
-        if (!isResolvingCssMaxHeight(this.element.nativeElement)) {
+        if (measurementMayBeAffected) {
+          this.updateConstraintObservation();
+          this.updateQueryContainerObservation();
+        }
+        if (
+          !isResolvingCssMaxHeight(this.element.nativeElement) &&
+          measurementMayBeAffected
+        ) {
           this.remeasureIfNeeded();
         }
       }
@@ -409,13 +423,16 @@ export class BuludTextareaAutosize
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const [index, ancestor] of this.metricAncestors.entries()) {
-      const observeChildList =
-        ancestor !== this.document.body &&
-        ancestor !== this.document.documentElement;
+      const observeChildList = ancestor !== this.document.documentElement;
       this.mutationObserver.observe(ancestor, {
         attributes: true,
         ...(observeChildList
-          ? { childList: true, ...(index === 0 ? { subtree: true } : {}) }
+          ? {
+              childList: true,
+              ...(index === 0 && ancestor !== this.document.body
+                ? { subtree: true }
+                : {}),
+            }
           : {}),
       });
     }
@@ -603,13 +620,16 @@ export class BuludTextareaAutosize
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const [index, ancestor] of this.metricAncestors.entries()) {
-      const observeChildList =
-        ancestor !== this.document.body &&
-        ancestor !== this.document.documentElement;
+      const observeChildList = ancestor !== this.document.documentElement;
       this.mutationObserver.observe(ancestor, {
         attributes: true,
         ...(observeChildList
-          ? { childList: true, ...(index === 0 ? { subtree: true } : {}) }
+          ? {
+              childList: true,
+              ...(index === 0 && ancestor !== this.document.body
+                ? { subtree: true }
+                : {}),
+            }
           : {}),
       });
     }
@@ -1071,6 +1091,21 @@ function metricObservationWasMoved(
   });
 }
 
+function mutationMayAffectMeasurement(
+  records: readonly MutationRecord[],
+  textarea: HTMLTextAreaElement,
+  ancestorChainMoved: boolean,
+): boolean {
+  if (ancestorChainMoved) {
+    return true;
+  }
+
+  const body = textarea.ownerDocument.body;
+  return records.some(
+    (record) => record.type !== 'childList' || record.target !== body,
+  );
+}
+
 function getShadowHostChain(textarea: HTMLTextAreaElement): HTMLElement[] {
   const hosts: HTMLElement[] = [];
   let current: Element = textarea;
@@ -1155,6 +1190,7 @@ function establishesConstraintContainingBlock(
     styles.perspective !== 'none' ||
     styles.filter !== 'none' ||
     getStyleValue(styles, 'backdrop-filter') !== 'none' ||
+    getStyleValue(styles, 'content-visibility') === 'auto' ||
     establishesContainingBlockViaContain(styles.contain) ||
     establishesContainingBlockViaWillChange(styles.willChange) ||
     getStyleValue(styles, 'container-type') !== 'normal'
@@ -1189,6 +1225,7 @@ function establishesContainingBlockViaWillChange(willChange: string): boolean {
         'filter',
         'backdrop-filter',
         'contain',
+        'content-visibility',
       ].includes(property),
     );
 }
@@ -2089,6 +2126,7 @@ const TEXT_METRIC_PROPERTIES = [
   'direction',
   'font-family',
   'font-feature-settings',
+  'font-kerning',
   'font-size',
   'font-size-adjust',
   'font-stretch',
@@ -2098,6 +2136,7 @@ const TEXT_METRIC_PROPERTIES = [
   'font-variation-settings',
   'hyphens',
   'letter-spacing',
+  'line-break',
   'line-height',
   'padding-bottom',
   'padding-left',
@@ -2117,6 +2156,7 @@ const PLACEHOLDER_METRIC_PROPERTIES = [
   'direction',
   'font-family',
   'font-feature-settings',
+  'font-kerning',
   'font-size',
   'font-size-adjust',
   'font-stretch',
@@ -2126,6 +2166,7 @@ const PLACEHOLDER_METRIC_PROPERTIES = [
   'font-variation-settings',
   'hyphens',
   'letter-spacing',
+  'line-break',
   'line-height',
   'tab-size',
   'text-indent',
