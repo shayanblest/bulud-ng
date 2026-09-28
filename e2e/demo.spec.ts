@@ -2081,6 +2081,61 @@ test.describe('Bulud component demo', () => {
     });
   });
 
+  test('textarea autosize remeasures after a body sibling changes selectors', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await page.addStyleTag({
+      content: `
+        body > app-root.e2e-body-sibling-selector:last-child #textarea-autosize-input {
+          line-height: 32px;
+        }
+        .e2e-body-sibling-selector #textarea-autosize-input {
+          line-height: 20px;
+        }
+      `,
+    });
+    await page.locator('app-root').evaluate((element) => {
+      element.classList.add('e2e-body-sibling-selector');
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('32px');
+    const initialHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+
+    await page.evaluate(() => {
+      const sibling = document.createElement('div');
+      sibling.className = 'e2e-body-sibling-selector-node';
+      document.body.append(sibling);
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('20px');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .not.toBe(initialHeight);
+
+    await page
+      .locator('.e2e-body-sibling-selector-node')
+      .evaluate((element) => {
+        element.remove();
+      });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('32px');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(initialHeight);
+  });
+
   test('textarea autosize observes stretched layout items and query containers', async ({
     page,
   }) => {

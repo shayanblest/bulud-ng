@@ -1102,7 +1102,7 @@ function mutationMayAffectMeasurement(
 
   const body = textarea.ownerDocument.body;
   return records.some(
-    (record) => record.type !== 'childList' || record.target !== body,
+    (record) => record.type !== 'childList' || record.target === body,
   );
 }
 

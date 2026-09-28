@@ -913,7 +913,8 @@ describe('BuludTextareaAutosize', () => {
       document.body.appendChild(unrelated);
       await fixture.whenStable();
 
-      expect(computedStyleCalls).toBe(callsAfterInit);
+      expect(computedStyleCalls).toBeGreaterThan(callsAfterInit);
+      expect(textareaOf(fixture).style.height).toBe('40px');
       unrelated.remove();
       fixture.destroy();
     } finally {
@@ -921,6 +922,46 @@ describe('BuludTextareaAutosize', () => {
         configurable: true,
         value: originalGetComputedStyle,
       });
+    }
+  });
+
+  it('remeasures when a body sibling changes an ancestor-dependent selector', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .body-sibling-selector textarea { line-height: 20px; }
+      body > .body-sibling-selector:last-child textarea {
+        line-height: 32px;
+      }
+    `;
+    document.head.appendChild(style);
+    let sibling: HTMLDivElement | undefined;
+    try {
+      const fixture = TestBed.createComponent(ApplicationRootHostComponent);
+      fixture.nativeElement.classList.add('body-sibling-selector');
+      document.body.append(fixture.nativeElement);
+      const textarea = fixture.nativeElement.querySelector(
+        'textarea',
+      ) as HTMLTextAreaElement;
+      defineScrollHeight(textarea);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const initialHeight = textarea.style.height;
+      expect(initialHeight).toBe('64px');
+
+      sibling = document.createElement('div');
+      document.body.append(sibling);
+      await fixture.whenStable();
+      expect(textarea.parentElement).toBe(fixture.nativeElement);
+      expect(textarea.style.height).toBe('40px');
+
+      sibling.remove();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe(initialHeight);
+      fixture.destroy();
+    } finally {
+      sibling?.remove();
+      style.remove();
     }
   });
 
