@@ -1130,7 +1130,12 @@ function getShadowHostChain(textarea: HTMLTextAreaElement): HTMLElement[] {
 
 function getShadowHostReparentObservers(textarea: HTMLTextAreaElement): Node[] {
   const observers: Node[] = [];
+  const root = textarea.getRootNode();
   const seen = new Set<Node>();
+  if (isShadowRoot(root, textarea.ownerDocument)) {
+    seen.add(root);
+    observers.push(root);
+  }
   for (const host of getShadowHostChain(textarea)) {
     const root = host.getRootNode();
     const parent = isShadowRoot(root, host.ownerDocument)
@@ -1390,18 +1395,28 @@ function getCssPixelBlockSize(container: Element): number | null {
 }
 
 function getResolvedCssPixelBlockSize(container: Element): number | null {
-  if (isCssAutoHeight(container)) {
-    return null;
-  }
-
+  const elementWithStyleMap = container as Element & {
+    computedStyleMap?: () => StylePropertyMapReadOnly;
+  };
+  const hasTypedStyleMap =
+    typeof elementWithStyleMap.computedStyleMap === 'function';
   const typedValue = getCssPixelBlockSize(container);
-  if (typedValue !== null) {
-    return typedValue;
-  }
-
   const view = container.ownerDocument.defaultView;
   if (!view || typeof view.getComputedStyle !== 'function') {
     return null;
+  }
+
+  if (!hasTypedStyleMap) {
+    return parsePixelLength(
+      (container as HTMLElement).style.getPropertyValue('height'),
+    );
+  }
+
+  if (isCssAutoHeight(container)) {
+    return null;
+  }
+  if (typedValue !== null) {
+    return typedValue;
   }
 
   return parsePixelLength(view.getComputedStyle(container).height);
@@ -1416,10 +1431,10 @@ function isCssAutoHeight(container: Element): boolean {
     if (isCssKeywordValue(value)) {
       return value.value === 'auto';
     }
+    return false;
   }
 
-  const view = container.ownerDocument.defaultView;
-  return view?.getComputedStyle(container).height === 'auto';
+  return true;
 }
 
 function isCssPixelValue(value: unknown): value is CssUnitValueLike {
@@ -1979,10 +1994,25 @@ function resolveCssMaxSize(
       sizeProperty === 'block-size' ? resolutionHeight : '',
     );
     textarea.style.setProperty('overflow-y', 'hidden');
+    const resolvedCssHeight = parsePixelLength(
+      getComputedStyle(textarea).height,
+    );
+    if (resolvedCssHeight !== null) {
+      return resolvedCssHeight;
+    }
     const physicalHeight = getUntransformedLayoutHeight(textarea, styles);
-    return Number.isFinite(physicalHeight) && physicalHeight < 10000000
-      ? physicalHeight
-      : null;
+    if (!Number.isFinite(physicalHeight) || physicalHeight >= 10000000) {
+      return null;
+    }
+
+    return styles.boxSizing === 'content-box'
+      ? Math.max(
+          0,
+          physicalHeight -
+            getVerticalPadding(styles) -
+            getVerticalBorders(styles),
+        )
+      : physicalHeight;
   } finally {
     restoreInlineStyle(textarea.style, 'height', previousHeight);
     restoreInlineStyle(textarea.style, 'block-size', previousBlockSize);

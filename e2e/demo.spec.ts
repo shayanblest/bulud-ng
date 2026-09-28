@@ -1948,6 +1948,7 @@ test.describe('Bulud component demo', () => {
     await parent.evaluate((element) => {
       element.style.height = '120px';
       element.style.display = 'block';
+      element.style.position = 'relative';
     });
     await textarea.fill('content-box percentage cap '.repeat(100));
     await expect
@@ -2002,6 +2003,61 @@ test.describe('Bulud component demo', () => {
         })),
       )
       .toEqual({ cssHeight: 60, physicalHeight: 60, maxBlockSize: 60 });
+  });
+
+  test('textarea autosize preserves content-box conversion for relative caps', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const parent = textarea.locator('..');
+    await parent.evaluate((element) => {
+      element.style.height = '120px';
+      element.style.display = 'block';
+      element.style.position = 'relative';
+    });
+    await textarea.evaluate((element) => {
+      element.style.minHeight = '0';
+      element.style.position = 'absolute';
+      element.style.lineHeight = '20px';
+      element.style.paddingBlock = '20px';
+      element.style.borderBlock = '2px solid';
+      element.style.boxSizing = 'content-box';
+      element.style.maxHeight = 'calc(50% - 10px)';
+      element.style.maxBlockSize = 'none';
+      element.value = 'relative cap\none\nthree';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          cssHeight: parseFloat(getComputedStyle(element).height),
+          physicalHeight: element.getBoundingClientRect().height,
+          overflowY: getComputedStyle(element).overflowY,
+        })),
+      )
+      .toEqual({ cssHeight: 60, physicalHeight: 104, overflowY: 'hidden' });
+
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '';
+      element.style.maxBlockSize = 'calc(50% - 10px)';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(94);
+
+    await textarea.evaluate((element) => {
+      element.style.boxSizing = 'border-box';
+      element.style.maxHeight = 'calc(50% - 10px)';
+      element.style.maxBlockSize = 'none';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          cssHeight: parseFloat(getComputedStyle(element).height),
+          physicalHeight: element.getBoundingClientRect().height,
+        })),
+      )
+      .toEqual({ cssHeight: 104, physicalHeight: 104 });
   });
 
   test('textarea autosize reconnects ordinary wrapper reparenting', async ({
@@ -2082,6 +2138,50 @@ test.describe('Bulud component demo', () => {
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
       .toBeGreaterThan(0);
+  });
+
+  test('textarea autosize reconnects moves within its ShadowRoot', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const initialHeight = await textarea.evaluate((element) => {
+      const target = element as HTMLTextAreaElement;
+      const host = document.createElement('div');
+      host.style.lineHeight = '20px';
+      const shadow = host.attachShadow({ mode: 'open' });
+      target.style.minHeight = '0';
+      target.style.lineHeight = 'inherit';
+      target.style.maxHeight = 'none';
+      target.value = 'shadow reparent '.repeat(30);
+      shadow.append(target);
+      document.body.append(host);
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      return target.offsetHeight;
+    });
+    await textarea.evaluate((element) => {
+      const target = element as HTMLTextAreaElement;
+      const shadow = target.getRootNode() as ShadowRoot;
+      const wrapper = document.createElement('div');
+      wrapper.style.lineHeight = '30px';
+      shadow.append(wrapper);
+      wrapper.append(target);
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(initialHeight);
+
+    await textarea.evaluate((element) => {
+      const target = element as HTMLTextAreaElement;
+      const shadow = target.getRootNode() as ShadowRoot;
+      shadow.append(target);
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(initialHeight);
+    await textarea.evaluate((element) => {
+      const host = element.getRootNode() as ShadowRoot;
+      host.host.remove();
+    });
   });
 
   test('textarea autosize reconnects a wrapper moved from body', async ({

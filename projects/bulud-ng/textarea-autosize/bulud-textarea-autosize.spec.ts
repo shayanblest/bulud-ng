@@ -1326,6 +1326,47 @@ describe('BuludTextareaAutosize', () => {
     fittingFixture.destroy();
   });
 
+  it('converts live relative caps from border-box to content-box units', () => {
+    contentHeight = 200;
+    for (const sizeProperty of ['maxHeight', 'maxBlockSize'] as const) {
+      const fixture = createHost((textarea) => {
+        textarea.style.boxSizing = 'content-box';
+        textarea.style.position = 'absolute';
+        textarea.style.paddingBlock = '20px';
+        textarea.style.borderBlock = '2px solid';
+        textarea.style.lineHeight = '20px';
+        textarea.style[sizeProperty] = 'calc(50% - 10px)';
+        textarea.parentElement!.style.height = '120px';
+        textarea.parentElement!.style.position = 'relative';
+        Object.defineProperty(textarea, 'offsetHeight', {
+          configurable: true,
+          get: () => (textarea.style.boxSizing === 'border-box' ? 50 : 94),
+        });
+      });
+      const textarea = textareaOf(fixture);
+      expect(textarea.style.height).toBe('50px');
+      expect(textarea.style.overflowY).toBe('auto');
+      fixture.destroy();
+    }
+
+    const fixture = createHost((textarea) => {
+      textarea.style.boxSizing = 'border-box';
+      textarea.style.position = 'absolute';
+      textarea.style.paddingBlock = '20px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.lineHeight = '20px';
+      textarea.style.maxHeight = 'calc(50% - 10px)';
+      textarea.parentElement!.style.height = '120px';
+      textarea.parentElement!.style.position = 'relative';
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => 50,
+      });
+    });
+    expect(textareaOf(fixture).style.height).toBe('50px');
+    fixture.destroy();
+  });
+
   it('measures against the textarea width constraints without a probe', () => {
     contentHeight = 80;
     const fixture = createHost((textarea) => {
@@ -1546,6 +1587,35 @@ describe('BuludTextareaAutosize', () => {
     host.setAttribute('data-density', 'compact');
     await fixture.whenStable();
     expect(textarea.style.height).toBe('70px');
+    fixture.destroy();
+  });
+
+  it('reconnects when a textarea moves within its ShadowRoot', async () => {
+    contentHeight = 0;
+    const fixture = TestBed.createComponent(ReparentedShadowHostComponent);
+    const host = fixture.nativeElement as HTMLElement;
+    const shadow = host.shadowRoot!;
+    const textarea = shadow.querySelector('textarea') as HTMLTextAreaElement;
+    defineScrollHeight(textarea);
+    host.style.lineHeight = '20px';
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+
+    const wrapper = document.createElement('div');
+    wrapper.style.lineHeight = '30px';
+    shadow.append(wrapper);
+    wrapper.append(textarea);
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('60px');
+
+    shadow.append(textarea);
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+
+    wrapper.append(textarea);
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('60px');
     fixture.destroy();
   });
 
@@ -2462,6 +2532,55 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.height).toBe('120px');
     expect(initialHeight).toBe('60px');
     fixture.destroy();
+  });
+
+  it('keeps auto parents indefinite when Typed OM is unavailable', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Element.prototype,
+      'computedStyleMap',
+    );
+    let fixture: ReturnType<typeof createHost> | undefined;
+    try {
+      Object.defineProperty(Element.prototype, 'computedStyleMap', {
+        configurable: true,
+        value: undefined,
+      });
+      contentHeight = 120;
+      fixture = createHost((textarea) => {
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const parent = textarea.parentElement!;
+      const observer = MockResizeObserver.instances[0];
+      const initialHeight = textarea.style.height;
+
+      expect(observer.isObserving(parent)).toBeFalse();
+      for (let cycle = 0; cycle < 3; cycle += 1) {
+        textarea.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+        expect(textarea.style.height).toBe(initialHeight);
+      }
+
+      parent.style.height = '120px';
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      expect(textarea.style.height).toBe('60px');
+    } finally {
+      fixture?.destroy();
+      if (descriptor) {
+        Object.defineProperty(
+          Element.prototype,
+          'computedStyleMap',
+          descriptor,
+        );
+      } else {
+        const elementPrototype = Element.prototype as unknown as {
+          computedStyleMap?: unknown;
+        };
+        delete elementPrototype.computedStyleMap;
+      }
+    }
   });
 
   it('selects a static filtered containing block and tracks both size directions', async () => {
