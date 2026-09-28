@@ -409,9 +409,14 @@ export class BuludTextareaAutosize
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const [index, ancestor] of this.metricAncestors.entries()) {
+      const observeChildList =
+        ancestor !== this.document.body &&
+        ancestor !== this.document.documentElement;
       this.mutationObserver.observe(ancestor, {
         attributes: true,
-        ...(index === 0 ? { childList: true, subtree: true } : {}),
+        ...(observeChildList
+          ? { childList: true, ...(index === 0 ? { subtree: true } : {}) }
+          : {}),
       });
     }
     for (const ancestor of getShadowHostReparentObservers(
@@ -598,9 +603,14 @@ export class BuludTextareaAutosize
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const [index, ancestor] of this.metricAncestors.entries()) {
+      const observeChildList =
+        ancestor !== this.document.body &&
+        ancestor !== this.document.documentElement;
       this.mutationObserver.observe(ancestor, {
         attributes: true,
-        ...(index === 0 ? { childList: true, subtree: true } : {}),
+        ...(observeChildList
+          ? { childList: true, ...(index === 0 ? { subtree: true } : {}) }
+          : {}),
       });
     }
     for (const ancestor of getShadowHostReparentObservers(
@@ -1047,7 +1057,11 @@ function metricObservationWasMoved(
   records: readonly MutationRecord[],
   textarea: HTMLTextAreaElement,
 ): boolean {
-  const movedElements = [textarea, ...getShadowHostChain(textarea)];
+  const movedElements = [
+    textarea,
+    ...getMetricAncestors(textarea),
+    ...getShadowHostChain(textarea),
+  ];
   return records.some((record) => {
     if (record.type !== 'childList') {
       return false;
@@ -1220,7 +1234,10 @@ function shouldObserveContainingBlock(container: Element): boolean {
   if (isLayoutDefiniteAutoHeight(container)) {
     return true;
   }
-  return getCssPixelBlockSize(container) !== null;
+  if (isIndefiniteFlexGridItem(container)) {
+    return false;
+  }
+  return getResolvedCssPixelBlockSize(container) !== null;
 }
 
 function isLayoutDefiniteAutoHeight(container: Element): boolean {
@@ -1232,12 +1249,13 @@ function isLayoutDefiniteAutoHeight(container: Element): boolean {
 
   const parentStyles = view.getComputedStyle(parent);
   const containerStyles = view.getComputedStyle(container);
+  if (!isStretchFlexGridItem(parentStyles, containerStyles)) {
+    return false;
+  }
+
   const display = parentStyles.display;
   const isFlex = display === 'flex' || display === 'inline-flex';
   const isGrid = display === 'grid' || display === 'inline-grid';
-  if (!isFlex && !isGrid) {
-    return false;
-  }
 
   const alignment =
     containerStyles.alignSelf === 'auto'
@@ -1254,12 +1272,46 @@ function isLayoutDefiniteAutoHeight(container: Element): boolean {
     if (direction === 'column' || direction === 'column-reverse') {
       return false;
     }
-    return getCssPixelBlockSize(parent) !== null;
+    return getResolvedCssPixelBlockSize(parent) !== null;
   }
 
   return (
-    getCssPixelBlockSize(parent) !== null && hasDefiniteGridRows(parentStyles)
+    getResolvedCssPixelBlockSize(parent) !== null &&
+    hasDefiniteGridRows(parentStyles)
   );
+}
+
+function isIndefiniteFlexGridItem(container: Element): boolean {
+  const parent = container.parentElement;
+  const view = container.ownerDocument.defaultView;
+  if (!parent || !view || typeof view.getComputedStyle !== 'function') {
+    return false;
+  }
+
+  const parentStyles = view.getComputedStyle(parent);
+  const containerStyles = view.getComputedStyle(container);
+  return (
+    isStretchFlexGridItem(parentStyles, containerStyles) &&
+    !isLayoutDefiniteAutoHeight(container)
+  );
+}
+
+function isStretchFlexGridItem(
+  parentStyles: CSSStyleDeclaration,
+  containerStyles: CSSStyleDeclaration,
+): boolean {
+  const display = parentStyles.display;
+  const isFlex = display === 'flex' || display === 'inline-flex';
+  const isGrid = display === 'grid' || display === 'inline-grid';
+  if (!isFlex && !isGrid) {
+    return false;
+  }
+
+  const alignment =
+    containerStyles.alignSelf === 'auto'
+      ? parentStyles.alignItems
+      : containerStyles.alignSelf;
+  return alignment === 'stretch' || (isGrid && alignment === 'normal');
 }
 
 function hasDefiniteGridRows(styles: CSSStyleDeclaration): boolean {
@@ -1294,6 +1346,39 @@ function getCssPixelBlockSize(container: Element): number | null {
   return value.value;
 }
 
+function getResolvedCssPixelBlockSize(container: Element): number | null {
+  if (isCssAutoHeight(container)) {
+    return null;
+  }
+
+  const typedValue = getCssPixelBlockSize(container);
+  if (typedValue !== null) {
+    return typedValue;
+  }
+
+  const view = container.ownerDocument.defaultView;
+  if (!view || typeof view.getComputedStyle !== 'function') {
+    return null;
+  }
+
+  return parsePixelLength(view.getComputedStyle(container).height);
+}
+
+function isCssAutoHeight(container: Element): boolean {
+  const elementWithStyleMap = container as Element & {
+    computedStyleMap?: () => StylePropertyMapReadOnly;
+  };
+  if (typeof elementWithStyleMap.computedStyleMap === 'function') {
+    const value = elementWithStyleMap.computedStyleMap().get('height');
+    if (isCssKeywordValue(value)) {
+      return value.value === 'auto';
+    }
+  }
+
+  const view = container.ownerDocument.defaultView;
+  return view?.getComputedStyle(container).height === 'auto';
+}
+
 function isCssPixelValue(value: unknown): value is CssUnitValueLike {
   if (typeof value !== 'object' || value === null || !('unit' in value)) {
     return false;
@@ -1301,6 +1386,17 @@ function isCssPixelValue(value: unknown): value is CssUnitValueLike {
 
   const candidate = value as { unit?: unknown; value?: unknown };
   return candidate.unit === 'px' && typeof candidate.value === 'number';
+}
+
+function isCssKeywordValue(
+  value: unknown,
+): value is { readonly value: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'value' in value &&
+    typeof value.value === 'string'
+  );
 }
 
 function formMutationMayAffectTextarea(
@@ -1941,13 +2037,16 @@ function getDefiniteContainingBlockHeight(
   const styles = view.getComputedStyle(container);
   const padding = getVerticalPadding(styles);
   const borders = getVerticalBorders(styles);
-  const declaredHeight = getCssPixelBlockSize(container);
+  const layoutDefiniteAutoHeight = isLayoutDefiniteAutoHeight(container);
+  const declaredHeight = isIndefiniteFlexGridItem(container)
+    ? null
+    : getResolvedCssPixelBlockSize(container);
   const contentBoxHeight =
     declaredHeight !== null
       ? styles.boxSizing === 'border-box'
         ? Math.max(0, declaredHeight - padding - borders)
         : declaredHeight
-      : isLayoutDefiniteAutoHeight(container)
+      : layoutDefiniteAutoHeight
         ? Math.max(0, getUsedBlockSize(container) - padding - borders)
         : null;
 

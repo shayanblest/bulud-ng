@@ -2488,6 +2488,133 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('reconnects ordinary wrapper and nested-wrapper reparenting', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-reparent-a textarea { line-height: 20px; }
+      .textarea-reparent-b textarea { line-height: 30px; }
+      .textarea-reparent-a.changed textarea,
+      .textarea-reparent-b.changed textarea { line-height: 40px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        const originalParent = textarea.parentElement!;
+        originalParent.classList.add('textarea-reparent-a');
+        textarea.style.minHeight = '0';
+        const wrapper = document.createElement('div');
+        originalParent.append(wrapper);
+        wrapper.append(textarea);
+      });
+      const textarea = textareaOf(fixture);
+      const wrapper = textarea.parentElement!;
+      const originalParent = wrapper.parentElement!;
+      const newParent = document.createElement('div');
+      newParent.className = 'textarea-reparent-b';
+      newParent.style.width = `${originalParent.offsetWidth}px`;
+      document.body.append(newParent);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+
+      newParent.append(wrapper);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+
+      originalParent.classList.add('changed');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+      newParent.classList.add('changed');
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('80px');
+
+      originalParent.classList.remove('changed');
+      originalParent.append(wrapper);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+
+      const outer = document.createElement('div');
+      const inner = document.createElement('div');
+      outer.append(inner);
+      inner.append(textarea);
+      originalParent.append(outer);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+
+      newParent.append(outer);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('80px');
+      originalParent.append(outer);
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+
+      fixture.destroy();
+      newParent.remove();
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('observes browser-resolved percentage, calc, and variable containing blocks', async () => {
+    contentHeight = 200;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-percentage-parent { height: 50%; }
+      .textarea-calc-parent { height: calc(100% - 20px); }
+      .textarea-variable-parent { height: var(--textarea-basis); }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea) => {
+        const parent = textarea.parentElement!;
+        const grandparent = document.createElement('div');
+        grandparent.style.height = '400px';
+        parent.replaceWith(grandparent);
+        grandparent.append(parent);
+        parent.className = 'textarea-percentage-parent';
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const parent = textarea.parentElement!;
+      const grandparent = parent.parentElement!;
+      const observer = MockResizeObserver.instances[0];
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      const percentageHeight = Number.parseFloat(textarea.style.height);
+
+      grandparent.style.height = '600px';
+      observer.triggerTarget(parent);
+      expect(Number.parseFloat(textarea.style.height)).toBeGreaterThan(
+        percentageHeight,
+      );
+
+      parent.className = 'textarea-calc-parent';
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      grandparent.style.height = '500px';
+      observer.triggerTarget(parent);
+      expect(observer.isObserving(parent)).toBeTrue();
+
+      parent.className = 'textarea-variable-parent';
+      parent.style.setProperty('--textarea-basis', '50%');
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      parent.style.setProperty('--textarea-basis', 'calc(100% - 40px)');
+      observer.triggerTarget(parent);
+      expect(observer.isObserving(parent)).toBeTrue();
+
+      parent.className = '';
+      parent.style.height = 'auto';
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeFalse();
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('remeasures when wrap-off horizontal overflow mode changes', () => {
     const fixture = createHost((textarea) => {
       textarea.setAttribute('wrap', 'off');
