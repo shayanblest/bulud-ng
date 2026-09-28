@@ -13,6 +13,8 @@ class MockResizeObserver {
   static readonly instances: MockResizeObserver[] = [];
   private readonly callback: ResizeObserverCallback;
   disconnectCount = 0;
+  observeCount = 0;
+  unobserveCount = 0;
   private readonly observedElements = new Set<Element>();
 
   constructor(callback: ResizeObserverCallback) {
@@ -21,10 +23,12 @@ class MockResizeObserver {
   }
 
   observe(element: Element): void {
+    this.observeCount += 1;
     this.observedElements.add(element);
   }
 
   unobserve(element: Element): void {
+    this.unobserveCount += 1;
     this.observedElements.delete(element);
   }
 
@@ -2025,6 +2029,102 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('keeps shared constraint and query observations role-safe', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .shared-query { container-type: inline-size; }
+      .shared-query.changed textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        const parent = textarea.parentElement!;
+        parent.classList.add('shared-query');
+        parent.style.height = '120px';
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const parent = textarea.parentElement!;
+      const observer = MockResizeObserver.instances[0];
+      await fixture.whenStable();
+
+      expect(observer.isObserving(parent)).toBeTrue();
+      expect(observer.observeCount).toBe(2);
+
+      textarea.style.maxHeight = 'none';
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      parent.classList.add('changed');
+      observer.triggerTarget(parent);
+      expect(observer.isObserving(parent)).toBeTrue();
+
+      textarea.style.maxHeight = '50%';
+      await fixture.whenStable();
+      parent.classList.remove('shared-query');
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      parent.style.height = '240px';
+      observer.triggerTarget(parent);
+      expect(observer.isObserving(parent)).toBeTrue();
+
+      textarea.style.maxHeight = 'none';
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeFalse();
+      expect(observer.unobserveCount).toBe(1);
+      fixture.destroy();
+      expect(observer.disconnectCount).toBe(1);
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('refreshes query observation after ancestor container-type mutations', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .query-enabled { container-type: inline-size; }
+      .query-size { container-type: size; }
+      .query-enabled.wide textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.parentElement!.style.width = '400px';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const parent = textarea.parentElement!;
+      const observer = MockResizeObserver.instances[0];
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeFalse();
+
+      parent.classList.add('query-enabled');
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      parent.classList.replace('query-enabled', 'query-size');
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeTrue();
+      parent.classList.add('wide');
+      observer.triggerTarget(parent);
+      expect(observer.isObserving(parent)).toBeTrue();
+
+      parent.classList.remove('query-size');
+      await fixture.whenStable();
+      expect(observer.isObserving(parent)).toBeFalse();
+      const heightWithoutQuery = textarea.style.height;
+      parent.style.width = '600px';
+      observer.triggerTarget(parent);
+      expect(textarea.style.height).toBe(heightWithoutQuery);
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('observes stretched flex and grid items with layout-definite auto height', async () => {
     contentHeight = 200;
     for (const display of ['flex', 'grid'] as const) {
@@ -2036,6 +2136,9 @@ describe('BuludTextareaAutosize', () => {
         layoutParent.style.display = display;
         layoutParent.style.height = '120px';
         layoutParent.style.alignItems = 'stretch';
+        if (display === 'grid') {
+          layoutParent.style.gridTemplateRows = '1fr';
+        }
         item.style.minHeight = '0';
         if (display === 'flex') {
           item.style.flex = '1 1 auto';
@@ -2069,6 +2172,37 @@ describe('BuludTextareaAutosize', () => {
       layoutParent.style.height = '120px';
       await fixture.whenStable();
       expect(observer.isObserving(item)).toBeTrue();
+      fixture.destroy();
+    }
+  });
+
+  it('does not resolve percentages from content-sized stretched flex/grid items', async () => {
+    contentHeight = 200;
+    for (const display of ['flex', 'grid'] as const) {
+      const fixture = createHost((textarea) => {
+        const item = textarea.parentElement!;
+        const layoutParent = document.createElement('div');
+        item.replaceWith(layoutParent);
+        layoutParent.append(item);
+        layoutParent.style.display = display;
+        layoutParent.style.alignItems = 'stretch';
+        if (display === 'grid') {
+          layoutParent.style.gridTemplateRows = 'auto';
+        }
+        item.style.minHeight = '0';
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const observer = MockResizeObserver.instances.at(-1)!;
+      await fixture.whenStable();
+      expect(observer.isObserving(textarea.parentElement!)).toBeFalse();
+      const stableHeight = textarea.style.height;
+      for (let cycle = 0; cycle < 3; cycle += 1) {
+        textarea.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+        expect(textarea.style.height).toBe(stableHeight);
+      }
       fixture.destroy();
     }
   });

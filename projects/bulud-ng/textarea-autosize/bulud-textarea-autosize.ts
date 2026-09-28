@@ -73,6 +73,7 @@ export class BuludTextareaAutosize
   private ownedOverflowY: string | null = null;
   private ownedOverflowYPriority = '';
   private observer: ResizeObserver | null = null;
+  private observedElements = new Set<Element>();
   private queryContainers = new Set<Element>();
   private mutationObserver: MutationObserver | null = null;
   private formMutationObserver: MutationObserver | null = null;
@@ -375,7 +376,6 @@ export class BuludTextareaAutosize
         this.resize();
       }
     });
-    this.observer.observe(textarea);
     this.updateConstraintObservation();
     this.updateQueryContainerObservation();
   }
@@ -398,6 +398,7 @@ export class BuludTextareaAutosize
           this.connectFormResetListener();
           this.connectFormMutationObserver();
         }
+        this.updateQueryContainerObservation();
         if (!isResolvingCssMaxHeight(this.element.nativeElement)) {
           this.remeasureIfNeeded();
         }
@@ -468,6 +469,7 @@ export class BuludTextareaAutosize
   private disconnectWidthObserver(): void {
     this.observer?.disconnect();
     this.observer = null;
+    this.observedElements.clear();
     this.lastObservedWidth = null;
     this.constraintContainer = null;
     this.queryContainers.clear();
@@ -769,17 +771,8 @@ export class BuludTextareaAutosize
           ? container
           : null
         : null;
-    if (nextContainer === this.constraintContainer) {
-      return;
-    }
-
-    if (this.constraintContainer) {
-      this.observer.unobserve(this.constraintContainer);
-    }
     this.constraintContainer = nextContainer;
-    if (nextContainer) {
-      this.observer.observe(nextContainer);
-    }
+    this.reconcileObservationRoles();
   }
 
   private updateQueryContainerObservation(): void {
@@ -797,20 +790,35 @@ export class BuludTextareaAutosize
         isSizeQueryContainer(view.getComputedStyle(ancestor)),
       ),
     );
-    for (const container of this.queryContainers) {
-      if (
-        !nextContainers.has(container) &&
-        container !== this.constraintContainer
-      ) {
-        this.observer.unobserve(container);
-      }
-    }
-    for (const container of nextContainers) {
-      if (!this.queryContainers.has(container)) {
-        this.observer.observe(container);
-      }
-    }
     this.queryContainers = nextContainers;
+    this.reconcileObservationRoles();
+  }
+
+  private reconcileObservationRoles(): void {
+    if (!this.observer || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const desiredElements = new Set<Element>([this.element.nativeElement]);
+    if (this.constraintContainer) {
+      desiredElements.add(this.constraintContainer);
+    }
+    for (const container of this.queryContainers) {
+      desiredElements.add(container);
+    }
+
+    for (const element of this.observedElements) {
+      if (!desiredElements.has(element)) {
+        this.observer.unobserve(element);
+        this.observedElements.delete(element);
+      }
+    }
+    for (const element of desiredElements) {
+      if (!this.observedElements.has(element)) {
+        this.observer.observe(element);
+        this.observedElements.add(element);
+      }
+    }
   }
 
   private hasMeasurementSignatureChanged(): boolean {
@@ -1246,9 +1254,23 @@ function isLayoutDefiniteAutoHeight(container: Element): boolean {
     if (direction === 'column' || direction === 'column-reverse') {
       return false;
     }
+    return getCssPixelBlockSize(parent) !== null;
   }
 
-  return getUsedBlockSize(container) > 0;
+  return (
+    getCssPixelBlockSize(parent) !== null && hasDefiniteGridRows(parentStyles)
+  );
+}
+
+function hasDefiniteGridRows(styles: CSSStyleDeclaration): boolean {
+  const rows = styles.gridTemplateRows.trim();
+  return (
+    rows !== '' &&
+    rows !== 'none' &&
+    rows !== 'subgrid' &&
+    !/(?:^|\s|\()auto(?:\s|\)|$)/.test(rows) &&
+    !/(?:min-content|max-content)/.test(rows)
+  );
 }
 
 function getUsedBlockSize(element: Element): number {

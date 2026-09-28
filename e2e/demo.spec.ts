@@ -1961,7 +1961,9 @@ test.describe('Bulud component demo', () => {
     const style = await page.addStyleTag({
       content: `
         .e2e-flex-shell { display: flex; width: 420px; height: 160px; align-items: stretch; }
-        .e2e-grid-shell { display: grid; width: 420px; height: 160px; align-items: stretch; }
+        .e2e-grid-shell { display: grid; width: 420px; height: 160px; align-items: stretch; grid-template-rows: 1fr; }
+        .e2e-auto-flex-shell { display: flex; width: 420px; align-items: stretch; }
+        .e2e-auto-grid-shell { display: grid; width: 420px; align-items: stretch; grid-template-rows: auto; }
         .e2e-layout-item { min-height: 0; }
         .e2e-query-shell { container-type: inline-size; width: 400px; }
         @container (min-width: 500px) {
@@ -2000,6 +2002,32 @@ test.describe('Bulud component demo', () => {
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
       .toBe(120);
+
+    for (const display of ['flex', 'grid'] as const) {
+      const stableHeight = await textarea.evaluate((element, nextDisplay) => {
+        const shell = document.createElement('div');
+        shell.className =
+          nextDisplay === 'flex'
+            ? 'e2e-auto-flex-shell'
+            : 'e2e-auto-grid-shell';
+        const item = document.createElement('div');
+        item.className = 'e2e-layout-item';
+        shell.append(item);
+        element.parentElement!.replaceWith(shell);
+        item.append(element);
+        element.style.maxHeight = '50%';
+        element.style.height = '';
+        element.value = 'content-sized layout '.repeat(100);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        return element.offsetHeight;
+      }, display);
+      for (let cycle = 0; cycle < 3; cycle += 1) {
+        await textarea.dispatchEvent('input');
+        await expect
+          .poll(() => textarea.evaluate((element) => element.offsetHeight))
+          .toBe(stableHeight);
+      }
+    }
 
     await textarea.evaluate((element) => {
       const oldShell = element.parentElement!.parentElement!;
