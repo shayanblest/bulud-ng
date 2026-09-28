@@ -94,6 +94,7 @@ export class BuludTextareaAutosize
   }> = [];
   private pointerInvalidationGeneration = 0;
   private pointerInvalidationScheduled = false;
+  private deferredRemeasurementScheduled = false;
   private composing = false;
   private resizeAfterComposition = false;
   private destroyed = false;
@@ -410,11 +411,18 @@ export class BuludTextareaAutosize
           this.updateConstraintObservation();
           this.updateQueryContainerObservation();
         }
-        if (
-          !isResolvingCssMaxHeight(this.element.nativeElement) &&
-          measurementMayBeAffected
-        ) {
-          this.remeasureIfNeeded();
+        if (measurementMayBeAffected) {
+          if (
+            isResolvingCssMaxHeight(this.element.nativeElement) &&
+            mutationIncludesExternalMeasurementChange(
+              records,
+              this.element.nativeElement,
+            )
+          ) {
+            this.scheduleDeferredRemeasurement();
+          } else if (!isResolvingCssMaxHeight(this.element.nativeElement)) {
+            this.remeasureIfNeeded();
+          }
         }
       }
     });
@@ -645,6 +653,9 @@ export class BuludTextareaAutosize
     const listener: EventListener = () => {
       this.remeasureIfNeeded();
     };
+    const formStateListener: EventListener = () => {
+      this.scheduleInvalidationRemeasurement();
+    };
     const pointerListener: EventListener = () => {
       this.schedulePointerRemeasurement();
     };
@@ -660,6 +671,8 @@ export class BuludTextareaAutosize
     for (const ancestor of this.metricAncestors) {
       this.addPseudoStateListener(ancestor, 'focusin', listener);
       this.addPseudoStateListener(ancestor, 'focusout', listener);
+      this.addPseudoStateListener(ancestor, 'input', formStateListener);
+      this.addPseudoStateListener(ancestor, 'change', formStateListener);
       for (const type of POINTER_STATE_EVENTS) {
         this.addPseudoStateListener(ancestor, type, pointerListener, true);
       }
@@ -669,6 +682,8 @@ export class BuludTextareaAutosize
     if (isShadowRoot(root, textarea.ownerDocument)) {
       this.addPseudoStateListener(root, 'focusin', listener);
       this.addPseudoStateListener(root, 'focusout', listener);
+      this.addPseudoStateListener(root, 'input', formStateListener);
+      this.addPseudoStateListener(root, 'change', formStateListener);
       for (const type of POINTER_STATE_EVENTS) {
         this.addPseudoStateListener(root, type, pointerListener, true);
       }
@@ -730,6 +745,7 @@ export class BuludTextareaAutosize
   private disconnectPseudoStateListeners(): void {
     this.pointerInvalidationGeneration += 1;
     this.pointerInvalidationScheduled = false;
+    this.deferredRemeasurementScheduled = false;
     for (const { target, type, listener, capture } of this
       .pseudoStateListeners) {
       target.removeEventListener(type, listener, capture);
@@ -759,7 +775,34 @@ export class BuludTextareaAutosize
 
       this.pointerInvalidationScheduled = false;
       if (!this.destroyed && this.enabled()) {
-        this.remeasureIfNeeded();
+        if (isResolvingCssMaxHeight(this.element.nativeElement)) {
+          this.scheduleDeferredRemeasurement();
+        } else {
+          this.remeasureIfNeeded();
+        }
+      }
+    });
+  }
+
+  private scheduleDeferredRemeasurement(): void {
+    if (this.deferredRemeasurementScheduled) {
+      return;
+    }
+
+    this.deferredRemeasurementScheduled = true;
+    const generation = this.pointerInvalidationGeneration;
+    scheduleMicrotask(() => {
+      this.deferredRemeasurementScheduled = false;
+      if (generation !== this.pointerInvalidationGeneration) {
+        return;
+      }
+
+      if (!this.destroyed && this.enabled()) {
+        if (isResolvingCssMaxHeight(this.element.nativeElement)) {
+          this.scheduleDeferredRemeasurement();
+        } else {
+          this.remeasureIfNeeded();
+        }
       }
     });
   }
@@ -1105,6 +1148,18 @@ function mutationMayAffectMeasurement(
         (ancestor) =>
           record.target === ancestor || ancestor.contains(record.target),
       ),
+  );
+}
+
+function mutationIncludesExternalMeasurementChange(
+  records: readonly MutationRecord[],
+  textarea: HTMLTextAreaElement,
+): boolean {
+  return records.some(
+    (record) =>
+      record.target !== textarea ||
+      record.type !== 'attributes' ||
+      record.attributeName !== 'style',
   );
 }
 

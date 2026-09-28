@@ -1516,6 +1516,69 @@ test.describe('Bulud component demo', () => {
     await style.evaluate((element) => element.remove());
   });
 
+  test('textarea autosize remeasures keyboard-driven form state changes', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-form-state-shell textarea { line-height: 20px !important; }
+        .e2e-form-state-shell:has(input:checked) textarea { line-height: 32px !important; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      const originalParent = element.parentElement!;
+      const shell = document.createElement('div');
+      shell.className = 'e2e-form-state-shell';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.setAttribute('aria-label', 'Metric state');
+      shell.append(checkbox, element);
+      originalParent.append(shell);
+      element.style.minHeight = '0';
+      element.style.maxHeight = 'none';
+      element.value = 'keyboard form state';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const checkbox = page.getByRole('checkbox', { name: 'Metric state' });
+    const initial = await textarea.evaluate((element) => ({
+      width: element.getBoundingClientRect().width,
+      value: element.value,
+      height: element.offsetHeight,
+    }));
+    await checkbox.focus();
+    await page.keyboard.press('Space');
+    await expect(checkbox).toBeChecked();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('32px');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(initial.height);
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          width: element.getBoundingClientRect().width,
+          value: element.value,
+        })),
+      )
+      .toEqual({ width: initial.width, value: initial.value });
+
+    await page.keyboard.press('Space');
+    await expect(checkbox).not.toBeChecked();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('20px');
+    await expect(textarea).toHaveValue(initial.value);
+    await style.evaluate((element) => element.remove());
+    await textarea.evaluate((element) => element.parentElement?.remove());
+  });
+
   test('textarea autosize reaches final textarea and ancestor transition metrics', async ({
     page,
   }) => {
@@ -1813,6 +1876,57 @@ test.describe('Bulud component demo', () => {
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
       .toBe(state.autoHeight);
+  });
+
+  test('textarea autosize defers external mutations during cap resolution', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-cap-resolution-shell textarea { line-height: 20px !important; }
+        .e2e-cap-resolution-shell.changed textarea { line-height: 32px !important; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      const parent = element.parentElement!;
+      parent.classList.add('e2e-cap-resolution-shell');
+      element.style.minHeight = '0';
+      element.style.maxHeight = '50%';
+      element.style.padding = '0';
+      element.style.border = '0';
+      const observer = new MutationObserver((records) => {
+        if (
+          records.some(
+            (record) =>
+              record.target === element &&
+              record.type === 'attributes' &&
+              record.attributeName === 'style',
+          )
+        ) {
+          observer.disconnect();
+          parent.classList.add('changed');
+          parent.setAttribute('data-cap-resolution', 'changed');
+        }
+      });
+      observer.observe(element, {
+        attributes: true,
+        attributeFilter: ['style'],
+      });
+      element.value = 'deferred cap resolution '.repeat(100);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => getComputedStyle(element).lineHeight),
+      )
+      .toBe('32px');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(0);
+    await textarea.evaluate((element) => element.parentElement?.remove());
+    await style.evaluate((element) => element.remove());
   });
 
   test('textarea percentage caps follow native containing-block semantics', async ({

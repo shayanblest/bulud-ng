@@ -1066,6 +1066,124 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('remeasures bubbling form-state events only when metrics change', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .form-state-metrics textarea { line-height: 20px; }
+      .form-state-metrics:has(input:checked) textarea { line-height: 32px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.style.width = '220px';
+        const wrapper = textarea.parentElement!;
+        wrapper.classList.add('form-state-metrics');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        wrapper.prepend(checkbox);
+      });
+      const textarea = textareaOf(fixture);
+      const checkbox = fixture.nativeElement.querySelector(
+        'input[type="checkbox"]',
+      ) as HTMLInputElement;
+      const unrelatedInput = document.createElement('input');
+      textarea.parentElement!.append(unrelatedInput);
+      await fixture.whenStable();
+      const directive = fixture.debugElement
+        .query(By.directive(BuludTextareaAutosize))
+        .injector.get(BuludTextareaAutosize);
+      const resizeSpy = spyOn(
+        directive as unknown as { resize: () => void },
+        'resize',
+      ).and.callThrough();
+      const initialWidth = textarea.style.width;
+      const initialValue = textarea.value;
+
+      checkbox.focus();
+      checkbox.click();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('64px');
+      expect(textarea.style.width).toBe(initialWidth);
+      expect(textarea.value).toBe(initialValue);
+      const expandedResizeCount = resizeSpy.calls.count();
+
+      checkbox.click();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+      expect(resizeSpy.calls.count()).toBeGreaterThan(expandedResizeCount);
+
+      const unchangedResizeCount = resizeSpy.calls.count();
+      unrelatedInput.dispatchEvent(new Event('input', { bubbles: true }));
+      unrelatedInput.dispatchEvent(new Event('change', { bubbles: true }));
+      await fixture.whenStable();
+      expect(resizeSpy.calls.count()).toBe(unchangedResizeCount);
+      fixture.destroy();
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('defers one signature recheck for external mutations during cap resolution', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .cap-resolution-metrics textarea { line-height: 20px; }
+      .cap-resolution-metrics.changed textarea { line-height: 32px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.style.maxHeight = '50%';
+        textarea.parentElement!.classList.add('cap-resolution-metrics');
+      });
+      const textarea = textareaOf(fixture);
+      const wrapper = textarea.parentElement!;
+      const directive = fixture.debugElement
+        .query(By.directive(BuludTextareaAutosize))
+        .injector.get(BuludTextareaAutosize);
+      const resizeSpy = spyOn(
+        directive as unknown as { resize: () => void },
+        'resize',
+      ).and.callThrough();
+      let externalMutationApplied = false;
+      const externalObserver = new MutationObserver((records) => {
+        if (
+          !externalMutationApplied &&
+          records.some(
+            (record) =>
+              record.target === textarea &&
+              record.type === 'attributes' &&
+              record.attributeName === 'style',
+          )
+        ) {
+          externalMutationApplied = true;
+          wrapper.classList.add('changed');
+          wrapper.setAttribute('data-cap-resolution', 'changed');
+        }
+      });
+      externalObserver.observe(textarea, {
+        attributes: true,
+        attributeFilter: ['style'],
+      });
+
+      const resizeCountBeforeInput = resizeSpy.calls.count();
+      textarea.value = 'trigger cap resolution';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('64px');
+      expect(resizeSpy.calls.count()).toBe(resizeCountBeforeInput + 2);
+
+      externalObserver.disconnect();
+      fixture.destroy();
+      await Promise.resolve();
+    } finally {
+      style.remove();
+    }
+  });
+
   it('finds the block containing block through inline and contents wrappers', async () => {
     for (const display of ['inline', 'contents']) {
       contentHeight = 120;
