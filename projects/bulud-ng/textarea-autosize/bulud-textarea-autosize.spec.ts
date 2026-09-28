@@ -1948,6 +1948,35 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('keeps percentage caps in their declared box while converting to content size', () => {
+    contentHeight = 100;
+    const contentBoxFixture = createHost((textarea) => {
+      textarea.parentElement!.style.height = '120px';
+      textarea.style.boxSizing = 'content-box';
+      textarea.style.paddingBlock = '10px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.maxHeight = '50%';
+    });
+    const contentBoxTextarea = textareaOf(contentBoxFixture);
+    expect(contentBoxTextarea.style.height).toBe('60px');
+    expect(contentBoxTextarea.getBoundingClientRect().height).toBe(84);
+    expect(contentBoxTextarea.style.overflowY).toBe('auto');
+    contentBoxFixture.destroy();
+
+    const borderBoxFixture = createHost((textarea) => {
+      textarea.parentElement!.style.height = '120px';
+      textarea.style.boxSizing = 'border-box';
+      textarea.style.paddingBlock = '10px';
+      textarea.style.borderBlock = '2px solid';
+      textarea.style.maxHeight = '50%';
+      textarea.style.maxBlockSize = '50%';
+    });
+    const borderBoxTextarea = textareaOf(borderBoxFixture);
+    expect(borderBoxTextarea.style.height).toBe('60px');
+    expect(borderBoxTextarea.style.overflowY).toBe('auto');
+    borderBoxFixture.destroy();
+  });
+
   it('observes stylesheet and CSS-variable definite containing blocks', async () => {
     contentHeight = 200;
     const style = document.createElement('style');
@@ -2261,6 +2290,67 @@ describe('BuludTextareaAutosize', () => {
 
     textarea.style.overflowX = 'hidden';
     observer.triggerTextareaMetrics();
+    expect(textarea.style.height).toBe('40px');
+    fixture.destroy();
+  });
+
+  it('normalizes case-insensitive wrap-off values for scrollbar sizing', async () => {
+    for (const wrap of ['off', 'OFF', 'Off', 'oFf'] as const) {
+      const fixture = createHost((textarea) => {
+        textarea.style.lineHeight = '20px';
+        textarea.style.overflowX = 'scroll';
+        textarea.setAttribute('wrap', wrap);
+        Object.defineProperty(textarea, 'scrollWidth', {
+          configurable: true,
+          get: () => 200,
+        });
+        Object.defineProperty(textarea, 'clientWidth', {
+          configurable: true,
+          get: () => 100,
+        });
+        Object.defineProperty(textarea, 'offsetHeight', {
+          configurable: true,
+          get: () => 55,
+        });
+        Object.defineProperty(textarea, 'clientHeight', {
+          configurable: true,
+          get: () => 40,
+        });
+      });
+      expect(textareaOf(fixture).style.height).toBe('55px');
+      fixture.destroy();
+    }
+
+    const fixture = createHost((textarea) => {
+      textarea.style.lineHeight = '20px';
+      textarea.style.overflowX = 'scroll';
+      Object.defineProperty(textarea, 'scrollWidth', {
+        configurable: true,
+        get: () => 200,
+      });
+      Object.defineProperty(textarea, 'clientWidth', {
+        configurable: true,
+        get: () => 100,
+      });
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => 55,
+      });
+      Object.defineProperty(textarea, 'clientHeight', {
+        configurable: true,
+        get: () => 40,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    expect(textarea.style.height).toBe('40px');
+    textarea.setAttribute('wrap', 'soft');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+    textarea.setAttribute('wrap', 'OFF');
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('55px');
+    textarea.setAttribute('wrap', 'soft');
+    await fixture.whenStable();
     expect(textarea.style.height).toBe('40px');
     fixture.destroy();
   });

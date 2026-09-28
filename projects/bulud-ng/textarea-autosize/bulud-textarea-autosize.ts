@@ -338,7 +338,7 @@ export class BuludTextareaAutosize
       let shouldResize = false;
       for (const entry of entries) {
         if (entry.target === this.constraintContainer) {
-          shouldResize = this.hasMeasurementSignatureChanged();
+          shouldResize = shouldResize || this.hasMeasurementSignatureChanged();
           continue;
         }
 
@@ -1535,7 +1535,7 @@ function getHorizontalScrollbarGutter(
   styles: CSSStyleDeclaration,
 ): number {
   if (
-    textarea.getAttribute('wrap') !== 'off' ||
+    !isWrapOff(textarea) ||
     getHorizontalOverflowMode(textarea, styles) === 'hidden'
   ) {
     return 0;
@@ -1558,7 +1558,7 @@ function getHorizontalOverflowMode(
   textarea: HTMLTextAreaElement,
   styles: CSSStyleDeclaration,
 ): 'auto' | 'hidden' | 'scroll' {
-  if (textarea.getAttribute('wrap') !== 'off') {
+  if (!isWrapOff(textarea)) {
     return 'hidden';
   }
 
@@ -1567,6 +1567,10 @@ function getHorizontalOverflowMode(
   }
 
   return styles.overflowX === 'auto' ? 'auto' : 'hidden';
+}
+
+function isWrapOff(textarea: HTMLTextAreaElement): boolean {
+  return (textarea.getAttribute('wrap') ?? '').toLowerCase() === 'off';
 }
 
 function getPlaceholderStyles(
@@ -1675,15 +1679,33 @@ function getCssMaxContentHeightForProperty(
       return Number.POSITIVE_INFINITY;
     }
 
-    return Math.max(
-      0,
-      resolvedSize - padding - borders - horizontalScrollbarGutter,
+    return getUsableContentHeightFromCssSize(
+      resolvedSize,
+      styles,
+      padding,
+      borders,
+      horizontalScrollbarGutter,
     );
   }
 
-  return styles.boxSizing === 'border-box'
-    ? Math.max(0, pixelMaxSize - padding - borders - horizontalScrollbarGutter)
-    : Math.max(0, pixelMaxSize - horizontalScrollbarGutter);
+  return getUsableContentHeightFromCssSize(
+    pixelMaxSize,
+    styles,
+    padding,
+    borders,
+    horizontalScrollbarGutter,
+  );
+}
+
+function getUsableContentHeightFromCssSize(
+  cssSize: number,
+  styles: CSSStyleDeclaration,
+  padding: number,
+  borders: number,
+  horizontalScrollbarGutter: number,
+): number {
+  const boxEdges = styles.boxSizing === 'border-box' ? padding + borders : 0;
+  return Math.max(0, cssSize - boxEdges - horizontalScrollbarGutter);
 }
 
 function isHorizontalWritingMode(styles: CSSStyleDeclaration): boolean {

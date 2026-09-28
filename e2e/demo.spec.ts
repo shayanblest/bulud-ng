@@ -1139,6 +1139,32 @@ test.describe('Bulud component demo', () => {
       )
       .toBe(offWrapHeight);
 
+    for (const wrap of ['OFF', 'Off', 'oFf']) {
+      await textarea.evaluate((element, nextWrap) => {
+        element.setAttribute('wrap', nextWrap);
+      }, wrap);
+      await expect
+        .poll(() =>
+          textarea.evaluate(
+            (element) => element.getBoundingClientRect().height,
+          ),
+        )
+        .toBe(offWrapHeight);
+    }
+    await textarea.evaluate((element) => element.removeAttribute('wrap'));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(offWrapHeight);
+    await textarea.evaluate((element) => element.setAttribute('wrap', 'hard'));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(offWrapHeight);
+    await textarea.evaluate((element) => element.setAttribute('wrap', 'soft'));
+
     const horizontalValue = '0123456789'.repeat(40);
     for (const boxSizing of ['content-box', 'border-box']) {
       await textarea.evaluate((element, nextBoxSizing) => {
@@ -1853,6 +1879,79 @@ test.describe('Bulud component demo', () => {
     }
 
     await style.evaluate((element) => element.remove());
+  });
+
+  test('textarea percentage caps preserve native content and border box geometry', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const parent = textarea.locator('..');
+    await textarea.evaluate((element) => {
+      element.style.minHeight = '0';
+      element.style.lineHeight = '20px';
+      element.style.padding = '10px 0';
+      element.style.border = '2px solid';
+      element.style.maxHeight = '50%';
+      element.style.maxBlockSize = '';
+      element.style.boxSizing = 'content-box';
+    });
+    await parent.evaluate((element) => {
+      element.style.height = '120px';
+      element.style.display = 'block';
+    });
+    await textarea.fill('content-box percentage cap '.repeat(100));
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => {
+          const styles = getComputedStyle(element);
+          return {
+            cssHeight: parseFloat(styles.height),
+            physicalHeight: element.getBoundingClientRect().height,
+            maxHeight: parseFloat(styles.maxHeight),
+            padding:
+              parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom),
+            borders:
+              parseFloat(styles.borderTopWidth) +
+              parseFloat(styles.borderBottomWidth),
+          };
+        }),
+      )
+      .toEqual({
+        cssHeight: 60,
+        physicalHeight: 84,
+        maxHeight: 60,
+        padding: 20,
+        borders: 4,
+      });
+
+    await textarea.evaluate((element) => {
+      element.style.boxSizing = 'border-box';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          cssHeight: parseFloat(getComputedStyle(element).height),
+          physicalHeight: element.getBoundingClientRect().height,
+          maxHeight: parseFloat(getComputedStyle(element).maxHeight),
+        })),
+      )
+      .toEqual({ cssHeight: 60, physicalHeight: 60, maxHeight: 60 });
+
+    await textarea.evaluate((element) => {
+      element.style.maxHeight = '';
+      element.style.maxBlockSize = '50%';
+    });
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          cssHeight: parseFloat(getComputedStyle(element).height),
+          physicalHeight: element.getBoundingClientRect().height,
+          maxBlockSize: parseFloat(
+            getComputedStyle(element).getPropertyValue('max-block-size'),
+          ),
+        })),
+      )
+      .toEqual({ cssHeight: 60, physicalHeight: 60, maxBlockSize: 60 });
   });
 
   test('textarea autosize measures one row for a long wrapping normal placeholder', async ({
