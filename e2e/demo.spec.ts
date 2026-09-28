@@ -1401,6 +1401,49 @@ test.describe('Bulud component demo', () => {
       .toBeGreaterThan(initialHeight);
   });
 
+  test('textarea autosize clears stale vertical overflow before wrap-off gutter measurement', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      element.style.width = '200px';
+      element.style.boxSizing = 'border-box';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.lineHeight = '20px';
+      element.style.maxHeight = '60px';
+      element.style.overflowX = 'auto';
+      element.style.setProperty('overflow-y', 'scroll', 'important');
+      element.setAttribute('wrap', 'off');
+      element.value = `${'01234567890123456789'}\n${'line\n'.repeat(10)}`;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(60);
+
+    const shortValue = '01234567890123456789';
+    await textarea.fill(shortValue);
+    await expect(textarea).toHaveCSS('overflow-y', 'hidden');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(40);
+    await expect
+      .poll(() =>
+        textarea.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      )
+      .toBe(true);
+
+    await textarea.fill(`${shortValue}\n${'line\n'.repeat(10)}`);
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(60);
+  });
+
   test('remeasures ancestor focus-within metrics and synchronizes font-size-adjust', async ({
     page,
   }) => {

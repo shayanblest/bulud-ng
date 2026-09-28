@@ -2262,6 +2262,55 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.style.height).toBe('40px');
   });
 
+  it('clears owned vertical overflow before measuring a wrap-off gutter', async () => {
+    contentHeight = 100;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.setAttribute('wrap', 'off');
+      textarea.style.lineHeight = '20px';
+      textarea.style.maxHeight = '40px';
+      textarea.style.overflowX = 'auto';
+      textarea.style.setProperty('overflow-y', 'scroll', 'important');
+      Object.defineProperty(textarea, 'scrollWidth', {
+        configurable: true,
+        get: () => 90,
+      });
+      Object.defineProperty(textarea, 'clientWidth', {
+        configurable: true,
+        get: () => (textarea.style.overflowY === 'auto' ? 80 : 100),
+      });
+      Object.defineProperty(textarea, 'offsetHeight', {
+        configurable: true,
+        get: () => (textarea.style.overflowY === 'auto' ? 55 : 40),
+      });
+      Object.defineProperty(textarea, 'clientHeight', {
+        configurable: true,
+        get: () => 40,
+      });
+    });
+    const textarea = textareaOf(fixture);
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('auto');
+
+    contentHeight = 20;
+    textarea.value = 'short';
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('hidden');
+
+    contentHeight = 100;
+    textarea.value = 'long content';
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    await fixture.whenStable();
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('auto');
+
+    fixture.destroy();
+    expect(textarea.style.getPropertyValue('overflow-y')).toBe('scroll');
+    expect(textarea.style.getPropertyPriority('overflow-y')).toBe('important');
+  });
+
   it('remeasures after a width change without observing its own height loop', () => {
     const fixture = createHost();
     const textarea = textareaOf(fixture);

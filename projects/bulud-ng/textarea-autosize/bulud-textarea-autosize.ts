@@ -234,6 +234,7 @@ export class BuludTextareaAutosize
     const styles = getComputedStyle.call(view, textarea);
     const padding = getVerticalPadding(styles);
     const borders = getVerticalBorders(styles);
+    this.setOwnedStyle('overflow-y', 'hidden');
     const horizontalScrollbarGutter = getHorizontalScrollbarGutter(
       textarea,
       styles,
@@ -245,7 +246,6 @@ export class BuludTextareaAutosize
       borders,
       horizontalScrollbarGutter,
     );
-    this.setOwnedStyle('overflow-y', 'hidden');
     this.setOwnedStyle('height', '0px');
     this.lastMeasurementSignature = getMeasurementSignature(
       textarea,
