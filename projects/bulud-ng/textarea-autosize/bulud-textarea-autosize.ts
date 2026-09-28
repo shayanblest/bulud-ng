@@ -289,9 +289,9 @@ export class BuludTextareaAutosize
     }
 
     this.ownedHeight = nextHeight;
-    this.ownedHeightPriority = this.originalStyles?.height.priority ?? '';
+    this.ownedHeightPriority = 'important';
     this.ownedOverflowY = nextOverflowY;
-    this.ownedOverflowYPriority = this.originalStyles?.overflowY.priority ?? '';
+    this.ownedOverflowYPriority = 'important';
     this.lastValue = textarea.value;
     restoreTextareaInteractionState(textarea, interactionState);
   }
@@ -978,11 +978,7 @@ export class BuludTextareaAutosize
 
   private setOwnedStyle(property: string, value: string): void {
     const textarea = this.element.nativeElement;
-    const priority =
-      property === 'height'
-        ? (this.originalStyles?.height.priority ?? '')
-        : (this.originalStyles?.overflowY.priority ?? '');
-    textarea.style.setProperty(property, value, priority);
+    textarea.style.setProperty(property, value, 'important');
   }
 
   private resetCompositionState(): void {
@@ -1207,7 +1203,7 @@ function recordTouchesNode(record: MutationRecord, target: Node): boolean {
 }
 
 function findConstraintContainingBlock(
-  textarea: HTMLTextAreaElement,
+  textarea: Element,
   styles: CSSStyleDeclaration,
 ): Element | null {
   if (styles.position !== 'absolute' && styles.position !== 'fixed') {
@@ -1468,29 +1464,12 @@ function getUsedBlockSize(element: Element): number {
   return Number.isFinite(rect.height) ? rect.height : 0;
 }
 
-function getCssPixelBlockSize(container: Element): number | null {
-  const elementWithStyleMap = container as Element & {
-    computedStyleMap?: () => StylePropertyMapReadOnly;
-  };
-  if (typeof elementWithStyleMap.computedStyleMap !== 'function') {
-    return null;
-  }
-
-  const value = elementWithStyleMap.computedStyleMap().get('height');
-  if (!isCssPixelValue(value)) {
-    return null;
-  }
-
-  return value.value;
-}
-
 function getResolvedCssPixelBlockSize(container: Element): number | null {
   const elementWithStyleMap = container as Element & {
     computedStyleMap?: () => StylePropertyMapReadOnly;
   };
   const hasTypedStyleMap =
     typeof elementWithStyleMap.computedStyleMap === 'function';
-  const typedValue = getCssPixelBlockSize(container);
   const view = container.ownerDocument.defaultView;
   if (!view || typeof view.getComputedStyle !== 'function') {
     return null;
@@ -1502,29 +1481,25 @@ function getResolvedCssPixelBlockSize(container: Element): number | null {
     );
   }
 
-  if (isCssAutoHeight(container)) {
+  const styles = view.getComputedStyle(container);
+  const typedHeight = elementWithStyleMap.computedStyleMap!().get('height');
+  if (isCssKeywordValue(typedHeight) && typedHeight.value === 'auto') {
     return null;
   }
-  if (typedValue !== null) {
-    return typedValue;
+  if (isCssPixelValue(typedHeight)) {
+    return typedHeight.value;
   }
 
-  return parsePixelLength(view.getComputedStyle(container).height);
-}
-
-function isCssAutoHeight(container: Element): boolean {
-  const elementWithStyleMap = container as Element & {
-    computedStyleMap?: () => StylePropertyMapReadOnly;
-  };
-  if (typeof elementWithStyleMap.computedStyleMap === 'function') {
-    const value = elementWithStyleMap.computedStyleMap().get('height');
-    if (isCssKeywordValue(value)) {
-      return value.value === 'auto';
-    }
-    return false;
+  const containingBlock = findConstraintContainingBlock(container, styles);
+  if (
+    !containingBlock ||
+    containingBlock === container ||
+    !shouldObserveContainingBlock(containingBlock)
+  ) {
+    return null;
   }
 
-  return true;
+  return parsePixelLength(styles.height);
 }
 
 function isCssPixelValue(value: unknown): value is CssUnitValueLike {

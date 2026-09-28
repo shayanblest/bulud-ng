@@ -2263,6 +2263,98 @@ test.describe('Bulud component demo', () => {
     );
   });
 
+  test('textarea autosize overrides stylesheet-important sizing while owned', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-important-sizing {
+          height: 40px !important;
+          overflow-y: auto !important;
+        }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      element.classList.add('e2e-important-sizing');
+      element.style.minHeight = '0';
+      element.style.maxHeight = '60px';
+      element.style.lineHeight = '20px';
+      element.value = 'stylesheet important sizing '.repeat(80);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(60);
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => ({
+          height: element.style.height,
+          heightPriority: element.style.getPropertyPriority('height'),
+          overflowPriority: element.style.getPropertyPriority('overflow-y'),
+        })),
+      )
+      .toEqual({
+        height: '60px',
+        heightPriority: 'important',
+        overflowPriority: 'important',
+      });
+    await page.locator('#textarea-autosize-enabled').uncheck();
+    await expect(textarea).toHaveCSS('height', '40px');
+    await expect(textarea).toHaveCSS('overflow-y', 'auto');
+    await style.evaluate((element) => element.remove());
+  });
+
+  test('textarea percentage caps reject unresolved relative container heights', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await textarea.evaluate((element) => {
+      const outer = document.createElement('div');
+      outer.style.width = '300px';
+      const container = document.createElement('div');
+      container.dataset.e2eRelativeContainer = 'true';
+      container.style.height = '50%';
+      document.body.append(outer);
+      outer.append(container);
+      container.append(element);
+      element.style.minHeight = '0';
+      element.style.maxHeight = '50%';
+      element.style.lineHeight = '20px';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.value = 'indefinite relative cap\n'.repeat(30);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const textareaHeight = () =>
+      textarea.evaluate((element) => element.offsetHeight);
+    const initialHeight = await textareaHeight();
+    expect(initialHeight).toBeGreaterThanOrEqual(100);
+
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await textarea.evaluate((element, suffix) => {
+        element.value = `indefinite relative cap\n${'line\n'.repeat(30)}${'x'.repeat(suffix)}`;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      }, cycle);
+      await expect.poll(textareaHeight).toBe(initialHeight);
+    }
+
+    const container = page.locator('[data-e2e-relative-container]');
+    const outer = container.locator('..');
+    await outer.evaluate((element) => {
+      (element as HTMLElement).style.height = '400px';
+    });
+    await expect.poll(textareaHeight).toBe(100);
+
+    await outer.evaluate((element) => {
+      (element as HTMLElement).style.height = '';
+    });
+    await expect.poll(textareaHeight).toBe(initialHeight);
+
+    await textarea.evaluate((element) => element.parentElement?.remove());
+  });
+
   test('textarea percentage caps preserve native content and border box geometry', async ({
     page,
   }) => {

@@ -3522,6 +3522,152 @@ describe('BuludTextareaAutosize', () => {
     absentFixture.destroy();
   });
 
+  it('overrides stylesheet-important sizing and restores exact inline ownership', async () => {
+    contentHeight = 100;
+    const style = document.createElement('style');
+    style.textContent = `
+      .stylesheet-important-sizing {
+        height: 40px !important;
+        overflow-y: auto !important;
+      }
+    `;
+    document.head.appendChild(style);
+    try {
+      const stylesheetFixture = createHost((textarea) => {
+        textarea.classList.add('stylesheet-important-sizing');
+      });
+      const stylesheetTextarea = textareaOf(stylesheetFixture);
+      expect(stylesheetTextarea.style.height).toBe('100px');
+      expect(stylesheetTextarea.style.getPropertyPriority('height')).toBe(
+        'important',
+      );
+      expect(stylesheetTextarea.style.overflowY).toBe('hidden');
+      expect(stylesheetTextarea.style.getPropertyPriority('overflow-y')).toBe(
+        'important',
+      );
+
+      stylesheetFixture.componentInstance.enabled = false;
+      stylesheetFixture.changeDetectorRef.markForCheck();
+      await stylesheetFixture.whenStable();
+      expect(stylesheetTextarea.style.height).toBe('');
+      expect(stylesheetTextarea.style.getPropertyPriority('height')).toBe('');
+      expect(stylesheetTextarea.style.overflowY).toBe('');
+      expect(stylesheetTextarea.style.getPropertyPriority('overflow-y')).toBe(
+        '',
+      );
+      expect(getComputedStyle(stylesheetTextarea).height).toBe('40px');
+      expect(getComputedStyle(stylesheetTextarea).overflowY).toBe('auto');
+      stylesheetFixture.destroy();
+
+      const inlineFixture = createHost((textarea) => {
+        textarea.style.setProperty('height', '80px', 'important');
+        textarea.style.setProperty('overflow-y', 'scroll', 'important');
+      });
+      const inlineTextarea = textareaOf(inlineFixture);
+      expect(inlineTextarea.style.height).toBe('100px');
+      expect(inlineTextarea.style.overflowY).toBe('hidden');
+      inlineFixture.componentInstance.enabled = false;
+      inlineFixture.changeDetectorRef.markForCheck();
+      await inlineFixture.whenStable();
+      expect(inlineTextarea.style.height).toBe('80px');
+      expect(inlineTextarea.style.getPropertyPriority('height')).toBe(
+        'important',
+      );
+      expect(inlineTextarea.style.overflowY).toBe('scroll');
+      expect(inlineTextarea.style.getPropertyPriority('overflow-y')).toBe(
+        'important',
+      );
+      inlineFixture.destroy();
+
+      const destroyFixture = createHost((textarea) => {
+        textarea.style.setProperty('height', '70px', 'important');
+        textarea.style.setProperty('overflow-y', 'auto', 'important');
+      });
+      const destroyTextarea = textareaOf(destroyFixture);
+      expect(destroyTextarea.style.height).toBe('100px');
+      destroyFixture.destroy();
+      expect(destroyTextarea.style.height).toBe('70px');
+      expect(destroyTextarea.style.getPropertyPriority('height')).toBe(
+        'important',
+      );
+      expect(destroyTextarea.style.overflowY).toBe('auto');
+      expect(destroyTextarea.style.getPropertyPriority('overflow-y')).toBe(
+        'important',
+      );
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('rejects unresolved relative containing-block heights and reconnects definite ones', async () => {
+    contentHeight = 120;
+    for (const height of ['50%', 'calc(50% + 10px)'] as const) {
+      const fixture = createHost((textarea) => {
+        const outer = textarea.parentElement!;
+        const container = document.createElement('div');
+        container.style.height = height;
+        outer.append(container);
+        container.append(textarea);
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const container = textarea.parentElement!;
+      const outer = container.parentElement!;
+      const observer = MockResizeObserver.instances.at(-1)!;
+
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('120px');
+      expect(observer.isObserving(container)).toBeFalse();
+      for (let cycle = 0; cycle < 3; cycle += 1) {
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        await fixture.whenStable();
+        expect(textarea.style.height).toBe('120px');
+      }
+      fixture.destroy();
+      outer.remove();
+    }
+
+    const variableFixture = createHost((textarea) => {
+      const outer = textarea.parentElement!;
+      const container = document.createElement('div');
+      container.style.setProperty('--indefinite-height', '50%');
+      container.style.height = 'var(--indefinite-height)';
+      outer.append(container);
+      container.append(textarea);
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+    });
+    const variableTextarea = textareaOf(variableFixture);
+    await variableFixture.whenStable();
+    expect(variableTextarea.style.height).toBe('120px');
+    variableFixture.destroy();
+
+    const definiteFixture = createHost((textarea) => {
+      const outer = textarea.parentElement!;
+      outer.style.height = '400px';
+      const container = document.createElement('div');
+      container.style.height = '50%';
+      outer.append(container);
+      container.append(textarea);
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+    });
+    const definiteTextarea = textareaOf(definiteFixture);
+    const definiteContainer = definiteTextarea.parentElement!;
+    const definiteOuter = definiteContainer.parentElement!;
+    const definiteObserver = MockResizeObserver.instances.at(-1)!;
+    await definiteFixture.whenStable();
+    expect(definiteTextarea.style.height).toBe('100px');
+    expect(definiteObserver.isObserving(definiteContainer)).toBeTrue();
+
+    definiteOuter.style.height = '';
+    await definiteFixture.whenStable();
+    expect(definiteTextarea.style.height).toBe('120px');
+    expect(definiteObserver.isObserving(definiteContainer)).toBeFalse();
+    definiteFixture.destroy();
+  });
+
   it('disconnects listeners and restores styles on destroy', () => {
     const fixture = createHost((textarea) => {
       textarea.style.height = '33px';
