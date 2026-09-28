@@ -1954,6 +1954,163 @@ test.describe('Bulud component demo', () => {
       .toEqual({ cssHeight: 60, physicalHeight: 60, maxBlockSize: 60 });
   });
 
+  test('textarea autosize observes stretched layout items and query containers', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const style = await page.addStyleTag({
+      content: `
+        .e2e-flex-shell { display: flex; width: 420px; height: 160px; align-items: stretch; }
+        .e2e-grid-shell { display: grid; width: 420px; height: 160px; align-items: stretch; }
+        .e2e-layout-item { min-height: 0; }
+        .e2e-query-shell { container-type: inline-size; width: 400px; }
+        @container (min-width: 500px) {
+          .e2e-query-shell textarea { font-size: 24px; line-height: 32px; }
+        }
+      `,
+    });
+    const moveInto = async (display: 'flex' | 'grid') =>
+      textarea.evaluate((element, nextDisplay) => {
+        const shell = document.createElement('div');
+        shell.className =
+          nextDisplay === 'flex' ? 'e2e-flex-shell' : 'e2e-grid-shell';
+        const item = document.createElement('div');
+        item.className = 'e2e-layout-item';
+        shell.append(item);
+        element.parentElement!.append(shell);
+        item.append(element);
+        element.style.width = '220px';
+        element.style.maxHeight = '50%';
+        element.style.minHeight = '0';
+        element.style.padding = '0';
+        element.style.border = '0';
+        element.style.lineHeight = '20px';
+        element.style.fontSize = '16px';
+        element.value = 'layout definite '.repeat(100);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      }, display);
+
+    await moveInto('flex');
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(80);
+    await textarea.evaluate((element) => {
+      element.parentElement!.parentElement!.style.height = '240px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(120);
+
+    await textarea.evaluate((element) => {
+      const oldShell = element.parentElement!.parentElement!;
+      const gridShell = document.createElement('div');
+      gridShell.className = 'e2e-grid-shell';
+      const item = document.createElement('div');
+      item.className = 'e2e-layout-item';
+      gridShell.append(item);
+      oldShell.replaceWith(gridShell);
+      item.append(element);
+      oldShell.remove();
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(80);
+    await textarea.evaluate((element) => {
+      element.parentElement!.parentElement!.style.height = '240px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(120);
+
+    await textarea.evaluate((element) => {
+      const item = element.parentElement!;
+      const shell = item.parentElement!;
+      shell.style.display = 'block';
+      shell.style.height = '';
+      element.style.maxHeight = '50%';
+    });
+    const normalFlowHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await textarea.dispatchEvent('input');
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(normalFlowHeight);
+    }
+
+    await textarea.evaluate((element) => {
+      const oldParent = element.parentElement!;
+      const queryShell = document.createElement('div');
+      queryShell.className = 'e2e-query-shell';
+      queryShell.style.width = '400px';
+      queryShell.append(element);
+      oldParent.replaceWith(queryShell);
+      element.style.maxHeight = 'none';
+      element.style.height = '';
+      element.value = 'query metrics '.repeat(20);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const queryContainerHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.width = '600px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(queryContainerHeight);
+    const wideQueryHeight = await textarea.evaluate(
+      (element) => element.offsetHeight,
+    );
+    await textarea.evaluate((element) => {
+      element.parentElement!.style.width = '700px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(wideQueryHeight);
+    await textarea.evaluate((element) => {
+      const oldQuery = element.parentElement!;
+      const newQuery = document.createElement('div');
+      newQuery.className = 'e2e-query-shell';
+      newQuery.style.width = '400px';
+      newQuery.append(element);
+      oldQuery.replaceWith(newQuery);
+      oldQuery.style.width = '700px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeLessThan(wideQueryHeight);
+    const shadowQueryHeight = await textarea.evaluate((element) => {
+      const host = document.createElement('div');
+      const shadow = host.attachShadow({ mode: 'open' });
+      const style = document.createElement('style');
+      style.textContent = `
+        .shadow-query { container-type: inline-size; width: 400px; }
+        @container (min-width: 500px) {
+          textarea { line-height: 32px; font-size: 24px; }
+        }
+      `;
+      const shell = document.createElement('div');
+      shell.className = 'shadow-query';
+      shadow.append(style, shell);
+      shell.append(element);
+      document.body.append(host);
+      element.style.maxHeight = 'none';
+      element.style.height = '';
+      element.value = 'shadow query metrics '.repeat(20);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      return element.offsetHeight;
+    });
+    await textarea.evaluate((element) => {
+      (element.parentElement as HTMLElement).style.width = '600px';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBeGreaterThan(shadowQueryHeight);
+    await style.evaluate((element) => element.remove());
+  });
+
   test('textarea autosize measures one row for a long wrapping normal placeholder', async ({
     page,
   }) => {

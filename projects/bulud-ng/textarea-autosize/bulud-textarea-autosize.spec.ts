@@ -1977,6 +1977,102 @@ describe('BuludTextareaAutosize', () => {
     borderBoxFixture.destroy();
   });
 
+  it('observes size query containers and reconnects them after reparenting', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .textarea-query-shell { container-type: inline-size; }
+      .textarea-query-shell textarea { line-height: 20px; }
+      .textarea-query-shell.changed textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.parentElement!.classList.add('textarea-query-shell');
+      });
+      const textarea = textareaOf(fixture);
+      const oldContainer = textarea.parentElement!;
+      const observer = MockResizeObserver.instances[0];
+      await fixture.whenStable();
+
+      expect(observer.isObserving(oldContainer)).toBeTrue();
+      expect(textarea.style.height).toBe('40px');
+
+      oldContainer.classList.add('changed');
+      observer.triggerTarget(oldContainer);
+      expect(textarea.style.height).toBe('60px');
+
+      const unchangedHeight = textarea.style.height;
+      observer.triggerTarget(oldContainer);
+      expect(textarea.style.height).toBe(unchangedHeight);
+
+      const newContainer = document.createElement('div');
+      newContainer.className = 'textarea-query-shell changed';
+      document.body.appendChild(newContainer);
+      newContainer.append(textarea);
+      await fixture.whenStable();
+
+      expect(observer.isObserving(oldContainer)).toBeFalse();
+      expect(observer.isObserving(newContainer)).toBeTrue();
+      newContainer.classList.remove('changed');
+      observer.triggerTarget(newContainer);
+      expect(textarea.style.height).toBe('40px');
+      fixture.destroy();
+      newContainer.remove();
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('observes stretched flex and grid items with layout-definite auto height', async () => {
+    contentHeight = 200;
+    for (const display of ['flex', 'grid'] as const) {
+      const fixture = createHost((textarea) => {
+        const item = textarea.parentElement!;
+        const layoutParent = document.createElement('div');
+        item.replaceWith(layoutParent);
+        layoutParent.append(item);
+        layoutParent.style.display = display;
+        layoutParent.style.height = '120px';
+        layoutParent.style.alignItems = 'stretch';
+        item.style.minHeight = '0';
+        if (display === 'flex') {
+          item.style.flex = '1 1 auto';
+        }
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+      });
+      const textarea = textareaOf(fixture);
+      const item = textarea.parentElement!;
+      const layoutParent = item.parentElement!;
+      const observer = MockResizeObserver.instances.at(-1)!;
+      await fixture.whenStable();
+
+      expect(observer.isObserving(item)).toBeTrue();
+      expect(textarea.style.height).toBe('60px');
+
+      layoutParent.style.height = '240px';
+      observer.triggerTarget(item);
+      expect(textarea.style.height).toBe('120px');
+
+      layoutParent.style.display = 'block';
+      layoutParent.style.height = '';
+      await fixture.whenStable();
+      expect(observer.isObserving(item)).toBeFalse();
+      const stableHeight = textarea.style.height;
+      textarea.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe(stableHeight);
+
+      layoutParent.style.display = display;
+      layoutParent.style.height = '120px';
+      await fixture.whenStable();
+      expect(observer.isObserving(item)).toBeTrue();
+      fixture.destroy();
+    }
+  });
+
   it('observes stylesheet and CSS-variable definite containing blocks', async () => {
     contentHeight = 200;
     const style = document.createElement('style');

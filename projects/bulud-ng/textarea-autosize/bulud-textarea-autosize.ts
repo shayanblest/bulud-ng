@@ -73,6 +73,7 @@ export class BuludTextareaAutosize
   private ownedOverflowY: string | null = null;
   private ownedOverflowYPriority = '';
   private observer: ResizeObserver | null = null;
+  private queryContainers = new Set<Element>();
   private mutationObserver: MutationObserver | null = null;
   private formMutationObserver: MutationObserver | null = null;
   private formMutationRoot: Node | null = null;
@@ -333,12 +334,23 @@ export class BuludTextareaAutosize
         return;
       }
 
+      const previousConstraintContainer = this.constraintContainer;
+      const previousQueryContainers = new Set(this.queryContainers);
       this.updateConstraintObservation();
+      this.updateQueryContainerObservation();
 
       let shouldResize = false;
+      let measurementSignatureChanged: boolean | undefined;
+      const signatureChanged = (): boolean =>
+        (measurementSignatureChanged ??= this.hasMeasurementSignatureChanged());
       for (const entry of entries) {
-        if (entry.target === this.constraintContainer) {
-          shouldResize = shouldResize || this.hasMeasurementSignatureChanged();
+        if (
+          entry.target === this.constraintContainer ||
+          entry.target === previousConstraintContainer ||
+          this.queryContainers.has(entry.target) ||
+          previousQueryContainers.has(entry.target)
+        ) {
+          shouldResize = shouldResize || signatureChanged();
           continue;
         }
 
@@ -352,9 +364,7 @@ export class BuludTextareaAutosize
           shouldResize = true;
         }
 
-        if (this.hasMeasurementSignatureChanged()) {
-          shouldResize = true;
-        }
+        shouldResize = shouldResize || signatureChanged();
 
         if (this.hasExternalOwnedSizingChange()) {
           shouldResize = true;
@@ -367,6 +377,7 @@ export class BuludTextareaAutosize
     });
     this.observer.observe(textarea);
     this.updateConstraintObservation();
+    this.updateQueryContainerObservation();
   }
 
   private connectMutationObserver(): void {
@@ -410,6 +421,7 @@ export class BuludTextareaAutosize
     this.connectPseudoStateListeners();
 
     this.connectFormMutationObserver();
+    this.updateQueryContainerObservation();
   }
 
   private connectFormMutationObserver(): void {
@@ -458,6 +470,7 @@ export class BuludTextareaAutosize
     this.observer = null;
     this.lastObservedWidth = null;
     this.constraintContainer = null;
+    this.queryContainers.clear();
     this.ownedHeight = null;
     this.ownedHeightPriority = '';
     this.ownedOverflowY = null;
@@ -594,6 +607,7 @@ export class BuludTextareaAutosize
       this.mutationObserver.observe(ancestor, { childList: true });
     }
     this.connectPseudoStateListeners();
+    this.updateQueryContainerObservation();
     this.updateConstraintObservation();
   }
 
@@ -766,6 +780,37 @@ export class BuludTextareaAutosize
     if (nextContainer) {
       this.observer.observe(nextContainer);
     }
+  }
+
+  private updateQueryContainerObservation(): void {
+    if (!this.observer || this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const view = this.document.defaultView;
+    if (!view || typeof view.getComputedStyle !== 'function') {
+      return;
+    }
+
+    const nextContainers = new Set(
+      this.metricAncestors.filter((ancestor) =>
+        isSizeQueryContainer(view.getComputedStyle(ancestor)),
+      ),
+    );
+    for (const container of this.queryContainers) {
+      if (
+        !nextContainers.has(container) &&
+        container !== this.constraintContainer
+      ) {
+        this.observer.unobserve(container);
+      }
+    }
+    for (const container of nextContainers) {
+      if (!this.queryContainers.has(container)) {
+        this.observer.observe(container);
+      }
+    }
+    this.queryContainers = nextContainers;
   }
 
   private hasMeasurementSignatureChanged(): boolean {
@@ -1130,6 +1175,11 @@ function getStyleValue(styles: CSSStyleDeclaration, property: string): string {
   return styles.getPropertyValue(property).trim();
 }
 
+function isSizeQueryContainer(styles: CSSStyleDeclaration): boolean {
+  const containerType = getStyleValue(styles, 'container-type');
+  return containerType === 'inline-size' || containerType === 'size';
+}
+
 function hasRelativeMaxHeight(styles: CSSStyleDeclaration): boolean {
   const maxHeight = styles.maxHeight.trim();
   const maxBlockSize = styles.getPropertyValue('max-block-size').trim();
@@ -1158,35 +1208,52 @@ interface CssUnitValueLike {
   readonly value: number;
 }
 
-function hasDefiniteContainingBlockBlockSize(container: Element): boolean {
+function shouldObserveContainingBlock(container: Element): boolean {
+  if (isLayoutDefiniteAutoHeight(container)) {
+    return true;
+  }
   return getCssPixelBlockSize(container) !== null;
 }
 
-function shouldObserveContainingBlock(container: Element): boolean {
-  const state = getContainingBlockBlockSizeState(container);
-  return state !== 'indefinite';
+function isLayoutDefiniteAutoHeight(container: Element): boolean {
+  const parent = container.parentElement;
+  const view = container.ownerDocument.defaultView;
+  if (!parent || !view || typeof view.getComputedStyle !== 'function') {
+    return false;
+  }
+
+  const parentStyles = view.getComputedStyle(parent);
+  const containerStyles = view.getComputedStyle(container);
+  const display = parentStyles.display;
+  const isFlex = display === 'flex' || display === 'inline-flex';
+  const isGrid = display === 'grid' || display === 'inline-grid';
+  if (!isFlex && !isGrid) {
+    return false;
+  }
+
+  const alignment =
+    containerStyles.alignSelf === 'auto'
+      ? parentStyles.alignItems
+      : containerStyles.alignSelf;
+  const stretches =
+    alignment === 'stretch' || (isGrid && alignment === 'normal');
+  if (!stretches) {
+    return false;
+  }
+
+  if (isFlex) {
+    const direction = parentStyles.flexDirection;
+    if (direction === 'column' || direction === 'column-reverse') {
+      return false;
+    }
+  }
+
+  return getUsedBlockSize(container) > 0;
 }
 
-function getContainingBlockBlockSizeState(
-  container: Element,
-): 'definite' | 'indefinite' | 'unknown' {
-  const elementWithStyleMap = container as Element & {
-    computedStyleMap?: () => StylePropertyMapReadOnly;
-  };
-  if (typeof elementWithStyleMap.computedStyleMap !== 'function') {
-    return 'unknown';
-  }
-
-  const value = elementWithStyleMap.computedStyleMap().get('height');
-  if (isCssPixelValue(value)) {
-    return 'definite';
-  }
-
-  if (isCssKeywordValue(value) && value.value === 'auto') {
-    return 'indefinite';
-  }
-
-  return 'unknown';
+function getUsedBlockSize(element: Element): number {
+  const rect = element.getBoundingClientRect();
+  return Number.isFinite(rect.height) ? rect.height : 0;
 }
 
 function getCssPixelBlockSize(container: Element): number | null {
@@ -1212,17 +1279,6 @@ function isCssPixelValue(value: unknown): value is CssUnitValueLike {
 
   const candidate = value as { unit?: unknown; value?: unknown };
   return candidate.unit === 'px' && typeof candidate.value === 'number';
-}
-
-function isCssKeywordValue(
-  value: unknown,
-): value is { readonly value: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'value' in value &&
-    typeof value.value === 'string'
-  );
 }
 
 function formMutationMayAffectTextarea(
@@ -1855,14 +1911,6 @@ function getDefiniteContainingBlockHeight(
     return null;
   }
 
-  if (!hasDefiniteContainingBlockBlockSize(container)) {
-    return null;
-  }
-  const declaredHeight = getCssPixelBlockSize(container);
-  if (declaredHeight === null) {
-    return null;
-  }
-
   const view = container.ownerDocument.defaultView;
   if (!view || typeof view.getComputedStyle !== 'function') {
     return null;
@@ -1871,10 +1919,19 @@ function getDefiniteContainingBlockHeight(
   const styles = view.getComputedStyle(container);
   const padding = getVerticalPadding(styles);
   const borders = getVerticalBorders(styles);
+  const declaredHeight = getCssPixelBlockSize(container);
   const contentBoxHeight =
-    styles.boxSizing === 'border-box'
-      ? Math.max(0, declaredHeight - padding - borders)
-      : declaredHeight;
+    declaredHeight !== null
+      ? styles.boxSizing === 'border-box'
+        ? Math.max(0, declaredHeight - padding - borders)
+        : declaredHeight
+      : isLayoutDefiniteAutoHeight(container)
+        ? Math.max(0, getUsedBlockSize(container) - padding - borders)
+        : null;
+
+  if (contentBoxHeight === null) {
+    return null;
+  }
 
   return textareaPosition === 'absolute' || textareaPosition === 'fixed'
     ? contentBoxHeight + padding
