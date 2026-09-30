@@ -725,6 +725,118 @@ describe('BuludTextareaAutosize', () => {
     fixture.destroy();
   });
 
+  it('remeasures when an ancestor becomes :target after a hash change', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      #textarea-hash-target textarea { line-height: 20px; }
+      #textarea-hash-target:target textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      host.maxRows = 3;
+      textarea.parentElement!.id = 'textarea-hash-target';
+    });
+    const textarea = textareaOf(fixture);
+    const originalHash = window.location.hash;
+
+    try {
+      expect(textarea.style.height).toBe('40px');
+      const hashChanged = new Promise<void>((resolve) => {
+        window.addEventListener('hashchange', () => resolve(), { once: true });
+      });
+      window.location.hash = 'textarea-hash-target';
+      await hashChanged;
+
+      expect(textarea.style.height).toBe('60px');
+    } finally {
+      history.replaceState(
+        null,
+        '',
+        `${location.pathname}${location.search}${originalHash}`,
+      );
+      fixture.destroy();
+      style.remove();
+    }
+  });
+
+  it('returns to the correct height when an ancestor stops being :target', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      #textarea-hash-target textarea { line-height: 20px; }
+      #textarea-hash-target:target textarea { line-height: 30px; }
+    `;
+    document.head.appendChild(style);
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      host.maxRows = 3;
+      textarea.parentElement!.id = 'textarea-hash-target';
+    });
+    const textarea = textareaOf(fixture);
+    const originalHash = window.location.hash;
+
+    try {
+      const targetHashChanged = new Promise<void>((resolve) => {
+        window.addEventListener('hashchange', () => resolve(), { once: true });
+      });
+      window.location.hash = 'textarea-hash-target';
+      await targetHashChanged;
+      expect(textarea.style.height).toBe('60px');
+
+      const clearedHash = new Promise<void>((resolve) => {
+        window.addEventListener('hashchange', () => resolve(), { once: true });
+      });
+      window.location.hash = '';
+      await clearedHash;
+      expect(textarea.style.height).toBe('40px');
+    } finally {
+      history.replaceState(
+        null,
+        '',
+        `${location.pathname}${location.search}${originalHash}`,
+      );
+      fixture.destroy();
+      style.remove();
+    }
+  });
+
+  it('does not resize when a hash change leaves the measurement signature unchanged', async () => {
+    const fixture = createHost();
+    const directive = fixture.debugElement
+      .query(By.directive(BuludTextareaAutosize))
+      .injector.get(BuludTextareaAutosize);
+    const resizeSpy = spyOn(
+      directive as unknown as { resize: () => void },
+      'resize',
+    ).and.callThrough();
+
+    const hashChanged = new Promise<void>((resolve) => {
+      window.addEventListener('hashchange', () => resolve(), { once: true });
+    });
+    window.location.hash = 'other';
+    await hashChanged;
+
+    expect(resizeSpy).not.toHaveBeenCalled();
+    fixture.destroy();
+  });
+
+  it('removes the hashchange listener when destroyed', () => {
+    const removeEventListenerSpy = spyOn(
+      window,
+      'removeEventListener',
+    ).and.callThrough();
+    const fixture = createHost();
+
+    fixture.destroy();
+
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      'hashchange',
+      jasmine.any(Function),
+    );
+  });
+
   it('remeasures ancestor dir and data-theme attribute metric changes', async () => {
     const style = document.createElement('style');
     style.textContent = `

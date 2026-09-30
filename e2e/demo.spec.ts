@@ -1401,6 +1401,49 @@ test.describe('Bulud component demo', () => {
       .toBeGreaterThan(initialHeight);
   });
 
+  test('remeasures textarea autosize for real hash navigation and :target changes', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await page.addStyleTag({
+      content: `
+        #e2e-textarea-hash-target textarea { line-height: 20px; }
+        #e2e-textarea-hash-target:target textarea { line-height: 30px; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      element.parentElement!.id = 'e2e-textarea-hash-target';
+      element.style.minHeight = '0';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.value = 'hash target measurement';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const initialHeight = await textarea.evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    expect(initialHeight).toBe(40);
+
+    await page.evaluate(() => {
+      const link = document.createElement('a');
+      link.href = '#e2e-textarea-hash-target';
+      link.textContent = 'Navigate to textarea target';
+      document.body.append(link);
+      link.click();
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(60);
+
+    await page.evaluate(() => {
+      location.hash = '';
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(40);
+  });
+
   test('textarea autosize clears stale vertical overflow before wrap-off gutter measurement', async ({
     page,
   }) => {

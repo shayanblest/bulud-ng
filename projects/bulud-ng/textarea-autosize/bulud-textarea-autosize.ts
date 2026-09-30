@@ -81,6 +81,7 @@ export class BuludTextareaAutosize
   private restoreBaselineObserver: MutationObserver | null = null;
   private metricAncestors: Element[] = [];
   private viewportResizeListener: EventListener | null = null;
+  private hashChangeListener: EventListener | null = null;
   private fontLoadingSet: FontLoadingSet | null = null;
   private fontLoadingListener: EventListener | null = null;
   private resetForm: HTMLFormElement | null = null;
@@ -132,6 +133,7 @@ export class BuludTextareaAutosize
       this.connectFontLoadingObserver();
       this.connectFormResetListener();
       this.connectViewportResizeListener();
+      this.connectHashChangeListener();
       const textarea = this.element.nativeElement;
       const inputListener = (event: Event): void => {
         if (eventIsComposing(event)) {
@@ -169,6 +171,7 @@ export class BuludTextareaAutosize
         this.disconnectFontLoadingObserver();
         this.disconnectFormResetListener();
         this.disconnectViewportResizeListener();
+        this.disconnectHashChangeListener();
         this.restoreOriginalStyles();
       });
     });
@@ -208,6 +211,7 @@ export class BuludTextareaAutosize
     this.disconnectFontLoadingObserver();
     this.disconnectFormResetListener();
     this.disconnectViewportResizeListener();
+    this.disconnectHashChangeListener();
     this.restoreBaselineObserver?.disconnect();
     this.restoreBaselineObserver = null;
     this.restoreOriginalStyles();
@@ -613,6 +617,33 @@ export class BuludTextareaAutosize
       view.removeEventListener('resize', this.viewportResizeListener);
     }
     this.viewportResizeListener = null;
+  }
+
+  private connectHashChangeListener(): void {
+    if (this.hashChangeListener || this.destroyed) {
+      return;
+    }
+
+    const view = this.document.defaultView;
+    if (!view) {
+      return;
+    }
+
+    const listener: EventListener = () => {
+      if (!this.destroyed && this.enabled()) {
+        this.remeasureIfNeeded();
+      }
+    };
+    view.addEventListener('hashchange', listener);
+    this.hashChangeListener = listener;
+  }
+
+  private disconnectHashChangeListener(): void {
+    const view = this.document.defaultView;
+    if (view && this.hashChangeListener) {
+      view.removeEventListener('hashchange', this.hashChangeListener);
+    }
+    this.hashChangeListener = null;
   }
 
   private reconnectMetricAncestors(): void {
