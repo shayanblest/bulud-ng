@@ -802,7 +802,7 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
-  it('does not resize when a hash change leaves the measurement signature unchanged', async () => {
+  it('does not resize when history fragments leave the measurement signature unchanged', () => {
     const fixture = createHost();
     const directive = fixture.debugElement
       .query(By.directive(BuludTextareaAutosize))
@@ -812,13 +812,12 @@ describe('BuludTextareaAutosize', () => {
       'resize',
     ).and.callThrough();
 
-    const hashChanged = new Promise<void>((resolve) => {
-      window.addEventListener('hashchange', () => resolve(), { once: true });
-    });
-    window.location.hash = 'other';
-    await hashChanged;
+    const originalUrl = window.location.href;
+    history.pushState(null, '', '#history-no-metrics');
+    history.replaceState(null, '', '#history-still-no-metrics');
 
     expect(resizeSpy).not.toHaveBeenCalled();
+    history.replaceState(null, '', originalUrl);
     fixture.destroy();
   });
 
@@ -835,6 +834,28 @@ describe('BuludTextareaAutosize', () => {
       'hashchange',
       jasmine.any(Function),
     );
+  });
+
+  it('shares history instrumentation across instances and restores it after the last destroy', () => {
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    const firstFixture = createHost();
+    const wrappedPushState = history.pushState;
+    const wrappedReplaceState = history.replaceState;
+    const secondFixture = createHost();
+
+    expect(wrappedPushState).not.toBe(originalPushState);
+    expect(wrappedReplaceState).not.toBe(originalReplaceState);
+    expect(history.pushState).toBe(wrappedPushState);
+    expect(history.replaceState).toBe(wrappedReplaceState);
+
+    firstFixture.destroy();
+    expect(history.pushState).toBe(wrappedPushState);
+    expect(history.replaceState).toBe(wrappedReplaceState);
+
+    secondFixture.destroy();
+    expect(history.pushState).toBe(originalPushState);
+    expect(history.replaceState).toBe(originalReplaceState);
   });
 
   it('remeasures ancestor dir and data-theme attribute metric changes', async () => {
@@ -3706,6 +3727,47 @@ describe('BuludTextareaAutosize', () => {
       expect(destroyTextarea.style.getPropertyPriority('overflow-y')).toBe(
         'important',
       );
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('resolves relative caps through stylesheet-important sizing and restores priorities', async () => {
+    contentHeight = 120;
+    const style = document.createElement('style');
+    style.textContent = `
+      .relative-cap-important textarea { height: 40px !important; }
+    `;
+    document.head.appendChild(style);
+    try {
+      const fixture = createHost((textarea) => {
+        textarea.parentElement!.classList.add('relative-cap-important');
+        textarea.parentElement!.style.height = '160px';
+        textarea.parentElement!.style.position = 'relative';
+        textarea.style.maxHeight = '50%';
+        textarea.style.lineHeight = '20px';
+        textarea.style.setProperty('height', '32px', 'important');
+        textarea.style.setProperty('overflow-y', 'scroll', 'important');
+      });
+      const textarea = textareaOf(fixture);
+
+      expect(textarea.style.height).toBe('80px');
+      expect(textarea.style.getPropertyPriority('height')).toBe('important');
+      expect(textarea.style.overflowY).toBe('auto');
+      expect(textarea.style.getPropertyPriority('overflow-y')).toBe(
+        'important',
+      );
+
+      fixture.componentInstance.enabled = false;
+      fixture.changeDetectorRef.markForCheck();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('32px');
+      expect(textarea.style.getPropertyPriority('height')).toBe('important');
+      expect(textarea.style.overflowY).toBe('scroll');
+      expect(textarea.style.getPropertyPriority('overflow-y')).toBe(
+        'important',
+      );
+      fixture.destroy();
     } finally {
       style.remove();
     }

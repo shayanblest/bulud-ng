@@ -1444,6 +1444,88 @@ test.describe('Bulud component demo', () => {
       .toBe(40);
   });
 
+  test('preserves :target state for pushState and replaceState fragments', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    await page.addStyleTag({
+      content: `
+        #e2e-history-target textarea { line-height: 20px; }
+        #e2e-history-target:target textarea { line-height: 30px; }
+      `,
+    });
+    await textarea.evaluate((element) => {
+      element.parentElement!.id = 'e2e-history-target';
+      element.style.minHeight = '0';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.value = 'history target measurement';
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(40);
+
+    await textarea.evaluate((element) => {
+      history.pushState(null, '', '#e2e-history-target');
+      if (element.parentElement!.matches(':target')) {
+        throw new Error('pushState unexpectedly activated :target');
+      }
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(40);
+
+    await textarea.evaluate((element) => {
+      history.replaceState(null, '', '#e2e-history-away');
+      if (element.parentElement!.matches(':target')) {
+        throw new Error('replaceState unexpectedly activated :target');
+      }
+    });
+    await expect
+      .poll(() => textarea.evaluate((element) => element.offsetHeight))
+      .toBe(40);
+  });
+
+  test('resolves relative caps despite stylesheet-important height', async ({
+    page,
+  }) => {
+    const textarea = page.locator('#textarea-autosize-input');
+    const enabled = page.locator('#textarea-autosize-enabled');
+    const style = await page.addStyleTag({
+      content: '.e2e-important-relative-cap { height: 40px !important; }',
+    });
+    await textarea.evaluate((element) => {
+      const parent = element.parentElement!;
+      parent.style.height = '160px';
+      parent.style.position = 'relative';
+      element.classList.add('e2e-important-relative-cap');
+      element.style.minHeight = '0';
+      element.style.padding = '0';
+      element.style.border = '0';
+      element.style.lineHeight = '20px';
+      element.style.maxHeight = '50%';
+      element.value = 'relative cap '.repeat(80);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const geometry = await textarea.evaluate((element) => ({
+      height: element.offsetHeight,
+      cssHeight: getComputedStyle(element).height,
+      maxHeight: getComputedStyle(element).maxHeight,
+      parentHeight: element.parentElement!.getBoundingClientRect().height,
+    }));
+    expect(geometry).toEqual({
+      height: 80,
+      cssHeight: '80px',
+      maxHeight: '50%',
+      parentHeight: 160,
+    });
+
+    await enabled.uncheck();
+    await expect(textarea).toHaveCSS('height', '40px');
+    await style.evaluate((element) => element.remove());
+  });
+
   test('textarea autosize clears stale vertical overflow before wrap-off gutter measurement', async ({
     page,
   }) => {

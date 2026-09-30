@@ -21,6 +21,11 @@ type MutationObserverConstructor = new (
   callback: MutationCallback,
 ) => MutationObserver;
 
+interface HistoryInvalidationManager {
+  add(listener: () => void): void;
+  remove(listener: () => void): void;
+}
+
 interface FontLoadingSet {
   addEventListener(type: 'loadingdone', listener: EventListener): void;
   removeEventListener(type: 'loadingdone', listener: EventListener): void;
@@ -82,6 +87,8 @@ export class BuludTextareaAutosize
   private metricAncestors: Element[] = [];
   private viewportResizeListener: EventListener | null = null;
   private hashChangeListener: EventListener | null = null;
+  private historyInvalidationManager: HistoryInvalidationManager | null = null;
+  private historyInvalidationListener: (() => void) | null = null;
   private fontLoadingSet: FontLoadingSet | null = null;
   private fontLoadingListener: EventListener | null = null;
   private resetForm: HTMLFormElement | null = null;
@@ -636,6 +643,15 @@ export class BuludTextareaAutosize
     };
     view.addEventListener('hashchange', listener);
     this.hashChangeListener = listener;
+    const historyListener = (): void => {
+      if (!this.destroyed && this.enabled()) {
+        this.remeasureIfNeeded();
+      }
+    };
+    const historyInvalidationManager = connectHistoryInvalidation(view);
+    historyInvalidationManager.add(historyListener);
+    this.historyInvalidationManager = historyInvalidationManager;
+    this.historyInvalidationListener = historyListener;
   }
 
   private disconnectHashChangeListener(): void {
@@ -644,6 +660,11 @@ export class BuludTextareaAutosize
       view.removeEventListener('hashchange', this.hashChangeListener);
     }
     this.hashChangeListener = null;
+    if (this.historyInvalidationManager && this.historyInvalidationListener) {
+      this.historyInvalidationManager.remove(this.historyInvalidationListener);
+    }
+    this.historyInvalidationManager = null;
+    this.historyInvalidationListener = null;
   }
 
   private reconnectMetricAncestors(): void {
@@ -1045,6 +1066,68 @@ export class BuludTextareaAutosize
   private hasBrowserView(): boolean {
     return this.document.defaultView !== null;
   }
+}
+
+const historyInvalidationManagers = new WeakMap<
+  Window,
+  HistoryInvalidationManager
+>();
+
+function connectHistoryInvalidation(view: Window): HistoryInvalidationManager {
+  const existing = historyInvalidationManagers.get(view);
+  if (existing) {
+    return existing;
+  }
+
+  const history = view.history;
+  const listeners = new Set<() => void>();
+  const pushState = history.pushState;
+  const replaceState = history.replaceState;
+  const notifyFragmentChange = (previousHash: string): void => {
+    if (view.location.hash !== previousHash) {
+      for (const callback of [...listeners]) {
+        callback();
+      }
+    }
+  };
+  const wrappedPushState: History['pushState'] = function (
+    this: History,
+    ...args: Parameters<History['pushState']>
+  ): ReturnType<History['pushState']> {
+    const previousHash = view.location.hash;
+    const result = pushState.apply(this, args);
+    notifyFragmentChange(previousHash);
+    return result;
+  };
+  const wrappedReplaceState: History['replaceState'] = function (
+    this: History,
+    ...args: Parameters<History['replaceState']>
+  ): ReturnType<History['replaceState']> {
+    const previousHash = view.location.hash;
+    const result = replaceState.apply(this, args);
+    notifyFragmentChange(previousHash);
+    return result;
+  };
+  history.pushState = wrappedPushState;
+  history.replaceState = wrappedReplaceState;
+
+  const manager: HistoryInvalidationManager = {
+    add(callback: () => void): void {
+      listeners.add(callback);
+    },
+    remove(callback: () => void): void {
+      listeners.delete(callback);
+      if (listeners.size > 0) {
+        return;
+      }
+
+      history.pushState = pushState;
+      history.replaceState = replaceState;
+      historyInvalidationManagers.delete(view);
+    },
+  };
+  historyInvalidationManagers.set(view, manager);
+  return manager;
 }
 
 function getResizeObserverConstructor(
@@ -2077,19 +2160,22 @@ function resolveCssMaxSize(
     textarea.style.setProperty(
       'max-height',
       sizeProperty === 'height' ? styles.maxHeight : 'none',
+      'important',
     );
     textarea.style.setProperty(
       'max-block-size',
       sizeProperty === 'block-size'
         ? styles.getPropertyValue('max-block-size')
         : 'none',
+      'important',
     );
-    textarea.style.setProperty('height', resolutionHeight);
+    textarea.style.setProperty('height', resolutionHeight, 'important');
     textarea.style.setProperty(
       'block-size',
       sizeProperty === 'block-size' ? resolutionHeight : '',
+      'important',
     );
-    textarea.style.setProperty('overflow-y', 'hidden');
+    textarea.style.setProperty('overflow-y', 'hidden', 'important');
     const resolvedCssHeight = parsePixelLength(
       getComputedStyle(textarea).height,
     );
