@@ -27,6 +27,10 @@ import { BuludSwitch } from 'bulud-ng/switch';
 import { BuludDialog } from 'bulud-ng/dialog';
 import { BuludPagination } from 'bulud-ng/pagination';
 import { BuludTextareaAutosize } from 'bulud-ng/textarea-autosize';
+import {
+  BuludEnglishDigitsPipe,
+  BuludPersianDigitsPipe,
+} from 'bulud-ng/digits';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -63,6 +67,8 @@ interface DemoOption {
     BuludDialog,
     BuludPagination,
     BuludTextareaAutosize,
+    BuludEnglishDigitsPipe,
+    BuludPersianDigitsPipe,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -251,6 +257,10 @@ export class App {
   );
   protected readonly textareaAutosizeMinRows = signal(2);
   protected readonly textareaAutosizeMaxRows = signal(5);
+  protected readonly digitDemoText = 'Invoice 1203 / شماره ۴۵';
+  protected readonly digitDemoEnglish = '۱۲۳۴۵۶۷۸۹۰';
+  protected readonly digitDemoNull: string | null = null;
+  protected readonly digitDemoUndefined: string | undefined = undefined;
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
   protected readonly activeTab = signal<string | null>(null);
