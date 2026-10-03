@@ -276,6 +276,67 @@ class ReparentedShadowHostComponent {
   minRows = 2;
 }
 
+function createAdoptedMediaSheet(
+  query: string,
+  selector: string,
+  lineHeight: string,
+  nativeSupport: boolean,
+): { sheet: CSSStyleSheet; mediaRule: CSSStyleRule | null } {
+  if (nativeSupport && typeof CSSStyleSheet === 'function') {
+    const sheet = new CSSStyleSheet();
+    sheet.insertRule(`${selector} { line-height: 20px; }`);
+    sheet.insertRule(
+      `@media ${query} { ${selector} { line-height: ${lineHeight}; } }`,
+    );
+    return {
+      sheet,
+      mediaRule: (sheet.cssRules[1] as CSSMediaRule)
+        .cssRules[0] as CSSStyleRule,
+    };
+  }
+
+  const mediaRule = {
+    media: { mediaText: query },
+    cssRules: [],
+  } as unknown as CSSStyleRule;
+  return {
+    sheet: {
+      media: { mediaText: 'all' },
+      cssRules: [mediaRule],
+    } as unknown as CSSStyleSheet,
+    mediaRule: null,
+  };
+}
+
+function installAdoptedStyleSheets(
+  root: Document | ShadowRoot,
+  sheets: readonly CSSStyleSheet[],
+): () => void {
+  const target = root as unknown as {
+    adoptedStyleSheets?: CSSStyleSheet[];
+  };
+  const hadProperty = 'adoptedStyleSheets' in target;
+  const original = target.adoptedStyleSheets;
+  if (hadProperty) {
+    target.adoptedStyleSheets = [...sheets];
+  } else {
+    Object.defineProperty(target, 'adoptedStyleSheets', {
+      configurable: true,
+      value: sheets,
+    });
+  }
+
+  return () => {
+    if (hadProperty) {
+      target.adoptedStyleSheets = (original ?? []).filter(
+        (sheet) => !sheets.includes(sheet),
+      );
+    } else {
+      delete target.adoptedStyleSheets;
+    }
+  };
+}
+
 describe('BuludTextareaAutosize', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
   let contentHeight = 40;
@@ -2059,6 +2120,134 @@ describe('BuludTextareaAutosize', () => {
         value: originalMatchMedia,
       });
       style.remove();
+    }
+  });
+
+  it('discovers media queries from document adopted stylesheets', async () => {
+    contentHeight = 0;
+    const originalMatchMedia = window.matchMedia;
+    const mediaListeners = new Set<EventListener>();
+    const matchMediaQueries: string[] = [];
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => {
+        matchMediaQueries.push(query);
+        return {
+          matches: true,
+          media: query,
+          addEventListener: (_type: 'change', listener: EventListener) => {
+            mediaListeners.add(listener);
+          },
+          removeEventListener: (_type: 'change', listener: EventListener) => {
+            mediaListeners.delete(listener);
+          },
+        };
+      },
+    });
+
+    const adopted = createAdoptedMediaSheet(
+      '(min-width: 1px)',
+      '.document-adopted-media-metric',
+      '20px',
+      'adoptedStyleSheets' in document,
+    );
+    const restoreAdopted = installAdoptedStyleSheets(document, [adopted.sheet]);
+    let fixture: ComponentFixture<HostComponent> | undefined;
+    try {
+      fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.classList.add('document-adopted-media-metric');
+      });
+      const textarea = textareaOf(fixture);
+      expect(matchMediaQueries).toContain('(min-width: 1px)');
+      expect(mediaListeners.size).toBe(1);
+      expect(textarea.style.height).toBe('40px');
+
+      if (adopted.mediaRule) {
+        adopted.mediaRule.style.lineHeight = '40px';
+      } else {
+        textarea.style.lineHeight = '40px';
+      }
+      for (const listener of mediaListeners) {
+        listener(new Event('change'));
+      }
+      await fixture.whenStable();
+
+      expect(textarea.style.height).toBe('80px');
+    } finally {
+      fixture?.destroy();
+      restoreAdopted();
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
+
+  it('discovers media queries from containing ShadowRoot adopted stylesheets', async () => {
+    contentHeight = 0;
+    const originalMatchMedia = window.matchMedia;
+    const mediaListeners = new Set<EventListener>();
+    const matchMediaQueries: string[] = [];
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => {
+        matchMediaQueries.push(query);
+        return {
+          matches: true,
+          media: query,
+          addEventListener: (_type: 'change', listener: EventListener) => {
+            mediaListeners.add(listener);
+          },
+          removeEventListener: (_type: 'change', listener: EventListener) => {
+            mediaListeners.delete(listener);
+          },
+        };
+      },
+    });
+
+    const fixture = TestBed.createComponent(ShadowRootHostComponent);
+    const shadowRoot = (fixture.nativeElement as HTMLElement).shadowRoot!;
+    const adopted = createAdoptedMediaSheet(
+      '(min-width: 2px)',
+      '.shadow-adopted-media-metric',
+      '20px',
+      'adoptedStyleSheets' in shadowRoot,
+    );
+    const restoreAdopted = installAdoptedStyleSheets(shadowRoot, [
+      adopted.sheet,
+    ]);
+    const textarea = shadowRoot.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.classList.add('shadow-adopted-media-metric');
+    defineScrollHeight(textarea);
+
+    try {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(matchMediaQueries).toContain('(min-width: 2px)');
+      expect(mediaListeners.size).toBeGreaterThanOrEqual(1);
+      expect(textarea.style.height).toBe('40px');
+
+      if (adopted.mediaRule) {
+        adopted.mediaRule.style.lineHeight = '40px';
+      } else {
+        textarea.style.lineHeight = '40px';
+      }
+      for (const listener of mediaListeners) {
+        listener(new Event('change'));
+      }
+      await fixture.whenStable();
+
+      expect(textarea.style.height).toBe('80px');
+    } finally {
+      restoreAdopted();
+      fixture.destroy();
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia,
+      });
     }
   });
 

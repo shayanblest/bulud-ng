@@ -1410,6 +1410,7 @@ function getRelevantMediaQueries(
   textarea: HTMLTextAreaElement,
 ): Set<string> {
   const queries = new Set<string>();
+  const visitedSheets = new Set<CSSStyleSheet>();
   const roots: (Element | ShadowRoot)[] = [
     document.head,
     ...getContainingShadowRoots(textarea),
@@ -1421,12 +1422,37 @@ function getRelevantMediaQueries(
     >('style,link[rel~="stylesheet"]')) {
       const sheet = element.sheet;
       if (sheet) {
-        collectMediaQueries(sheet, queries, new Set<CSSStyleSheet>());
+        collectMediaQueries(sheet, queries, visitedSheets);
       }
+    }
+
+    for (const sheet of getAdoptedStyleSheets(root)) {
+      collectMediaQueries(sheet, queries, visitedSheets);
     }
   }
 
+  for (const sheet of getAdoptedStyleSheets(document)) {
+    collectMediaQueries(sheet, queries, visitedSheets);
+  }
+
   return queries;
+}
+
+function getAdoptedStyleSheets(
+  root: Document | ShadowRoot | Element,
+): readonly CSSStyleSheet[] {
+  if (root.nodeType !== 9 && root.nodeType !== 11) {
+    return [];
+  }
+
+  const adoptedStyleSheets = (
+    root as
+      | Document
+      | (ShadowRoot & {
+          readonly adoptedStyleSheets?: readonly CSSStyleSheet[];
+        })
+  ).adoptedStyleSheets;
+  return Array.isArray(adoptedStyleSheets) ? adoptedStyleSheets : [];
 }
 
 function collectMediaQueries(

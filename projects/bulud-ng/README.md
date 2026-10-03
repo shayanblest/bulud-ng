@@ -554,6 +554,26 @@ current value immediately. It is a safe no-op during SSR or when layout APIs
 are unavailable, and it removes listeners and observers on destroy. The
 directive preserves native textarea accessibility and does not add ARIA.
 
+Global row defaults use `BuludTextareaAutosizeConfig` and
+`provideBuludTextareaAutosize`:
+
+```ts
+import { ApplicationConfig } from "@angular/core";
+import { provideBuludTextareaAutosize } from "bulud-ng/textarea-autosize";
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideBuludTextareaAutosize({ minRows: 2, maxRows: 6 })],
+};
+```
+
+The config fields are `minRows` and `maxRows`; each accepts a finite row number
+or `null`. Resolution precedence is instance override → directive default →
+global config → library default. An omitted or `undefined` value falls through
+to the next layer. Explicit `null` is preserved at that layer and disables the
+corresponding row limit; the library default is also `null`. The
+`BULUD_TEXTAREA_AUTOSIZE_CONFIG` token is available for typed injection when a
+consumer needs to read the configured defaults.
+
 ### Dropdown accessibility
 
 The trigger is a `role="combobox"` controlling a `role="listbox"`. Its active
