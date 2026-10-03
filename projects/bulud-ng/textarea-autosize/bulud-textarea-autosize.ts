@@ -81,6 +81,7 @@ export class BuludTextareaAutosize
   private observedElements = new Set<Element>();
   private queryContainers = new Set<Element>();
   private mutationObserver: MutationObserver | null = null;
+  private stylesheetLoadListeners = new Map<HTMLLinkElement, EventListener>();
   private formMutationObserver: MutationObserver | null = null;
   private formMutationRoot: Node | null = null;
   private restoreBaselineObserver: MutationObserver | null = null;
@@ -408,17 +409,20 @@ export class BuludTextareaAutosize
           records,
           this.element.nativeElement,
         );
-        const documentStylesheetMutation =
-          documentStylesheetMutationMayAffectMeasurement(
-            records,
-            this.document,
-          );
+        const stylesheetMutation = stylesheetMutationMayAffectMeasurement(
+          records,
+          this.document,
+          this.element.nativeElement,
+        );
+        if (stylesheetMutation) {
+          this.syncStylesheetLoadListeners();
+        }
         const measurementMayBeAffected =
           mutationMayAffectMeasurement(
             records,
             this.element.nativeElement,
             ancestorChainMoved,
-          ) || documentStylesheetMutation;
+          ) || stylesheetMutation;
         if (ancestorChainMoved) {
           this.reconnectMetricAncestors();
           this.connectFormResetListener();
@@ -469,12 +473,22 @@ export class BuludTextareaAutosize
     for (const ancestor of getShadowHostReparentObservers(
       this.element.nativeElement,
     )) {
-      this.mutationObserver.observe(ancestor, { childList: true });
+      this.mutationObserver.observe(ancestor, {
+        childList: true,
+        ...(isShadowRoot(ancestor, this.document)
+          ? {
+              attributes: true,
+              attributeFilter: ['disabled', 'href', 'media', 'rel'],
+              subtree: true,
+            }
+          : {}),
+      });
     }
     this.connectPseudoStateListeners();
 
     this.connectFormMutationObserver();
     this.updateQueryContainerObservation();
+    this.syncStylesheetLoadListeners();
   }
 
   private connectFormMutationObserver(): void {
@@ -539,7 +553,55 @@ export class BuludTextareaAutosize
     this.formMutationObserver = null;
     this.formMutationRoot = null;
     this.metricAncestors = [];
+    this.disconnectStylesheetLoadListeners();
     this.disconnectPseudoStateListeners();
+  }
+
+  private syncStylesheetLoadListeners(): void {
+    if (this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const links = new Set<HTMLLinkElement>();
+    const roots: (Element | ShadowRoot)[] = [
+      this.document.head,
+      ...getContainingShadowRoots(this.element.nativeElement),
+    ];
+    for (const root of roots) {
+      for (const link of root.querySelectorAll<HTMLLinkElement>(
+        'link[rel~="stylesheet"]',
+      )) {
+        links.add(link);
+      }
+    }
+
+    for (const [link, listener] of this.stylesheetLoadListeners) {
+      if (!links.has(link)) {
+        link.removeEventListener('load', listener);
+        this.stylesheetLoadListeners.delete(link);
+      }
+    }
+
+    for (const link of links) {
+      if (this.stylesheetLoadListeners.has(link)) {
+        continue;
+      }
+
+      const listener: EventListener = () => {
+        if (!this.destroyed && this.enabled()) {
+          this.scheduleInvalidationRemeasurement();
+        }
+      };
+      link.addEventListener('load', listener);
+      this.stylesheetLoadListeners.set(link, listener);
+    }
+  }
+
+  private disconnectStylesheetLoadListeners(): void {
+    for (const [link, listener] of this.stylesheetLoadListeners) {
+      link.removeEventListener('load', listener);
+    }
+    this.stylesheetLoadListeners.clear();
   }
 
   private connectFontLoadingObserver(): void {
@@ -712,9 +774,19 @@ export class BuludTextareaAutosize
     for (const ancestor of getShadowHostReparentObservers(
       this.element.nativeElement,
     )) {
-      this.mutationObserver.observe(ancestor, { childList: true });
+      this.mutationObserver.observe(ancestor, {
+        childList: true,
+        ...(isShadowRoot(ancestor, this.document)
+          ? {
+              attributes: true,
+              attributeFilter: ['disabled', 'href', 'media', 'rel'],
+              subtree: true,
+            }
+          : {}),
+      });
     }
     this.connectPseudoStateListeners();
+    this.syncStylesheetLoadListeners();
     this.updateQueryContainerObservation();
     this.updateConstraintObservation();
   }
@@ -1285,34 +1357,74 @@ function mutationMayAffectMeasurement(
   );
 }
 
-function documentStylesheetMutationMayAffectMeasurement(
+function stylesheetMutationMayAffectMeasurement(
   records: readonly MutationRecord[],
   document: Document,
+  textarea: HTMLTextAreaElement,
 ): boolean {
+  const roots: (Element | ShadowRoot)[] = [
+    document.head,
+    ...getContainingShadowRoots(textarea),
+  ];
   return records.some((record) => {
-    if (!document.head.contains(record.target)) {
+    if (
+      !roots.some(
+        (root) => root === record.target || root.contains(record.target),
+      )
+    ) {
       return false;
     }
 
     if (record.type === 'attributes') {
-      return isStylesheetElement(record.target);
+      return isStylesheetElement(record.target) || isLinkElement(record.target);
     }
 
     return (
       record.type === 'childList' &&
-      [...record.addedNodes, ...record.removedNodes].some(
-        (node) =>
-          isStylesheetElement(node) || isStylesheetElement(node.parentNode),
-      )
+      (isStylesheetElement(record.target) ||
+        [...record.addedNodes, ...record.removedNodes].some((node) =>
+          containsStylesheetElement(node),
+        ))
     );
   });
 }
 
+function getContainingShadowRoots(textarea: HTMLTextAreaElement): ShadowRoot[] {
+  const roots: ShadowRoot[] = [];
+  let current: Element = textarea;
+  while (true) {
+    const root = current.getRootNode();
+    if (!isShadowRoot(root, textarea.ownerDocument)) {
+      return roots;
+    }
+
+    roots.push(root);
+    current = root.host;
+  }
+}
+
+function containsStylesheetElement(node: Node): boolean {
+  return (
+    isStylesheetElement(node) ||
+    (isElementNode(node) &&
+      node.querySelector('style,link[rel~="stylesheet"]') !== null)
+  );
+}
+
 function isStylesheetElement(node: Node | null): boolean {
   return (
-    node instanceof HTMLStyleElement ||
-    (node instanceof HTMLLinkElement && node.rel === 'stylesheet')
+    isElementNode(node) &&
+    (node.localName === 'style' ||
+      (isLinkElement(node) && node.relList.contains('stylesheet')))
   );
+}
+
+function isLinkElement(node: Node | null): node is HTMLLinkElement {
+  return isElementNode(node) && node.localName === 'link';
+}
+
+function isElementNode(node: Node | null): node is Element {
+  return node?.nodeType === 1;
 }
 
 function mutationIncludesExternalMeasurementChange(

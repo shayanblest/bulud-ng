@@ -1423,6 +1423,43 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('remeasures when an external stylesheet link finishes loading', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = '.runtime-link-style-metric { line-height: 20px; }';
+    document.head.appendChild(style);
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.classList.add('runtime-link-style-metric');
+    });
+    const textarea = textareaOf(fixture);
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://example.invalid/runtime-metrics.css';
+    link.addEventListener('load', () => {
+      const rule = style.sheet!.cssRules[0] as CSSStyleRule;
+      rule.style.lineHeight = '30px';
+    });
+
+    try {
+      document.head.appendChild(link);
+      await Promise.resolve();
+      expect(textarea.style.height).toBe('40px');
+
+      link.href = 'https://example.invalid/runtime-metrics-v2.css';
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('40px');
+
+      link.dispatchEvent(new Event('load'));
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+    } finally {
+      link.remove();
+      style.remove();
+      fixture.destroy();
+    }
+  });
+
   it('finds the block containing block through inline and contents wrappers', async () => {
     for (const display of ['inline', 'contents']) {
       contentHeight = 120;
@@ -2017,6 +2054,31 @@ describe('BuludTextareaAutosize', () => {
     fixture.changeDetectorRef.markForCheck();
     await fixture.whenStable();
     expect(textarea.style.overflowY).toBe('hidden');
+    fixture.destroy();
+  });
+
+  it('remeasures when a stylesheet is added inside the containing ShadowRoot', async () => {
+    contentHeight = 0;
+    const fixture = TestBed.createComponent(ShadowRootHostComponent);
+    const host = fixture.nativeElement as HTMLElement;
+    const shadowRoot = host.shadowRoot!;
+    const textarea = shadowRoot.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.classList.add('runtime-shadow-style-metric');
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(textarea.style.height).toBe('40px');
+    const width = textarea.getBoundingClientRect().width;
+    const style = document.createElement('style');
+    style.textContent = '.runtime-shadow-style-metric { line-height: 30px; }';
+    shadowRoot.appendChild(style);
+    await fixture.whenStable();
+
+    expect(textarea.getBoundingClientRect().width).toBe(width);
+    expect(textarea.style.height).toBe('60px');
     fixture.destroy();
   });
 
