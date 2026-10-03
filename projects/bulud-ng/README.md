@@ -27,6 +27,7 @@ its documented secondary entry point:
 | `bulud-ng/dropdown`          | `BuludDropdown`                                      |
 | `bulud-ng/resize-observer`   | `BuludResizeObserver` and `BuludElementSize`         |
 | `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                              |
+| `bulud-ng/digits`            | `BuludPersianDigitsPipe`, `BuludEnglishDigitsPipe`   |
 | `bulud-ng/clickoutside`      | `BuludClickOutside` and related trigger types        |
 | `bulud-ng/tabs`              | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
 | `bulud-ng/accordion`         | `BuludAccordion` and `BuludAccordionItem`            |
@@ -729,6 +730,33 @@ export const appConfig = {
   ],
 };
 ```
+
+## Digit conversion pipes
+
+Import the pure, standalone digit conversion pipes from the digits secondary
+entry point. The direction is explicit in the pipe name and independent of
+the injected locale:
+
+```ts
+import { BuludEnglishDigitsPipe, BuludPersianDigitsPipe } from "bulud-ng/digits";
+
+@Component({
+  imports: [BuludPersianDigitsPipe, BuludEnglishDigitsPipe],
+  template: `
+    <p>{{ "Order 12 / شماره ۳۴" | buludPersianDigits }}</p>
+    <p>{{ "Order 12 / شماره ۳۴" | buludEnglishDigits }}</p>
+  `,
+})
+export class OrderSummary {}
+```
+
+`BuludPersianDigitsPipe` converts `0-9` to `۰-۹`, and
+`BuludEnglishDigitsPipe` converts `۰-۹` to `0-9`. Both preserve non-digit text,
+leave digits already in the target form unchanged, and convert mixed strings
+one digit at a time. Their typed input is `string | number | null | undefined`
+and their output is always a string. `null` and `undefined` return an empty
+string; an empty string remains empty. The pipes are pure and do not mutate
+their input.
 
 ## Theme API
 

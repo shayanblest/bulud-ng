@@ -14,6 +14,7 @@
       "bulud-ng/textarea-autosize": [
         "./projects/bulud-ng/textarea-autosize/public-api.ts"
       ],
+      "bulud-ng/digits": ["./projects/bulud-ng/digits/public-api.ts"],
       "bulud-ng/clickoutside": [
         "./projects/bulud-ng/clickoutside/public-api.ts"
       ],

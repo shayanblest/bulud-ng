@@ -278,6 +278,17 @@ test.describe('Bulud component demo', () => {
     ).toHaveCSS('background-color', 'rgb(20, 83, 45)');
   });
 
+  test('covers explicit Persian and English digit conversion pipes', async ({
+    page,
+  }) => {
+    await expect(page.locator('#digits-to-persian')).toHaveText(
+      'Invoice ۱۲۰۳ / شماره ۴۵',
+    );
+    await expect(page.locator('#digits-to-english')).toHaveText('1234567890');
+    await expect(page.locator('#digits-null')).toHaveText('');
+    await expect(page.locator('#digits-undefined')).toHaveText('');
+  });
+
   test('covers resize observer enabled, disabled, and re-enabled states', async ({
     page,
   }) => {
