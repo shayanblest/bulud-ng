@@ -408,11 +408,17 @@ export class BuludTextareaAutosize
           records,
           this.element.nativeElement,
         );
-        const measurementMayBeAffected = mutationMayAffectMeasurement(
-          records,
-          this.element.nativeElement,
-          ancestorChainMoved,
-        );
+        const documentStylesheetMutation =
+          documentStylesheetMutationMayAffectMeasurement(
+            records,
+            this.document,
+          );
+        const measurementMayBeAffected =
+          mutationMayAffectMeasurement(
+            records,
+            this.element.nativeElement,
+            ancestorChainMoved,
+          ) || documentStylesheetMutation;
         if (ancestorChainMoved) {
           this.reconnectMetricAncestors();
           this.connectFormResetListener();
@@ -439,6 +445,13 @@ export class BuludTextareaAutosize
     });
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
+      attributeOldValue: true,
+    });
+    this.mutationObserver.observe(this.document.head, {
+      attributes: true,
+      attributeFilter: ['disabled', 'href', 'media', 'rel'],
+      childList: true,
+      subtree: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const ancestor of this.metricAncestors) {
@@ -675,6 +688,13 @@ export class BuludTextareaAutosize
     this.mutationObserver.disconnect();
     this.mutationObserver.observe(this.element.nativeElement, {
       attributes: true,
+      attributeOldValue: true,
+    });
+    this.mutationObserver.observe(this.document.head, {
+      attributes: true,
+      attributeFilter: ['disabled', 'href', 'media', 'rel'],
+      childList: true,
+      subtree: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
     for (const ancestor of this.metricAncestors) {
@@ -1121,8 +1141,12 @@ function connectHistoryInvalidation(view: Window): HistoryInvalidationManager {
         return;
       }
 
-      history.pushState = pushState;
-      history.replaceState = replaceState;
+      if (history.pushState === wrappedPushState) {
+        history.pushState = pushState;
+      }
+      if (history.replaceState === wrappedReplaceState) {
+        history.replaceState = replaceState;
+      }
       historyInvalidationManagers.delete(view);
     },
   };
@@ -1261,6 +1285,36 @@ function mutationMayAffectMeasurement(
   );
 }
 
+function documentStylesheetMutationMayAffectMeasurement(
+  records: readonly MutationRecord[],
+  document: Document,
+): boolean {
+  return records.some((record) => {
+    if (!document.head.contains(record.target)) {
+      return false;
+    }
+
+    if (record.type === 'attributes') {
+      return isStylesheetElement(record.target);
+    }
+
+    return (
+      record.type === 'childList' &&
+      [...record.addedNodes, ...record.removedNodes].some(
+        (node) =>
+          isStylesheetElement(node) || isStylesheetElement(node.parentNode),
+      )
+    );
+  });
+}
+
+function isStylesheetElement(node: Node | null): boolean {
+  return (
+    node instanceof HTMLStyleElement ||
+    (node instanceof HTMLLinkElement && node.rel === 'stylesheet')
+  );
+}
+
 function mutationIncludesExternalMeasurementChange(
   records: readonly MutationRecord[],
   textarea: HTMLTextAreaElement,
@@ -1269,8 +1323,32 @@ function mutationIncludesExternalMeasurementChange(
     (record) =>
       record.target !== textarea ||
       record.type !== 'attributes' ||
-      record.attributeName !== 'style',
+      record.attributeName !== 'style' ||
+      inlineMeasurementStyleChanged(record, textarea),
   );
+}
+
+function inlineMeasurementStyleChanged(
+  record: MutationRecord,
+  textarea: HTMLTextAreaElement,
+): boolean {
+  if (record.oldValue === null) {
+    return true;
+  }
+
+  const previousStyle = textarea.ownerDocument.createElement('textarea').style;
+  previousStyle.cssText = record.oldValue;
+  return (
+    getInlineMeasurementSignature(previousStyle) !==
+    getInlineMeasurementSignature(textarea.style)
+  );
+}
+
+function getInlineMeasurementSignature(styles: CSSStyleDeclaration): string {
+  return INLINE_MEASUREMENT_PROPERTIES.map(
+    (property) =>
+      `${property}:${styles.getPropertyValue(property)}:${styles.getPropertyPriority(property)}`,
+  ).join('|');
 }
 
 function getShadowHostChain(textarea: HTMLTextAreaElement): HTMLElement[] {
@@ -2368,6 +2446,16 @@ const TEXT_METRIC_PROPERTIES = [
   'word-break',
   'word-spacing',
   'overflow-wrap',
+] as const;
+
+const INLINE_MEASUREMENT_PROPERTIES = [
+  ...TEXT_METRIC_PROPERTIES,
+  'box-sizing',
+  'min-height',
+  'max-height',
+  'max-block-size',
+  'overflow-x',
+  'width',
 ] as const;
 
 const PLACEHOLDER_METRIC_PROPERTIES = [

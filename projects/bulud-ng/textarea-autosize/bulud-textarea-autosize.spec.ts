@@ -858,6 +858,46 @@ describe('BuludTextareaAutosize', () => {
     expect(history.replaceState).toBe(originalReplaceState);
   });
 
+  it('preserves later history wrappers during autosize teardown', () => {
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    const fixture = createHost();
+    const autosizePushState = history.pushState;
+    const autosizeReplaceState = history.replaceState;
+    let pushStateCalls = 0;
+    let replaceStateCalls = 0;
+    const laterPushState: History['pushState'] = function (
+      this: History,
+      ...args: Parameters<History['pushState']>
+    ) {
+      pushStateCalls += 1;
+      return autosizePushState.apply(this, args);
+    };
+    const laterReplaceState: History['replaceState'] = function (
+      this: History,
+      ...args: Parameters<History['replaceState']>
+    ) {
+      replaceStateCalls += 1;
+      return autosizeReplaceState.apply(this, args);
+    };
+
+    try {
+      history.pushState = laterPushState;
+      history.replaceState = laterReplaceState;
+      fixture.destroy();
+
+      expect(history.pushState).toBe(laterPushState);
+      expect(history.replaceState).toBe(laterReplaceState);
+      history.pushState(null, '', '#later-push-wrapper');
+      history.replaceState(null, '', '#later-replace-wrapper');
+      expect(pushStateCalls).toBe(1);
+      expect(replaceStateCalls).toBe(1);
+    } finally {
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    }
+  });
+
   it('remeasures ancestor dir and data-theme attribute metric changes', async () => {
     const style = document.createElement('style');
     style.textContent = `
@@ -1314,6 +1354,72 @@ describe('BuludTextareaAutosize', () => {
       await Promise.resolve();
     } finally {
       style.remove();
+    }
+  });
+
+  it('remeasures an external same-element metric style change during cap resolution', async () => {
+    contentHeight = 0;
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.style.maxHeight = '50%';
+      textarea.style.lineHeight = '20px';
+    });
+    const textarea = textareaOf(fixture);
+    const externalObserver = new MutationObserver((records) => {
+      if (
+        records.some(
+          (record) =>
+            record.target === textarea &&
+            record.type === 'attributes' &&
+            record.attributeName === 'style' &&
+            textarea.style.lineHeight === '20px',
+        )
+      ) {
+        textarea.style.lineHeight = '32px';
+      }
+    });
+    externalObserver.observe(textarea, {
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+
+    try {
+      textarea.value = 'trigger cap resolution';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      await fixture.whenStable();
+
+      expect(textarea.style.height).toBe('64px');
+    } finally {
+      externalObserver.disconnect();
+      fixture.destroy();
+    }
+  });
+
+  it('remeasures when a document style element is inserted at runtime', async () => {
+    contentHeight = 0;
+    const initialStyle = document.createElement('style');
+    initialStyle.textContent =
+      '.runtime-document-style-metric { line-height: 20px; }';
+    document.head.appendChild(initialStyle);
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.classList.add('runtime-document-style-metric');
+    });
+    const textarea = textareaOf(fixture);
+    const style = document.createElement('style');
+    style.textContent = '.runtime-document-style-metric { line-height: 30px; }';
+
+    try {
+      const width = textarea.getBoundingClientRect().width;
+      document.head.appendChild(style);
+      await fixture.whenStable();
+
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('60px');
+    } finally {
+      style.remove();
+      initialStyle.remove();
+      fixture.destroy();
     }
   });
 
