@@ -8,6 +8,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { BuludTextareaAutosize } from './bulud-textarea-autosize';
+import { provideBuludTextareaAutosize } from './bulud-textarea-autosize-config';
 
 class MockResizeObserver {
   static readonly instances: MockResizeObserver[] = [];
@@ -142,10 +143,16 @@ class MockFontLoadingSet {
 })
 class HostComponent {
   enabled = true;
-  minRows: number | null = null;
-  maxRows: number | null = null;
+  minRows: number | null | undefined = undefined;
+  maxRows: number | null | undefined = undefined;
   value = '';
 }
+
+@Component({
+  imports: [BuludTextareaAutosize],
+  template: `<textarea buludTextareaAutosize></textarea>`,
+})
+class ConfigHostComponent {}
 
 @Component({
   imports: [BuludTextareaAutosize],
@@ -372,6 +379,108 @@ describe('BuludTextareaAutosize', () => {
 
     expect(textareaOf(fixture).style.height).toBe('40px');
     expect(textareaOf(fixture).style.overflowY).toBe('hidden');
+  });
+
+  it('uses library defaults when no textarea autosize config is provided', () => {
+    contentHeight = 40;
+    const fixture = TestBed.createComponent(ConfigHostComponent);
+    const textarea = fixture.nativeElement.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+
+    expect(textarea.style.height).toBe('40px');
+    expect(textarea.style.overflowY).toBe('hidden');
+    fixture.destroy();
+  });
+
+  it('uses global minRows and maxRows independently', () => {
+    contentHeight = 0;
+    TestBed.configureTestingModule({
+      providers: [provideBuludTextareaAutosize({ minRows: 2 })],
+    });
+    const minFixture = TestBed.createComponent(ConfigHostComponent);
+    const minTextarea = minFixture.nativeElement.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    minTextarea.style.lineHeight = '20px';
+    minTextarea.style.padding = '0';
+    minTextarea.style.border = '0';
+    defineScrollHeight(minTextarea);
+    minFixture.detectChanges();
+    expect(minTextarea.style.height).toBe('40px');
+    minFixture.destroy();
+
+    contentHeight = 100;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    TestBed.configureTestingModule({
+      providers: [provideBuludTextareaAutosize({ maxRows: 2 })],
+    });
+    const maxFixture = TestBed.createComponent(ConfigHostComponent);
+    const maxTextarea = maxFixture.nativeElement.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    maxTextarea.style.lineHeight = '20px';
+    maxTextarea.style.padding = '0';
+    maxTextarea.style.border = '0';
+    defineScrollHeight(maxTextarea);
+    maxFixture.detectChanges();
+    expect(maxTextarea.style.height).toBe('40px');
+    expect(maxTextarea.style.overflowY).toBe('auto');
+    maxFixture.destroy();
+  });
+
+  it('applies instance row overrides before global configuration', () => {
+    contentHeight = 100;
+    TestBed.configureTestingModule({
+      providers: [provideBuludTextareaAutosize({ minRows: 2, maxRows: 2 })],
+    });
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 3;
+      host.maxRows = 4;
+      textarea.style.lineHeight = '20px';
+    });
+
+    expect(textareaOf(fixture).style.height).toBe('80px');
+    fixture.destroy();
+  });
+
+  it('preserves the four-layer row resolution and explicit null overrides', () => {
+    contentHeight = 0;
+    TestBed.configureTestingModule({
+      providers: [provideBuludTextareaAutosize({ minRows: 2, maxRows: 2 })],
+    });
+    const fixture = createHost((textarea, host) => {
+      textarea.style.lineHeight = '20px';
+      host.minRows = undefined;
+      host.maxRows = null;
+    });
+
+    expect(textareaOf(fixture).style.height).toBe('40px');
+    expect(textareaOf(fixture).style.overflowY).toBe('hidden');
+    fixture.destroy();
+  });
+
+  it('ignores invalid row values at both configuration layers', () => {
+    contentHeight = 100;
+    TestBed.configureTestingModule({
+      providers: [provideBuludTextareaAutosize({ minRows: 0, maxRows: -1 })],
+    });
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 0;
+      host.maxRows = -1;
+      textarea.style.lineHeight = '20px';
+    });
+
+    expect(textareaOf(fixture).style.height).toBe('100px');
+    expect(textareaOf(fixture).style.overflowY).toBe('hidden');
+    fixture.destroy();
   });
 
   it('measures normal line-height and responds to different font sizes', () => {
@@ -1067,6 +1176,38 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('remeasures when an existing direct body sibling attribute changes selector metrics', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      body:has(> .autosize-body-overlay.open) textarea { line-height: 30px; }
+      textarea { line-height: 20px; }
+    `;
+    document.head.appendChild(style);
+    const overlay = document.createElement('div');
+    overlay.className = 'autosize-body-overlay';
+    document.body.appendChild(overlay);
+
+    try {
+      const fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+      });
+      const textarea = textareaOf(fixture);
+      const width = textarea.getBoundingClientRect().width;
+      expect(textarea.style.height).toBe('40px');
+
+      overlay.classList.add('open');
+      await fixture.whenStable();
+
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('60px');
+      fixture.destroy();
+    } finally {
+      overlay.remove();
+      style.remove();
+    }
+  });
+
   it('ignores unrelated document churn while retaining relevant observers', async () => {
     const view = document.defaultView!;
     const originalGetComputedStyle = view.getComputedStyle;
@@ -1422,6 +1563,33 @@ describe('BuludTextareaAutosize', () => {
     } finally {
       style.remove();
       initialStyle.remove();
+      fixture.destroy();
+    }
+  });
+
+  it('remeasures when an existing document style text node changes in place', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = '.runtime-document-text-metric { line-height: 20px; }';
+    document.head.appendChild(style);
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.classList.add('runtime-document-text-metric');
+    });
+    const textarea = textareaOf(fixture);
+
+    try {
+      const width = textarea.getBoundingClientRect().width;
+      expect(textarea.style.height).toBe('40px');
+
+      (style.firstChild as CharacterData).data =
+        '.runtime-document-text-metric { line-height: 30px; }';
+      await fixture.whenStable();
+
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('60px');
+    } finally {
+      style.remove();
       fixture.destroy();
     }
   });
@@ -2282,6 +2450,37 @@ describe('BuludTextareaAutosize', () => {
     expect(textarea.getBoundingClientRect().width).toBe(width);
     expect(textarea.style.height).toBe('60px');
     fixture.destroy();
+  });
+
+  it('remeasures when an existing ShadowRoot style text node changes in place', async () => {
+    contentHeight = 0;
+    const fixture = TestBed.createComponent(ShadowRootHostComponent);
+    const shadowRoot = (fixture.nativeElement as HTMLElement).shadowRoot!;
+    const textarea = shadowRoot.querySelector(
+      'textarea',
+    ) as HTMLTextAreaElement;
+    textarea.classList.add('runtime-shadow-text-metric');
+    const style = document.createElement('style');
+    style.textContent = '.runtime-shadow-text-metric { line-height: 20px; }';
+    shadowRoot.appendChild(style);
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    try {
+      const width = textarea.getBoundingClientRect().width;
+      expect(textarea.style.height).toBe('40px');
+
+      (style.firstChild as CharacterData).data =
+        '.runtime-shadow-text-metric { line-height: 30px; }';
+      await fixture.whenStable();
+
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('60px');
+    } finally {
+      style.remove();
+      fixture.destroy();
+    }
   });
 
   it('observes metric attributes on a ShadowRoot host', async () => {

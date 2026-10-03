@@ -12,10 +12,27 @@ import {
   AfterViewInit,
   signal,
 } from '@angular/core';
+import { BULUD_TEXTAREA_AUTOSIZE_CONFIG } from './bulud-textarea-autosize-config';
 
 type ResizeObserverConstructor = new (
   callback: ResizeObserverCallback,
 ) => ResizeObserver;
+
+const TEXTAREA_AUTOSIZE_COMPONENT_DEFAULTS = {
+  // An omitted directive input leaves the global configuration eligible.
+  minRows: undefined,
+  maxRows: undefined,
+} as const satisfies BuludTextareaAutosizeComponentDefaults;
+
+const TEXTAREA_AUTOSIZE_LIBRARY_DEFAULTS = {
+  minRows: null,
+  maxRows: null,
+} as const;
+
+interface BuludTextareaAutosizeComponentDefaults {
+  readonly minRows: number | null | undefined;
+  readonly maxRows: number | null | undefined;
+}
 
 type MutationObserverConstructor = new (
   callback: MutationCallback,
@@ -82,6 +99,7 @@ export class BuludTextareaAutosize
   private readonly element =
     inject<ElementRef<HTMLTextAreaElement>>(ElementRef);
   private readonly document = inject(DOCUMENT);
+  private readonly config = inject(BULUD_TEXTAREA_AUTOSIZE_CONFIG);
   private originalStyles: OriginalStyles | null = null;
   private lastValue = '';
   private lastObservedWidth: number | null = null;
@@ -128,16 +146,30 @@ export class BuludTextareaAutosize
   readonly enabled = input(true, { transform: booleanAttribute });
 
   /** Minimum number of text rows. Invalid or non-positive values are ignored. */
-  readonly minRows = input<number | null>(null);
+  readonly minRows = input<number | null | undefined>(
+    TEXTAREA_AUTOSIZE_COMPONENT_DEFAULTS.minRows,
+  );
 
   /** Maximum number of text rows. Invalid or non-positive values are ignored. */
-  readonly maxRows = input<number | null>(null);
+  readonly maxRows = input<number | null | undefined>(
+    TEXTAREA_AUTOSIZE_COMPONENT_DEFAULTS.maxRows,
+  );
 
   private readonly normalizedMinRows = computed(() =>
-    normalizeRows(this.minRows()),
+    resolveTextareaAutosizeRows(
+      this.minRows(),
+      TEXTAREA_AUTOSIZE_COMPONENT_DEFAULTS.minRows,
+      this.config.minRows,
+      TEXTAREA_AUTOSIZE_LIBRARY_DEFAULTS.minRows,
+    ),
   );
   private readonly normalizedMaxRows = computed(() =>
-    normalizeRows(this.maxRows()),
+    resolveTextareaAutosizeRows(
+      this.maxRows(),
+      TEXTAREA_AUTOSIZE_COMPONENT_DEFAULTS.maxRows,
+      this.config.maxRows,
+      TEXTAREA_AUTOSIZE_LIBRARY_DEFAULTS.maxRows,
+    ),
   );
 
   constructor() {
@@ -447,6 +479,16 @@ export class BuludTextareaAutosize
           this.connectFormResetListener();
           this.connectFormMutationObserver();
         }
+        if (
+          !ancestorChainMoved &&
+          records.some(
+            (record) =>
+              record.type === 'childList' &&
+              record.target === this.document.body,
+          )
+        ) {
+          this.reconnectMetricAncestors();
+        }
         if (measurementMayBeAffected) {
           this.updateConstraintObservation();
           this.updateQueryContainerObservation();
@@ -474,6 +516,7 @@ export class BuludTextareaAutosize
       attributes: true,
       attributeFilter: ['disabled', 'href', 'media', 'rel'],
       childList: true,
+      characterData: true,
       subtree: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
@@ -489,6 +532,7 @@ export class BuludTextareaAutosize
           : {}),
       });
     }
+    this.observeBodyChildAttributes();
     for (const ancestor of getShadowHostReparentObservers(
       this.element.nativeElement,
     )) {
@@ -498,6 +542,7 @@ export class BuludTextareaAutosize
           ? {
               attributes: true,
               attributeFilter: ['disabled', 'href', 'media', 'rel'],
+              characterData: true,
               subtree: true,
             }
           : {}),
@@ -829,6 +874,7 @@ export class BuludTextareaAutosize
       attributes: true,
       attributeFilter: ['disabled', 'href', 'media', 'rel'],
       childList: true,
+      characterData: true,
       subtree: true,
     });
     this.metricAncestors = getMetricAncestors(this.element.nativeElement);
@@ -844,6 +890,7 @@ export class BuludTextareaAutosize
           : {}),
       });
     }
+    this.observeBodyChildAttributes();
     for (const ancestor of getShadowHostReparentObservers(
       this.element.nativeElement,
     )) {
@@ -853,6 +900,7 @@ export class BuludTextareaAutosize
           ? {
               attributes: true,
               attributeFilter: ['disabled', 'href', 'media', 'rel'],
+              characterData: true,
               subtree: true,
             }
           : {}),
@@ -862,6 +910,21 @@ export class BuludTextareaAutosize
     this.syncStylesheetLoadListeners();
     this.updateQueryContainerObservation();
     this.updateConstraintObservation();
+  }
+
+  private observeBodyChildAttributes(): void {
+    if (!this.mutationObserver || this.destroyed) {
+      return;
+    }
+
+    const body = this.document.body;
+    if (!body) {
+      return;
+    }
+
+    for (const child of Array.from(body.children)) {
+      this.mutationObserver.observe(child, { attributes: true });
+    }
   }
 
   private connectPseudoStateListeners(): void {
@@ -1578,6 +1641,10 @@ function stylesheetMutationMayAffectMeasurement(
       return isStylesheetElement(record.target) || isLinkElement(record.target);
     }
 
+    if (record.type === 'characterData') {
+      return stylesheetTextContainsNode(record.target, roots);
+    }
+
     return (
       record.type === 'childList' &&
       (isStylesheetElement(record.target) ||
@@ -1586,6 +1653,27 @@ function stylesheetMutationMayAffectMeasurement(
         ))
     );
   });
+}
+
+function stylesheetTextContainsNode(
+  node: Node,
+  roots: readonly (Element | ShadowRoot)[],
+): boolean {
+  for (const root of roots) {
+    if (!root.contains(node)) {
+      continue;
+    }
+
+    let current: Node | null = node.parentNode;
+    while (current && current !== root) {
+      if (isElementNode(current) && current.localName === 'style') {
+        return true;
+      }
+      current = current.parentNode;
+    }
+  }
+
+  return false;
 }
 
 function getContainingShadowRoots(textarea: HTMLTextAreaElement): ShadowRoot[] {
@@ -2710,6 +2798,24 @@ function scheduleMicrotask(callback: () => void): void {
   }
 
   void Promise.resolve().then(callback);
+}
+
+function resolveTextareaAutosizeRows(
+  instanceValue: number | null | undefined,
+  componentDefault: number | null | undefined,
+  globalValue: number | null | undefined,
+  libraryDefault: number | null,
+): number | null {
+  const value =
+    instanceValue !== undefined
+      ? instanceValue
+      : componentDefault !== undefined
+        ? componentDefault
+        : globalValue !== undefined
+          ? globalValue
+          : libraryDefault;
+
+  return normalizeRows(value);
 }
 
 function normalizeRows(value: number | null): number | null {
