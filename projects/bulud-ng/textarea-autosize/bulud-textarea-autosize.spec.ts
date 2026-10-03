@@ -151,9 +151,11 @@ class HostComponent {
   imports: [BuludTextareaAutosize],
   template: `
     <form>
+      <input type="checkbox" />
       <textarea
         buludTextareaAutosize
         [enabled]="enabled"
+        [minRows]="minRows"
         [value]="value"
       ></textarea>
     </form>
@@ -162,6 +164,7 @@ class HostComponent {
 class FormHostComponent {
   enabled = true;
   value = '';
+  minRows: number | null = null;
 }
 
 @Component({
@@ -1460,6 +1463,74 @@ describe('BuludTextareaAutosize', () => {
     }
   });
 
+  it('resyncs media-query listeners after a stylesheet link loads', async () => {
+    contentHeight = 0;
+    const originalMatchMedia = window.matchMedia;
+    const matchMediaQueries: string[] = [];
+    const mediaListeners = new Set<EventListener>();
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => {
+        matchMediaQueries.push(query);
+        return {
+          matches: true,
+          media: query,
+          addEventListener: (_type: 'change', listener: EventListener) => {
+            mediaListeners.add(listener);
+          },
+          removeEventListener: (_type: 'change', listener: EventListener) => {
+            mediaListeners.delete(listener);
+          },
+        };
+      },
+    });
+
+    const fixture = createHost((textarea, host) => {
+      host.minRows = 2;
+      textarea.classList.add('late-link-media-metric');
+    });
+    const textarea = textareaOf(fixture);
+    const width = textarea.getBoundingClientRect().width;
+    const stylesheet = new CSSStyleSheet();
+    stylesheet.insertRule(
+      '@media (min-width: 1px) { .late-link-media-metric { line-height: 30px; } }',
+    );
+    let loaded = false;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    Object.defineProperty(link, 'sheet', {
+      configurable: true,
+      get: () => (loaded ? stylesheet : null),
+    });
+
+    try {
+      document.head.appendChild(link);
+      await Promise.resolve();
+      expect(matchMediaQueries).not.toContain('(min-width: 1px)');
+
+      loaded = true;
+      link.dispatchEvent(new Event('load'));
+      await fixture.whenStable();
+      expect(matchMediaQueries).toContain('(min-width: 1px)');
+
+      textarea.style.lineHeight = '40px';
+      for (const listener of mediaListeners) {
+        listener(new Event('change'));
+      }
+      await fixture.whenStable();
+
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('80px');
+    } finally {
+      link.remove();
+      fixture.destroy();
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
+
   it('finds the block containing block through inline and contents wrappers', async () => {
     for (const display of ['inline', 'contents']) {
       contentHeight = 120;
@@ -1690,6 +1761,137 @@ describe('BuludTextareaAutosize', () => {
     form.reset();
     await Promise.resolve();
     expect(textarea.style.height).toBe('33px');
+  });
+
+  it('remeasures after form reset when another control changes typography', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      form:has(input:checked) textarea { line-height: 30px; }
+      form textarea { line-height: 20px; }
+    `;
+    document.head.appendChild(style);
+    const fixture = TestBed.createComponent(FormHostComponent);
+    fixture.componentInstance.minRows = 2;
+    fixture.componentInstance.value = 'unchanged value';
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const checkbox = form.querySelector('input') as HTMLInputElement;
+    const textarea = form.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+
+    try {
+      textarea.defaultValue = 'unchanged value';
+      textarea.value = 'unchanged value';
+      fixture.detectChanges();
+      const width = textarea.getBoundingClientRect().width;
+      expect(textarea.style.height).toBe('40px');
+
+      checkbox.click();
+      await fixture.whenStable();
+      expect(textarea.style.height).toBe('60px');
+
+      form.reset();
+      await fixture.whenStable();
+
+      expect(textarea.value).toBe('unchanged value');
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('40px');
+    } finally {
+      fixture.destroy();
+      style.remove();
+    }
+  });
+
+  it('preserves a reset resize request when another invalidation is pending', async () => {
+    contentHeight = 80;
+    const fixture = TestBed.createComponent(FormHostComponent);
+    fixture.componentInstance.value = 'long current value';
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const textarea = form.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.style.padding = '0';
+    textarea.style.border = '0';
+    defineScrollHeight(textarea);
+    fixture.detectChanges();
+
+    try {
+      textarea.defaultValue = 'long current value';
+      textarea.value = 'long current value';
+      fixture.detectChanges();
+      expect(textarea.style.height).toBe('80px');
+
+      textarea.defaultValue = 'short reset value';
+      contentHeight = 20;
+      textarea.parentElement!.dispatchEvent(
+        new Event('pointerover', { bubbles: true }),
+      );
+      form.reset();
+      await fixture.whenStable();
+
+      expect(textarea.value).toBe('short reset value');
+      expect(textarea.style.height).toBe('20px');
+    } finally {
+      fixture.destroy();
+    }
+  });
+
+  it('remeasures when a relevant media query changes metrics without width changes', async () => {
+    contentHeight = 0;
+    const style = document.createElement('style');
+    style.textContent = `
+      .media-query-metric textarea { line-height: 20px; }
+      @media (min-width: 1px) {
+        .media-query-metric textarea { line-height: 30px; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    const originalMatchMedia = window.matchMedia;
+    const mediaListeners = new Set<EventListener>();
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: (_type: 'change', listener: EventListener) => {
+          mediaListeners.add(listener);
+        },
+        removeEventListener: (_type: 'change', listener: EventListener) => {
+          mediaListeners.delete(listener);
+        },
+      }),
+    });
+
+    let fixture: ComponentFixture<HostComponent> | undefined;
+    try {
+      fixture = createHost((textarea, host) => {
+        host.minRows = 2;
+        textarea.parentElement!.classList.add('media-query-metric');
+      });
+      const textarea = textareaOf(fixture);
+      const width = textarea.getBoundingClientRect().width;
+      expect(textarea.style.height).toBe('60px');
+
+      const mediaRule = style.sheet!.cssRules[1] as CSSMediaRule;
+      const metricRule = mediaRule.cssRules[0] as CSSStyleRule;
+      metricRule.style.lineHeight = '40px';
+      for (const listener of mediaListeners) {
+        listener(new Event('change'));
+      }
+      await fixture.whenStable();
+
+      expect(textarea.getBoundingClientRect().width).toBe(width);
+      expect(textarea.style.height).toBe('80px');
+    } finally {
+      fixture?.destroy();
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+      style.remove();
+    }
   });
 
   it('does not produce a different result for an unchanged input', () => {

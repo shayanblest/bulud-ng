@@ -31,6 +31,19 @@ interface FontLoadingSet {
   removeEventListener(type: 'loadingdone', listener: EventListener): void;
 }
 
+interface MediaQueryListLike {
+  readonly media: string;
+  addEventListener?: (type: 'change', listener: EventListener) => void;
+  removeEventListener?: (type: 'change', listener: EventListener) => void;
+  addListener?: (listener: EventListener) => void;
+  removeListener?: (listener: EventListener) => void;
+}
+
+interface MediaQueryListener {
+  readonly queryList: MediaQueryListLike;
+  readonly listener: EventListener;
+}
+
 interface InlineStyleValue {
   readonly present: boolean;
   readonly value: string;
@@ -92,6 +105,7 @@ export class BuludTextareaAutosize
   private historyInvalidationListener: (() => void) | null = null;
   private fontLoadingSet: FontLoadingSet | null = null;
   private fontLoadingListener: EventListener | null = null;
+  private mediaQueryListeners = new Map<string, MediaQueryListener>();
   private resetForm: HTMLFormElement | null = null;
   private resetListener: EventListener | null = null;
   private lastMeasurementSignature: string | null = null;
@@ -103,6 +117,7 @@ export class BuludTextareaAutosize
   }> = [];
   private pointerInvalidationGeneration = 0;
   private pointerInvalidationScheduled = false;
+  private pendingResizeForValueChange = false;
   private deferredRemeasurementScheduled = false;
   private composing = false;
   private resizeAfterComposition = false;
@@ -139,6 +154,7 @@ export class BuludTextareaAutosize
       this.connectWidthObserver();
       this.connectMutationObserver();
       this.connectFontLoadingObserver();
+      this.connectMediaQueryObserver();
       this.connectFormResetListener();
       this.connectViewportResizeListener();
       this.connectHashChangeListener();
@@ -177,6 +193,7 @@ export class BuludTextareaAutosize
         this.disconnectWidthObserver();
         this.disconnectMutationObserver();
         this.disconnectFontLoadingObserver();
+        this.disconnectMediaQueryObserver();
         this.disconnectFormResetListener();
         this.disconnectViewportResizeListener();
         this.disconnectHashChangeListener();
@@ -217,6 +234,7 @@ export class BuludTextareaAutosize
     this.disconnectWidthObserver();
     this.disconnectMutationObserver();
     this.disconnectFontLoadingObserver();
+    this.disconnectMediaQueryObserver();
     this.disconnectFormResetListener();
     this.disconnectViewportResizeListener();
     this.disconnectHashChangeListener();
@@ -416,6 +434,7 @@ export class BuludTextareaAutosize
         );
         if (stylesheetMutation) {
           this.syncStylesheetLoadListeners();
+          this.syncMediaQueryListeners();
         }
         const measurementMayBeAffected =
           mutationMayAffectMeasurement(
@@ -489,6 +508,7 @@ export class BuludTextareaAutosize
     this.connectFormMutationObserver();
     this.updateQueryContainerObservation();
     this.syncStylesheetLoadListeners();
+    this.syncMediaQueryListeners();
   }
 
   private connectFormMutationObserver(): void {
@@ -589,6 +609,7 @@ export class BuludTextareaAutosize
 
       const listener: EventListener = () => {
         if (!this.destroyed && this.enabled()) {
+          this.syncMediaQueryListeners();
           this.scheduleInvalidationRemeasurement();
         }
       };
@@ -635,6 +656,66 @@ export class BuludTextareaAutosize
     this.fontLoadingListener = null;
   }
 
+  private connectMediaQueryObserver(): void {
+    if (this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    this.syncMediaQueryListeners();
+  }
+
+  private syncMediaQueryListeners(): void {
+    if (this.destroyed || !this.hasBrowserView()) {
+      return;
+    }
+
+    const view = this.document.defaultView;
+    if (!view || typeof view.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQueries = getRelevantMediaQueries(
+      this.document,
+      this.element.nativeElement,
+    );
+    for (const [query, { queryList, listener }] of this.mediaQueryListeners) {
+      if (!mediaQueries.has(query)) {
+        removeMediaQueryListener(queryList, listener);
+        this.mediaQueryListeners.delete(query);
+      }
+    }
+
+    for (const query of mediaQueries) {
+      if (this.mediaQueryListeners.has(query)) {
+        continue;
+      }
+
+      let queryList: MediaQueryListLike;
+      try {
+        queryList = view.matchMedia(query);
+      } catch {
+        continue;
+      }
+
+      const listener: EventListener = () => {
+        if (!this.destroyed && this.enabled()) {
+          this.scheduleInvalidationRemeasurement();
+        }
+      };
+      if (!addMediaQueryListener(queryList, listener)) {
+        continue;
+      }
+      this.mediaQueryListeners.set(query, { queryList, listener });
+    }
+  }
+
+  private disconnectMediaQueryObserver(): void {
+    for (const { queryList, listener } of this.mediaQueryListeners.values()) {
+      removeMediaQueryListener(queryList, listener);
+    }
+    this.mediaQueryListeners.clear();
+  }
+
   private connectFormResetListener(): void {
     if (this.destroyed || !this.hasBrowserView()) {
       return;
@@ -651,15 +732,7 @@ export class BuludTextareaAutosize
     }
 
     const listener: EventListener = () => {
-      scheduleMicrotask(() => {
-        if (
-          !this.destroyed &&
-          this.enabled() &&
-          this.element.nativeElement.value !== this.lastValue
-        ) {
-          this.resize();
-        }
-      });
+      this.scheduleInvalidationRemeasurement(true);
     };
     form.addEventListener('reset', listener);
     this.resetForm = form;
@@ -889,6 +962,7 @@ export class BuludTextareaAutosize
   private disconnectPseudoStateListeners(): void {
     this.pointerInvalidationGeneration += 1;
     this.pointerInvalidationScheduled = false;
+    this.pendingResizeForValueChange = false;
     this.deferredRemeasurementScheduled = false;
     for (const { target, type, listener, capture } of this
       .pseudoStateListeners) {
@@ -905,7 +979,10 @@ export class BuludTextareaAutosize
     this.scheduleInvalidationRemeasurement();
   }
 
-  private scheduleInvalidationRemeasurement(): void {
+  private scheduleInvalidationRemeasurement(
+    resizeForValueChange = false,
+  ): void {
+    this.pendingResizeForValueChange ||= resizeForValueChange;
     if (this.pointerInvalidationScheduled) {
       return;
     }
@@ -918,9 +995,16 @@ export class BuludTextareaAutosize
       }
 
       this.pointerInvalidationScheduled = false;
+      const shouldResizeForValueChange = this.pendingResizeForValueChange;
+      this.pendingResizeForValueChange = false;
       if (!this.destroyed && this.enabled()) {
         if (isResolvingCssMaxHeight(this.element.nativeElement)) {
           this.scheduleDeferredRemeasurement();
+        } else if (
+          shouldResizeForValueChange &&
+          this.element.nativeElement.value !== this.lastValue
+        ) {
+          this.resize();
         } else {
           this.remeasureIfNeeded();
         }
@@ -1256,6 +1340,121 @@ function getFontLoadingSet(document: Document): FontLoadingSet | null {
     typeof fontLoadingSet.removeEventListener === 'function'
     ? fontLoadingSet
     : null;
+}
+
+function getRelevantMediaQueries(
+  document: Document,
+  textarea: HTMLTextAreaElement,
+): Set<string> {
+  const queries = new Set<string>();
+  const roots: (Element | ShadowRoot)[] = [
+    document.head,
+    ...getContainingShadowRoots(textarea),
+  ];
+
+  for (const root of roots) {
+    for (const element of root.querySelectorAll<
+      HTMLStyleElement | HTMLLinkElement
+    >('style,link[rel~="stylesheet"]')) {
+      const sheet = element.sheet;
+      if (sheet) {
+        collectMediaQueries(sheet, queries, new Set<CSSStyleSheet>());
+      }
+    }
+  }
+
+  return queries;
+}
+
+function collectMediaQueries(
+  sheet: CSSStyleSheet,
+  queries: Set<string>,
+  visited: Set<CSSStyleSheet>,
+): void {
+  if (visited.has(sheet)) {
+    return;
+  }
+  visited.add(sheet);
+
+  addMediaQuery(sheet.media?.mediaText, queries);
+  let rules: CSSRuleList;
+  try {
+    rules = sheet.cssRules;
+  } catch {
+    return;
+  }
+
+  for (const rule of Array.from(rules)) {
+    const media = (rule as CSSRule & { readonly media?: MediaList }).media;
+    addMediaQuery(media?.mediaText, queries);
+
+    const importedSheet = (rule as CSSImportRule).styleSheet;
+    if (importedSheet) {
+      collectMediaQueries(importedSheet, queries, visited);
+    }
+
+    const nestedRules = (rule as CSSRule & { readonly cssRules?: CSSRuleList })
+      .cssRules;
+    if (nestedRules) {
+      collectMediaQueriesFromRules(nestedRules, queries, visited);
+    }
+  }
+}
+
+function collectMediaQueriesFromRules(
+  rules: CSSRuleList,
+  queries: Set<string>,
+  visited: Set<CSSStyleSheet>,
+): void {
+  for (const rule of Array.from(rules)) {
+    const media = (rule as CSSRule & { readonly media?: MediaList }).media;
+    addMediaQuery(media?.mediaText, queries);
+    const nestedRules = (rule as CSSRule & { readonly cssRules?: CSSRuleList })
+      .cssRules;
+    if (nestedRules) {
+      collectMediaQueriesFromRules(nestedRules, queries, visited);
+    }
+    const importedSheet = (rule as CSSImportRule).styleSheet;
+    if (importedSheet) {
+      collectMediaQueries(importedSheet, queries, visited);
+    }
+  }
+}
+
+function addMediaQuery(
+  mediaText: string | undefined,
+  queries: Set<string>,
+): void {
+  const query = mediaText?.trim();
+  if (query && query !== 'all') {
+    queries.add(query);
+  }
+}
+
+function addMediaQueryListener(
+  queryList: MediaQueryListLike,
+  listener: EventListener,
+): boolean {
+  if (typeof queryList.addEventListener === 'function') {
+    queryList.addEventListener('change', listener);
+    return true;
+  }
+  if (typeof queryList.addListener === 'function') {
+    queryList.addListener(listener);
+    return true;
+  }
+  return false;
+}
+
+function removeMediaQueryListener(
+  queryList: MediaQueryListLike,
+  listener: EventListener,
+): void {
+  if (typeof queryList.removeEventListener === 'function') {
+    queryList.removeEventListener('change', listener);
+  } else if (typeof queryList.removeListener === 'function') {
+    queryList.removeListener(listener);
+  }
 }
 
 function getMetricAncestors(textarea: HTMLTextAreaElement): Element[] {
