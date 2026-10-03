@@ -134,6 +134,7 @@ accessibility, testing, packaging, theming, and compatibility.
 | `bulud-ng/badge`           | Accessible badge component                       |
 | `bulud-ng/dropdown`        | Searchable single- and multiple-select dropdown  |
 | `bulud-ng/resize-observer` | Element resize observer directive                |
+| `bulud-ng/textarea-autosize` | Native textarea autosize directive             |
 | `bulud-ng/tailwind.css`    | Tailwind CSS 4 theme-variable bridge             |
 
 ## Compatibility note
