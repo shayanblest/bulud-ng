@@ -59,8 +59,9 @@ export class BuludFileSizePipe implements PipeTransform {
       unitIndex += 1;
     }
 
-    const sign = bytes < 0 ? '-' : '';
-    return `${sign}${formatNumber(scaledBytes, precision)} ${units[unitIndex]}`;
+    const formattedValue = formatNumber(scaledBytes, precision);
+    const sign = bytes < 0 && formattedValue !== '0' ? '-' : '';
+    return `${sign}${formattedValue} ${units[unitIndex]}`;
   }
 }
 

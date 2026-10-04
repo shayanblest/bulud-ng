@@ -45,6 +45,9 @@ describe('BuludFileSizePipe', () => {
 
     expect(fileSize.transform(value)).toBe('-1.54 kB');
     expect(value).toBe(-1536);
+    expect(fileSize.transform(-0.001)).toBe('0 B');
+    expect(fileSize.transform(-0.0004, { precision: 3 })).toBe('0 B');
+    expect(fileSize.transform(-0.01)).toBe('-0.01 B');
   });
 
   it('returns an empty string for nullish and invalid numeric values', () => {
