@@ -31,6 +31,7 @@ import {
   BuludEnglishDigitsPipe,
   BuludPersianDigitsPipe,
 } from 'bulud-ng/digits';
+import { BuludInitialsPipe } from 'bulud-ng/initials';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -69,6 +70,7 @@ interface DemoOption {
     BuludTextareaAutosize,
     BuludEnglishDigitsPipe,
     BuludPersianDigitsPipe,
+    BuludInitialsPipe,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -261,6 +263,11 @@ export class App {
   protected readonly digitDemoEnglish = '۱۲۳۴۵۶۷۸۹۰';
   protected readonly digitDemoNull: string | null = null;
   protected readonly digitDemoUndefined: string | undefined = undefined;
+  protected readonly initialsDemoLatin = 'Ada Lovelace';
+  protected readonly initialsDemoPersian = 'مریم احمدی';
+  protected readonly initialsDemoEmoji = '👩‍💻 Smith';
+  protected readonly initialsDemoWhitespace = '\tAda\nLovelace  ';
+  protected readonly initialsDemoNull: string | null = null;
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
   protected readonly activeTab = signal<string | null>(null);

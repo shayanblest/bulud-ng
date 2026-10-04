@@ -33,6 +33,7 @@
               "../resize-observer/**/*.spec.ts",
               "../textarea-autosize/**/*.spec.ts",
               "../digits/**/*.spec.ts",
+              "../initials/**/*.spec.ts",
               "../clickoutside/**/*.spec.ts",
               "../tabs/**/*.spec.ts",
               "../accordion/**/*.spec.ts",
