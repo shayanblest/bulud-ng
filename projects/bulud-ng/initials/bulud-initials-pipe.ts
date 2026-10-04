@@ -22,7 +22,7 @@ export class BuludInitialsPipe implements PipeTransform {
     }
 
     const normalizedValue = value.replace(
-      /^\p{White_Space}+|\p{White_Space}+$/gu,
+      /^[\p{White_Space}\uFEFF]+|[\p{White_Space}\uFEFF]+$/gu,
       '',
     );
     if (normalizedValue === '') {
@@ -30,7 +30,7 @@ export class BuludInitialsPipe implements PipeTransform {
     }
 
     return normalizedValue
-      .split(/\p{White_Space}+/u)
+      .split(/[\p{White_Space}\uFEFF]+/u)
       .map((word) => firstGrapheme(word))
       .join('');
   }
