@@ -8,14 +8,6 @@
   vertical-align: middle;
 }
 
-:host-context(html[dir='rtl']) {
-  direction: rtl;
-}
-
-:host-context(html[dir='ltr']) {
-  direction: ltr;
-}
-
 :host(.bulud-dropdown-host--disabled) {
   cursor: not-allowed;
 }

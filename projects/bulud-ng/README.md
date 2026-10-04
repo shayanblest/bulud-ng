@@ -715,10 +715,13 @@ order.
 
 ## Locale API
 
-`provideBuludLocale` supplies typed English or Persian Dropdown and Pagination
-defaults through `BULUD_LOCALE`. Instance text inputs override provider values. The provider also
-sets the document `lang` and `dir`; components follow ancestor direction and do
-not own the application language switcher.
+`provideBuludLocale` supplies typed English or Persian defaults for Dropdown,
+Pagination, Button loading status, and Badge dismiss actions through
+`BULUD_LOCALE`. The precedence for all integrated text is explicit instance
+text, configured locale defaults, then the library's English fallback. The
+provider sets the document `lang`, but does not set `dir` or CSS `direction`:
+components inherit the nearest ancestor direction naturally, so an application
+or component ancestor can choose LTR or RTL independently of language.
 
 ```ts
 import { provideBuludLocale } from "bulud-ng";
@@ -727,11 +730,28 @@ export const appConfig = {
   providers: [
     provideBuludLocale({
       language: "fa",
+      button: { loadingLabel: "در حال بارگذاری" },
+      badge: { dismissLabel: "حذف نشان" },
       dropdown: { clearLabel: "حذف انتخاب" },
     }),
   ],
 };
 ```
+
+The built-in English defaults are `Loading`, `Remove badge`, `Select an
+option`, `Search options`, `No options found`, `Loading options…`, `No options
+available`, `Clear selection`, `Pagination`, `Previous page`, `Next page`, and
+`More pages` (with page-number functions for page labels). Persian defaults are
+`در حال بارگذاری`, `حذف نشان`, `یک گزینه انتخاب کنید`, `جست‌وجوی گزینه‌ها`,
+`گزینه‌ای پیدا نشد`, `در حال بارگذاری…`, `گزینه‌ای موجود نیست`, `پاک کردن
+انتخاب`, `صفحه‌بندی`, `صفحه قبلی`, `صفحه بعدی`, and `صفحه‌های بیشتر` (with
+Persian page-number functions). Consumers may override any typed field in the
+provider or on the component instance.
+
+Accessible names and status/placeholder messages are localized only when the
+component's corresponding instance input is omitted. Consumers should still
+provide projected labels or `aria-label`/`aria-labelledby` where a component's
+content does not provide an accessible name.
 
 ## Digit conversion pipes
 
