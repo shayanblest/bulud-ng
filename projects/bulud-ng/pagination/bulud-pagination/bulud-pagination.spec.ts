@@ -16,16 +16,20 @@ import { BuludPagination } from './bulud-pagination';
 @Component({
   imports: [BuludPagination],
   template: `
-    <bulud-pagination
-      [currentPage]="page()"
-      [pageCount]="count()"
-      [disabled]="disabled()"
-      [aria-label]="navigationLabel()"
-      [previousPageLabel]="previousLabel()"
-      [nextPageLabel]="nextLabel()"
-      [pageLabel]="pageLabel()"
-      (pageChange)="pageChange.set($event)"
-    />
+    <div [attr.dir]="outerDirection()">
+      <section [attr.dir]="nearestDirection()">
+        <bulud-pagination
+          [currentPage]="page()"
+          [pageCount]="count()"
+          [disabled]="disabled()"
+          [aria-label]="navigationLabel()"
+          [previousPageLabel]="previousLabel()"
+          [nextPageLabel]="nextLabel()"
+          [pageLabel]="pageLabel()"
+          (pageChange)="pageChange.set($event)"
+        />
+      </section>
+    </div>
   `,
 })
 class TestHost {
@@ -39,6 +43,8 @@ class TestHost {
     undefined,
   );
   readonly pageChange = signal<number | null>(null);
+  readonly outerDirection = signal<'ltr' | 'rtl' | null>(null);
+  readonly nearestDirection = signal<'ltr' | 'rtl' | null>(null);
 }
 
 describe('BuludPagination', () => {
@@ -427,6 +433,35 @@ describe('BuludPagination', () => {
     nav().setAttribute('dir', 'rtl');
     buttons()[0].click();
     expect(fixture.componentInstance.pageChange()).toBe(4);
+  });
+
+  it('uses the nearest effective direction for directional icons', async () => {
+    const state = fixture.componentInstance;
+    const icon = (): HTMLElement =>
+      fixture.nativeElement.querySelector(
+        '.bulud-pagination__control--previous .bulud-pagination__direction-icon',
+      );
+
+    state.outerDirection.set('rtl');
+    state.nearestDirection.set('ltr');
+    await fixture.whenStable();
+    expect(getComputedStyle(icon()).transform).toBe('none');
+
+    state.nearestDirection.set('rtl');
+    await fixture.whenStable();
+    expect(getComputedStyle(icon()).transform).toBe(
+      'matrix(-1, 0, 0, 1, 0, 0)',
+    );
+
+    state.outerDirection.set('ltr');
+    await fixture.whenStable();
+    expect(getComputedStyle(icon()).transform).toBe(
+      'matrix(-1, 0, 0, 1, 0, 0)',
+    );
+
+    state.nearestDirection.set('ltr');
+    await fixture.whenStable();
+    expect(getComputedStyle(icon()).transform).toBe('none');
   });
 
   it('provides theme defaults and provider theme overrides', () => {
