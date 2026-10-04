@@ -118,10 +118,10 @@
   line-height: 1;
 }
 
-:host-context([dir="rtl"])
+:host(:dir(rtl))
   .bulud-pagination__control--previous
   .bulud-pagination__direction-icon,
-:host-context([dir="rtl"])
+:host(:dir(rtl))
   .bulud-pagination__control--next
   .bulud-pagination__direction-icon {
   transform: scaleX(-1);
