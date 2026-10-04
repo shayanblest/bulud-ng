@@ -299,6 +299,15 @@ test.describe('Bulud component demo', () => {
     await expect(page.locator('#initials-null')).toHaveText('');
   });
 
+  test('covers decimal, binary, negative, and null file-size formatting', async ({
+    page,
+  }) => {
+    await expect(page.locator('#filesize-decimal')).toHaveText('1.5 MB');
+    await expect(page.locator('#filesize-binary')).toHaveText('1.5 KiB');
+    await expect(page.locator('#filesize-negative')).toHaveText('-1.54 kB');
+    await expect(page.locator('#filesize-null')).toHaveText('');
+  });
+
   test('covers resize observer enabled, disabled, and re-enabled states', async ({
     page,
   }) => {

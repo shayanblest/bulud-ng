@@ -32,6 +32,7 @@ import {
   BuludPersianDigitsPipe,
 } from 'bulud-ng/digits';
 import { BuludInitialsPipe } from 'bulud-ng/initials';
+import { BuludFileSizePipe } from 'bulud-ng/filesize';
 
 interface VariantPreview {
   readonly name: BuludButtonVariant;
@@ -71,6 +72,7 @@ interface DemoOption {
     BuludEnglishDigitsPipe,
     BuludPersianDigitsPipe,
     BuludInitialsPipe,
+    BuludFileSizePipe,
     NgTemplateOutlet,
   ],
   templateUrl: './app.html',
@@ -268,6 +270,11 @@ export class App {
   protected readonly initialsDemoEmoji = '👩‍💻 Smith';
   protected readonly initialsDemoWhitespace = '\tAda\nLovelace  ';
   protected readonly initialsDemoNull: string | null = null;
+  protected readonly fileSizeDemoDecimal = 1_500_000;
+  protected readonly fileSizeDemoBinary = 1536;
+  protected readonly fileSizeDemoBinaryOptions = { base: 'binary' as const };
+  protected readonly fileSizeDemoNegative = -1536;
+  protected readonly fileSizeDemoNull: number | null = null;
   protected readonly clickOutsideEnabled = signal(true);
   protected readonly clickOutsideCount = signal(0);
   protected readonly activeTab = signal<string | null>(null);
