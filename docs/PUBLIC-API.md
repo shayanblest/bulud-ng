@@ -16,6 +16,7 @@ supported.
 | `bulud-ng/resize-observer`   | `BuludElementSize`, `BuludResizeObserver`                                                                                |
 | `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`, `BuludTextareaAutosizeConfig`, `BULUD_TEXTAREA_AUTOSIZE_CONFIG`, `provideBuludTextareaAutosize` |
 | `bulud-ng/digits`            | `BuludDigitPipeValue`, `BuludEnglishDigitsPipe`, `BuludPersianDigitsPipe`                                                |
+| `bulud-ng/initials`          | `BuludInitialsPipe`, `BuludInitialsPipeValue`                                                                            |
 | `bulud-ng/tabs`              | `BuludTab`, `BuludTabId`, `BuludTabPanel`, `BuludTabs`, `BuludTabsOrientation`                                           |
 | `bulud-ng/accordion`         | `BuludAccordion`, `BuludAccordionId`, `BuludAccordionItem`, `BuludAccordionMode`                                         |
 | `bulud-ng/checkbox`          | `BuludCheckbox`                                                                                                          |

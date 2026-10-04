@@ -28,6 +28,7 @@ its documented secondary entry point:
 | `bulud-ng/resize-observer`   | `BuludResizeObserver` and `BuludElementSize`         |
 | `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                              |
 | `bulud-ng/digits`            | `BuludPersianDigitsPipe`, `BuludEnglishDigitsPipe`   |
+| `bulud-ng/initials`          | `BuludInitialsPipe`                                  |
 | `bulud-ng/clickoutside`      | `BuludClickOutside` and related trigger types        |
 | `bulud-ng/tabs`              | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
 | `bulud-ng/accordion`         | `BuludAccordion` and `BuludAccordionItem`            |
@@ -757,6 +758,39 @@ one digit at a time. Their typed input is `string | number | null | undefined`
 and their output is always a string. `null` and `undefined` return an empty
 string; an empty string remains empty. The pipes are pure and do not mutate
 their input.
+
+## Initials pipe
+
+Import the pure, standalone initials pipe from the initials secondary entry
+point:
+
+```ts
+import { BuludInitialsPipe } from "bulud-ng/initials";
+
+@Component({
+  imports: [BuludInitialsPipe],
+  template: `
+    <span>{{ "Ada Lovelace" | buludInitials }}</span>
+    <span>{{ "مریم احمدی" | buludInitials }}</span>
+  `,
+})
+export class ProfileLabel {}
+```
+
+`BuludInitialsPipe` trims Unicode whitespace, splits the value on one or more
+whitespace characters, takes the first Unicode grapheme of each word, and
+joins those graphemes without a separator. Therefore `Ada Lovelace` becomes
+`AL`, `مریم احمدی` becomes `ما`, and `Jean-Luc Picard` becomes `JP`; punctuation,
+hyphens, emoji, and symbols at the start of a word are preserved. Grapheme
+boundaries are determined by the standards-compliant `Intl.Segmenter` API with
+grapheme granularity, so combining characters, emoji ZWJ sequences, regional
+indicator flags, keycaps, and script-specific clusters remain intact. Its typed
+input is `string | null | undefined`, and its output is always a string. `null`,
+`undefined`, the empty string, and whitespace-only strings return `""`. The
+pipe is pure and does not mutate its input. It uses the locale-neutral `und`
+locale and has no transliteration behavior. Consumers should provide any
+accessible name for the surrounding control or label; this pipe only derives
+display text.
 
 ## Theme API
 

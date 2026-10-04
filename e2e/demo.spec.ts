@@ -289,6 +289,16 @@ test.describe('Bulud component demo', () => {
     await expect(page.locator('#digits-undefined')).toHaveText('');
   });
 
+  test('covers Unicode-aware initials for Latin, Persian, emoji, and whitespace', async ({
+    page,
+  }) => {
+    await expect(page.locator('#initials-latin')).toHaveText('AL');
+    await expect(page.locator('#initials-persian')).toHaveText('ما');
+    await expect(page.locator('#initials-emoji')).toHaveText('👩‍💻S');
+    await expect(page.locator('#initials-whitespace')).toHaveText('AL');
+    await expect(page.locator('#initials-null')).toHaveText('');
+  });
+
   test('covers resize observer enabled, disabled, and re-enabled states', async ({
     page,
   }) => {
