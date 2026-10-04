@@ -29,6 +29,7 @@ its documented secondary entry point:
 | `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                              |
 | `bulud-ng/digits`            | `BuludPersianDigitsPipe`, `BuludEnglishDigitsPipe`   |
 | `bulud-ng/initials`          | `BuludInitialsPipe`                                  |
+| `bulud-ng/filesize`          | `BuludFileSizePipe`                                  |
 | `bulud-ng/clickoutside`      | `BuludClickOutside` and related trigger types        |
 | `bulud-ng/tabs`              | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
 | `bulud-ng/accordion`         | `BuludAccordion` and `BuludAccordionItem`            |
@@ -791,6 +792,39 @@ pipe is pure and does not mutate its input. It uses the locale-neutral `und`
 locale and has no transliteration behavior. Consumers should provide any
 accessible name for the surrounding control or label; this pipe only derives
 display text.
+
+## File size pipe
+
+Import the pure, standalone file-size pipe from the `filesize` secondary entry
+point:
+
+```ts
+import { BuludFileSizePipe, type BuludFileSizeOptions } from "bulud-ng/filesize";
+
+const binary: BuludFileSizeOptions = { base: "binary" };
+
+@Component({
+  imports: [BuludFileSizePipe],
+  template: `
+    <p>{{ 1500000 | buludFileSize }}</p>
+    <p>{{ 1536 | buludFileSize: binary }}</p>
+  `,
+})
+export class FileSummary {}
+```
+
+`BuludFileSizePipe` accepts `number | null | undefined` and returns a string.
+It uses decimal base 1000 by default with `B`, `kB`, `MB`, `GB`, `TB`, `PB`,
+`EB`, `ZB`, and `YB`. Pass `{ base: "binary" }` for base 1024 and the matching
+`B`, `KiB`, `MiB`, `GiB`, `TiB`, `PiB`, `EiB`, `ZiB`, and `YiB` units. The
+default precision is two maximum fraction digits; `precision` accepts integer
+values from 0 through 3, and invalid precision values use the default. Zero is
+`0 B`, negative values preserve their sign, and values beyond the largest unit
+are capped at that unit; very large capped values use deterministic scientific
+notation when fixed-point output is not practical. Nullish, `NaN`, and infinite
+values return `""`.
+Formatting is locale-independent and always uses `.` as the decimal separator;
+the pipe does not use implicit locale configuration or grouping separators.
 
 ## Theme API
 
