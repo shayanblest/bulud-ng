@@ -20,11 +20,14 @@ describe('BuludInitialsPipe', () => {
   it('trims and collapses whitespace between words', () => {
     expect(initials.transform('  Ada   Lovelace  ')).toBe('AL');
     expect(initials.transform('\tAda\nLovelace\r\n')).toBe('AL');
+    expect(initials.transform('Ada\u0085Lovelace')).toBe('AL');
+    expect(initials.transform('\u0085Ada\u0085Lovelace\u0085')).toBe('AL');
   });
 
   it('returns an empty string for empty, whitespace-only, and nullish values', () => {
     expect(initials.transform('')).toBe('');
     expect(initials.transform(' \t\n ')).toBe('');
+    expect(initials.transform('\u0085\u2000\u2028')).toBe('');
     expect(initials.transform(null)).toBe('');
     expect(initials.transform(undefined)).toBe('');
   });

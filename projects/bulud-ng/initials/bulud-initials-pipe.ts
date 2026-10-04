@@ -21,12 +21,18 @@ export class BuludInitialsPipe implements PipeTransform {
       return '';
     }
 
-    const words = value.trim().split(/\s+/u);
-    if (words.length === 1 && words[0] === '') {
+    const normalizedValue = value.replace(
+      /^\p{White_Space}+|\p{White_Space}+$/gu,
+      '',
+    );
+    if (normalizedValue === '') {
       return '';
     }
 
-    return words.map((word) => firstGrapheme(word)).join('');
+    return normalizedValue
+      .split(/\p{White_Space}+/u)
+      .map((word) => firstGrapheme(word))
+      .join('');
   }
 }
 
