@@ -801,8 +801,6 @@ point:
 ```ts
 import { BuludFileSizePipe, type BuludFileSizeOptions } from "bulud-ng/filesize";
 
-const binary: BuludFileSizeOptions = { base: "binary" };
-
 @Component({
   imports: [BuludFileSizePipe],
   template: `
@@ -810,7 +808,9 @@ const binary: BuludFileSizeOptions = { base: "binary" };
     <p>{{ 1536 | buludFileSize: binary }}</p>
   `,
 })
-export class FileSummary {}
+export class FileSummary {
+  protected readonly binary: BuludFileSizeOptions = { base: "binary" };
+}
 ```
 
 `BuludFileSizePipe` accepts `number | null | undefined` and returns a string.
@@ -825,6 +825,9 @@ notation when fixed-point output is not practical. Nullish, `NaN`, and infinite
 values return `""`.
 Formatting is locale-independent and always uses `.` as the decimal separator;
 the pipe does not use implicit locale configuration or grouping separators.
+The pipe only formats display text and has no interaction semantics of its own.
+Consumers must provide meaningful surrounding text, a label, accessible name,
+or appropriate ARIA context when the formatted value would otherwise be unclear.
 
 ## Theme API
 
