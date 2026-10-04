@@ -242,10 +242,11 @@ for one-off overrides.
 
 The trigger follows the combobox/listbox keyboard pattern: `ArrowDown` and
 `ArrowUp` open and move the active option, `Home` and `End` jump to the first
-and last enabled option, `Enter` or `Space` selects, and `Escape` closes and
-restores focus to the trigger. Navigation wraps at either end and skips
-options matched by `optionDisabled`. In a searchable panel, `ArrowUp` and
-`ArrowDown` move from the search field into the options; `Home` and `End`
+and last option, `Enter` or `Space` selects, and `Escape` closes and restores
+focus to the trigger. Navigation wraps at either end. Options matched by
+`optionDisabled` remain discoverable during keyboard navigation, expose
+`aria-disabled="true"`, and cannot be activated or selected. In a searchable
+panel, `ArrowUp` and `ArrowDown` move from the search field into the options; `Home` and `End`
 remain native text-editing keys while the search field has focus. Tab and
 Shift+Tab retain native focus navigation and close the panel when focus leaves.
 Pointer interaction outside the dropdown also closes an open panel. Consumers
@@ -266,25 +267,25 @@ combine, so either one prevents interaction.
 
 ### Dropdown inputs
 
-| Input               | Type                             | Default          | Description                                       |
-| ------------------- | -------------------------------- | ---------------- | ------------------------------------------------- |
-| `options`           | `readonly T[]`                   | `[]`             | Options rendered in the listbox                   |
-| `value`             | `T \| readonly T[] \| null`      | `null`           | Selected value; use an array with `multiple`      |
-| `multiple`          | `boolean`                        | `false`          | Keeps the panel open and toggles multiple values  |
-| `searchable`        | `boolean`                        | `true`           | Shows the search field                            |
-| `clearable`         | `boolean`                        | `true`           | Shows the clear action for a selected value       |
-| `disabled`          | `boolean`                        | `false`          | Prevents opening and interaction                  |
-| `loading`           | `boolean`                        | `false`          | Shows a loading status instead of options         |
-| `required`          | `boolean`                        | `false`          | Enables the standard Forms `required` validator   |
-| `optionDisabled`    | `(option: T) => boolean`         | `() => false`    | Disables options and skips them during navigation |
-| `placeholder`       | `string \| undefined`            | locale default   | Empty-selection trigger text                      |
-| `searchPlaceholder` | `string \| undefined`            | locale default   | Search input placeholder                          |
-| `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result               |
-| `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                             |
-| `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection            |
-| `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger          |
-| `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text                |
-| `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values             |
+| Input               | Type                             | Default          | Description                                               |
+| ------------------- | -------------------------------- | ---------------- | --------------------------------------------------------- |
+| `options`           | `readonly T[]`                   | `[]`             | Options rendered in the listbox                           |
+| `value`             | `T \| readonly T[] \| null`      | `null`           | Selected value; use an array with `multiple`              |
+| `multiple`          | `boolean`                        | `false`          | Keeps the panel open and toggles multiple values          |
+| `searchable`        | `boolean`                        | `true`           | Shows the search field                                    |
+| `clearable`         | `boolean`                        | `true`           | Shows the clear action for a selected value               |
+| `disabled`          | `boolean`                        | `false`          | Prevents opening and interaction                          |
+| `loading`           | `boolean`                        | `false`          | Shows a loading status instead of options                 |
+| `required`          | `boolean`                        | `false`          | Enables the standard Forms `required` validator           |
+| `optionDisabled`    | `(option: T) => boolean`         | `() => false`    | Marks options unavailable while keeping them discoverable |
+| `placeholder`       | `string \| undefined`            | locale default   | Empty-selection trigger text                              |
+| `searchPlaceholder` | `string \| undefined`            | locale default   | Search input placeholder                                  |
+| `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result                       |
+| `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                                     |
+| `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection                    |
+| `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger                  |
+| `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text                        |
+| `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values                     |
 
 `clearLabel` and `searchLabel` override the localized accessible names for the
 clear action and search field. The component exposes `valueChange` through its

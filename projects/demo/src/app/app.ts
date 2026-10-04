@@ -334,6 +334,9 @@ export class App {
 
   protected readonly optionLabel = (option: DemoOption): string => option.label;
 
+  protected readonly isFrameworkDisabled = (option: DemoOption): boolean =>
+    option.id === 'svelte';
+
   protected readonly variants: readonly VariantPreview[] = [
     {
       name: 'primary',

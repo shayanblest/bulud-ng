@@ -92,6 +92,21 @@ test.describe('Bulud component demo', () => {
       'aria-activedescendant',
       await single.locator('[role="option"]').first().getAttribute('id'),
     );
+    const disabledOption = single.locator('[role="option"]').filter({
+      hasText: 'Svelte',
+    });
+    await expect(disabledOption).toHaveAttribute('aria-disabled', 'true');
+    await trigger.press('ArrowDown');
+    await trigger.press('ArrowDown');
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      await disabledOption.getAttribute('id'),
+    );
+    await trigger.press('Enter');
+    await expect(trigger).not.toContainText('Svelte');
+    await disabledOption.click();
+    await expect(trigger).not.toContainText('Svelte');
     await trigger.press('End');
     await expect(trigger).toHaveAttribute(
       'aria-activedescendant',
@@ -108,7 +123,7 @@ test.describe('Bulud component demo', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await trigger.press('ArrowDown');
-    await page.locator('h1').first().click();
+    await page.locator('#dropdown-loading').click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await page.locator('#dropdown-loading').check();
@@ -153,8 +168,19 @@ test.describe('Bulud component demo', () => {
     const formDropdown = page.locator('#dropdown-forms bulud-dropdown');
     const formTrigger = formDropdown.locator('.bulud-dropdown__trigger');
     await formTrigger.click();
+    await expect(formDropdown.locator('input[type="search"]')).toBeFocused();
+    await page.locator('h1').first().click();
+    await expect(formTrigger).toHaveAttribute('aria-invalid', 'true');
+    await expect(formDropdown).toHaveClass(/bulud-dropdown-host--invalid/);
+    await expect(formTrigger).toHaveCSS(
+      'border-top-color',
+      'rgb(220, 38, 38)',
+    );
+    await formTrigger.click();
     await formDropdown.locator('[role="option"]').first().click();
     await expect(formTrigger).toContainText('Angular');
+    await expect(formTrigger).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(formDropdown).not.toHaveClass(/bulud-dropdown-host--invalid/);
   });
 
   test('covers tabs semantics, selection, disabled state, orientation, and theme override', async ({

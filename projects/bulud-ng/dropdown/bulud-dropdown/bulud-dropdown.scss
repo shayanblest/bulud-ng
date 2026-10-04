@@ -240,6 +240,11 @@
   color: var(--bulud-dropdown-option-selected-foreground, #1d4ed8);
 }
 
+.bulud-dropdown__option[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: var(--bulud-dropdown-disabled-opacity, 0.55);
+}
+
 .bulud-dropdown__check {
   align-items: center;
   border: 1px solid var(--bulud-dropdown-option-border, #cbd5e1);

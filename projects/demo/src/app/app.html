@@ -809,6 +809,7 @@
                   [options]="dropdownEmpty() ? [] : frameworks"
                   [loading]="dropdownLoading()"
                   [disabled]="dropdownDisabled()"
+                  [optionDisabled]="isFrameworkDisabled"
                   [optionLabel]="optionLabel"
                   [placeholder]="dropdownLocale().placeholder"
                   [searchPlaceholder]="dropdownLocale().searchPlaceholder"

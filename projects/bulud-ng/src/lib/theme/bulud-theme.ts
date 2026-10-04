@@ -57,6 +57,7 @@ export interface BuludButtonTheme {
 export interface BuludDropdownTheme {
   readonly background: string;
   readonly border: string;
+  readonly invalidBorder: string;
   readonly borderHover: string;
   readonly foreground: string;
   readonly focus: string;
@@ -433,6 +434,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
   dropdown: {
     background: '#ffffff',
     border: '#cbd5e1',
+    invalidBorder: '#dc2626',
     borderHover: '#2563eb',
     foreground: '#0f172a',
     focus: '#93c5fd',
@@ -836,6 +838,7 @@ export function createBuludThemeVariables(
     '--bulud-button-padding-inline-large': theme.button.large.paddingInline,
     '--bulud-dropdown-background': theme.dropdown.background,
     '--bulud-dropdown-border': theme.dropdown.border,
+    '--bulud-dropdown-invalid-border': theme.dropdown.invalidBorder,
     '--bulud-dropdown-border-hover': theme.dropdown.borderHover,
     '--bulud-dropdown-foreground': theme.dropdown.foreground,
     '--bulud-dropdown-focus': theme.dropdown.focus,

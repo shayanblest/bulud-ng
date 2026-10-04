@@ -307,9 +307,9 @@ export class BuludDropdown<T = unknown>
     this.activeOptionIndex.set(
       options.length === 0
         ? -1
-        : index >= 0 && !this.isOptionDisabled(options[index])
+        : index >= 0
           ? index
-          : this.findEnabledIndex(0, 1),
+          : 0,
     );
   }
 
@@ -320,26 +320,8 @@ export class BuludDropdown<T = unknown>
       return;
     }
     const current = this.activeOptionIndex();
-    this.activeOptionIndex.set(
-      this.findEnabledIndex(
-        current < 0 ? (delta > 0 ? 0 : count - 1) : current + delta,
-        delta,
-      ),
-    );
-  }
-
-  private findEnabledIndex(start: number, delta: number): number {
-    const options = this.filteredOptions();
-    const count = options.length;
-
-    for (let offset = 0; offset < count; offset++) {
-      const index = (start + offset * (delta < 0 ? -1 : 1) + count * 2) % count;
-      if (!this.isOptionDisabled(options[index])) {
-        return index;
-      }
-    }
-
-    return -1;
+    const start = current < 0 ? (delta > 0 ? 0 : count - 1) : current + delta;
+    this.activeOptionIndex.set((start + count) % count);
   }
 
   private focusActiveOption(): void {
@@ -405,11 +387,11 @@ export class BuludDropdown<T = unknown>
       this.moveActive(-1);
     } else if (event.key === 'Home') {
       event.preventDefault();
-      this.activeOptionIndex.set(this.findEnabledIndex(0, 1));
+      this.activeOptionIndex.set(this.filteredOptions().length > 0 ? 0 : -1);
     } else if (event.key === 'End') {
       event.preventDefault();
       this.activeOptionIndex.set(
-        this.findEnabledIndex(this.filteredOptions().length - 1, -1),
+        this.filteredOptions().length - 1,
       );
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -491,7 +473,7 @@ export class BuludDropdown<T = unknown>
 
     if (event.key === 'Home') {
       event.preventDefault();
-      this.activeOptionIndex.set(this.findEnabledIndex(0, 1));
+      this.activeOptionIndex.set(this.filteredOptions().length > 0 ? 0 : -1);
       this.focusActiveOption();
       return;
     }
@@ -499,7 +481,7 @@ export class BuludDropdown<T = unknown>
     if (event.key === 'End') {
       event.preventDefault();
       this.activeOptionIndex.set(
-        this.findEnabledIndex(this.filteredOptions().length - 1, -1),
+        this.filteredOptions().length - 1,
       );
       this.focusActiveOption();
       return;

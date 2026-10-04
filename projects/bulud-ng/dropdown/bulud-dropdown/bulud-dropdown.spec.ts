@@ -195,7 +195,7 @@ describe('BuludDropdown', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('exposes required/search ARIA relationships and skips disabled options', () => {
+  it('keeps disabled options discoverable without allowing activation', () => {
     fixture.componentInstance.disabledOptionId.set('react');
     fixture.componentInstance.required.set(true);
     fixture.detectChanges();
@@ -206,7 +206,7 @@ describe('BuludDropdown', () => {
     fixture.detectChanges();
 
     const options = getOptions();
-    expect(options[1].disabled).toBeTrue();
+    expect(options[1].disabled).toBeFalse();
     expect(options[1].getAttribute('aria-disabled')).toBe('true');
     expect(
       getDropdown().querySelector('input')?.getAttribute('aria-controls'),
@@ -217,7 +217,14 @@ describe('BuludDropdown', () => {
       new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
     );
     fixture.detectChanges();
-    expect(document.activeElement).toBe(options[2]);
+    expect(document.activeElement).toBe(options[1]);
+
+    options[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+    options[1].click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.value()).toBeNull();
   });
 
   it('closes on Escape and restores focus to the trigger', () => {

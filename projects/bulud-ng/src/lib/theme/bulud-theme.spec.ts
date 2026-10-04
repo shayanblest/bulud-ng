@@ -351,7 +351,7 @@ describe('Bulud theme', () => {
   it('resolves component tokens after global values and library defaults', () => {
     const theme = resolveBuludTheme({
       colors: { primary: '#7c3aed' },
-      dropdown: { border: '#f97316' },
+      dropdown: { border: '#f97316', invalidBorder: '#b91c1c' },
       badge: {
         success: { background: '#14532d' },
         fontWeight: '700',
@@ -371,6 +371,7 @@ describe('Bulud theme', () => {
 
     expect(theme.colors.primary).toBe('#7c3aed');
     expect(theme.dropdown.border).toBe('#f97316');
+    expect(theme.dropdown.invalidBorder).toBe('#b91c1c');
     expect(theme.dropdown.foreground).toBe(
       BULUD_DEFAULT_THEME.dropdown.foreground,
     );
@@ -401,6 +402,7 @@ describe('Bulud theme', () => {
       },
       dropdown: {
         border: '#f97316',
+        invalidBorder: '#b91c1c',
       },
       badge: {
         danger: {
@@ -423,6 +425,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-color-primary']).toBe('#7c3aed');
     expect(variables['--bulud-radius-control']).toBe('0.75rem');
     expect(variables['--bulud-dropdown-border']).toBe('#f97316');
+    expect(variables['--bulud-dropdown-invalid-border']).toBe('#b91c1c');
     expect(variables['--bulud-badge-danger-foreground']).toBe('#881337');
     expect(variables['--bulud-tabs-active-border']).toBe('#7c3aed');
     expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
