@@ -9,6 +9,7 @@
     [attr.aria-expanded]="open()"
     [attr.aria-controls]="instanceId + '-listbox'"
     [attr.aria-activedescendant]="activeOptionId()"
+    [attr.aria-required]="required() ? 'true' : null"
     [attr.aria-invalid]="isInvalid() ? 'true' : null"
     aria-haspopup="listbox"
     (click)="toggle()"
@@ -19,8 +20,12 @@
         <ng-container
           [ngTemplateOutlet]="template"
           [ngTemplateOutletContext]="{
-            $implicit: multiple() ? selectedOptions() : (selectedOptions()[0] ?? null),
-            value: multiple() ? selectedOptions() : (selectedOptions()[0] ?? null),
+            $implicit: multiple()
+              ? selectedOptions()
+              : (selectedOptions()[0] ?? null),
+            value: multiple()
+              ? selectedOptions()
+              : (selectedOptions()[0] ?? null),
             multiple: multiple(),
           }"
         />
@@ -47,9 +52,9 @@
       [attr.aria-label]="clearLabel() ?? locale.dropdown.clearLabel"
       (click)="clear($event)"
     >
-        <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
-          <path d="m6 6 8 8m0-8-8 8" />
-        </svg>
+      <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+        <path d="m6 6 8 8m0-8-8 8" />
+      </svg>
     </button>
   }
 
@@ -73,6 +78,9 @@
             [placeholder]="
               searchPlaceholder() ?? locale.dropdown.searchPlaceholder
             "
+            [attr.aria-label]="searchLabel() ?? locale.dropdown.searchLabel"
+            [attr.aria-controls]="instanceId + '-listbox'"
+            [attr.aria-activedescendant]="activeOptionId()"
             (input)="handleSearchInput(searchInput.value)"
             (keydown)="handleSearchKeydown($event)"
           />
@@ -105,8 +113,10 @@
               class="bulud-dropdown__option"
               type="button"
               [id]="optionId(index)"
+              [disabled]="isOptionDisabled(option)"
               tabindex="-1"
               role="option"
+              [attr.aria-disabled]="isOptionDisabled(option) ? 'true' : null"
               [attr.aria-selected]="isSelected(option)"
               [class.bulud-dropdown__option--active]="isActive(index)"
               (click)="selectOption(option)"

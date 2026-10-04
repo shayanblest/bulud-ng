@@ -124,6 +124,11 @@ test.describe('Bulud component demo', () => {
     await trigger.press('ArrowDown');
 
     const search = single.locator('input[type="search"]');
+    await expect(search).toHaveAttribute('aria-label', 'Search options');
+    await expect(search).toHaveAttribute(
+      'aria-controls',
+      await trigger.getAttribute('aria-controls'),
+    );
     await search.fill('React');
     await expect(single.locator('[role="option"]')).toHaveCount(1);
     await single.locator('[role="option"]').click();
@@ -137,6 +142,19 @@ test.describe('Bulud component demo', () => {
     await multiple.locator('[role="option"]').nth(1).click();
     await expect(multipleTrigger).toContainText('2 selected');
     await expect(multipleTrigger).toHaveAttribute('aria-expanded', 'true');
+
+    await multiple.locator('[role="option"]').last().press('Escape');
+    await page.locator('#dropdown-disabled').check();
+    await expect(trigger).toBeDisabled();
+    await trigger.click({ force: true });
+    await expect(single.locator('[role="listbox"]')).toHaveCount(0);
+    await page.locator('#dropdown-disabled').uncheck();
+
+    const formDropdown = page.locator('#dropdown-forms bulud-dropdown');
+    const formTrigger = formDropdown.locator('.bulud-dropdown__trigger');
+    await formTrigger.click();
+    await formDropdown.locator('[role="option"]').first().click();
+    await expect(formTrigger).toContainText('Angular');
   });
 
   test('covers tabs semantics, selection, disabled state, orientation, and theme override', async ({
