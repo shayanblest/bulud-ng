@@ -48,7 +48,7 @@ describe('Bulud locale', () => {
     expect(locale.pagination?.pageLabel(3)).toBe('Page 3');
   });
 
-  it('provides the resolved locale and applies document language direction', () => {
+  it('provides the resolved locale and applies language without overriding direction', () => {
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
@@ -62,7 +62,7 @@ describe('Bulud locale', () => {
     expect(locale.language).toBe('fa');
     expect(locale.direction).toBe('rtl');
     expect(document.documentElement.lang).toBe('fa');
-    expect(document.documentElement.dir).toBe('rtl');
-    expect(document.documentElement.style.direction).toBe('rtl');
+    expect(document.documentElement.getAttribute('dir')).not.toBe('rtl');
+    expect(document.documentElement.style.direction).toBe('');
   });
 });

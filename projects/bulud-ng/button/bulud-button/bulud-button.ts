@@ -2,17 +2,16 @@ import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  computed,
+  inject,
   input,
 } from '@angular/core';
+import { BULUD_DEFAULT_LOCALE, BULUD_LOCALE } from 'bulud-ng';
 
 /**
  * Visual treatments supported by {@link BuludButton}.
  */
-export type BuludButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'danger'
-  | 'ghost';
+export type BuludButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 /**
  * Sizes supported by {@link BuludButton}.
@@ -35,6 +34,7 @@ export type BuludButtonType = 'button' | 'submit' | 'reset';
   styleUrl: './bulud-button.scss',
 })
 export class BuludButton {
+  private readonly locale = inject(BULUD_LOCALE);
   /**
    * Native type applied to the internal button. Defaults to `button` to avoid
    * accidental form submission.
@@ -66,5 +66,12 @@ export class BuludButton {
   readonly ariaLabel = input<string | null>(null, { alias: 'aria-label' });
 
   /** Assistive text announced when `loading` becomes true. */
-  readonly loadingLabel = input('Loading');
+  readonly loadingLabel = input<string | undefined>(undefined);
+
+  protected readonly resolvedLoadingLabel = computed(
+    () =>
+      this.loadingLabel() ??
+      this.locale.button?.loadingLabel ??
+      BULUD_DEFAULT_LOCALE.button!.loadingLabel,
+  );
 }

@@ -3,9 +3,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   output,
 } from '@angular/core';
+import { BULUD_DEFAULT_LOCALE, BULUD_LOCALE } from 'bulud-ng';
 
 export type BuludBadgeVariant =
   'neutral' | 'primary' | 'success' | 'warning' | 'danger';
@@ -24,16 +26,20 @@ export type BuludBadgeSize = 'small' | 'medium' | 'large';
   styleUrl: './bulud-badge.scss',
 })
 export class BuludBadge {
+  private readonly locale = inject(BULUD_LOCALE);
   readonly variant = input<BuludBadgeVariant>('neutral');
   readonly size = input<BuludBadgeSize>('medium');
   readonly dot = input(false, { transform: booleanAttribute });
   readonly dismissible = input(false, { transform: booleanAttribute });
-  readonly dismissLabel = input('Remove badge');
+  readonly dismissLabel = input<string | undefined>(undefined);
   /** Emits once per activation; consumers own removal and subsequent focus. */
   readonly dismissed = output<void>();
 
   protected readonly accessibleDismissLabel = computed(
-    () => this.dismissLabel().trim() || 'Remove badge',
+    () =>
+      this.dismissLabel()?.trim() ||
+      this.locale.badge?.dismissLabel ||
+      BULUD_DEFAULT_LOCALE.badge!.dismissLabel,
   );
 
   protected dismiss(event: Event): void {
