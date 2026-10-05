@@ -238,19 +238,26 @@ test.describe('Bulud component demo', () => {
     page,
   }) => {
     const darkToggle = page.locator('#dropdown-dark');
+    const dropdownPreview = page.locator(
+      '[data-testid="demo-dropdown-dark-preview"]',
+    );
+    const accordionPreview = page.locator(
+      '[data-testid="demo-accordion-dark-preview"]',
+    );
+    const tabsPreview = page.locator('[data-testid="demo-tabs-dark-preview"]');
     const dropdownTrigger = page.locator(
-      '#demo-dropdown-single .bulud-dropdown__trigger',
+      '[data-testid="demo-dropdown-dark-preview"] #demo-dropdown-single .bulud-dropdown__trigger',
     );
     const accordionTrigger = page.locator(
-      '#demo-accordion-overview .bulud-accordion-item__trigger',
+      '[data-testid="demo-accordion-dark-preview"] #demo-accordion-overview .bulud-accordion-item__trigger',
     );
     const tabsSurface = page.locator(
-      '#tabs [data-testid="demo-tabs-horizontal"] .bulud-tabs',
+      '[data-testid="demo-tabs-dark-preview"] [data-testid="demo-tabs-horizontal"] .bulud-tabs',
     );
 
-    await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
-    await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
-    await expect(page.locator('#tabs')).not.toHaveAttribute('data-theme');
+    await expect(dropdownPreview).not.toHaveAttribute('data-theme');
+    await expect(accordionPreview).not.toHaveAttribute('data-theme');
+    await expect(tabsPreview).not.toHaveAttribute('data-theme');
     await expect(dropdownTrigger).toHaveCSS(
       'background-color',
       'rgb(255, 255, 255)',
@@ -266,15 +273,9 @@ test.describe('Bulud component demo', () => {
 
     await darkToggle.check();
 
-    await expect(page.locator('#dropdown')).toHaveAttribute(
-      'data-theme',
-      'dark',
-    );
-    await expect(page.locator('#accordion')).toHaveAttribute(
-      'data-theme',
-      'dark',
-    );
-    await expect(page.locator('#tabs')).toHaveAttribute('data-theme', 'dark');
+    await expect(dropdownPreview).toHaveAttribute('data-theme', 'dark');
+    await expect(accordionPreview).toHaveAttribute('data-theme', 'dark');
+    await expect(tabsPreview).toHaveAttribute('data-theme', 'dark');
     await expect(dropdownTrigger).toHaveCSS(
       'background-color',
       'rgb(15, 23, 42)',
@@ -287,9 +288,9 @@ test.describe('Bulud component demo', () => {
 
     await darkToggle.uncheck();
 
-    await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
-    await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
-    await expect(page.locator('#tabs')).not.toHaveAttribute('data-theme');
+    await expect(dropdownPreview).not.toHaveAttribute('data-theme');
+    await expect(accordionPreview).not.toHaveAttribute('data-theme');
+    await expect(tabsPreview).not.toHaveAttribute('data-theme');
     await expect(dropdownTrigger).toHaveCSS(
       'background-color',
       'rgb(255, 255, 255)',

@@ -762,7 +762,6 @@
         <section
           id="dropdown"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-          [attr.data-theme]="componentDark() ? 'dark' : null"
         >
           <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -811,7 +810,11 @@
   [(value)]="selectedFramework"
 &gt;&lt;/bulud-dropdown&gt;</code></pre>
           } @else {
-            <div class="grid gap-6 lg:grid-cols-2">
+            <div
+              data-testid="demo-dropdown-dark-preview"
+              class="grid gap-6 rounded-2xl bg-bulud-surface p-5 text-bulud-on-surface lg:grid-cols-2"
+              [attr.data-theme]="componentDark() ? 'dark' : null"
+            >
               <article
                 class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
               >
@@ -986,7 +989,6 @@
         <section
           id="accordion"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-          [attr.data-theme]="componentDark() ? 'dark' : null"
         >
           <div class="mb-7">
             <p
@@ -1003,7 +1005,11 @@
             </p>
           </div>
 
-          <div class="grid gap-6 lg:grid-cols-2">
+          <div
+            data-testid="demo-accordion-dark-preview"
+            class="grid gap-6 rounded-2xl bg-bulud-surface p-5 text-bulud-on-surface lg:grid-cols-2"
+            [attr.data-theme]="componentDark() ? 'dark' : null"
+          >
             <article
               class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
             >
@@ -1094,7 +1100,6 @@
         <section
           id="tabs"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-          [attr.data-theme]="componentDark() ? 'dark' : null"
         >
           <div class="mb-7">
             <p
@@ -1112,75 +1117,83 @@
             </p>
           </div>
 
-          <bulud-tabs
-            data-testid="demo-tabs-horizontal"
-            aria-label="Account sections"
-            [(activeId)]="activeTab"
-            style="--bulud-tabs-active-border: #7c3aed"
+          <div
+            data-testid="demo-tabs-dark-preview"
+            class="rounded-2xl bg-bulud-surface p-5 text-bulud-on-surface"
+            [attr.data-theme]="componentDark() ? 'dark' : null"
           >
-            <button
-              data-testid="demo-tab-overview"
-              type="button"
-              [buludTab]="'overview'"
+            <bulud-tabs
+              data-testid="demo-tabs-horizontal"
+              aria-label="Account sections"
+              [(activeId)]="activeTab"
+              style="--bulud-tabs-active-border: #7c3aed"
             >
-              Overview
-            </button>
-            <button
-              data-testid="demo-tab-activity"
-              type="button"
-              [buludTab]="'activity'"
-            >
-              Activity
-            </button>
-            <button
-              data-testid="demo-tab-disabled"
-              type="button"
-              [buludTab]="'settings'"
-              disabled
-            >
-              Settings (disabled)
-            </button>
-
-            <section [buludTabPanel]="'overview'">
-              Your workspace overview and recent project activity.
-            </section>
-            <section [buludTabPanel]="'activity'">
-              Activity is grouped by project and sorted by most recent change.
-            </section>
-            <section [buludTabPanel]="'settings'">
-              Settings are currently unavailable in this preview.
-            </section>
-          </bulud-tabs>
-          <p
-            id="tabs-active"
-            class="mt-4 text-sm font-semibold text-slate-600"
-            aria-live="polite"
-          >
-            Active tab: {{ activeTab() }}
-          </p>
-
-          <div class="mt-7 max-w-2xl">
-            <p class="mb-3 text-sm font-bold text-slate-700">
-              Vertical example
-            </p>
-            <bulud-tabs orientation="vertical" aria-label="Profile sections">
               <button
-                data-testid="demo-tab-profile"
+                data-testid="demo-tab-overview"
                 type="button"
-                [buludTab]="'profile'"
+                [buludTab]="'overview'"
               >
-                Profile
+                Overview
               </button>
               <button
-                data-testid="demo-tab-security"
+                data-testid="demo-tab-activity"
                 type="button"
-                [buludTab]="'security'"
+                [buludTab]="'activity'"
               >
-                Security
+                Activity
               </button>
-              <section [buludTabPanel]="'profile'">Profile details.</section>
-              <section [buludTabPanel]="'security'">Security details.</section>
+              <button
+                data-testid="demo-tab-disabled"
+                type="button"
+                [buludTab]="'settings'"
+                disabled
+              >
+                Settings (disabled)
+              </button>
+
+              <section [buludTabPanel]="'overview'">
+                Your workspace overview and recent project activity.
+              </section>
+              <section [buludTabPanel]="'activity'">
+                Activity is grouped by project and sorted by most recent change.
+              </section>
+              <section [buludTabPanel]="'settings'">
+                Settings are currently unavailable in this preview.
+              </section>
             </bulud-tabs>
+            <p
+              id="tabs-active"
+              class="mt-4 text-sm font-semibold text-bulud-on-surface"
+              aria-live="polite"
+            >
+              Active tab: {{ activeTab() }}
+            </p>
+
+            <div class="mt-7 max-w-2xl">
+              <p class="mb-3 text-sm font-bold text-bulud-on-surface">
+                Vertical example
+              </p>
+              <bulud-tabs orientation="vertical" aria-label="Profile sections">
+                <button
+                  data-testid="demo-tab-profile"
+                  type="button"
+                  [buludTab]="'profile'"
+                >
+                  Profile
+                </button>
+                <button
+                  data-testid="demo-tab-security"
+                  type="button"
+                  [buludTab]="'security'"
+                >
+                  Security
+                </button>
+                <section [buludTabPanel]="'profile'">Profile details.</section>
+                <section [buludTabPanel]="'security'">
+                  Security details.
+                </section>
+              </bulud-tabs>
+            </div>
           </div>
 
           <pre
