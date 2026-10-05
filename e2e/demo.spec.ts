@@ -77,6 +77,15 @@ test.describe('Bulud component demo', () => {
     );
   });
 
+  test('preserves nested RTL and LTR direction overrides', async ({ page }) => {
+    const rtlRegion = page.locator('#rtl-demo');
+    const rtlButton = rtlRegion.locator('#demo-button-rtl button');
+    const nestedLtrButton = rtlRegion.locator('#demo-button-ltr-nested button');
+
+    await expect(rtlButton).toHaveCSS('direction', 'rtl');
+    await expect(nestedLtrButton).toHaveCSS('direction', 'ltr');
+  });
+
   test('covers dropdown pointer, keyboard opening, search, single, and multiple selection', async ({
     page,
   }) => {
