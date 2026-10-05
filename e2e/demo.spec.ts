@@ -238,10 +238,29 @@ test.describe('Bulud component demo', () => {
     page,
   }) => {
     const darkToggle = page.locator('#dropdown-dark');
+    const dropdownTrigger = page.locator(
+      '#demo-dropdown-single .bulud-dropdown__trigger',
+    );
+    const accordionTrigger = page.locator(
+      '#demo-accordion-overview .bulud-accordion-item__trigger',
+    );
+    const tabsSurface = page.locator('#tabs bulud-tabs .bulud-tabs');
 
     await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
     await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
     await expect(page.locator('#tabs')).not.toHaveAttribute('data-theme');
+    await expect(dropdownTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(accordionTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(tabsSurface).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
 
     await darkToggle.check();
 
@@ -254,12 +273,33 @@ test.describe('Bulud component demo', () => {
       'dark',
     );
     await expect(page.locator('#tabs')).toHaveAttribute('data-theme', 'dark');
+    await expect(dropdownTrigger).toHaveCSS(
+      'background-color',
+      'rgb(15, 23, 42)',
+    );
+    await expect(accordionTrigger).toHaveCSS(
+      'background-color',
+      'rgb(15, 23, 42)',
+    );
+    await expect(tabsSurface).toHaveCSS('background-color', 'rgb(15, 23, 42)');
 
     await darkToggle.uncheck();
 
     await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
     await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
     await expect(page.locator('#tabs')).not.toHaveAttribute('data-theme');
+    await expect(dropdownTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(accordionTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(tabsSurface).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
   });
 
   test('covers accordion single and multiple expansion, disabled state, keyboard, and theme override', async ({
