@@ -435,9 +435,12 @@ explicitly imported `theme.css` provides light and dark defaults.
 | `aria-errormessage` | `string \| null` | `null`  | Error relationship                             |
 
 `checkedChange` emits once for each user change; programmatic Angular Forms
-writes or resets do not call the registered Forms `onChange` callback. `reset()`
-renders the switch off. Reactive
-Forms and template-driven forms are both supported:
+writes or resets do not call the registered Forms `onChange` callback. For
+nullable/default controls, `reset()` without an explicit value may pass
+`null` or another false-like value to `writeValue`; a `nonNullable` control
+resets to its initial value instead. BuludSwitch renders according to the value
+supplied through `writeValue`, so only a true value renders on. Reactive Forms
+and template-driven forms are both supported:
 
 ```html
 <bulud-switch [formControl]="notificationsControl">Notifications</bulud-switch>
