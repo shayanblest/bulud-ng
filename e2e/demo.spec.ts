@@ -234,6 +234,34 @@ test.describe('Bulud component demo', () => {
     );
   });
 
+  test('applies the scoped dark preview to dropdown, accordion, and tabs', async ({
+    page,
+  }) => {
+    const darkToggle = page.locator('#dropdown-dark');
+
+    await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
+    await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
+    await expect(page.locator('#tabs')).not.toHaveAttribute('data-theme');
+
+    await darkToggle.check();
+
+    await expect(page.locator('#dropdown')).toHaveAttribute(
+      'data-theme',
+      'dark',
+    );
+    await expect(page.locator('#accordion')).toHaveAttribute(
+      'data-theme',
+      'dark',
+    );
+    await expect(page.locator('#tabs')).toHaveAttribute('data-theme', 'dark');
+
+    await darkToggle.uncheck();
+
+    await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
+    await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
+    await expect(page.locator('#tabs')).not.toHaveAttribute('data-theme');
+  });
+
   test('covers accordion single and multiple expansion, disabled state, keyboard, and theme override', async ({
     page,
   }) => {
