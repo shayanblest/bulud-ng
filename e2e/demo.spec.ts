@@ -78,10 +78,13 @@ test.describe('Bulud component demo', () => {
   });
 
   test('preserves nested RTL and LTR direction overrides', async ({ page }) => {
+    const languageToggle = page.locator('#demo-language-toggle');
     const rtlRegion = page.locator('#rtl-demo');
     const rtlButton = rtlRegion.locator('#demo-button-rtl button');
     const nestedLtrButton = rtlRegion.locator('#demo-button-ltr-nested button');
 
+    await languageToggle.click();
+    await expect(page.locator('html')).toHaveCSS('direction', 'ltr');
     await expect(rtlButton).toHaveCSS('direction', 'rtl');
     await expect(nestedLtrButton).toHaveCSS('direction', 'ltr');
   });
