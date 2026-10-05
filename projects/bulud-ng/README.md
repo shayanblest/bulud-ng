@@ -224,8 +224,9 @@ bind `[(value)]` to a readonly array:
 When text inputs are omitted, the dropdown uses the injected locale. Configure
 English or Persian defaults with `provideBuludLocale`; explicit instance inputs
 such as `placeholder`, `loadingText`, `clearLabel`, and `searchLabel` take
-precedence. The provider also applies `lang` and `dir` to the document; the
-component follows the ancestor direction and does not switch it.
+precedence. The provider sets the document `lang`; it does not set `dir` or
+CSS direction. The component follows the nearest ancestor direction and does
+not switch it.
 
 ```ts
 import { provideBuludLocale } from "bulud-ng";
@@ -285,6 +286,8 @@ state combine, so either one prevents interaction.
 | `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result                       |
 | `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                                     |
 | `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection                    |
+| `clearLabel`        | `string \| undefined`            | locale default   | Accessible name for the clear action                      |
+| `searchLabel`       | `string \| undefined`            | locale default   | Accessible name for the search field                      |
 | `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger                  |
 | `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text                        |
 | `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values                     |
@@ -293,6 +296,13 @@ state combine, so either one prevents interaction.
 clear action and search field. The component exposes `valueChange` through its
 model binding; Angular Forms users should prefer `formControl`, `formControlName`,
 or `ngModel` when participating in form state.
+
+The option template receives `let-option` and `let-selected="selected"`; its
+context exposes the option as both the implicit value and `option`, plus the
+boolean `selected`. The selected-value template receives the selected `value`
+and the `multiple` boolean. Keep projected option content text-equivalent to
+the value returned by `optionLabel`, and provide an accessible trigger label
+when the projected content is not sufficient.
 
 ## Checkbox
 
@@ -327,6 +337,17 @@ update the form value, blur marks it touched, `required` returns the standard
 `required` error, and a disabled Angular control disables the native input.
 Checkbox theme values use the shared CSS variables and follow the normal
 instance, component token, global provider, and library-default precedence.
+Reactive Forms and template-driven forms are both supported:
+
+```html
+<bulud-checkbox [formControl]="accepted">Accept terms</bulud-checkbox> <bulud-checkbox [(ngModel)]="accepted">Accept terms</bulud-checkbox>
+```
+
+Angular Forms `reset()` normally passes `null` to `writeValue`; because only
+`true` renders as checked, the checkbox renders unchecked. Programmatic
+`writeValue` calls and resets do not emit `checkedChange` as user events. An
+instance `[disabled]` value and Forms `disable()` state are combined; both must
+be clear before interaction resumes.
 
 ### Checkbox inputs
 
@@ -396,9 +417,16 @@ explicitly imported `theme.css` provides light and dark defaults.
 | `aria-errormessage` | `string \| null` | `null`  | Error relationship                             |
 
 `checkedChange` emits once for each user change; programmatic Angular Forms
-writes do not emit it. The native switch handles
-Space and projected-label activation; Enter is not required by the switch APG
-pattern.
+writes or resets do not emit it. `reset()` renders the switch off. Reactive
+Forms and template-driven forms are both supported:
+
+```html
+<bulud-switch [formControl]="notifications">Notifications</bulud-switch> <bulud-switch [(ngModel)]="notifications">Notifications</bulud-switch>
+```
+
+An instance `[disabled]` value and Forms `disable()` state are combined. The
+native switch handles Space and projected-label activation; Enter is not
+required by the switch APG pattern.
 
 ## Dialog
 
@@ -537,6 +565,33 @@ not add semantics or ARIA; consumers must provide the appropriate native
 element, accessible name, and keyboard behavior when observing an interactive
 element.
 
+## Click outside
+
+Import the standalone directive and listen to its typed `outside` output:
+
+```ts
+import { Component } from "@angular/core";
+import { BuludClickOutside, type BuludClickOutsideEvent } from "bulud-ng/clickoutside";
+
+@Component({
+  imports: [BuludClickOutside],
+  template: ` <div buludClickOutside (outside)="closeMenu($event)">Menu content</div> `,
+})
+export class Menu {
+  closeMenu(event: BuludClickOutsideEvent): void {
+    // event.trigger is "pointerdown" or "focusin".
+  }
+}
+```
+
+`BuludClickOutside` has `enabled` (default `true`) and `triggers` inputs. The
+default triggers are `pointerdown` and `focusin`; duplicate trigger names are
+deduplicated. A pointerdown followed by focusin for the same target emits only
+the pointer event. The directive emits only for targets outside its host and
+does not add ARIA, keyboard, focus-management, or close behavior. Consumers
+must provide the host semantics, accessible names, focus handling, and any
+keyboard behavior required by the surrounding interaction.
+
 ## Textarea autosize
 
 Import `BuludTextareaAutosize` from its secondary entry point and opt in on a
@@ -613,14 +668,14 @@ import { BuludBadge } from "bulud-ng/badge";
 `BuludBadge` renders projected content with optional status dot and dismiss
 action. Its `dismissed` output emits after the dismiss button is activated.
 
-| Input/output   | Type                                                           | Default          | Description                                |
-| -------------- | -------------------------------------------------------------- | ---------------- | ------------------------------------------ |
-| `variant`      | `'neutral' \| 'primary' \| 'success' \| 'warning' \| 'danger'` | `'neutral'`      | Visual treatment                           |
-| `size`         | `'small' \| 'medium' \| 'large'`                               | `'medium'`       | Badge size                                 |
-| `dot`          | `boolean`                                                      | `false`          | Shows a decorative status dot              |
-| `dismissible`  | `boolean`                                                      | `false`          | Shows a keyboard-accessible dismiss button |
-| `dismissLabel` | `string`                                                       | `'Remove badge'` | Accessible name for dismiss                |
-| `dismissed`    | `Output<void>`                                                 | —                | Emits when dismissal is activated          |
+| Input/output   | Type                                                           | Default        | Description                                |
+| -------------- | -------------------------------------------------------------- | -------------- | ------------------------------------------ |
+| `variant`      | `'neutral' \| 'primary' \| 'success' \| 'warning' \| 'danger'` | `'neutral'`    | Visual treatment                           |
+| `size`         | `'small' \| 'medium' \| 'large'`                               | `'medium'`     | Badge size                                 |
+| `dot`          | `boolean`                                                      | `false`        | Shows a decorative status dot              |
+| `dismissible`  | `boolean`                                                      | `false`        | Shows a keyboard-accessible dismiss button |
+| `dismissLabel` | `string \| undefined`                                          | locale default | Accessible name for dismiss                |
+| `dismissed`    | `Output<void>`                                                 | —              | Emits when dismissal is activated          |
 
 The badge is passive text, with no implicit live region, button role, or tab
 stop. Variants communicate appearance; include meaningful text rather than
@@ -875,10 +930,12 @@ configuration, then library default. Import `bulud-ng/theme.css` explicitly to
 ship the default light and dark variable sets.
 
 All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
-`BuludButtonTheme`, `BuludDropdownTheme`, `BuludBadgeTheme`, `BuludTheme`, and
-`BuludTabsTheme`, `BuludAccordionTheme`, `BuludDialogTheme`, `BuludPaginationTheme`, and
-`BuludThemeConfig`) are exported
-from the root entry point.
+`BuludButtonSizeTheme`, `BuludButtonTheme`, `BuludDropdownTheme`,
+`BuludBadgeVariantTheme`, `BuludBadgeTheme`, `BuludTabsTheme`,
+`BuludAccordionTheme`, `BuludCheckboxTheme`, `BuludSwitchTheme`,
+`BuludDialogTheme`, `BuludPaginationTheme`, `BuludTheme`,
+`ResolvedBuludTheme`, `BuludThemeConfig`, and `BuludThemeCssVariable`) are
+exported from the root entry point.
 
 `ResolvedBuludTheme` is also exported for values returned by `resolveBuludTheme()`
 and injected through `BULUD_THEME`. Its button and badge fields are all required strings,
@@ -926,16 +983,16 @@ click behavior are preserved.
 
 ### Inputs
 
-| Input          | Type                                              | Default     | Description                                      |
-| -------------- | ------------------------------------------------- | ----------- | ------------------------------------------------ |
-| `type`         | `'button' \| 'submit' \| 'reset'`                 | `'button'`  | Native button type                               |
-| `variant`      | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'` | Visual treatment                                 |
-| `size`         | `'small' \| 'medium' \| 'large'`                  | `'medium'`  | Control size                                     |
-| `disabled`     | `boolean`                                         | `false`     | Prevents interaction                             |
-| `loading`      | `boolean`                                         | `false`     | Shows progress and prevents repeated interaction |
-| `loadingLabel` | `string`                                          | `'Loading'` | Assistive text for the loading state             |
-| `fullWidth`    | `boolean`                                         | `false`     | Fills the available inline size                  |
-| `aria-label`   | `string \| null`                                  | `null`      | Overrides projected text as the accessible name  |
+| Input          | Type                                              | Default        | Description                                      |
+| -------------- | ------------------------------------------------- | -------------- | ------------------------------------------------ |
+| `type`         | `'button' \| 'submit' \| 'reset'`                 | `'button'`     | Native button type                               |
+| `variant`      | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'`    | Visual treatment                                 |
+| `size`         | `'small' \| 'medium' \| 'large'`                  | `'medium'`     | Control size                                     |
+| `disabled`     | `boolean`                                         | `false`        | Prevents interaction                             |
+| `loading`      | `boolean`                                         | `false`        | Shows progress and prevents repeated interaction |
+| `loadingLabel` | `string \| undefined`                             | locale default | Assistive text for the loading state             |
+| `fullWidth`    | `boolean`                                         | `false`        | Fills the available inline size                  |
+| `aria-label`   | `string \| null`                                  | `null`         | Overrides projected text as the accessible name  |
 
 The component uses the native bubbling `click` event rather than a duplicate
 custom output.
