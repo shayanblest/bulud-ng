@@ -418,6 +418,7 @@ describe('Bulud theme', () => {
     const variables = createBuludThemeVariables({
       colors: {
         primary: '#7c3aed',
+        danger: '#be123c',
       },
       shape: {
         controlRadius: '0.75rem',
@@ -445,6 +446,7 @@ describe('Bulud theme', () => {
     });
 
     expect(variables['--bulud-color-primary']).toBe('#7c3aed');
+    expect(variables['--bulud-color-danger']).toBe('#be123c');
     expect(variables['--bulud-radius-control']).toBe('0.75rem');
     expect(variables['--bulud-dropdown-border']).toBe('#f97316');
     expect(variables['--bulud-dropdown-invalid-border']).toBe('#b91c1c');
@@ -458,9 +460,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-dialog-focus-offset']).toBe('2px');
     expect(variables['--bulud-dialog-viewport-gutter']).toBe('1rem');
     expect(variables['--bulud-dialog-stack-base']).toBe('1000');
-    expect(variables['--bulud-color-danger']).toBe(
-      BULUD_DEFAULT_THEME.colors.danger,
-    );
+    expect(variables['--bulud-color-danger']).toBe('#be123c');
   });
 
   it('keeps instance custom properties available above provider values', () => {
@@ -504,6 +504,7 @@ describe('Bulud theme', () => {
         provideBuludTheme({
           colors: {
             primary: '#7c3aed',
+            danger: '#be123c',
           },
           tabs: {
             activeBorder: '#7c3aed',
@@ -525,6 +526,14 @@ describe('Bulud theme', () => {
           ?.getComputedStyle(document.documentElement)
           .getPropertyValue('--bulud-color-primary'),
       ).toBe('#7c3aed');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-danger'),
+      ).toBe('#be123c');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-dropdown-invalid-border:');
       expect(
         document.defaultView
           ?.getComputedStyle(document.documentElement)

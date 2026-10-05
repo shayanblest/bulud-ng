@@ -1070,6 +1070,10 @@ export function provideBuludTheme(
 
   // Omitted optional tokens must remain CSS fallbacks, not high-specificity
   // provider declarations that override consumer :root rules.
+  if (config.dropdown?.invalidBorder === undefined) {
+    delete variables['--bulud-dropdown-invalid-border'];
+  }
+
   for (const [field, variable] of [
     ['borderWidth', '--bulud-button-border-width'],
     ['focusWidth', '--bulud-button-focus-width'],
