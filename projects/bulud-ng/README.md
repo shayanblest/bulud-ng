@@ -340,14 +340,32 @@ instance, component token, global provider, and library-default precedence.
 Reactive Forms and template-driven forms are both supported:
 
 ```html
-<bulud-checkbox [formControl]="accepted">Accept terms</bulud-checkbox> <bulud-checkbox [(ngModel)]="accepted">Accept terms</bulud-checkbox>
+<bulud-checkbox [formControl]="acceptedControl">Accept terms</bulud-checkbox>
 ```
 
-Angular Forms `reset()` normally passes `null` to `writeValue`; because only
-`true` renders as checked, the checkbox renders unchecked. Programmatic
-`writeValue` calls and resets do not emit `checkedChange` as user events. An
-instance `[disabled]` value and Forms `disable()` state are combined; both must
-be clear before interaction resumes.
+```ts
+import { FormControl } from "@angular/forms";
+
+acceptedControl = new FormControl<boolean>(false, { nonNullable: true });
+```
+
+```html
+<bulud-checkbox [(ngModel)]="accepted">Accept terms</bulud-checkbox>
+```
+
+```ts
+accepted = false;
+```
+
+For nullable/default Angular Forms controls, `reset()` without an explicit
+value may pass `null` to `writeValue`; a `nonNullable` control such as the
+example resets to its initial value instead. Only `true` renders as checked, so
+`null` and other non-true values render unchecked. Because `writeValue` uses the
+`checked` model setter, a changed value is reflected through the generated
+`checkedChange` output; this is distinct from the registered Forms `onChange`
+callback, which `writeValue` does not call. An instance `[disabled]` value and
+Forms `disable()` state are combined; both must be clear before interaction
+resumes.
 
 ### Checkbox inputs
 
@@ -417,11 +435,26 @@ explicitly imported `theme.css` provides light and dark defaults.
 | `aria-errormessage` | `string \| null` | `null`  | Error relationship                             |
 
 `checkedChange` emits once for each user change; programmatic Angular Forms
-writes or resets do not emit it. `reset()` renders the switch off. Reactive
+writes or resets do not call the registered Forms `onChange` callback. `reset()`
+renders the switch off. Reactive
 Forms and template-driven forms are both supported:
 
 ```html
-<bulud-switch [formControl]="notifications">Notifications</bulud-switch> <bulud-switch [(ngModel)]="notifications">Notifications</bulud-switch>
+<bulud-switch [formControl]="notificationsControl">Notifications</bulud-switch>
+```
+
+```ts
+import { FormControl } from "@angular/forms";
+
+notificationsControl = new FormControl<boolean>(false, { nonNullable: true });
+```
+
+```html
+<bulud-switch [(ngModel)]="notifications">Notifications</bulud-switch>
+```
+
+```ts
+notifications = false;
 ```
 
 An instance `[disabled]` value and Forms `disable()` state are combined. The

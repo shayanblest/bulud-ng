@@ -111,9 +111,15 @@ Exports `BuludCheckbox`. Inputs are model `checked` and `indeterminate`, plus
 `disabled`, `required`, `invalid`, `id`, `aria-label`, `aria-describedby`, and
 `aria-errormessage`. Model outputs are `checkedChange` and
 `indeterminateChange`. It implements ControlValueAccessor and Validator:
-`null`/non-true writes render unchecked, user changes call Forms change
-callbacks, blur marks touched, required returns `{ required: true }`, and Forms
-disabled state combines with the instance input.
+Nullable/default Angular Forms controls may pass `null` to `writeValue` when
+`reset()` has no explicit value; `nonNullable` controls reset to their initial
+value instead. Only `true` renders as checked, so `null` and other non-true
+writes render unchecked. A changed `writeValue` is reflected through the
+generated `checkedChange` model output because it uses the checked model setter.
+This output is distinct from the registered Forms `onChange` callback, which
+`writeValue` does not call. User changes call Forms change callbacks, blur marks
+touched, required returns `{ required: true }`, and Forms disabled state combines
+with the instance input.
 
 ### `bulud-ng/switch`
 
