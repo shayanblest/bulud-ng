@@ -10,6 +10,7 @@ import {
   BULUD_DEFAULT_THEME,
   BULUD_THEME,
   BuludButtonTheme,
+  BuludDropdownTheme,
   BuludTheme,
   createBuludThemeVariables,
   defineBuludTheme,
@@ -228,6 +229,27 @@ describe('Bulud theme', () => {
     });
   });
 
+  it('resolves the invalid border default for legacy dropdown theme objects', () => {
+    const { invalidBorder, ...legacyDropdown } = BULUD_DEFAULT_THEME.dropdown;
+    void invalidBorder;
+    const legacyTheme: BuludTheme = {
+      ...BULUD_DEFAULT_THEME,
+      dropdown: legacyDropdown,
+    };
+    const resolvedDropdown: Required<BuludDropdownTheme> =
+      resolveBuludTheme(legacyTheme).dropdown;
+
+    expect(resolvedDropdown.invalidBorder).toBe(
+      resolveBuludTheme().dropdown.invalidBorder,
+    );
+    expect(createBuludThemeVariables(legacyTheme)).toEqual(
+      jasmine.objectContaining({
+        '--bulud-dropdown-invalid-border':
+          resolveBuludTheme().dropdown.invalidBorder,
+      }),
+    );
+  });
+
   it('accepts a legacy theme typed using typeof BULUD_DEFAULT_THEME', () => {
     const legacyTheme: typeof BULUD_DEFAULT_THEME = {
       ...BULUD_DEFAULT_THEME,
@@ -351,7 +373,7 @@ describe('Bulud theme', () => {
   it('resolves component tokens after global values and library defaults', () => {
     const theme = resolveBuludTheme({
       colors: { primary: '#7c3aed' },
-      dropdown: { border: '#f97316' },
+      dropdown: { border: '#f97316', invalidBorder: '#b91c1c' },
       badge: {
         success: { background: '#14532d' },
         fontWeight: '700',
@@ -371,6 +393,7 @@ describe('Bulud theme', () => {
 
     expect(theme.colors.primary).toBe('#7c3aed');
     expect(theme.dropdown.border).toBe('#f97316');
+    expect(theme.dropdown.invalidBorder).toBe('#b91c1c');
     expect(theme.dropdown.foreground).toBe(
       BULUD_DEFAULT_THEME.dropdown.foreground,
     );
@@ -395,12 +418,14 @@ describe('Bulud theme', () => {
     const variables = createBuludThemeVariables({
       colors: {
         primary: '#7c3aed',
+        danger: '#be123c',
       },
       shape: {
         controlRadius: '0.75rem',
       },
       dropdown: {
         border: '#f97316',
+        invalidBorder: '#b91c1c',
       },
       badge: {
         danger: {
@@ -421,8 +446,10 @@ describe('Bulud theme', () => {
     });
 
     expect(variables['--bulud-color-primary']).toBe('#7c3aed');
+    expect(variables['--bulud-color-danger']).toBe('#be123c');
     expect(variables['--bulud-radius-control']).toBe('0.75rem');
     expect(variables['--bulud-dropdown-border']).toBe('#f97316');
+    expect(variables['--bulud-dropdown-invalid-border']).toBe('#b91c1c');
     expect(variables['--bulud-badge-danger-foreground']).toBe('#881337');
     expect(variables['--bulud-tabs-active-border']).toBe('#7c3aed');
     expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
@@ -433,9 +460,7 @@ describe('Bulud theme', () => {
     expect(variables['--bulud-dialog-focus-offset']).toBe('2px');
     expect(variables['--bulud-dialog-viewport-gutter']).toBe('1rem');
     expect(variables['--bulud-dialog-stack-base']).toBe('1000');
-    expect(variables['--bulud-color-danger']).toBe(
-      BULUD_DEFAULT_THEME.colors.danger,
-    );
+    expect(variables['--bulud-color-danger']).toBe('#be123c');
   });
 
   it('keeps instance custom properties available above provider values', () => {
@@ -479,6 +504,7 @@ describe('Bulud theme', () => {
         provideBuludTheme({
           colors: {
             primary: '#7c3aed',
+            danger: '#be123c',
           },
           tabs: {
             activeBorder: '#7c3aed',
@@ -500,6 +526,14 @@ describe('Bulud theme', () => {
           ?.getComputedStyle(document.documentElement)
           .getPropertyValue('--bulud-color-primary'),
       ).toBe('#7c3aed');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-danger'),
+      ).toBe('#be123c');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-dropdown-invalid-border:');
       expect(
         document.defaultView
           ?.getComputedStyle(document.documentElement)
@@ -626,6 +660,68 @@ describe('Bulud theme', () => {
       ).toContain(":root:not(.dark):not([data-theme='dark'])");
     } finally {
       document.documentElement.removeAttribute('data-theme');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps explicit dropdown invalid borders in light and dark scopes', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          colors: { danger: '#be123c' },
+          dropdown: { invalidBorder: '#7f1d1d' },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      const styleText =
+        document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+        '';
+      expect(styleText.match(/--bulud-dropdown-invalid-border:/g)).toHaveSize(
+        2,
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+
+      root.classList.add('dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+
+      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+    } finally {
+      root.classList.remove('dark');
+      root.removeAttribute('data-theme');
       environmentInjector.destroy();
 
       if (existingStyle) {

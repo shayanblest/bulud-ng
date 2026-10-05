@@ -57,6 +57,7 @@ export interface BuludButtonTheme {
 export interface BuludDropdownTheme {
   readonly background: string;
   readonly border: string;
+  readonly invalidBorder?: string;
   readonly borderHover: string;
   readonly foreground: string;
   readonly focus: string;
@@ -252,6 +253,7 @@ export interface ResolvedBuludTheme extends Omit<
   BuludTheme,
   'checkbox' | 'switch'
 > {
+  readonly dropdown: Required<BuludDropdownTheme>;
   readonly button: Required<BuludButtonTheme>;
   readonly badge: Required<BuludBadgeTheme>;
   readonly checkbox: BuludCheckboxTheme;
@@ -433,6 +435,7 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
   dropdown: {
     background: '#ffffff',
     border: '#cbd5e1',
+    invalidBorder: '#dc2626',
     borderHover: '#2563eb',
     foreground: '#0f172a',
     focus: '#93c5fd',
@@ -658,6 +661,10 @@ export function defineBuludTheme<const Config extends BuludThemeConfig>(
 export function resolveBuludTheme(
   config: BuludThemeConfig = {},
 ): ResolvedBuludTheme {
+  const dropdownInvalidBorder: string =
+    config.dropdown?.invalidBorder ??
+    RESOLVED_DEFAULT_THEME.dropdown.invalidBorder;
+
   return {
     colors: {
       ...BULUD_DEFAULT_THEME.colors,
@@ -695,6 +702,7 @@ export function resolveBuludTheme(
     dropdown: {
       ...BULUD_DEFAULT_THEME.dropdown,
       ...config.dropdown,
+      invalidBorder: dropdownInvalidBorder,
     },
     badge: {
       ...BULUD_DEFAULT_THEME.badge,
@@ -836,6 +844,7 @@ export function createBuludThemeVariables(
     '--bulud-button-padding-inline-large': theme.button.large.paddingInline,
     '--bulud-dropdown-background': theme.dropdown.background,
     '--bulud-dropdown-border': theme.dropdown.border,
+    '--bulud-dropdown-invalid-border': theme.dropdown.invalidBorder,
     '--bulud-dropdown-border-hover': theme.dropdown.borderHover,
     '--bulud-dropdown-foreground': theme.dropdown.foreground,
     '--bulud-dropdown-focus': theme.dropdown.focus,
@@ -1025,6 +1034,9 @@ function createBuludThemeCss(
       property.startsWith('--bulud-switch-') &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
+  const dropdownDarkModeVariables = entries.filter(
+    ([property]) => property === '--bulud-dropdown-invalid-border',
+  );
   const dialogDarkModeVariables = entries.filter(
     ([property]) =>
       property.startsWith('--bulud-dialog-') &&
@@ -1036,7 +1048,7 @@ function createBuludThemeCss(
       !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...dropdownDarkModeVariables, ...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
 }
 
 /**
@@ -1061,6 +1073,10 @@ export function provideBuludTheme(
 
   // Omitted optional tokens must remain CSS fallbacks, not high-specificity
   // provider declarations that override consumer :root rules.
+  if (config.dropdown?.invalidBorder === undefined) {
+    delete variables['--bulud-dropdown-invalid-border'];
+  }
+
   for (const [field, variable] of [
     ['borderWidth', '--bulud-button-border-width'],
     ['focusWidth', '--bulud-button-focus-width'],

@@ -6,6 +6,7 @@ import {
   computed,
   contentChild,
   ElementRef,
+  effect,
   forwardRef,
   inject,
   Injector,
@@ -17,6 +18,7 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ControlValueAccessor,
@@ -26,6 +28,8 @@ import {
   ValidationErrors,
   Validator,
 } from '@angular/forms';
+import { defer, EMPTY } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { BULUD_LOCALE } from 'bulud-ng';
 
@@ -76,6 +80,7 @@ export interface BuludDropdownSelectedTemplateContext<T> {
     class: 'bulud-dropdown-host',
     '[class.bulud-dropdown-host--open]': 'open()',
     '[class.bulud-dropdown-host--disabled]': 'isDisabled()',
+    '[class.bulud-dropdown-host--invalid]': 'isInvalid()',
     '(focusout)': 'handleFocusOut($event)',
     '(document:pointerdown)': 'handleDocumentPointerDown($event)',
   },
@@ -89,8 +94,10 @@ export class BuludDropdown<T = unknown>
 
   protected readonly locale = inject(BULUD_LOCALE);
   private readonly injector = inject(Injector);
-  private readonly triggerElement = viewChild<ElementRef<HTMLButtonElement>>('trigger');
-  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  private readonly triggerElement =
+    viewChild<ElementRef<HTMLButtonElement>>('trigger');
+  private readonly searchInput =
+    viewChild<ElementRef<HTMLInputElement>>('searchInput');
   private readonly optionElements =
     viewChildren<ElementRef<HTMLButtonElement>>('option');
   protected readonly instanceId = `bulud-dropdown-${BuludDropdown.nextId++}`;
@@ -149,37 +156,80 @@ export class BuludDropdown<T = unknown>
   );
 
   /** Compares options and selected values. */
-  readonly compareWith = input<(left: T, right: T) => boolean>(
-    (left, right) => Object.is(left, right),
+  readonly compareWith = input<(left: T, right: T) => boolean>((left, right) =>
+    Object.is(left, right),
   );
 
+  /** Marks options unavailable without changing the option collection. */
+  readonly optionDisabled = input<(option: T) => boolean>(() => false);
+
   /** Optional custom option template declared as `#optionTemplate`. */
-  readonly optionTemplate = contentChild<
-    TemplateRef<BuludDropdownOptionTemplateContext<T>>
-  >('optionTemplate');
+  readonly optionTemplate =
+    contentChild<TemplateRef<BuludDropdownOptionTemplateContext<T>>>(
+      'optionTemplate',
+    );
 
   /** Optional custom selected-value template declared as `#selectedTemplate`. */
-  readonly selectedTemplate = contentChild<
-    TemplateRef<BuludDropdownSelectedTemplateContext<T>>
-  >('selectedTemplate');
+  readonly selectedTemplate =
+    contentChild<TemplateRef<BuludDropdownSelectedTemplateContext<T>>>(
+      'selectedTemplate',
+    );
 
   protected readonly open = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly activeOptionIndex = signal(-1);
   private readonly formDisabled = signal(false);
+  private readonly formBindingVersion = signal<number | null>(null);
+  private formBindingCount = 0;
+  private readonly formEvents = toSignal(
+    toObservable(this.formBindingVersion).pipe(
+      switchMap((version) =>
+        version === null
+          ? EMPTY
+          : defer(() => this.getFormControl()?.events ?? EMPTY),
+      ),
+    ),
+    { initialValue: null },
+  );
   private onChange: (value: T | readonly T[] | null) => void = () => {};
   private onTouched: () => void = () => {};
+  private onValidatorChange: () => void = () => {};
+
+  constructor() {
+    effect(() => {
+      this.required();
+      this.onValidatorChange();
+    });
+    effect(() => {
+      const options = this.filteredOptions();
+      const activeIndex = this.activeOptionIndex();
+
+      if (this.loading() || options.length === 0) {
+        this.restoreFocusFromRemovedOption();
+        this.activeOptionIndex.set(-1);
+      } else if (this.open() && activeIndex < 0) {
+        this.setActiveFromSelection();
+      } else if (activeIndex >= options.length) {
+        this.activeOptionIndex.set(-1);
+      }
+    });
+  }
 
   protected isDisabled(): boolean {
     return this.disabled() || this.formDisabled();
   }
 
   protected isInvalid(): boolean {
-    const control = this.injector.get(NgControl, null, {
+    this.formEvents();
+    const control = this.getFormControl();
+    return Boolean(control?.invalid && (control.touched || control.dirty));
+  }
+
+  private getFormControl() {
+    return this.injector.get(NgControl, null, {
       self: true,
       optional: true,
     })?.control;
-    return Boolean(control?.invalid && (control.touched || control.dirty));
   }
 
   protected readonly selectedOptions = computed<readonly T[]>(() => {
@@ -229,7 +279,6 @@ export class BuludDropdown<T = unknown>
 
     if (this.open()) {
       this.close();
-      this.onTouched();
       return;
     }
 
@@ -250,11 +299,17 @@ export class BuludDropdown<T = unknown>
     return `${this.instanceId}-option-${index}`;
   }
 
+  protected hasRenderedListbox(): boolean {
+    return this.open() && !this.loading() && this.filteredOptions().length > 0;
+  }
+
   protected activeOptionId(): string | null {
     const index = this.activeOptionIndex();
-    return index >= 0 && index < this.filteredOptions().length
-      ? this.optionId(index)
-      : null;
+    if (!this.hasRenderedListbox() || index < 0) {
+      return null;
+    }
+
+    return this.optionElements()[index]?.nativeElement.id ?? null;
   }
 
   protected isActive(index: number): boolean {
@@ -264,10 +319,13 @@ export class BuludDropdown<T = unknown>
   private setActiveFromSelection(): void {
     const selected = this.selectedOptions()[0];
     const options = this.filteredOptions();
-    const index = selected === undefined
-      ? 0
-      : options.findIndex((option) => this.isSameOption(option, selected));
-    this.activeOptionIndex.set(options.length === 0 ? -1 : Math.max(index, 0));
+    const index =
+      selected === undefined
+        ? 0
+        : options.findIndex((option) => this.isSameOption(option, selected));
+    this.activeOptionIndex.set(
+      options.length === 0 ? -1 : index >= 0 ? index : 0,
+    );
   }
 
   private moveActive(delta: number): void {
@@ -277,12 +335,32 @@ export class BuludDropdown<T = unknown>
       return;
     }
     const current = this.activeOptionIndex();
-    const next = current < 0 ? (delta > 0 ? 0 : count - 1) : current + delta;
-    this.activeOptionIndex.set((next + count) % count);
+    const start = current < 0 ? (delta > 0 ? 0 : count - 1) : current + delta;
+    this.activeOptionIndex.set((start + count) % count);
   }
 
   private focusActiveOption(): void {
     this.optionElements()[this.activeOptionIndex()]?.nativeElement.focus();
+  }
+
+  private restoreFocusFromRemovedOption(): void {
+    const trigger = this.triggerElement()?.nativeElement;
+    const activeElement = trigger?.ownerDocument.activeElement;
+
+    if (
+      !trigger ||
+      !activeElement ||
+      activeElement.getAttribute('role') !== 'option' ||
+      !trigger.closest('bulud-dropdown')?.contains(activeElement)
+    ) {
+      return;
+    }
+
+    if (this.searchable() && this.open()) {
+      this.searchInput()?.nativeElement.focus();
+    } else {
+      trigger.focus();
+    }
   }
 
   private syncActiveOptionToFocus(event: KeyboardEvent): void {
@@ -360,12 +438,26 @@ export class BuludDropdown<T = unknown>
   }
 
   protected selectOption(option: T): void {
+    if (this.isOptionDisabled(option)) {
+      return;
+    }
+
+    const optionIndex = this.filteredOptions().findIndex((item) =>
+      this.isSameOption(item, option),
+    );
+    if (optionIndex >= 0) {
+      this.activeOptionIndex.set(optionIndex);
+    }
+
     if (this.multiple()) {
       const selected = this.selectedOptions();
-      const index = selected.findIndex((item) => this.isSameOption(item, option));
-      const next = index === -1
-        ? [...selected, option]
-        : selected.filter((_, itemIndex) => itemIndex !== index);
+      const index = selected.findIndex((item) =>
+        this.isSameOption(item, option),
+      );
+      const next =
+        index === -1
+          ? [...selected, option]
+          : selected.filter((_, itemIndex) => itemIndex !== index);
 
       this.value.set(next);
       this.onChange(next);
@@ -379,6 +471,7 @@ export class BuludDropdown<T = unknown>
 
   protected clear(event: Event): void {
     event.stopPropagation();
+    this.triggerElement()?.nativeElement.focus();
     const next = this.multiple() ? [] : null;
     this.value.set(next);
     this.onChange(next);
@@ -388,6 +481,10 @@ export class BuludDropdown<T = unknown>
     return this.selectedOptions().some((selected) =>
       this.isSameOption(selected, option),
     );
+  }
+
+  protected isOptionDisabled(option: T): boolean {
+    return this.optionDisabled()(option);
   }
 
   protected handleOptionKeydown(event: KeyboardEvent, option: T): void {
@@ -430,7 +527,6 @@ export class BuludDropdown<T = unknown>
     if (event.key === 'Escape') {
       event.preventDefault();
       this.close();
-      this.onTouched();
     }
   }
 
@@ -438,22 +534,20 @@ export class BuludDropdown<T = unknown>
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.moveActive(1);
+      this.focusActiveOption();
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.moveActive(-1);
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      this.activeOptionIndex.set(this.filteredOptions().length > 0 ? 0 : -1);
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      this.activeOptionIndex.set(this.filteredOptions().length - 1);
+      this.focusActiveOption();
+    } else if (event.key === 'Home' || event.key === 'End') {
+      // Home and End retain their native text-editing behavior in search.
+      return;
     } else if (event.key === 'Enter') {
       event.preventDefault();
       this.selectActiveOption();
     } else if (event.key === 'Escape') {
       event.preventDefault();
       this.close();
-      this.onTouched();
     }
   }
 
@@ -491,10 +585,15 @@ export class BuludDropdown<T = unknown>
 
   registerOnChange(fn: (value: T | readonly T[] | null) => void): void {
     this.onChange = fn;
+    this.formBindingVersion.set(++this.formBindingCount);
   }
 
   registerOnTouched(fn: () => void): void {
     this.onTouched = fn;
+  }
+
+  registerOnValidatorChange(fn: () => void): void {
+    this.onValidatorChange = fn;
   }
 
   setDisabledState(isDisabled: boolean): void {
@@ -506,7 +605,8 @@ export class BuludDropdown<T = unknown>
       return null;
     }
     const value = this.value();
-    const empty = value === null ||
+    const empty =
+      value === null ||
       value === undefined ||
       (Array.isArray(value) && value.length === 0);
     return empty ? { required: true } : null;

@@ -213,7 +213,7 @@ export class FrameworkPicker {
 ```
 
 `BuludDropdown` supports single and multiple selection, searchable filtering,
-loading and empty states, clearable values, custom comparison functions, and
+loading and empty states, clearable values, disabled options, custom comparison functions, and
 projected `#optionTemplate`/`#selectedTemplate` templates. In multiple mode,
 bind `[(value)]` to a readonly array:
 
@@ -243,9 +243,15 @@ for one-off overrides.
 The trigger follows the combobox/listbox keyboard pattern: `ArrowDown` and
 `ArrowUp` open and move the active option, `Home` and `End` jump to the first
 and last option, `Enter` or `Space` selects, and `Escape` closes and restores
-focus to the trigger. Pointer interaction outside the dropdown also closes an
-open panel. Consumers should provide an accurate `aria-label` when the
-projected trigger content is not sufficient.
+focus to the trigger. Navigation wraps at either end. Options matched by
+`optionDisabled` remain discoverable during keyboard navigation, expose
+`aria-disabled="true"`, and cannot be activated or selected. In a searchable
+panel, `ArrowUp` and `ArrowDown` move from the search field into the options; `Home` and `End`
+remain native text-editing keys while the search field has focus. Tab and
+Shift+Tab retain native focus navigation and close the panel when focus leaves.
+Pointer interaction outside the dropdown also closes an open panel. Consumers
+should provide an accurate `aria-label` when the projected trigger content is
+not sufficient.
 
 For Angular Forms, bind the dropdown with `formControl`/`formControlName` or
 `[(ngModel)]`. Single-select controls use the selected option value and
@@ -254,26 +260,34 @@ standard `required` validation error, propagates disabled state from the form,
 emits changes after user selection/clearing, and marks the control touched when
 focus leaves the dropdown.
 
+`writeValue` updates the view without emitting a user change. Selection and
+clearing emit one form change. Angular Forms `reset()` without an explicit value
+passes `null` through the CVA in both single and multiple modes; multiple mode
+renders that value as an empty selection. Pass an explicit `[]` when the form
+model must reset to an array. The instance `disabled` input and Forms disabled
+state combine, so either one prevents interaction.
+
 ### Dropdown inputs
 
-| Input               | Type                             | Default          | Description                                      |
-| ------------------- | -------------------------------- | ---------------- | ------------------------------------------------ |
-| `options`           | `readonly T[]`                   | `[]`             | Options rendered in the listbox                  |
-| `value`             | `T \| readonly T[] \| null`      | `null`           | Selected value; use an array with `multiple`     |
-| `multiple`          | `boolean`                        | `false`          | Keeps the panel open and toggles multiple values |
-| `searchable`        | `boolean`                        | `true`           | Shows the search field                           |
-| `clearable`         | `boolean`                        | `true`           | Shows the clear action for a selected value      |
-| `disabled`          | `boolean`                        | `false`          | Prevents opening and interaction                 |
-| `loading`           | `boolean`                        | `false`          | Shows a loading status instead of options        |
-| `required`          | `boolean`                        | `false`          | Enables the standard Forms `required` validator  |
-| `placeholder`       | `string \| undefined`            | locale default   | Empty-selection trigger text                     |
-| `searchPlaceholder` | `string \| undefined`            | locale default   | Search input placeholder                         |
-| `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result              |
-| `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                            |
-| `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection           |
-| `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger         |
-| `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text               |
-| `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values            |
+| Input               | Type                             | Default          | Description                                               |
+| ------------------- | -------------------------------- | ---------------- | --------------------------------------------------------- |
+| `options`           | `readonly T[]`                   | `[]`             | Options rendered in the listbox                           |
+| `value`             | `T \| readonly T[] \| null`      | `null`           | Selected value; use an array with `multiple`              |
+| `multiple`          | `boolean`                        | `false`          | Keeps the panel open and toggles multiple values          |
+| `searchable`        | `boolean`                        | `true`           | Shows the search field                                    |
+| `clearable`         | `boolean`                        | `true`           | Shows the clear action for a selected value               |
+| `disabled`          | `boolean`                        | `false`          | Prevents opening and interaction                          |
+| `loading`           | `boolean`                        | `false`          | Shows a loading status instead of options                 |
+| `required`          | `boolean`                        | `false`          | Enables the standard Forms `required` validator           |
+| `optionDisabled`    | `(option: T) => boolean`         | `() => false`    | Marks options unavailable while keeping them discoverable |
+| `placeholder`       | `string \| undefined`            | locale default   | Empty-selection trigger text                              |
+| `searchPlaceholder` | `string \| undefined`            | locale default   | Search input placeholder                                  |
+| `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result                       |
+| `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                                     |
+| `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection                    |
+| `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger                  |
+| `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text                        |
+| `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values                     |
 
 `clearLabel` and `searchLabel` override the localized accessible names for the
 clear action and search field. The component exposes `valueChange` through its
@@ -581,10 +595,12 @@ consumer needs to read the configured defaults.
 
 The trigger is a `role="combobox"` controlling a `role="listbox"`. Its active
 option is exposed through `aria-activedescendant`; the component supplies stable
-IDs and `aria-selected` state. Consumers must provide `aria-label` when the
-visible trigger content is not an adequate accessible name. Keyboard behavior
-is `ArrowUp`/`ArrowDown` to open and move, `Home`/`End` to jump, `Enter` or
-`Space` to select, and `Escape` to close and restore focus.
+IDs, `aria-selected`, `aria-disabled`, `aria-required`, and form-driven
+`aria-invalid` state. The search field has its own localized accessible name
+and listbox relationship. Consumers must provide `aria-label` when the visible
+trigger content is not an adequate accessible name. Direction is inherited
+from the nearest ancestor CSS/`dir` context; locale selection never forces a
+component direction.
 
 ## Badge
 

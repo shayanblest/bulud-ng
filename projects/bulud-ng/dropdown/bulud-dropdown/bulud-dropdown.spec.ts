@@ -1,5 +1,10 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { BuludDropdown } from './bulud-dropdown';
@@ -15,12 +20,15 @@ interface TestOption {
   template: `
     <bulud-dropdown
       aria-label="Choose a framework"
-      [options]="options"
+      [options]="displayedOptions()"
+      [loading]="loading()"
       [multiple]="multiple()"
       [searchable]="searchable()"
+      [required]="required()"
       [placeholder]="placeholder()"
       [clearLabel]="clearLabel()"
       [searchLabel]="searchLabel()"
+      [optionDisabled]="optionDisabled"
       [optionLabel]="optionLabel"
       [(value)]="value"
     >
@@ -41,13 +49,19 @@ class TestHost {
     { id: 'react', label: 'React', category: 'Framework' },
     { id: 'tailwind', label: 'Tailwind', category: 'CSS' },
   ];
+  readonly displayedOptions = signal<readonly TestOption[]>(this.options);
+  readonly loading = signal(false);
   readonly value = signal<TestOption | readonly TestOption[] | null>(null);
   readonly multiple = signal(false);
   readonly searchable = signal(true);
+  readonly required = signal(false);
   readonly placeholder = signal<string | undefined>(undefined);
   readonly clearLabel = signal<string | undefined>(undefined);
   readonly searchLabel = signal<string | undefined>(undefined);
   readonly optionLabel = (option: TestOption): string => option.label;
+  readonly disabledOptionId = signal<string | null>(null);
+  readonly optionDisabled = (option: TestOption): boolean =>
+    option.id === this.disabledOptionId();
 }
 
 @Component({
@@ -67,6 +81,27 @@ class FormsHost {
     { id: 'react', label: 'React', category: 'Framework' },
   ];
   readonly control = new FormControl<TestOption | null>(null);
+  readonly optionLabel = (option: TestOption): string => option.label;
+}
+
+@Component({
+  imports: [BuludDropdown, ReactiveFormsModule],
+  template: `
+    <bulud-dropdown
+      aria-label="Choose frameworks"
+      multiple
+      [options]="options"
+      [optionLabel]="optionLabel"
+      [formControl]="control"
+    />
+  `,
+})
+class MultipleFormsHost {
+  readonly options: readonly TestOption[] = [
+    { id: 'angular', label: 'Angular', category: 'Framework' },
+    { id: 'react', label: 'React', category: 'Framework' },
+  ];
+  readonly control = new FormControl<readonly TestOption[]>([]);
   readonly optionLabel = (option: TestOption): string => option.label;
 }
 
@@ -103,9 +138,7 @@ describe('BuludDropdown', () => {
   };
 
   const getTrigger = (): HTMLButtonElement => {
-    const button = getDropdown().querySelector(
-      '.bulud-dropdown__trigger',
-    );
+    const button = getDropdown().querySelector('.bulud-dropdown__trigger');
 
     if (!(button instanceof HTMLButtonElement)) {
       throw new Error('Expected a dropdown trigger button.');
@@ -150,9 +183,7 @@ describe('BuludDropdown', () => {
 
     const options = getOptions();
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    expect(trigger.getAttribute('aria-activedescendant')).toBe(
-      options[0].id,
-    );
+    expect(trigger.getAttribute('aria-activedescendant')).toBe(options[0].id);
     trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
     fixture.detectChanges();
@@ -165,6 +196,133 @@ describe('BuludDropdown', () => {
       'tailwind',
     );
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('keeps search relationships valid while a nonempty listbox is rendered', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+
+    const search = getDropdown().querySelector<HTMLInputElement>('input');
+    const listbox =
+      getDropdown().querySelector<HTMLElement>('[role="listbox"]');
+    const option = getOptions()[0];
+
+    expect(search?.getAttribute('aria-controls')).toBe(listbox?.id);
+    expect(search?.getAttribute('aria-activedescendant')).toBe(option.id);
+  });
+
+  it('removes stale search relationships and restores them with options', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+
+    const getSearch = () =>
+      getDropdown().querySelector<HTMLInputElement>('input');
+
+    expect(getSearch()?.getAttribute('aria-controls')).toMatch(
+      /^bulud-dropdown-\d+-listbox$/,
+    );
+    expect(getSearch()?.getAttribute('aria-activedescendant')).toMatch(
+      /^bulud-dropdown-\d+-option-0$/,
+    );
+
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+    expect(getSearch()?.hasAttribute('aria-controls')).toBeFalse();
+    expect(getSearch()?.hasAttribute('aria-activedescendant')).toBeFalse();
+
+    fixture.componentInstance.loading.set(false);
+    fixture.componentInstance.displayedOptions.set([]);
+    fixture.detectChanges();
+    expect(getSearch()?.hasAttribute('aria-controls')).toBeFalse();
+    expect(getSearch()?.hasAttribute('aria-activedescendant')).toBeFalse();
+
+    fixture.componentInstance.displayedOptions.set(
+      fixture.componentInstance.options,
+    );
+    fixture.detectChanges();
+    const restoredSearch = getSearch();
+    const restoredListbox =
+      getDropdown().querySelector<HTMLElement>('[role="listbox"]');
+    expect(restoredSearch?.getAttribute('aria-controls')).toBe(
+      restoredListbox?.id,
+    );
+    expect(restoredSearch?.getAttribute('aria-activedescendant')).toBe(
+      getOptions()[0].id,
+    );
+  });
+
+  it('restores option focus to the search field before loading removes options', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+    getOptions()[1].focus();
+
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(
+      getDropdown().querySelector('.bulud-dropdown__search input'),
+    );
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('true');
+    expect(getDropdown().querySelector('[role="status"]')).not.toBeNull();
+  });
+
+  it('restores option focus to the trigger when an empty non-searchable state removes options', () => {
+    fixture.componentInstance.searchable.set(false);
+    fixture.detectChanges();
+    getTrigger().click();
+    fixture.detectChanges();
+    getOptions()[0].focus();
+
+    fixture.componentInstance.displayedOptions.set([]);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(getTrigger());
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('true');
+    expect(getDropdown().textContent).toContain('No options available');
+  });
+
+  it('does not move focus when loading changes while focus is outside an option', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+    getTrigger().focus();
+
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(getTrigger());
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('keeps disabled options discoverable without allowing activation', () => {
+    fixture.componentInstance.disabledOptionId.set('react');
+    fixture.componentInstance.required.set(true);
+    fixture.detectChanges();
+
+    const trigger = getTrigger();
+    expect(trigger.getAttribute('aria-required')).toBe('true');
+    trigger.click();
+    fixture.detectChanges();
+
+    const options = getOptions();
+    expect(options[1].disabled).toBeFalse();
+    expect(options[1].getAttribute('aria-disabled')).toBe('true');
+    expect(
+      getDropdown().querySelector('input')?.getAttribute('aria-controls'),
+    ).toBe(trigger.getAttribute('aria-controls'));
+
+    options[0].focus();
+    options[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(options[1]);
+
+    options[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+    options[1].click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.value()).toBeNull();
   });
 
   it('closes on Escape and restores focus to the trigger', () => {
@@ -193,7 +351,9 @@ describe('BuludDropdown', () => {
 
     options[2].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
     fixture.detectChanges();
-    expect(getTrigger().getAttribute('aria-activedescendant')).toBe(options[1].id);
+    expect(getTrigger().getAttribute('aria-activedescendant')).toBe(
+      options[1].id,
+    );
   });
 
   it('does not steal focus when focus leaves the component', () => {
@@ -279,8 +439,12 @@ describe('BuludDropdown', () => {
   it('integrates with reactive forms for value, touched, and required state', () => {
     const formsFixture = TestBed.createComponent(FormsHost);
     formsFixture.detectChanges();
-    const dropdown = formsFixture.nativeElement.querySelector('bulud-dropdown') as HTMLElement;
-    const trigger = dropdown.querySelector('.bulud-dropdown__trigger') as HTMLButtonElement;
+    const dropdown = formsFixture.nativeElement.querySelector(
+      'bulud-dropdown',
+    ) as HTMLElement;
+    const trigger = dropdown.querySelector(
+      '.bulud-dropdown__trigger',
+    ) as HTMLButtonElement;
 
     expect(formsFixture.componentInstance.control.invalid).toBeTrue();
     trigger.click();
@@ -305,12 +469,76 @@ describe('BuludDropdown', () => {
     expect(trigger.getAttribute('aria-invalid')).toBe('true');
   });
 
+  it('marks a single control touched only after focus leaves the dropdown', () => {
+    const formsFixture = TestBed.createComponent(FormsHost);
+    formsFixture.detectChanges();
+    const host = formsFixture.componentInstance;
+    const dropdown = formsFixture.nativeElement.querySelector(
+      'bulud-dropdown',
+    ) as HTMLElement;
+    const trigger = dropdown.querySelector(
+      '.bulud-dropdown__trigger',
+    ) as HTMLButtonElement;
+
+    trigger.click();
+    formsFixture.detectChanges();
+    dropdown.querySelector<HTMLButtonElement>('[role="option"]')?.click();
+    formsFixture.detectChanges();
+    expect(host.control.touched).toBeFalse();
+
+    const clear = dropdown.querySelector<HTMLButtonElement>(
+      '.bulud-dropdown__clear',
+    );
+    clear?.focus();
+    clear?.click();
+    formsFixture.detectChanges();
+    expect(host.control.touched).toBeFalse();
+
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    trigger.focus();
+    outside.focus();
+    formsFixture.detectChanges();
+    expect(host.control.touched).toBeTrue();
+    outside.blur();
+    outside.remove();
+  });
+
+  it('keeps a multiple control untouched while selection keeps focus inside', () => {
+    const formsFixture = TestBed.createComponent(MultipleFormsHost);
+    formsFixture.detectChanges();
+    const host = formsFixture.componentInstance;
+    const dropdown = formsFixture.nativeElement.querySelector(
+      'bulud-dropdown',
+    ) as HTMLElement;
+    const trigger = dropdown.querySelector(
+      '.bulud-dropdown__trigger',
+    ) as HTMLButtonElement;
+
+    trigger.click();
+    formsFixture.detectChanges();
+    const options =
+      dropdown.querySelectorAll<HTMLButtonElement>('[role="option"]');
+    options[0].click();
+    formsFixture.detectChanges();
+    options[1].click();
+    formsFixture.detectChanges();
+
+    expect(host.control.value).toHaveSize(2);
+    expect(host.control.touched).toBeFalse();
+    expect(dropdown.contains(document.activeElement)).toBeTrue();
+  });
+
   it('receives disabled state from reactive forms and writes external values', () => {
     const formsFixture = TestBed.createComponent(FormsHost);
     formsFixture.detectChanges();
     const host = formsFixture.componentInstance;
-    const dropdown = formsFixture.nativeElement.querySelector('bulud-dropdown') as HTMLElement;
-    const trigger = dropdown.querySelector('.bulud-dropdown__trigger') as HTMLButtonElement;
+    const dropdown = formsFixture.nativeElement.querySelector(
+      'bulud-dropdown',
+    ) as HTMLElement;
+    const trigger = dropdown.querySelector(
+      '.bulud-dropdown__trigger',
+    ) as HTMLButtonElement;
 
     host.control.setValue(host.options[1]);
     formsFixture.detectChanges();
@@ -319,14 +547,61 @@ describe('BuludDropdown', () => {
     host.control.disable();
     formsFixture.detectChanges();
     expect(trigger.disabled).toBeTrue();
-    expect(dropdown.classList.contains('bulud-dropdown-host--disabled')).toBeTrue();
+    expect(
+      dropdown.classList.contains('bulud-dropdown-host--disabled'),
+    ).toBeTrue();
+  });
+
+  it('does not emit a form change for writeValue and supports reset', () => {
+    const formsFixture = TestBed.createComponent(FormsHost);
+    formsFixture.detectChanges();
+    const host = formsFixture.componentInstance;
+    const component = formsFixture.debugElement.query(
+      By.directive(BuludDropdown),
+    ).componentInstance as BuludDropdown<TestOption>;
+    let changes = 0;
+    component.registerOnChange(() => changes++);
+
+    component.writeValue(host.options[1]);
+    formsFixture.detectChanges();
+    expect(host.control.value).toBeNull();
+    expect(changes).toBe(0);
+
+    host.control.setValue(host.options[0]);
+    host.control.reset();
+    formsFixture.detectChanges();
+    expect(host.control.value).toBeNull();
+    expect(host.control.invalid).toBeTrue();
+    expect(changes).toBe(0);
+  });
+
+  it('preserves Angular null reset semantics in multiple mode', () => {
+    const formsFixture = TestBed.createComponent(MultipleFormsHost);
+    formsFixture.detectChanges();
+    const host = formsFixture.componentInstance;
+
+    host.control.setValue([host.options[0]]);
+    formsFixture.detectChanges();
+    host.control.reset();
+    formsFixture.detectChanges();
+
+    expect(host.control.value).toBeNull();
+    expect(
+      formsFixture.debugElement
+        .query(By.directive(BuludDropdown))
+        .componentInstance.value(),
+    ).toBeNull();
   });
 
   it('integrates with template-driven ngModel forms', () => {
     const formsFixture = TestBed.createComponent(TemplateFormsHost);
     formsFixture.detectChanges();
-    const dropdown = formsFixture.nativeElement.querySelector('bulud-dropdown') as HTMLElement;
-    const trigger = dropdown.querySelector('.bulud-dropdown__trigger') as HTMLButtonElement;
+    const dropdown = formsFixture.nativeElement.querySelector(
+      'bulud-dropdown',
+    ) as HTMLElement;
+    const trigger = dropdown.querySelector(
+      '.bulud-dropdown__trigger',
+    ) as HTMLButtonElement;
 
     trigger.click();
     formsFixture.detectChanges();
@@ -340,9 +615,7 @@ describe('BuludDropdown', () => {
     getTrigger().click();
     fixture.detectChanges();
 
-    const search = getDropdown().querySelector(
-      '.bulud-dropdown__search input',
-    );
+    const search = getDropdown().querySelector('.bulud-dropdown__search input');
 
     if (!(search instanceof HTMLInputElement)) {
       throw new Error('Expected a dropdown search input.');
@@ -407,9 +680,9 @@ describe('BuludDropdown', () => {
 
     expect(getTrigger().textContent).toContain('Select an option');
     expect(search?.placeholder).toBe('Search options');
-    expect(getDropdown().querySelector('.bulud-visually-hidden')?.textContent).toContain(
-      'Search options',
-    );
+    expect(
+      getDropdown().querySelector('.bulud-visually-hidden')?.textContent,
+    ).toContain('Search options');
 
     fixture.componentInstance.value.set(fixture.componentInstance.options[0]);
     fixture.detectChanges();
@@ -432,9 +705,9 @@ describe('BuludDropdown', () => {
 
     const search = getDropdown().querySelector('input');
     expect(search?.placeholder).toBe('Search options');
-    expect(getDropdown().querySelector('.bulud-visually-hidden')?.textContent).toContain(
-      'Find a choice',
-    );
+    expect(
+      getDropdown().querySelector('.bulud-visually-hidden')?.textContent,
+    ).toContain('Find a choice');
 
     fixture.componentInstance.value.set(fixture.componentInstance.options[0]);
     fixture.detectChanges();
@@ -449,8 +722,8 @@ describe('BuludDropdown', () => {
     getTrigger().click();
     fixture.detectChanges();
 
-    expect(getOptions()[1].querySelector('.custom-option')?.textContent).toContain(
-      'React · Framework',
-    );
+    expect(
+      getOptions()[1].querySelector('.custom-option')?.textContent,
+    ).toContain('React · Framework');
   });
 });

@@ -92,6 +92,21 @@ test.describe('Bulud component demo', () => {
       'aria-activedescendant',
       await single.locator('[role="option"]').first().getAttribute('id'),
     );
+    const disabledOption = single.locator('[role="option"]').filter({
+      hasText: 'Svelte',
+    });
+    await expect(disabledOption).toHaveAttribute('aria-disabled', 'true');
+    await trigger.press('ArrowDown');
+    await trigger.press('ArrowDown');
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      await disabledOption.getAttribute('id'),
+    );
+    await trigger.press('Enter');
+    await expect(trigger).not.toContainText('Svelte');
+    await disabledOption.click();
+    await expect(trigger).not.toContainText('Svelte');
     await trigger.press('End');
     await expect(trigger).toHaveAttribute(
       'aria-activedescendant',
@@ -108,7 +123,7 @@ test.describe('Bulud component demo', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await trigger.press('ArrowDown');
-    await page.locator('h1').first().click();
+    await page.locator('#dropdown-loading').click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await page.locator('#dropdown-loading').check();
@@ -124,6 +139,11 @@ test.describe('Bulud component demo', () => {
     await trigger.press('ArrowDown');
 
     const search = single.locator('input[type="search"]');
+    await expect(search).toHaveAttribute('aria-label', 'Search options');
+    await expect(search).toHaveAttribute(
+      'aria-controls',
+      await trigger.getAttribute('aria-controls'),
+    );
     await search.fill('React');
     await expect(single.locator('[role="option"]')).toHaveCount(1);
     await single.locator('[role="option"]').click();
@@ -137,6 +157,27 @@ test.describe('Bulud component demo', () => {
     await multiple.locator('[role="option"]').nth(1).click();
     await expect(multipleTrigger).toContainText('2 selected');
     await expect(multipleTrigger).toHaveAttribute('aria-expanded', 'true');
+
+    await multiple.locator('[role="option"]').last().press('Escape');
+    await page.locator('#dropdown-disabled').check();
+    await expect(trigger).toBeDisabled();
+    await trigger.click({ force: true });
+    await expect(single.locator('[role="listbox"]')).toHaveCount(0);
+    await page.locator('#dropdown-disabled').uncheck();
+
+    const formDropdown = page.locator('#dropdown-forms bulud-dropdown');
+    const formTrigger = formDropdown.locator('.bulud-dropdown__trigger');
+    await formTrigger.click();
+    await expect(formDropdown.locator('input[type="search"]')).toBeFocused();
+    await page.locator('h1').first().click();
+    await expect(formTrigger).toHaveAttribute('aria-invalid', 'true');
+    await expect(formDropdown).toHaveClass(/bulud-dropdown-host--invalid/);
+    await expect(formTrigger).toHaveCSS('border-top-color', 'rgb(225, 29, 72)');
+    await formTrigger.click();
+    await formDropdown.locator('[role="option"]').first().click();
+    await expect(formTrigger).toContainText('Angular');
+    await expect(formTrigger).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(formDropdown).not.toHaveClass(/bulud-dropdown-host--invalid/);
   });
 
   test('covers tabs semantics, selection, disabled state, orientation, and theme override', async ({

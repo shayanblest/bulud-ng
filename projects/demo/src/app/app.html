@@ -792,6 +792,15 @@
                     />
                     {{ text().empty }}
                   </label>
+                  <label class="inline-flex items-center gap-2">
+                    <input
+                      id="dropdown-disabled"
+                      type="checkbox"
+                      [checked]="dropdownDisabled()"
+                      (change)="dropdownDisabled.set(!dropdownDisabled())"
+                    />
+                    Disabled
+                  </label>
                 </div>
 
                 <bulud-dropdown
@@ -799,6 +808,8 @@
                   [attr.aria-label]="text().frameworkLabel"
                   [options]="dropdownEmpty() ? [] : frameworks"
                   [loading]="dropdownLoading()"
+                  [disabled]="dropdownDisabled()"
+                  [optionDisabled]="isFrameworkDisabled"
                   [optionLabel]="optionLabel"
                   [placeholder]="dropdownLocale().placeholder"
                   [searchPlaceholder]="dropdownLocale().searchPlaceholder"
@@ -879,6 +890,31 @@
                 </bulud-dropdown>
               </article>
             </div>
+
+            <article
+              id="dropdown-forms"
+              class="mt-6 rounded-2xl border border-bulud-border bg-bulud-surface p-5"
+            >
+              <h4 class="font-extrabold text-bulud-on-surface">
+                Required reactive form control
+              </h4>
+              <p class="mt-1 text-sm text-slate-500">
+                Select an option, or leave it empty and move focus away to see
+                the required invalid state.
+              </p>
+              <bulud-dropdown
+                class="mt-4 block max-w-md"
+                aria-label="Required framework"
+                [options]="frameworks"
+                [optionLabel]="optionLabel"
+                required
+                [formControl]="dropdownFormControl"
+              />
+              <p class="mt-2 text-sm text-slate-500" aria-live="polite">
+                Form status:
+                {{ dropdownFormControl.invalid ? "invalid" : "valid" }}
+              </p>
+            </article>
           }
         </section>
 

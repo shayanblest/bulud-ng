@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   BuludButton,
   BuludButtonSize,
@@ -74,6 +75,7 @@ interface DemoOption {
     BuludInitialsPipe,
     BuludFileSizePipe,
     NgTemplateOutlet,
+    ReactiveFormsModule,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -252,6 +254,10 @@ export class App {
   >([]);
   protected readonly dropdownLoading = signal(false);
   protected readonly dropdownEmpty = signal(false);
+  protected readonly dropdownDisabled = signal(false);
+  protected readonly dropdownFormControl = new FormControl<DemoOption | null>(
+    null,
+  );
   protected readonly resizeObserverEnabled = signal(true);
   protected readonly resizeObserverSize = signal<BuludElementSize | null>(null);
   protected readonly resizeObserverNotifications = signal(0);
@@ -327,6 +333,9 @@ export class App {
   ];
 
   protected readonly optionLabel = (option: DemoOption): string => option.label;
+
+  protected readonly isFrameworkDisabled = (option: DemoOption): boolean =>
+    option.id === 'svelte';
 
   protected readonly variants: readonly VariantPreview[] = [
     {
