@@ -10,6 +10,7 @@ import {
   BULUD_DEFAULT_THEME,
   BULUD_THEME,
   BuludButtonTheme,
+  BuludDropdownTheme,
   BuludTheme,
   createBuludThemeVariables,
   defineBuludTheme,
@@ -226,6 +227,27 @@ describe('Bulud theme', () => {
       ...optionalButtonDefaults,
       ...button,
     });
+  });
+
+  it('resolves the invalid border default for legacy dropdown theme objects', () => {
+    const { invalidBorder, ...legacyDropdown } = BULUD_DEFAULT_THEME.dropdown;
+    void invalidBorder;
+    const legacyTheme: BuludTheme = {
+      ...BULUD_DEFAULT_THEME,
+      dropdown: legacyDropdown,
+    };
+    const resolvedDropdown: Required<BuludDropdownTheme> =
+      resolveBuludTheme(legacyTheme).dropdown;
+
+    expect(resolvedDropdown.invalidBorder).toBe(
+      resolveBuludTheme().dropdown.invalidBorder,
+    );
+    expect(createBuludThemeVariables(legacyTheme)).toEqual(
+      jasmine.objectContaining({
+        '--bulud-dropdown-invalid-border':
+          resolveBuludTheme().dropdown.invalidBorder,
+      }),
+    );
   });
 
   it('accepts a legacy theme typed using typeof BULUD_DEFAULT_THEME', () => {

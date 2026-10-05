@@ -57,7 +57,7 @@ export interface BuludButtonTheme {
 export interface BuludDropdownTheme {
   readonly background: string;
   readonly border: string;
-  readonly invalidBorder: string;
+  readonly invalidBorder?: string;
   readonly borderHover: string;
   readonly foreground: string;
   readonly focus: string;
@@ -253,6 +253,7 @@ export interface ResolvedBuludTheme extends Omit<
   BuludTheme,
   'checkbox' | 'switch'
 > {
+  readonly dropdown: Required<BuludDropdownTheme>;
   readonly button: Required<BuludButtonTheme>;
   readonly badge: Required<BuludBadgeTheme>;
   readonly checkbox: BuludCheckboxTheme;
@@ -660,6 +661,10 @@ export function defineBuludTheme<const Config extends BuludThemeConfig>(
 export function resolveBuludTheme(
   config: BuludThemeConfig = {},
 ): ResolvedBuludTheme {
+  const dropdownInvalidBorder: string =
+    config.dropdown?.invalidBorder ??
+    RESOLVED_DEFAULT_THEME.dropdown.invalidBorder;
+
   return {
     colors: {
       ...BULUD_DEFAULT_THEME.colors,
@@ -697,6 +702,7 @@ export function resolveBuludTheme(
     dropdown: {
       ...BULUD_DEFAULT_THEME.dropdown,
       ...config.dropdown,
+      invalidBorder: dropdownInvalidBorder,
     },
     badge: {
       ...BULUD_DEFAULT_THEME.badge,
