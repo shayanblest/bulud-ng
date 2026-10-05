@@ -172,10 +172,7 @@ test.describe('Bulud component demo', () => {
     await page.locator('h1').first().click();
     await expect(formTrigger).toHaveAttribute('aria-invalid', 'true');
     await expect(formDropdown).toHaveClass(/bulud-dropdown-host--invalid/);
-    await expect(formTrigger).toHaveCSS(
-      'border-top-color',
-      'rgb(220, 38, 38)',
-    );
+    await expect(formTrigger).toHaveCSS('border-top-color', 'rgb(225, 29, 72)');
     await formTrigger.click();
     await formDropdown.locator('[role="option"]').first().click();
     await expect(formTrigger).toContainText('Angular');
