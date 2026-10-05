@@ -32,7 +32,7 @@ test.describe('Bulud component demo', () => {
     );
 
     const interactive = page.locator('#interactive');
-    const action = interactive.locator('bulud-button');
+    const action = page.locator('#demo-interactive-action');
     await action.locator('button').focus();
     await expect(action.locator('button')).toBeFocused();
     await action.hover();

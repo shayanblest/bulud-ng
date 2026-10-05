@@ -1044,7 +1044,7 @@
               </bulud-accordion>
               <p
                 id="accordion-single-state"
-                class="mt-4 text-sm font-semibold text-slate-600"
+                class="mt-4 text-sm font-semibold text-bulud-on-surface"
                 aria-live="polite"
               >
                 Expanded: {{ expandedAccordion() }}
@@ -1220,7 +1220,11 @@
           </div>
 
           <div class="pt-7">
-            <bulud-button [fullWidth]="fullWidth()" (click)="incrementCount()">
+            <bulud-button
+              id="demo-interactive-action"
+              [fullWidth]="fullWidth()"
+              (click)="incrementCount()"
+            >
               {{ text().increment }}
             </bulud-button>
 
