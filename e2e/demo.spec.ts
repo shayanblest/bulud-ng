@@ -32,7 +32,7 @@ test.describe('Bulud component demo', () => {
     );
 
     const interactive = page.locator('#interactive');
-    const action = interactive.locator('bulud-button');
+    const action = page.locator('#demo-interactive-action');
     await action.locator('button').focus();
     await expect(action.locator('button')).toBeFocused();
     await action.hover();
@@ -75,6 +75,18 @@ test.describe('Bulud component demo', () => {
       'background-color',
       'rgb(18, 52, 86)',
     );
+  });
+
+  test('preserves nested RTL and LTR direction overrides', async ({ page }) => {
+    const languageToggle = page.locator('#demo-language-toggle');
+    const rtlRegion = page.locator('#rtl-demo');
+    const rtlButton = rtlRegion.locator('#demo-button-rtl button');
+    const nestedLtrButton = rtlRegion.locator('#demo-button-ltr-nested button');
+
+    await languageToggle.click();
+    await expect(page.locator('html')).toHaveCSS('direction', 'ltr');
+    await expect(rtlButton).toHaveCSS('direction', 'rtl');
+    await expect(nestedLtrButton).toHaveCSS('direction', 'ltr');
   });
 
   test('covers dropdown pointer, keyboard opening, search, single, and multiple selection', async ({
@@ -231,6 +243,77 @@ test.describe('Bulud component demo', () => {
     await expect(verticalButtons.nth(1)).toHaveAttribute(
       'aria-selected',
       'true',
+    );
+  });
+
+  test('applies the scoped dark preview to dropdown, accordion, and tabs', async ({
+    page,
+  }) => {
+    const darkToggle = page.locator('#dropdown-dark');
+    const dropdownPreview = page.locator(
+      '[data-testid="demo-dropdown-dark-preview"]',
+    );
+    const accordionPreview = page.locator(
+      '[data-testid="demo-accordion-dark-preview"]',
+    );
+    const tabsPreview = page.locator('[data-testid="demo-tabs-dark-preview"]');
+    const dropdownTrigger = page.locator(
+      '[data-testid="demo-dropdown-dark-preview"] #demo-dropdown-single .bulud-dropdown__trigger',
+    );
+    const accordionTrigger = page.locator(
+      '[data-testid="demo-accordion-dark-preview"] #demo-accordion-overview .bulud-accordion-item__trigger',
+    );
+    const tabsSurface = page.locator(
+      '[data-testid="demo-tabs-dark-preview"] [data-testid="demo-tabs-horizontal"] .bulud-tabs',
+    );
+
+    await expect(dropdownPreview).not.toHaveAttribute('data-theme');
+    await expect(accordionPreview).not.toHaveAttribute('data-theme');
+    await expect(tabsPreview).not.toHaveAttribute('data-theme');
+    await expect(dropdownTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(accordionTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(tabsSurface).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+
+    await darkToggle.check();
+
+    await expect(dropdownPreview).toHaveAttribute('data-theme', 'dark');
+    await expect(accordionPreview).toHaveAttribute('data-theme', 'dark');
+    await expect(tabsPreview).toHaveAttribute('data-theme', 'dark');
+    await expect(dropdownTrigger).toHaveCSS(
+      'background-color',
+      'rgb(15, 23, 42)',
+    );
+    await expect(accordionTrigger).toHaveCSS(
+      'background-color',
+      'rgb(15, 23, 42)',
+    );
+    await expect(tabsSurface).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+
+    await darkToggle.uncheck();
+
+    await expect(dropdownPreview).not.toHaveAttribute('data-theme');
+    await expect(accordionPreview).not.toHaveAttribute('data-theme');
+    await expect(tabsPreview).not.toHaveAttribute('data-theme');
+    await expect(dropdownTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(accordionTrigger).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(tabsSurface).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
     );
   });
 
