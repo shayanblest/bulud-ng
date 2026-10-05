@@ -251,6 +251,48 @@ describe('BuludDropdown', () => {
     );
   });
 
+  it('restores option focus to the search field before loading removes options', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+    getOptions()[1].focus();
+
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(
+      getDropdown().querySelector('.bulud-dropdown__search input'),
+    );
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('true');
+    expect(getDropdown().querySelector('[role="status"]')).not.toBeNull();
+  });
+
+  it('restores option focus to the trigger when an empty non-searchable state removes options', () => {
+    fixture.componentInstance.searchable.set(false);
+    fixture.detectChanges();
+    getTrigger().click();
+    fixture.detectChanges();
+    getOptions()[0].focus();
+
+    fixture.componentInstance.displayedOptions.set([]);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(getTrigger());
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('true');
+    expect(getDropdown().textContent).toContain('No options available');
+  });
+
+  it('does not move focus when loading changes while focus is outside an option', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+    getTrigger().focus();
+
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(getTrigger());
+    expect(getTrigger().getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('keeps disabled options discoverable without allowing activation', () => {
     fixture.componentInstance.disabledOptionId.set('react');
     fixture.componentInstance.required.set(true);
@@ -531,6 +573,24 @@ describe('BuludDropdown', () => {
     expect(host.control.value).toBeNull();
     expect(host.control.invalid).toBeTrue();
     expect(changes).toBe(0);
+  });
+
+  it('preserves Angular null reset semantics in multiple mode', () => {
+    const formsFixture = TestBed.createComponent(MultipleFormsHost);
+    formsFixture.detectChanges();
+    const host = formsFixture.componentInstance;
+
+    host.control.setValue([host.options[0]]);
+    formsFixture.detectChanges();
+    host.control.reset();
+    formsFixture.detectChanges();
+
+    expect(host.control.value).toBeNull();
+    expect(
+      formsFixture.debugElement
+        .query(By.directive(BuludDropdown))
+        .componentInstance.value(),
+    ).toBeNull();
   });
 
   it('integrates with template-driven ngModel forms', () => {

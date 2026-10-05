@@ -205,6 +205,7 @@ export class BuludDropdown<T = unknown>
       const activeIndex = this.activeOptionIndex();
 
       if (this.loading() || options.length === 0) {
+        this.restoreFocusFromRemovedOption();
         this.activeOptionIndex.set(-1);
       } else if (this.open() && activeIndex < 0) {
         this.setActiveFromSelection();
@@ -340,6 +341,26 @@ export class BuludDropdown<T = unknown>
 
   private focusActiveOption(): void {
     this.optionElements()[this.activeOptionIndex()]?.nativeElement.focus();
+  }
+
+  private restoreFocusFromRemovedOption(): void {
+    const trigger = this.triggerElement()?.nativeElement;
+    const activeElement = trigger?.ownerDocument.activeElement;
+
+    if (
+      !trigger ||
+      !activeElement ||
+      activeElement.getAttribute('role') !== 'option' ||
+      !trigger.closest('bulud-dropdown')?.contains(activeElement)
+    ) {
+      return;
+    }
+
+    if (this.searchable() && this.open()) {
+      this.searchInput()?.nativeElement.focus();
+    } else {
+      trigger.focus();
+    }
   }
 
   private syncActiveOptionToFocus(event: KeyboardEvent): void {

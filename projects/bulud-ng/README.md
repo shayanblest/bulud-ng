@@ -261,9 +261,11 @@ emits changes after user selection/clearing, and marks the control touched when
 focus leaves the dropdown.
 
 `writeValue` updates the view without emitting a user change. Selection and
-clearing emit one form change, and reset restores the empty single (`null`) or
-multiple (`[]`) value. The instance `disabled` input and Forms disabled state
-combine, so either one prevents interaction.
+clearing emit one form change. Angular Forms `reset()` without an explicit value
+passes `null` through the CVA in both single and multiple modes; multiple mode
+renders that value as an empty selection. Pass an explicit `[]` when the form
+model must reset to an array. The instance `disabled` input and Forms disabled
+state combine, so either one prevents interaction.
 
 ### Dropdown inputs
 
