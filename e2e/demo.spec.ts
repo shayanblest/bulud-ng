@@ -244,7 +244,9 @@ test.describe('Bulud component demo', () => {
     const accordionTrigger = page.locator(
       '#demo-accordion-overview .bulud-accordion-item__trigger',
     );
-    const tabsSurface = page.locator('#tabs bulud-tabs .bulud-tabs');
+    const tabsSurface = page.locator(
+      '#tabs [data-testid="demo-tabs-horizontal"] .bulud-tabs',
+    );
 
     await expect(page.locator('#dropdown')).not.toHaveAttribute('data-theme');
     await expect(page.locator('#accordion')).not.toHaveAttribute('data-theme');
