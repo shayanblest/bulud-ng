@@ -200,6 +200,18 @@ export class BuludDropdown<T = unknown>
       this.required();
       this.onValidatorChange();
     });
+    effect(() => {
+      const options = this.filteredOptions();
+      const activeIndex = this.activeOptionIndex();
+
+      if (this.loading() || options.length === 0) {
+        this.activeOptionIndex.set(-1);
+      } else if (this.open() && activeIndex < 0) {
+        this.setActiveFromSelection();
+      } else if (activeIndex >= options.length) {
+        this.activeOptionIndex.set(-1);
+      }
+    });
   }
 
   protected isDisabled(): boolean {
@@ -286,11 +298,17 @@ export class BuludDropdown<T = unknown>
     return `${this.instanceId}-option-${index}`;
   }
 
+  protected hasRenderedListbox(): boolean {
+    return this.open() && !this.loading() && this.filteredOptions().length > 0;
+  }
+
   protected activeOptionId(): string | null {
     const index = this.activeOptionIndex();
-    return index >= 0 && index < this.filteredOptions().length
-      ? this.optionId(index)
-      : null;
+    if (!this.hasRenderedListbox() || index < 0) {
+      return null;
+    }
+
+    return this.optionElements()[index]?.nativeElement.id ?? null;
   }
 
   protected isActive(index: number): boolean {
@@ -305,11 +323,7 @@ export class BuludDropdown<T = unknown>
         ? 0
         : options.findIndex((option) => this.isSameOption(option, selected));
     this.activeOptionIndex.set(
-      options.length === 0
-        ? -1
-        : index >= 0
-          ? index
-          : 0,
+      options.length === 0 ? -1 : index >= 0 ? index : 0,
     );
   }
 
@@ -390,9 +404,7 @@ export class BuludDropdown<T = unknown>
       this.activeOptionIndex.set(this.filteredOptions().length > 0 ? 0 : -1);
     } else if (event.key === 'End') {
       event.preventDefault();
-      this.activeOptionIndex.set(
-        this.filteredOptions().length - 1,
-      );
+      this.activeOptionIndex.set(this.filteredOptions().length - 1);
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.selectActiveOption();
@@ -480,9 +492,7 @@ export class BuludDropdown<T = unknown>
 
     if (event.key === 'End') {
       event.preventDefault();
-      this.activeOptionIndex.set(
-        this.filteredOptions().length - 1,
-      );
+      this.activeOptionIndex.set(this.filteredOptions().length - 1);
       this.focusActiveOption();
       return;
     }

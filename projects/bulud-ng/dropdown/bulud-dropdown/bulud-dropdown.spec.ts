@@ -20,7 +20,8 @@ interface TestOption {
   template: `
     <bulud-dropdown
       aria-label="Choose a framework"
-      [options]="options"
+      [options]="displayedOptions()"
+      [loading]="loading()"
       [multiple]="multiple()"
       [searchable]="searchable()"
       [required]="required()"
@@ -48,6 +49,8 @@ class TestHost {
     { id: 'react', label: 'React', category: 'Framework' },
     { id: 'tailwind', label: 'Tailwind', category: 'CSS' },
   ];
+  readonly displayedOptions = signal<readonly TestOption[]>(this.options);
+  readonly loading = signal(false);
   readonly value = signal<TestOption | readonly TestOption[] | null>(null);
   readonly multiple = signal(false);
   readonly searchable = signal(true);
@@ -193,6 +196,59 @@ describe('BuludDropdown', () => {
       'tailwind',
     );
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('keeps search relationships valid while a nonempty listbox is rendered', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+
+    const search = getDropdown().querySelector<HTMLInputElement>('input');
+    const listbox =
+      getDropdown().querySelector<HTMLElement>('[role="listbox"]');
+    const option = getOptions()[0];
+
+    expect(search?.getAttribute('aria-controls')).toBe(listbox?.id);
+    expect(search?.getAttribute('aria-activedescendant')).toBe(option.id);
+  });
+
+  it('removes stale search relationships and restores them with options', () => {
+    getTrigger().click();
+    fixture.detectChanges();
+
+    const getSearch = () =>
+      getDropdown().querySelector<HTMLInputElement>('input');
+
+    expect(getSearch()?.getAttribute('aria-controls')).toMatch(
+      /^bulud-dropdown-\d+-listbox$/,
+    );
+    expect(getSearch()?.getAttribute('aria-activedescendant')).toMatch(
+      /^bulud-dropdown-\d+-option-0$/,
+    );
+
+    fixture.componentInstance.loading.set(true);
+    fixture.detectChanges();
+    expect(getSearch()?.hasAttribute('aria-controls')).toBeFalse();
+    expect(getSearch()?.hasAttribute('aria-activedescendant')).toBeFalse();
+
+    fixture.componentInstance.loading.set(false);
+    fixture.componentInstance.displayedOptions.set([]);
+    fixture.detectChanges();
+    expect(getSearch()?.hasAttribute('aria-controls')).toBeFalse();
+    expect(getSearch()?.hasAttribute('aria-activedescendant')).toBeFalse();
+
+    fixture.componentInstance.displayedOptions.set(
+      fixture.componentInstance.options,
+    );
+    fixture.detectChanges();
+    const restoredSearch = getSearch();
+    const restoredListbox =
+      getDropdown().querySelector<HTMLElement>('[role="listbox"]');
+    expect(restoredSearch?.getAttribute('aria-controls')).toBe(
+      restoredListbox?.id,
+    );
+    expect(restoredSearch?.getAttribute('aria-activedescendant')).toBe(
+      getOptions()[0].id,
+    );
   });
 
   it('keeps disabled options discoverable without allowing activation', () => {

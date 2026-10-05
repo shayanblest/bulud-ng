@@ -1034,6 +1034,9 @@ function createBuludThemeCss(
       property.startsWith('--bulud-switch-') &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
+  const dropdownDarkModeVariables = entries.filter(
+    ([property]) => property === '--bulud-dropdown-invalid-border',
+  );
   const dialogDarkModeVariables = entries.filter(
     ([property]) =>
       property.startsWith('--bulud-dialog-') &&
@@ -1045,7 +1048,7 @@ function createBuludThemeCss(
       !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...dropdownDarkModeVariables, ...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
 }
 
 /**

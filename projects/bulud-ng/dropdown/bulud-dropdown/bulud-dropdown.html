@@ -79,7 +79,9 @@
               searchPlaceholder() ?? locale.dropdown.searchPlaceholder
             "
             [attr.aria-label]="searchLabel() ?? locale.dropdown.searchLabel"
-            [attr.aria-controls]="instanceId + '-listbox'"
+            [attr.aria-controls]="
+              hasRenderedListbox() ? instanceId + '-listbox' : null
+            "
             [attr.aria-activedescendant]="activeOptionId()"
             (input)="handleSearchInput(searchInput.value)"
             (keydown)="handleSearchKeydown($event)"

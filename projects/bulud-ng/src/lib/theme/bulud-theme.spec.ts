@@ -670,6 +670,68 @@ describe('Bulud theme', () => {
     }
   });
 
+  it('keeps explicit dropdown invalid borders in light and dark scopes', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          colors: { danger: '#be123c' },
+          dropdown: { invalidBorder: '#7f1d1d' },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      const styleText =
+        document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+        '';
+      expect(styleText.match(/--bulud-dropdown-invalid-border:/g)).toHaveSize(
+        2,
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+
+      root.classList.add('dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+
+      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+    } finally {
+      root.classList.remove('dark');
+      root.removeAttribute('data-theme');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
   it('keeps configured Switch values active in dark mode without leaking omitted tokens', () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
