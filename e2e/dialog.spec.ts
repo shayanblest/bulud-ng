@@ -39,9 +39,11 @@ test('lets a native popover light-dismiss before the containing Dialog', async (
 }) => {
   const supported = await page.evaluate(
     () =>
-      typeof (HTMLElement.prototype as HTMLElement & {
-        showPopover?: unknown;
-      }).showPopover === 'function',
+      typeof (
+        HTMLElement.prototype as HTMLElement & {
+          showPopover?: unknown;
+        }
+      ).showPopover === 'function',
   );
   test.skip(!supported, 'Native popover APIs are unavailable.');
 
@@ -67,9 +69,7 @@ test('lets a native popover light-dismiss before the containing Dialog', async (
     invoker.setAttribute('popovertarget', popover.id);
     element.append(invoker, popover);
     invoker.focus();
-    (
-      popover as HTMLDivElement & { showPopover: () => void }
-    ).showPopover();
+    (popover as HTMLDivElement & { showPopover: () => void }).showPopover();
   });
   await expect(invoker).toBeFocused();
   await expect(popover).toBeVisible();
@@ -113,6 +113,11 @@ test('supports dark theme, RTL, and instance geometry override', async ({
   page,
 }) => {
   const section = page.locator('#dialog');
+  await section.getByRole('button', { name: 'Open dialog' }).click();
+  const lightDialog = page.getByRole('dialog', { name: 'Review changes' });
+  await expect(lightDialog).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await page.keyboard.press('Escape');
+
   await section.getByText('Dark theme', { exact: true }).click();
   await section.getByRole('button', { name: 'Open dialog' }).click();
   const dialog = page.getByRole('dialog', { name: 'Review changes' });
@@ -121,6 +126,7 @@ test('supports dark theme, RTL, and instance geometry override', async ({
   await expect(dialog).toHaveCSS('max-width', '640px');
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveCSS('direction', 'rtl');
   await page.keyboard.press('Escape');
   await page.evaluate(() => document.documentElement.removeAttribute('dir'));
 });

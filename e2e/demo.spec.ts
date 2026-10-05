@@ -95,6 +95,7 @@ test.describe('Bulud component demo', () => {
     const single = page.locator('#dropdown bulud-dropdown').first();
     const trigger = single.locator('.bulud-dropdown__trigger');
     await expect(trigger).toHaveAttribute('role', 'combobox');
+    await expect(trigger).toHaveCSS('direction', 'rtl');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(trigger).toHaveAttribute('aria-controls', /-listbox$/);
     await trigger.press('ArrowDown');
@@ -205,6 +206,14 @@ test.describe('Bulud component demo', () => {
     await expect(tabButtons.nth(2)).toBeDisabled();
     await expect(tabButtons.nth(2)).toHaveAttribute('aria-disabled', 'true');
 
+    const overviewTab = tabs.locator('[data-testid="demo-tab-overview"]');
+    const activityTab = tabs.locator('[data-testid="demo-tab-activity"]');
+    await activityTab.click();
+    await expect(activityTab).toHaveAttribute('aria-selected', 'true');
+    await expect(overviewTab).toHaveAttribute('aria-selected', 'false');
+    await overviewTab.click();
+    await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+
     const overviewPanel = tabs.locator('[role="tabpanel"]').nth(0);
     const activityPanel = tabs.locator('[role="tabpanel"]').nth(1);
     await expect(tabButtons.nth(0)).toHaveAttribute(
@@ -266,6 +275,13 @@ test.describe('Bulud component demo', () => {
     const tabsSurface = page.locator(
       '[data-testid="demo-tabs-dark-preview"] [data-testid="demo-tabs-horizontal"] .bulud-tabs',
     );
+    const dropdownDescription = dropdownPreview
+      .locator('article')
+      .filter({ has: page.locator('#demo-dropdown-single') })
+      .locator('p');
+    const lightDropdownDescriptionColor = await dropdownDescription.evaluate(
+      (element) => getComputedStyle(element).color,
+    );
 
     await expect(dropdownPreview).not.toHaveAttribute('data-theme');
     await expect(accordionPreview).not.toHaveAttribute('data-theme');
@@ -298,6 +314,23 @@ test.describe('Bulud component demo', () => {
     );
     await expect(tabsSurface).toHaveCSS('background-color', 'rgb(15, 23, 42)');
 
+    const darkDropdownDescriptionColor = await dropdownDescription.evaluate(
+      (element) => getComputedStyle(element).color,
+    );
+    expect(darkDropdownDescriptionColor).not.toBe(
+      lightDropdownDescriptionColor,
+    );
+    await dropdownTrigger.click();
+    const angularMetadata = dropdownPreview
+      .locator('#demo-dropdown-single [role="option"]')
+      .filter({ hasText: 'Angular' })
+      .locator('[class~="text-bulud-on-surface/70"]');
+    await expect(angularMetadata).toHaveCSS(
+      'color',
+      darkDropdownDescriptionColor,
+    );
+    await dropdownTrigger.press('Escape');
+
     await darkToggle.uncheck();
 
     await expect(dropdownPreview).not.toHaveAttribute('data-theme');
@@ -315,6 +348,10 @@ test.describe('Bulud component demo', () => {
       'background-color',
       'rgb(255, 255, 255)',
     );
+    await expect(dropdownDescription).toHaveCSS(
+      'color',
+      lightDropdownDescriptionColor,
+    );
   });
 
   test('covers accordion single and multiple expansion, disabled state, keyboard, and theme override', async ({
@@ -324,6 +361,12 @@ test.describe('Bulud component demo', () => {
     const single = accordion.locator('bulud-accordion').first();
     const triggers = single.locator('.bulud-accordion-item__trigger');
     const panels = single.locator('[role="region"]');
+    const overviewTrigger = single.locator(
+      '#demo-accordion-overview .bulud-accordion-item__trigger',
+    );
+    const detailsTrigger = single.locator(
+      '#demo-accordion-details .bulud-accordion-item__trigger',
+    );
 
     await expect(triggers).toHaveCount(3);
     await expect(triggers.nth(0)).toHaveAttribute('aria-expanded', 'true');
@@ -335,6 +378,12 @@ test.describe('Bulud component demo', () => {
     );
     await expect(panels.nth(0)).toBeVisible();
     await expect(panels.nth(1)).toBeHidden();
+
+    await detailsTrigger.click();
+    await expect(detailsTrigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(overviewTrigger).toHaveAttribute('aria-expanded', 'false');
+    await overviewTrigger.click();
+    await expect(overviewTrigger).toHaveAttribute('aria-expanded', 'true');
 
     await triggers.nth(0).press('ArrowDown');
     await expect(triggers.nth(1)).toBeFocused();
@@ -669,6 +718,7 @@ test.describe('Bulud component demo', () => {
       (element) => element.getBoundingClientRect().height,
     );
     await textarea.focus();
+    await expect(textarea).toBeFocused();
     await expect
       .poll(() =>
         textarea.evaluate((element) => element.getBoundingClientRect().height),
