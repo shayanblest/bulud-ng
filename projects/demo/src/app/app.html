@@ -51,6 +51,7 @@
       </nav>
 
       <button
+        id="demo-language-toggle"
         type="button"
         class="rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-xs font-semibold text-violet-200"
         (click)="toggleLanguage()"
@@ -222,7 +223,11 @@
                 <article
                   class="rounded-2xl border border-bulud-border bg-bulud-surface p-5"
                 >
-                  <bulud-button [variant]="variant.name" fullWidth>
+                  <bulud-button
+                    [id]="'demo-button-variant-' + variant.name"
+                    [variant]="variant.name"
+                    fullWidth
+                  >
                     {{ variant.label }}
                   </bulud-button>
                   <p class="mt-4 text-sm font-semibold text-bulud-on-surface">
@@ -250,7 +255,10 @@
 
             <div class="flex min-h-24 flex-wrap items-center gap-4">
               @for (size of sizes; track size.name) {
-                <bulud-button [size]="size.name">
+                <bulud-button
+                  [id]="'demo-button-size-' + size.name"
+                  [size]="size.name"
+                >
                   {{ size.label }}
                 </bulud-button>
               }
@@ -269,9 +277,17 @@
             </div>
 
             <div class="flex min-h-24 flex-wrap items-center gap-4">
-              <bulud-button>{{ text().ready }}</bulud-button>
-              <bulud-button disabled>{{ text().disabled }}</bulud-button>
-              <bulud-button loading [loadingLabel]="text().publish">
+              <bulud-button id="demo-button-ready">{{
+                text().ready
+              }}</bulud-button>
+              <bulud-button id="demo-button-disabled" disabled>{{
+                text().disabled
+              }}</bulud-button>
+              <bulud-button
+                id="demo-button-loading"
+                loading
+                [loadingLabel]="text().publish"
+              >
                 {{ text().publish }}
               </bulud-button>
             </div>
@@ -292,6 +308,7 @@
           <div class="my-4 flex flex-wrap gap-4">
             <label
               ><input
+                id="demo-button-disabled-toggle"
                 type="checkbox"
                 [checked]="buttonDisabled()"
                 (change)="buttonDisabled.set(!buttonDisabled())"
@@ -300,6 +317,7 @@
             >
             <label
               ><input
+                id="demo-button-loading-toggle"
                 type="checkbox"
                 [checked]="buttonLoading()"
                 (change)="buttonLoading.set(!buttonLoading())"
@@ -308,6 +326,7 @@
             >
             <label
               ><input
+                id="demo-button-dark-toggle"
                 type="checkbox"
                 [checked]="buttonDark()"
                 (change)="buttonDark.set(!buttonDark())"
@@ -378,6 +397,7 @@
           <div class="mb-5 flex flex-wrap gap-4 text-sm font-semibold">
             <label
               ><input
+                id="demo-pagination-disabled-toggle"
                 type="checkbox"
                 [checked]="paginationDisabled()"
                 (change)="paginationDisabled.set(!paginationDisabled())"
@@ -386,6 +406,7 @@
             >
             <label
               ><input
+                id="demo-pagination-dark-toggle"
                 type="checkbox"
                 [checked]="paginationDark()"
                 (change)="paginationDark.set(!paginationDark())"
@@ -394,6 +415,7 @@
             >
             <label
               ><input
+                id="demo-pagination-rtl-toggle"
                 type="checkbox"
                 [checked]="paginationRtl()"
                 (change)="paginationRtl.set(!paginationRtl())"
@@ -446,7 +468,11 @@
             <p id="pagination-empty-state" class="text-sm font-semibold">
               No pages available
             </p>
-            <bulud-pagination [pageCount]="0" aria-label="Empty pagination" />
+            <bulud-pagination
+              id="demo-pagination-empty"
+              [pageCount]="0"
+              aria-label="Empty pagination"
+            />
           </div>
         </section>
 
@@ -486,6 +512,7 @@
               Focus checkbox
             </button>
             <bulud-checkbox
+              id="demo-checkbox-state"
               [checked]="checkboxAccepted()"
               [(indeterminate)]="checkboxIndeterminate"
               [disabled]="checkboxDisabled()"
@@ -496,6 +523,7 @@
             >
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input
+                id="demo-checkbox-indeterminate-toggle"
                 type="checkbox"
                 [checked]="checkboxIndeterminate()"
                 (change)="checkboxIndeterminate.set(!checkboxIndeterminate())"
@@ -504,6 +532,7 @@
             </label>
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input
+                id="demo-checkbox-disabled-toggle"
                 type="checkbox"
                 [checked]="checkboxDisabled()"
                 (change)="checkboxDisabled.set(!checkboxDisabled())"
@@ -512,6 +541,7 @@
             </label>
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input
+                id="demo-checkbox-dark-toggle"
                 type="checkbox"
                 [checked]="checkboxDark()"
                 (change)="checkboxDark.set(!checkboxDark())"
@@ -519,6 +549,7 @@
               Dark theme
             </label>
             <bulud-checkbox
+              id="demo-checkbox-instance-theme"
               style="
                 --bulud-checkbox-checked-background: #14532d;
                 --bulud-checkbox-size: 2rem;
@@ -576,6 +607,7 @@
             >
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input
+                id="demo-switch-disabled-toggle"
                 type="checkbox"
                 [checked]="switchDisabled()"
                 (change)="switchDisabled.set(!switchDisabled())"
@@ -590,6 +622,7 @@
             >
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input
+                id="demo-switch-invalid-toggle"
                 type="checkbox"
                 [checked]="switchInvalid()"
                 (change)="switchInvalid.set(!switchInvalid())"
@@ -598,6 +631,7 @@
             </label>
             <label class="inline-flex items-center gap-2 text-sm font-semibold">
               <input
+                id="demo-switch-dark-toggle"
                 type="checkbox"
                 [checked]="switchDark()"
                 (change)="switchDark.set(!switchDark())"
@@ -605,6 +639,7 @@
               Dark theme
             </label>
             <bulud-switch
+              id="demo-switch-instance-theme"
               style="
                 --bulud-switch-checked-background: #14532d;
                 --bulud-switch-width: 3.25rem;
@@ -642,12 +677,25 @@
           </div>
           <div class="flex flex-wrap items-center gap-3">
             @for (variant of badgeVariants; track variant) {
-              <bulud-badge class="capitalize" [variant]="variant" dot>
+              <bulud-badge
+                [id]="'demo-badge-variant-' + variant"
+                class="capitalize"
+                [variant]="variant"
+                dot
+              >
                 {{ variant }}
               </bulud-badge>
             }
-            <bulud-badge variant="success">Published</bulud-badge>
-            <bulud-badge variant="primary" dismissible>Dismissible</bulud-badge>
+            <bulud-badge id="demo-badge-success" variant="success">
+              Published
+            </bulud-badge>
+            <bulud-badge
+              id="demo-badge-dismissible"
+              variant="primary"
+              dismissible
+            >
+              Dismissible
+            </bulud-badge>
           </div>
           <div
             id="badge-states"
@@ -655,7 +703,9 @@
             [class.dark]="badgeDark()"
           >
             @for (size of badgeSizes; track size) {
-              <bulud-badge [size]="size">{{ size }}</bulud-badge>
+              <bulud-badge [id]="'demo-badge-size-' + size" [size]="size">
+                {{ size }}
+              </bulud-badge>
             }
             <bulud-badge id="badge-default">Default</bulud-badge>
             <bulud-badge id="badge-empty" />
@@ -671,6 +721,7 @@
             >
             <label
               ><input
+                id="demo-badge-dark-toggle"
                 type="checkbox"
                 [checked]="badgeDark()"
                 (change)="badgeDark.set(!badgeDark())"
@@ -678,6 +729,7 @@
               Dark badge theme</label
             >
             <button
+              id="demo-badge-restore"
               #restoreBadge
               type="button"
               (click)="badgeVisible.set(true)"
@@ -710,6 +762,7 @@
         <section
           id="dropdown"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          [attr.data-theme]="componentDark() ? 'dark' : null"
         >
           <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -801,9 +854,19 @@
                     />
                     Disabled
                   </label>
+                  <label class="inline-flex items-center gap-2">
+                    <input
+                      id="dropdown-dark"
+                      type="checkbox"
+                      [checked]="componentDark()"
+                      (change)="componentDark.set(!componentDark())"
+                    />
+                    Dark theme
+                  </label>
                 </div>
 
                 <bulud-dropdown
+                  id="demo-dropdown-single"
                   class="block w-full"
                   [attr.aria-label]="text().frameworkLabel"
                   [options]="dropdownEmpty() ? [] : frameworks"
@@ -851,6 +914,7 @@
                 </div>
 
                 <bulud-dropdown
+                  id="demo-dropdown-multiple"
                   class="block w-full"
                   [attr.aria-label]="text().teamLabel"
                   [options]="teamMembers"
@@ -903,6 +967,7 @@
                 the required invalid state.
               </p>
               <bulud-dropdown
+                id="demo-dropdown-required"
                 class="mt-4 block max-w-md"
                 aria-label="Required framework"
                 [options]="frameworks"
@@ -921,6 +986,7 @@
         <section
           id="accordion"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          [attr.data-theme]="componentDark() ? 'dark' : null"
         >
           <div class="mb-7">
             <p
@@ -949,19 +1015,29 @@
                 (expandedChange)="expandedAccordion.set($event)"
                 style="--bulud-accordion-focus: #7c3aed"
               >
-                <section [buludAccordionItem]="'overview'">
+                <section
+                  id="demo-accordion-overview"
+                  [buludAccordionItem]="'overview'"
+                >
                   <span buludAccordionTrigger>Overview</span>
                   <p buludAccordionPanel>
                     Your workspace overview and recent project activity.
                   </p>
                 </section>
-                <section [buludAccordionItem]="'details'">
+                <section
+                  id="demo-accordion-details"
+                  [buludAccordionItem]="'details'"
+                >
                   <span buludAccordionTrigger>Details</span>
                   <p buludAccordionPanel>
                     Account details and notification preferences.
                   </p>
                 </section>
-                <section [buludAccordionItem]="'settings'" disabled>
+                <section
+                  id="demo-accordion-disabled"
+                  [buludAccordionItem]="'settings'"
+                  disabled
+                >
                   <span buludAccordionTrigger>Settings (disabled)</span>
                   <p buludAccordionPanel>Settings are unavailable.</p>
                 </section>
@@ -986,13 +1062,16 @@
                 [expanded]="expandedAccordionItems()"
                 (expandedChange)="expandedAccordionItems.set($event)"
               >
-                <section [buludAccordionItem]="'team'">
+                <section id="demo-accordion-team" [buludAccordionItem]="'team'">
                   <span buludAccordionTrigger>Team</span>
                   <p buludAccordionPanel>
                     Collaborators can be expanded independently.
                   </p>
                 </section>
-                <section [buludAccordionItem]="'activity'">
+                <section
+                  id="demo-accordion-activity"
+                  [buludAccordionItem]="'activity'"
+                >
                   <span buludAccordionTrigger>Activity</span>
                   <p buludAccordionPanel>
                     Recent activity remains open while reviewing the team.
@@ -1015,6 +1094,7 @@
         <section
           id="tabs"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          [attr.data-theme]="componentDark() ? 'dark' : null"
         >
           <div class="mb-7">
             <p
@@ -1037,9 +1117,26 @@
             [(activeId)]="activeTab"
             style="--bulud-tabs-active-border: #7c3aed"
           >
-            <button type="button" [buludTab]="'overview'">Overview</button>
-            <button type="button" [buludTab]="'activity'">Activity</button>
-            <button type="button" [buludTab]="'settings'" disabled>
+            <button
+              id="demo-tab-overview"
+              type="button"
+              [buludTab]="'overview'"
+            >
+              Overview
+            </button>
+            <button
+              id="demo-tab-activity"
+              type="button"
+              [buludTab]="'activity'"
+            >
+              Activity
+            </button>
+            <button
+              id="demo-tab-disabled"
+              type="button"
+              [buludTab]="'settings'"
+              disabled
+            >
               Settings (disabled)
             </button>
 
@@ -1066,8 +1163,20 @@
               Vertical example
             </p>
             <bulud-tabs orientation="vertical" aria-label="Profile sections">
-              <button type="button" [buludTab]="'profile'">Profile</button>
-              <button type="button" [buludTab]="'security'">Security</button>
+              <button
+                id="demo-tab-profile"
+                type="button"
+                [buludTab]="'profile'"
+              >
+                Profile
+              </button>
+              <button
+                id="demo-tab-security"
+                type="button"
+                [buludTab]="'security'"
+              >
+                Security
+              </button>
               <section [buludTabPanel]="'profile'">Profile details.</section>
               <section [buludTabPanel]="'security'">Security details.</section>
             </bulud-tabs>
@@ -1096,6 +1205,7 @@
             </div>
 
             <label
+              id="demo-button-full-width-toggle"
               class="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-700"
             >
               <input
@@ -1127,6 +1237,24 @@
               >
                 {{ text().reset }}
               </button>
+            </div>
+          </div>
+          <div
+            id="rtl-demo"
+            dir="rtl"
+            class="mt-7 rounded-2xl border border-dashed border-violet-300 bg-violet-50 p-5 text-violet-950"
+          >
+            <p class="font-semibold">RTL region</p>
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <bulud-button id="demo-button-rtl">RTL action</bulud-button>
+              <bulud-badge id="demo-badge-rtl" variant="primary"
+                >RTL status</bulud-badge
+              >
+              <div dir="ltr">
+                <bulud-button id="demo-button-ltr-nested" variant="secondary">
+                  Nested LTR action
+                </bulud-button>
+              </div>
             </div>
           </div>
         </section>
@@ -1520,6 +1648,7 @@
             <div class="flex flex-wrap gap-3 text-sm font-semibold">
               <label class="inline-flex items-center gap-2">
                 <input
+                  id="demo-dialog-escape-toggle"
                   type="checkbox"
                   [checked]="dialogEscape()"
                   (change)="dialogEscape.set(!dialogEscape())"
@@ -1528,6 +1657,7 @@
               </label>
               <label class="inline-flex items-center gap-2">
                 <input
+                  id="demo-dialog-backdrop-toggle"
                   type="checkbox"
                   [checked]="dialogBackdrop()"
                   (change)="dialogBackdrop.set(!dialogBackdrop())"
@@ -1536,6 +1666,7 @@
               </label>
               <label class="inline-flex items-center gap-2">
                 <input
+                  id="demo-dialog-dark-toggle"
                   type="checkbox"
                   [checked]="dialogDark()"
                   (change)="dialogDark.set(!dialogDark())"
@@ -1555,6 +1686,7 @@
           </button>
 
           <bulud-dialog
+            id="demo-dialog"
             [(open)]="dialogOpen"
             aria-labelledby="dialog-title"
             aria-describedby="dialog-description"

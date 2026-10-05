@@ -255,6 +255,7 @@ export class App {
   protected readonly dropdownLoading = signal(false);
   protected readonly dropdownEmpty = signal(false);
   protected readonly dropdownDisabled = signal(false);
+  protected readonly componentDark = signal(false);
   protected readonly dropdownFormControl = new FormControl<DemoOption | null>(
     null,
   );
