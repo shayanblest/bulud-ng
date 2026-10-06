@@ -1,18 +1,16 @@
 import { execFileSync } from "node:child_process";
 import {
+  cpSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
   readdirSync,
-  realpathSync,
   statSync,
-  symlinkSync,
   writeFileSync,
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import ts from "typescript";
 
 const root = resolve(dirname(new URL(import.meta.url).pathname), "..");
@@ -29,6 +27,114 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function gitOutput(args) {
+  return execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function dependencyChanges(label, baseline, current) {
+  const changes = [];
+  const names = new Set([
+    ...Object.keys(baseline ?? {}),
+    ...Object.keys(current ?? {}),
+  ]);
+  for (const name of sorted(names)) {
+    const had = Object.hasOwn(baseline ?? {}, name);
+    const has = Object.hasOwn(current ?? {}, name);
+    if (!had)
+      changes.push(`${label}: added ${name}=${JSON.stringify(current[name])}`);
+    else if (!has)
+      changes.push(
+        `${label}: removed ${name}=${JSON.stringify(baseline[name])}`,
+      );
+    else if (JSON.stringify(baseline[name]) !== JSON.stringify(current[name]))
+      changes.push(
+        `${label}: changed ${name}: ${JSON.stringify(baseline[name])} -> ${JSON.stringify(current[name])}`,
+      );
+  }
+  return changes;
+}
+
+function dependencyBaseRef() {
+  const explicit = process.env.BULUD_BASE_REF || process.env.GITHUB_BASE_SHA;
+  if (explicit) return explicit;
+  for (const candidate of ["origin/develop", "develop", "HEAD^"]) {
+    try {
+      return gitOutput(["rev-parse", "--verify", candidate]);
+    } catch {
+      // Try the next deterministic local fallback.
+    }
+  }
+  fail(
+    "dependency baseline is unavailable; set BULUD_BASE_REF to the PR base revision",
+  );
+}
+
+function readBaseJson(baseRef, path) {
+  try {
+    return JSON.parse(gitOutput(["show", `${baseRef}:${path}`]));
+  } catch {
+    fail(`could not read ${path} from dependency baseline ${baseRef}`);
+  }
+}
+
+function baseRevisionDirectory(baseRef) {
+  const directory = mkdtempSync(join(tmpdir(), "bulud-ng-api-baseline-"));
+  try {
+    const projectPrefix = "projects/bulud-ng/";
+    const projectRoot = join(directory, projectPrefix);
+    const paths = gitOutput([
+      "ls-tree",
+      "-r",
+      "--name-only",
+      baseRef,
+      "projects/bulud-ng",
+    ]).split("\n");
+    for (const path of paths) {
+      if (!path) continue;
+      const target = join(directory, path);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(
+        target,
+        execFileSync("git", ["show", `${baseRef}:${path}`], {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+        }),
+      );
+    }
+    if (!statSafe(join(projectRoot, "src", "public-api.ts")))
+      fail(`API baseline ${baseRef} does not contain the library public API`);
+    return directory;
+  } catch {
+    rmSync(directory, { recursive: true, force: true });
+    fail(`could not materialize API baseline ${baseRef}`);
+  }
+}
+
+function documentedIdentifiers(text) {
+  return new Set(
+    text.match(
+      /\b(?:Bulud[A-Za-z0-9_$]*|[A-Za-z_$][A-Za-z0-9_$]*Bulud[A-Za-z0-9_$]*|BULUD[A-Za-z0-9_$]*)\b/g,
+    ) ?? [],
+  );
+}
+
+function documentationSection(text, entry) {
+  const heading =
+    entry === "."
+      ? "## Root entry point: `bulud-ng`"
+      : `### \`bulud-ng/${entry.slice(2)}\``;
+  const start = text.indexOf(heading);
+  if (start < 0) return "";
+  const body = text.slice(start + heading.length);
+  const end = body.search(entry === "." ? /^## /m : /^### |^## /m);
+  return end < 0 ? body : body.slice(0, end);
+}
+
 function sorted(values) {
   return [...values].sort();
 }
@@ -37,11 +143,11 @@ function formatList(values) {
   return values.length === 0 ? "(none)" : values.join(", ");
 }
 
-function sourceEntryPoints() {
-  const entries = new Map([[".", join(sourceApiRoot, "src", "public-api.ts")]]);
-  for (const name of readdirSync(sourceApiRoot)) {
+function sourceEntryPoints(apiRoot = sourceApiRoot) {
+  const entries = new Map([[".", join(apiRoot, "src", "public-api.ts")]]);
+  for (const name of readdirSync(apiRoot)) {
     if (name === "src") continue;
-    const api = join(sourceApiRoot, name, "public-api.ts");
+    const api = join(apiRoot, name, "public-api.ts");
     if (statSafe(api)) entries.set(`./${name}`, api);
   }
   return entries;
@@ -121,9 +227,57 @@ function moduleExportNames(path) {
   );
 }
 
+function validateApiBaseline(currentEntries, baseRef) {
+  const baselineRoot = baseRevisionDirectory(baseRef);
+  try {
+    const baselineEntries = sourceEntryPoints(
+      join(baselineRoot, "projects", "bulud-ng"),
+    );
+    const differences = [];
+    const currentNames = new Set(currentEntries.keys());
+    const baselineNames = new Set(baselineEntries.keys());
+    for (const entry of sorted(baselineNames)) {
+      if (!currentNames.has(entry))
+        differences.push(
+          `entry point removed: ${entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`}`,
+        );
+    }
+    for (const entry of sorted(currentNames)) {
+      if (!baselineNames.has(entry))
+        differences.push(
+          `entry point added: ${entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`}`,
+        );
+    }
+    for (const entry of sorted(currentNames).filter((name) =>
+      baselineNames.has(name),
+    )) {
+      const currentSymbols = moduleExportNames(currentEntries.get(entry));
+      const baselineSymbols = moduleExportNames(baselineEntries.get(entry));
+      const removed = sorted(
+        [...baselineSymbols].filter((name) => !currentSymbols.has(name)),
+      );
+      const added = sorted(
+        [...currentSymbols].filter((name) => !baselineSymbols.has(name)),
+      );
+      if (removed.length || added.length)
+        differences.push(
+          `${entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`}: removed=${formatList(removed)} added=${formatList(added)}`,
+        );
+    }
+    if (differences.length)
+      fail(
+        `public API differs from approved baseline ${baseRef}; approval is required:\n${differences.map((difference) => `- ${difference}`).join("\n")}`,
+      );
+  } finally {
+    rmSync(baselineRoot, { recursive: true, force: true });
+  }
+}
+
 function validateApi() {
   const packageJson = readJson(join(packageRoot, "package.json"));
   const sourceEntries = sourceEntryPoints();
+  const baseRef = dependencyBaseRef();
+  validateApiBaseline(sourceEntries, baseRef);
   validatePackageJsEntries(packageJson);
 
   const docs = readFileSync(publicApiDocsPath, "utf8");
@@ -152,7 +306,8 @@ function validateApi() {
   }
 
   const declarationMismatches = [];
-  const sourceSymbolNames = new Set();
+  const undocumentedSymbols = [];
+  const staleSymbols = [];
   for (const [entry, sourcePath] of sourceEntries) {
     const declarationPath =
       entry === "."
@@ -165,7 +320,6 @@ function validateApi() {
       continue;
     }
     const sourceNames = moduleExportNames(sourcePath);
-    for (const name of sourceNames) sourceSymbolNames.add(name);
     const declarationNames = moduleExportNames(declarationPath);
     const missing = sorted(
       [...sourceNames].filter((name) => !declarationNames.has(name)),
@@ -178,29 +332,27 @@ function validateApi() {
         `${entry}: missing=${formatList(missing)} extra=${formatList(extra)}`,
       );
     }
+    const documentedNames = documentedIdentifiers(
+      documentationSection(docs, entry),
+    );
+    undocumentedSymbols.push(
+      ...[...sourceNames]
+        .filter((name) => !documentedNames.has(name))
+        .map((name) => `${entry}:${name}`),
+    );
+    staleSymbols.push(
+      ...[...documentedNames]
+        .filter((name) => !sourceNames.has(name))
+        .map((name) => `${entry}:${name}`),
+    );
   }
   if (declarationMismatches.length)
     fail(
       `generated declarations differ from the approved source API:\n${declarationMismatches.join("\n")}`,
     );
-  const documentedSymbols = new Set(
-    [...docs.matchAll(/`([A-Za-z_$][\w$]*)`/g)]
-      .map((match) => match[1])
-      .filter((name) =>
-        /^(Bulud|BULUD|provideBulud|resolveBulud|createBulud|defineBulud)/.test(
-          name,
-        ),
-      ),
-  );
-  const undocumentedSymbols = sorted(
-    [...sourceSymbolNames].filter((name) => !docs.includes(name)),
-  );
-  const staleSymbols = sorted(
-    [...documentedSymbols].filter((name) => !sourceSymbolNames.has(name)),
-  );
   if (undocumentedSymbols.length || staleSymbols.length)
     fail(
-      `documented public symbols do not match source exports; undocumented=${formatList(undocumentedSymbols)} stale=${formatList(staleSymbols)}`,
+      `documented public symbols do not match source exports exactly; undocumented=${formatList(sorted(undocumentedSymbols))} stale=${formatList(sorted(staleSymbols))}`,
     );
   execFileSync(
     "npx",
@@ -256,8 +408,33 @@ function validateDependencies() {
       `package runtime dependencies are not consumer runtime dependencies: ${formatList(sorted(leakedDevDependencies))}`,
     );
   }
+  const baseRef = dependencyBaseRef();
+  const baseRoot = readBaseJson(baseRef, "package.json");
+  const baseLibrary = readBaseJson(baseRef, "projects/bulud-ng/package.json");
+  const baselineChanges = [
+    ...["dependencies", "devDependencies", "optionalDependencies"].flatMap(
+      (field) =>
+        dependencyChanges(
+          `root package.json ${field}`,
+          baseRoot[field],
+          rootPackage[field],
+        ),
+    ),
+    ...["dependencies", "peerDependencies", "peerDependenciesMeta"].flatMap(
+      (field) =>
+        dependencyChanges(
+          `projects/bulud-ng/package.json ${field}`,
+          baseLibrary[field],
+          source[field],
+        ),
+    ),
+  ];
+  if (baselineChanges.length)
+    fail(
+      `dependency declarations differ from baseline ${baseRef}; approval is required:\n${baselineChanges.map((change) => `- ${change}`).join("\n")}`,
+    );
   console.log(
-    "Dependency contract validated: built metadata matches the library manifest and has no workspace-only runtime dependency.",
+    `Dependency contract validated against ${baseRef}: declarations are unchanged, built metadata matches the library manifest, and no workspace-only runtime dependency is present.`,
   );
 }
 
@@ -356,24 +533,69 @@ async function validateSmokeImports() {
   const temporaryRoot = mkdtempSync(join(tmpdir(), "bulud-ng-package-smoke-"));
   try {
     const nodeModules = join(temporaryRoot, "node_modules");
-    const packageLink = join(nodeModules, "bulud-ng");
     mkdirSync(nodeModules, { recursive: true });
-    symlinkSync(realpathSync(packageRoot), packageLink, "dir");
+    cpSync(packageRoot, join(nodeModules, "bulud-ng"), { recursive: true });
+    const copiedDependencies = new Set();
+    for (const name of [
+      "@angular/compiler",
+      ...Object.keys(packageJson.dependencies ?? {}),
+      ...Object.keys(packageJson.peerDependencies ?? {}).filter(
+        (dependency) =>
+          !packageJson.peerDependenciesMeta?.[dependency]?.optional,
+      ),
+    ]) {
+      copySmokeDependency(name, nodeModules, copiedDependencies);
+    }
     const smokeScript = join(temporaryRoot, "smoke.mjs");
     writeFileSync(
       smokeScript,
-      `import ${JSON.stringify(pathToFileURL(join(root, "node_modules/@angular/compiler/fesm2022/compiler.mjs")).href)};\n${expectedImports.map((specifier) => `await import(${JSON.stringify(specifier)});`).join("\n")}\n`,
+      `import "@angular/compiler";\n${expectedImports.map((specifier) => `await import(${JSON.stringify(specifier)});`).join("\n")}\n`,
     );
-    execFileSync(process.execPath, [smokeScript], {
-      cwd: temporaryRoot,
-      stdio: "inherit",
-    });
+    try {
+      execFileSync(process.execPath, [smokeScript], {
+        cwd: temporaryRoot,
+        env: { ...process.env, NODE_PATH: "" },
+        stdio: "inherit",
+      });
+    } catch (error) {
+      fail(
+        `isolated package-path import failed; copied package and declared dependency closure were used only: ${error instanceof Error ? error.message : error}`,
+      );
+    }
     console.log(
       `Package-path imports validated: ${expectedImports.length} public paths imported from dist/bulud-ng.`,
     );
   } finally {
     rmSync(temporaryRoot, { recursive: true, force: true });
   }
+}
+
+function smokePackagePath(name) {
+  return join(root, "node_modules", ...name.split("/"));
+}
+
+function copySmokeDependency(name, nodeModules, copiedDependencies) {
+  if (copiedDependencies.has(name)) return;
+  const source = smokePackagePath(name);
+  const manifestPath = join(source, "package.json");
+  if (!statSafe(manifestPath))
+    fail(
+      `isolated package smoke test requires installed declared dependency ${name}; install the package's declared dependency closure before running smoke validation`,
+    );
+  copiedDependencies.add(name);
+  const target = join(nodeModules, ...name.split("/"));
+  mkdirSync(dirname(target), { recursive: true });
+  cpSync(source, target, { recursive: true });
+  const manifest = readJson(manifestPath);
+  const dependencies = [
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.optionalDependencies ?? {}),
+    ...Object.keys(manifest.peerDependencies ?? {}).filter(
+      (dependency) => !manifest.peerDependenciesMeta?.[dependency]?.optional,
+    ),
+  ];
+  for (const dependency of dependencies)
+    copySmokeDependency(dependency, nodeModules, copiedDependencies);
 }
 
 function run(command, args) {

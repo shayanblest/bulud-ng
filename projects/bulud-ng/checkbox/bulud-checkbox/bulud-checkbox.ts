@@ -147,6 +147,9 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
       return;
     }
 
+    if (!this.indeterminate() && this.checked() === input.checked) {
+      return;
+    }
     this.indeterminate.set(false);
     this.checked.set(input.checked);
     this.onChange(input.checked);

@@ -62,6 +62,7 @@ jobs:
           name: bulud-ng-dist
           path: dist/bulud-ng
           if-no-files-found: error
+          include-hidden-files: true
 
   demo-build:
     runs-on: ubuntu-latest
@@ -94,6 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22.22.3
@@ -105,12 +108,16 @@ jobs:
           path: dist/bulud-ng
       - name: Validate public API and declarations
         run: npm run validate:api
+        env:
+          BULUD_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
 
   dependencies:
     needs: library-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22.22.3
@@ -122,6 +129,8 @@ jobs:
           path: dist/bulud-ng
       - name: Validate dependency contract
         run: npm run validate:deps
+        env:
+          BULUD_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
 
   package-output:
     needs: library-build
