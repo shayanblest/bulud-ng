@@ -10,6 +10,7 @@ import {
   input,
   model,
   signal,
+  untracked,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -81,7 +82,7 @@ export class BuludCheckbox implements ControlValueAccessor, Validator {
   constructor() {
     effect(() => {
       this.required();
-      this.onValidatorChange();
+      untracked(() => this.onValidatorChange());
     });
   }
 

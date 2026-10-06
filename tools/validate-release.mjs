@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 import {
-  cpSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -18,6 +17,7 @@ const packageRoot = join(root, "dist", "bulud-ng");
 const sourcePackagePath = join(root, "projects", "bulud-ng", "package.json");
 const sourceApiRoot = join(root, "projects", "bulud-ng");
 const publicApiDocsPath = join(root, "docs", "PUBLIC-API.md");
+const releaseApprovalsPath = join(root, "tools", "release-approvals.json");
 
 function fail(message) {
   throw new Error(`Release validation failed: ${message}`);
@@ -25,6 +25,24 @@ function fail(message) {
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
+}
+
+function approvedChanges(category) {
+  const approvals = readJson(releaseApprovalsPath);
+  const changes = approvals[category];
+  if (!Array.isArray(changes))
+    fail(`release approval file has no ${category} change list`);
+  return new Set(changes);
+}
+
+function enforceApprovedChanges(category, changes) {
+  const approved = approvedChanges(category);
+  const unexpected = changes.filter((change) => !approved.has(change));
+  const stale = [...approved].filter((change) => !changes.includes(change));
+  if (unexpected.length || stale.length)
+    fail(
+      `${category} contract differs from its approved baseline; update tools/release-approvals.json in the same reviewed change. unexpected=${formatList(unexpected)} stale=${formatList(stale)}`,
+    );
 }
 
 function gitOutput(args) {
@@ -205,6 +223,40 @@ function exportTargets(value) {
   return Object.values(value).flatMap(exportTargets);
 }
 
+function packageNameFromSpecifier(specifier) {
+  if (specifier.startsWith("@"))
+    return specifier.split("/").slice(0, 2).join("/");
+  return specifier.split("/")[0];
+}
+
+function validateBuiltImportContract(packageJson) {
+  const declared = new Set([
+    packageJson.name,
+    ...Object.keys(packageJson.dependencies ?? {}),
+    ...Object.keys(packageJson.peerDependencies ?? {}),
+  ]);
+  const unexpected = [];
+  for (const target of [...packageExports(packageJson).values()]
+    .flatMap(exportTargets)
+    .filter((target) => target.endsWith(".mjs"))) {
+    const path = join(packageRoot, target.replace(/^\.\//, ""));
+    const source = readFileSync(path, "utf8");
+    for (const match of source.matchAll(
+      /\b(?:from\s+|import\s*\(\s*)["']([^"']+)["']/g,
+    )) {
+      const specifier = match[1];
+      if (specifier.startsWith(".") || specifier.startsWith("node:")) continue;
+      const packageName = packageNameFromSpecifier(specifier);
+      if (!declared.has(packageName))
+        unexpected.push(`${relative(root, path)} -> ${specifier}`);
+    }
+  }
+  if (unexpected.length)
+    fail(
+      `built package contains undeclared bare imports; add an intentional dependency/peer dependency or remove the import:\n${unexpected.map((item) => `- ${item}`).join("\n")}`,
+    );
+}
+
 function moduleExportNames(path) {
   const program = ts.createProgram([path], {
     allowJs: false,
@@ -264,10 +316,7 @@ function validateApiBaseline(currentEntries, baseRef) {
           `${entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`}: removed=${formatList(removed)} added=${formatList(added)}`,
         );
     }
-    if (differences.length)
-      fail(
-        `public API differs from approved baseline ${baseRef}; approval is required:\n${differences.map((difference) => `- ${difference}`).join("\n")}`,
-      );
+    enforceApprovedChanges("api", differences);
   } finally {
     rmSync(baselineRoot, { recursive: true, force: true });
   }
@@ -429,13 +478,90 @@ function validateDependencies() {
         ),
     ),
   ];
-  if (baselineChanges.length)
-    fail(
-      `dependency declarations differ from baseline ${baseRef}; approval is required:\n${baselineChanges.map((change) => `- ${change}`).join("\n")}`,
-    );
+  const baseLockfile = readBaseJson(baseRef, "package-lock.json");
+  const lockfileChanges = lockfileContractChanges(baseLockfile, lockfile);
+  enforceApprovedChanges("dependencies", [
+    ...baselineChanges,
+    ...lockfileChanges,
+  ]);
   console.log(
-    `Dependency contract validated against ${baseRef}: declarations are unchanged, built metadata matches the library manifest, and no workspace-only runtime dependency is present.`,
+    `Dependency contract validated against ${baseRef}: declarations and normalized lockfile are approved, built metadata matches the library manifest, and no workspace-only runtime dependency is present.`,
   );
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, stableValue(value[key])]),
+    );
+  return value;
+}
+
+function normalizedLockfile(lockfile) {
+  const fields = [
+    "version",
+    "resolved",
+    "integrity",
+    "link",
+    "dependencies",
+    "devDependencies",
+    "optionalDependencies",
+    "peerDependencies",
+    "peerDependenciesMeta",
+  ];
+  return Object.fromEntries(
+    Object.keys(lockfile.packages ?? {})
+      .sort()
+      .map((path) => {
+        const packageRecord = lockfile.packages[path] ?? {};
+        const normalized = Object.fromEntries(
+          fields
+            .filter((field) => Object.hasOwn(packageRecord, field))
+            .map((field) => [field, stableValue(packageRecord[field])]),
+        );
+        return [path, normalized];
+      }),
+  );
+}
+
+function lockfileContractChanges(baseline, current) {
+  const basePackages = normalizedLockfile(baseline);
+  const currentPackages = normalizedLockfile(current);
+  const changes = [];
+  const paths = new Set([
+    ...Object.keys(basePackages),
+    ...Object.keys(currentPackages),
+  ]);
+  for (const path of sorted(paths)) {
+    const baseRecord = basePackages[path];
+    const currentRecord = currentPackages[path];
+    const label = `package-lock packages[${JSON.stringify(path)}]`;
+    if (!baseRecord) {
+      changes.push(`${label}: added ${JSON.stringify(currentRecord)}`);
+      continue;
+    }
+    if (!currentRecord) {
+      changes.push(`${label}: removed ${JSON.stringify(baseRecord)}`);
+      continue;
+    }
+    const fields = new Set([
+      ...Object.keys(baseRecord),
+      ...Object.keys(currentRecord),
+    ]);
+    for (const field of sorted(fields)) {
+      if (
+        JSON.stringify(baseRecord[field]) !==
+        JSON.stringify(currentRecord[field])
+      )
+        changes.push(
+          `${label}.${field}: ${JSON.stringify(baseRecord[field])} -> ${JSON.stringify(currentRecord[field])}`,
+        );
+    }
+  }
+  return changes;
 }
 
 function walkFiles(directory, prefix = "") {
@@ -530,21 +656,64 @@ async function validateSmokeImports() {
   const packageJson = readJson(join(packageRoot, "package.json"));
   const expectedImports = [...approvedPackageJsEntries()];
   validatePackageJsEntries(packageJson);
+  validateBuiltImportContract(packageJson);
   const temporaryRoot = mkdtempSync(join(tmpdir(), "bulud-ng-package-smoke-"));
   try {
-    const nodeModules = join(temporaryRoot, "node_modules");
-    mkdirSync(nodeModules, { recursive: true });
-    cpSync(packageRoot, join(nodeModules, "bulud-ng"), { recursive: true });
-    const copiedDependencies = new Set();
-    for (const name of [
-      "@angular/compiler",
-      ...Object.keys(packageJson.dependencies ?? {}),
-      ...Object.keys(packageJson.peerDependencies ?? {}).filter(
+    const smokeNpmEnv = {
+      ...process.env,
+      npm_config_cache: join(temporaryRoot, "npm-cache"),
+    };
+    writeFileSync(
+      join(temporaryRoot, "package.json"),
+      JSON.stringify(
+        { name: "bulud-ng-package-smoke", private: true, version: "0.0.0" },
+        null,
+        2,
+      ),
+    );
+    execFileSync(
+      "npm",
+      [
+        "pack",
+        `./${relative(root, packageRoot)}`,
+        "--pack-destination",
+        temporaryRoot,
+      ],
+      { cwd: root, env: smokeNpmEnv, stdio: "ignore" },
+    );
+    const packedFilename = readdirSync(temporaryRoot).find((name) =>
+      name.endsWith(".tgz"),
+    );
+    if (!packedFilename) fail("npm pack produced no package tarball");
+    const peerPackages = Object.keys(packageJson.peerDependencies ?? {})
+      .filter(
         (dependency) =>
           !packageJson.peerDependenciesMeta?.[dependency]?.optional,
-      ),
-    ]) {
-      copySmokeDependency(name, nodeModules, copiedDependencies);
+      )
+      .map((dependency) => `${dependency}@${smokePackageVersion(dependency)}`);
+    const smokeDependencies = ["@angular/compiler", ...peerPackages];
+    try {
+      execFileSync(
+        "npm",
+        [
+          "install",
+          "--prefix",
+          temporaryRoot,
+          "--install-strategy=nested",
+          "--ignore-scripts",
+          "--no-audit",
+          "--no-fund",
+          "--package-lock=false",
+          "--no-save",
+          join(temporaryRoot, packedFilename),
+          ...smokeDependencies,
+        ],
+        { cwd: temporaryRoot, env: smokeNpmEnv, stdio: "inherit" },
+      );
+    } catch (error) {
+      fail(
+        `isolated package installation failed; npm could not install the packed package and explicit peers in the temporary consumer: ${error instanceof Error ? error.message : error}`,
+      );
     }
     const smokeScript = join(temporaryRoot, "smoke.mjs");
     writeFileSync(
@@ -559,7 +728,7 @@ async function validateSmokeImports() {
       });
     } catch (error) {
       fail(
-        `isolated package-path import failed; copied package and declared dependency closure were used only: ${error instanceof Error ? error.message : error}`,
+        `isolated package-path import failed after nested consumer installation; check the package's declared dependencies and peers: ${error instanceof Error ? error.message : error}`,
       );
     }
     console.log(
@@ -574,28 +743,13 @@ function smokePackagePath(name) {
   return join(root, "node_modules", ...name.split("/"));
 }
 
-function copySmokeDependency(name, nodeModules, copiedDependencies) {
-  if (copiedDependencies.has(name)) return;
-  const source = smokePackagePath(name);
-  const manifestPath = join(source, "package.json");
+function smokePackageVersion(name) {
+  const manifestPath = join(smokePackagePath(name), "package.json");
   if (!statSafe(manifestPath))
     fail(
-      `isolated package smoke test requires installed declared dependency ${name}; install the package's declared dependency closure before running smoke validation`,
+      `isolated package smoke test requires installed peer dependency ${name}; install the declared peer dependency before running smoke validation`,
     );
-  copiedDependencies.add(name);
-  const target = join(nodeModules, ...name.split("/"));
-  mkdirSync(dirname(target), { recursive: true });
-  cpSync(source, target, { recursive: true });
-  const manifest = readJson(manifestPath);
-  const dependencies = [
-    ...Object.keys(manifest.dependencies ?? {}),
-    ...Object.keys(manifest.optionalDependencies ?? {}),
-    ...Object.keys(manifest.peerDependencies ?? {}).filter(
-      (dependency) => !manifest.peerDependenciesMeta?.[dependency]?.optional,
-    ),
-  ];
-  for (const dependency of dependencies)
-    copySmokeDependency(dependency, nodeModules, copiedDependencies);
+  return readJson(manifestPath).version;
 }
 
 function run(command, args) {
