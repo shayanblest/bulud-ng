@@ -298,15 +298,69 @@ function moduleExportNames(path) {
   );
 }
 
-function moduleDeclarationSignatures(path) {
-  const program = ts.createProgram([path], {
+function declarationProgram(apiRoot, entries) {
+  const outputRoot = mkdtempSync(join(tmpdir(), "bulud-ng-api-declarations-"));
+  const paths = {
+    "*": ["node_modules/*"],
+    ...Object.fromEntries(
+      [...entries].map(([entry, sourcePath]) => [
+        entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`,
+        [sourcePath],
+      ]),
+    ),
+  };
+  const sourceProgram = ts.createProgram([...entries.values()], {
     allowJs: false,
-    module: ts.ModuleKind.NodeNext,
-    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    baseUrl: root,
+    declaration: true,
+    emitDeclarationOnly: true,
+    experimentalDecorators: true,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    outDir: outputRoot,
+    removeComments: true,
+    rootDir: apiRoot,
+    paths,
+    skipLibCheck: true,
+    strict: true,
+    target: ts.ScriptTarget.ES2022,
+  });
+  const diagnostics = ts.getPreEmitDiagnostics(sourceProgram);
+  if (diagnostics.length) {
+    rmSync(outputRoot, { recursive: true, force: true });
+    fail(
+      `could not emit API declarations from ${relative(root, apiRoot)}:\n${diagnostics
+        .map((diagnostic) =>
+          ts.flattenDiagnosticMessageText(diagnostic.messageText, " "),
+        )
+        .join("\n")}`,
+    );
+  }
+  if (sourceProgram.emit().emitSkipped) {
+    rmSync(outputRoot, { recursive: true, force: true });
+    fail(`could not emit API declarations from ${relative(root, apiRoot)}`);
+  }
+  const declarationFiles = walkFiles(outputRoot)
+    .filter((path) => path.endsWith(".d.ts"))
+    .map((path) => join(outputRoot, path));
+  const program = ts.createProgram(declarationFiles, {
+    allowJs: false,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
     noEmit: true,
     skipLibCheck: true,
     target: ts.ScriptTarget.ES2022,
   });
+  const declarationEntries = new Map(
+    [...entries].map(([entry, sourcePath]) => [
+      entry,
+      join(outputRoot, relative(apiRoot, sourcePath).replace(/\.ts$/, ".d.ts")),
+    ]),
+  );
+  return { declarationEntries, outputRoot, program };
+}
+
+function moduleDeclarationSignatures(program, path) {
   const sourceFile = program.getSourceFile(path);
   if (!sourceFile)
     fail(`could not read declarations from ${relative(root, path)}`);
@@ -314,38 +368,46 @@ function moduleDeclarationSignatures(path) {
   if (!moduleSymbol)
     fail(`could not inspect declarations from ${relative(root, path)}`);
   const checker = program.getTypeChecker();
+  const sourceOrder = new Map(
+    program.getSourceFiles().map((file, index) => [file.fileName, index]),
+  );
   const signatures = new Map();
   for (const exported of checker.getExportsOfModule(moduleSymbol)) {
     const symbol =
       exported.flags & ts.SymbolFlags.Alias
         ? checker.getAliasedSymbol(exported)
         : exported;
-    const declaration = symbol.declarations?.[0];
-    if (!declaration) continue;
-    const declarationSource = declaration
-      .getSourceFile()
-      .text.slice(
-        declaration.getStart(declaration.getSourceFile()),
-        declaration.getEnd(),
-      );
-    const output = ts.transpileDeclaration(declarationSource, {
-      compilerOptions: {
-        declaration: true,
-        removeComments: true,
-        target: ts.ScriptTarget.ES2022,
+    const declarations = [...(symbol.declarations ?? [])].sort(
+      (left, right) => {
+        const leftFile =
+          sourceOrder.get(left.getSourceFile().fileName) ?? Infinity;
+        const rightFile =
+          sourceOrder.get(right.getSourceFile().fileName) ?? Infinity;
+        return leftFile - rightFile || left.getStart() - right.getStart();
       },
-    }).outputText;
-    signatures.set(exported.name, output.replace(/\s+/g, " ").trim());
+    );
+    if (declarations.length === 0) continue;
+    signatures.set(
+      exported.name,
+      declarations
+        .map((declaration) => declaration.getText().replace(/\s+/g, " ").trim())
+        .join(" "),
+    );
   }
   return signatures;
 }
 
 function validateApiBaseline(currentEntries, baseRef) {
   const baselineRoot = baseRevisionDirectory(baseRef);
+  const currentDeclarations = declarationProgram(sourceApiRoot, currentEntries);
+  const baselineEntries = sourceEntryPoints(
+    join(baselineRoot, "projects", "bulud-ng"),
+  );
+  const baselineDeclarations = declarationProgram(
+    join(baselineRoot, "projects", "bulud-ng"),
+    baselineEntries,
+  );
   try {
-    const baselineEntries = sourceEntryPoints(
-      join(baselineRoot, "projects", "bulud-ng"),
-    );
     const differences = [];
     const currentNames = new Set(currentEntries.keys());
     const baselineNames = new Set(baselineEntries.keys());
@@ -365,10 +427,12 @@ function validateApiBaseline(currentEntries, baseRef) {
       baselineNames.has(name),
     )) {
       const currentSymbols = moduleDeclarationSignatures(
-        currentEntries.get(entry),
+        currentDeclarations.program,
+        currentDeclarations.declarationEntries.get(entry),
       );
       const baselineSymbols = moduleDeclarationSignatures(
-        baselineEntries.get(entry),
+        baselineDeclarations.program,
+        baselineDeclarations.declarationEntries.get(entry),
       );
       const removed = sorted(
         [...baselineSymbols.keys()].filter((name) => !currentSymbols.has(name)),
@@ -395,6 +459,11 @@ function validateApiBaseline(currentEntries, baseRef) {
     }
     enforceApprovedChanges("api", differences, baseRef);
   } finally {
+    rmSync(currentDeclarations.outputRoot, { recursive: true, force: true });
+    rmSync(baselineDeclarations.outputRoot, {
+      recursive: true,
+      force: true,
+    });
     rmSync(baselineRoot, { recursive: true, force: true });
   }
 }
@@ -756,7 +825,10 @@ async function validateSmokeImports() {
           !packageJson.peerDependenciesMeta?.[dependency]?.optional,
       )
       .map((dependency) => `${dependency}@${smokePackageVersion(dependency)}`);
-    const smokeDependencies = ["@angular/compiler", ...peerPackages];
+    const smokeDependencies = [
+      `@angular/compiler@${smokePackageVersion("@angular/compiler")}`,
+      ...peerPackages,
+    ];
     try {
       execFileSync(
         "npm",
