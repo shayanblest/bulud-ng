@@ -6,13 +6,24 @@
     "build": "ng build bulud-ng",
     "build:demo": "ng build demo",
     "demo": "ng serve demo",
-    "format:check": "prettier --check eslint.config.mjs package.json projects/bulud-ng/README.md",
+    "format:check": "prettier --check eslint.config.mjs package.json projects/bulud-ng/README.md tools/validate-release.mjs .github/workflows/ci.yml",
     "lint": "eslint .",
     "watch": "ng build bulud-ng --watch --configuration development",
     "test": "CHROME_BIN=${CHROME_BIN:-/snap/bin/chromium} ng test bulud-ng --watch=false --browsers=ChromeHeadless",
     "test:ci": "npm run test",
     "test:tailwind": "tailwindcss -i projects/bulud-ng/tailwind.integration.css -o .angular/cache/bulud-tailwind.css --minify",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "validate:format": "npm run format:check",
+    "validate:lint": "npm run lint",
+    "validate:unit": "npm run test:ci",
+    "validate:build": "npm run build",
+    "validate:demo": "npm run build:demo",
+    "validate:e2e": "npm run e2e",
+    "validate:api": "node tools/validate-release.mjs api",
+    "validate:deps": "node tools/validate-release.mjs deps",
+    "validate:package": "node tools/validate-release.mjs package",
+    "validate:smoke": "node tools/validate-release.mjs smoke",
+    "validate:release": "node tools/validate-release.mjs release"
   },
   "prettier": {
     "overrides": [
