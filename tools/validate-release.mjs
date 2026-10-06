@@ -27,16 +27,35 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
-function approvedChanges(category) {
+function resolvedCommit(ref) {
+  try {
+    return gitOutput(["rev-parse", `${ref}^{commit}`]);
+  } catch {
+    fail(`could not resolve approval baseline ${ref}`);
+  }
+}
+
+function approvedChanges(category, baseRef) {
   const approvals = readJson(releaseApprovalsPath);
-  const changes = approvals[category];
+  const scopes = approvals[category];
+  if (!scopes || typeof scopes !== "object" || Array.isArray(scopes))
+    fail(`release approval file has no ${category} baseline scopes`);
+  const changes = scopes[resolvedCommit(baseRef)];
+  if (changes === undefined) return null;
   if (!Array.isArray(changes))
-    fail(`release approval file has no ${category} change list`);
+    fail(`release approval scope for ${category} must be an array`);
   return new Set(changes);
 }
 
-function enforceApprovedChanges(category, changes) {
-  const approved = approvedChanges(category);
+function enforceApprovedChanges(category, changes, baseRef) {
+  const approved = approvedChanges(category, baseRef);
+  if (approved === null) {
+    if (changes.length)
+      fail(
+        `${category} contract differs from its baseline and has no approved scope for ${resolvedCommit(baseRef)}; review the diff and add exact entries under that baseline in tools/release-approvals.json. unexpected=${formatList(changes)}`,
+      );
+    return;
+  }
   const unexpected = changes.filter((change) => !approved.has(change));
   const stale = [...approved].filter((change) => !changes.includes(change));
   if (unexpected.length || stale.length)
@@ -279,6 +298,48 @@ function moduleExportNames(path) {
   );
 }
 
+function moduleDeclarationSignatures(path) {
+  const program = ts.createProgram([path], {
+    allowJs: false,
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    noEmit: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.ES2022,
+  });
+  const sourceFile = program.getSourceFile(path);
+  if (!sourceFile)
+    fail(`could not read declarations from ${relative(root, path)}`);
+  const moduleSymbol = program.getTypeChecker().getSymbolAtLocation(sourceFile);
+  if (!moduleSymbol)
+    fail(`could not inspect declarations from ${relative(root, path)}`);
+  const checker = program.getTypeChecker();
+  const signatures = new Map();
+  for (const exported of checker.getExportsOfModule(moduleSymbol)) {
+    const symbol =
+      exported.flags & ts.SymbolFlags.Alias
+        ? checker.getAliasedSymbol(exported)
+        : exported;
+    const declaration = symbol.declarations?.[0];
+    if (!declaration) continue;
+    const declarationSource = declaration
+      .getSourceFile()
+      .text.slice(
+        declaration.getStart(declaration.getSourceFile()),
+        declaration.getEnd(),
+      );
+    const output = ts.transpileDeclaration(declarationSource, {
+      compilerOptions: {
+        declaration: true,
+        removeComments: true,
+        target: ts.ScriptTarget.ES2022,
+      },
+    }).outputText;
+    signatures.set(exported.name, output.replace(/\s+/g, " ").trim());
+  }
+  return signatures;
+}
+
 function validateApiBaseline(currentEntries, baseRef) {
   const baselineRoot = baseRevisionDirectory(baseRef);
   try {
@@ -303,20 +364,36 @@ function validateApiBaseline(currentEntries, baseRef) {
     for (const entry of sorted(currentNames).filter((name) =>
       baselineNames.has(name),
     )) {
-      const currentSymbols = moduleExportNames(currentEntries.get(entry));
-      const baselineSymbols = moduleExportNames(baselineEntries.get(entry));
+      const currentSymbols = moduleDeclarationSignatures(
+        currentEntries.get(entry),
+      );
+      const baselineSymbols = moduleDeclarationSignatures(
+        baselineEntries.get(entry),
+      );
       const removed = sorted(
-        [...baselineSymbols].filter((name) => !currentSymbols.has(name)),
+        [...baselineSymbols.keys()].filter((name) => !currentSymbols.has(name)),
       );
       const added = sorted(
-        [...currentSymbols].filter((name) => !baselineSymbols.has(name)),
+        [...currentSymbols.keys()].filter((name) => !baselineSymbols.has(name)),
       );
       if (removed.length || added.length)
         differences.push(
           `${entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`}: removed=${formatList(removed)} added=${formatList(added)}`,
         );
+      for (const name of sorted(
+        [...currentSymbols.keys()].filter((symbol) =>
+          baselineSymbols.has(symbol),
+        ),
+      )) {
+        const baselineSignature = baselineSymbols.get(name);
+        const currentSignature = currentSymbols.get(name);
+        if (baselineSignature !== currentSignature)
+          differences.push(
+            `${entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`} ${name}: signature changed; baseline=${baselineSignature} current=${currentSignature}`,
+          );
+      }
     }
-    enforceApprovedChanges("api", differences);
+    enforceApprovedChanges("api", differences, baseRef);
   } finally {
     rmSync(baselineRoot, { recursive: true, force: true });
   }
@@ -480,10 +557,11 @@ function validateDependencies() {
   ];
   const baseLockfile = readBaseJson(baseRef, "package-lock.json");
   const lockfileChanges = lockfileContractChanges(baseLockfile, lockfile);
-  enforceApprovedChanges("dependencies", [
-    ...baselineChanges,
-    ...lockfileChanges,
-  ]);
+  enforceApprovedChanges(
+    "dependencies",
+    [...baselineChanges, ...lockfileChanges],
+    baseRef,
+  );
   console.log(
     `Dependency contract validated against ${baseRef}: declarations and normalized lockfile are approved, built metadata matches the library manifest, and no workspace-only runtime dependency is present.`,
   );
@@ -501,28 +579,15 @@ function stableValue(value) {
 }
 
 function normalizedLockfile(lockfile) {
-  const fields = [
-    "version",
-    "resolved",
-    "integrity",
-    "link",
-    "dependencies",
-    "devDependencies",
-    "optionalDependencies",
-    "peerDependencies",
-    "peerDependenciesMeta",
-  ];
+  // Preserve every package-record field. Only object-key ordering is normalized;
+  // fields such as dev, optional, peer, install scripts, os, and cpu can affect
+  // npm installation or consumer runtime behavior and must remain comparable.
   return Object.fromEntries(
     Object.keys(lockfile.packages ?? {})
       .sort()
       .map((path) => {
         const packageRecord = lockfile.packages[path] ?? {};
-        const normalized = Object.fromEntries(
-          fields
-            .filter((field) => Object.hasOwn(packageRecord, field))
-            .map((field) => [field, stableValue(packageRecord[field])]),
-        );
-        return [path, normalized];
+        return [path, stableValue(packageRecord)];
       }),
   );
 }
