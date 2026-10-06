@@ -360,6 +360,35 @@ function declarationProgram(apiRoot, entries) {
   return { declarationEntries, outputRoot, program };
 }
 
+function publicDeclarationText(declaration) {
+  const sourceFile = declaration.getSourceFile();
+  let printable = declaration;
+  if (ts.isClassDeclaration(declaration)) {
+    const members = declaration.members.filter((member) => {
+      const modifiers = ts.getModifiers(member) ?? [];
+      return (
+        !modifiers.some(
+          (modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword,
+        ) &&
+        (!member.name || !ts.isPrivateIdentifier(member.name))
+      );
+    });
+    printable = ts.factory.updateClassDeclaration(
+      declaration,
+      ts.getModifiers(declaration),
+      declaration.name,
+      declaration.typeParameters,
+      declaration.heritageClauses,
+      members,
+    );
+  }
+  return ts
+    .createPrinter({ removeComments: true })
+    .printNode(ts.EmitHint.Unspecified, printable, sourceFile)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function moduleDeclarationSignatures(program, path) {
   const sourceFile = program.getSourceFile(path);
   if (!sourceFile)
@@ -389,9 +418,7 @@ function moduleDeclarationSignatures(program, path) {
     if (declarations.length === 0) continue;
     signatures.set(
       exported.name,
-      declarations
-        .map((declaration) => declaration.getText().replace(/\s+/g, " ").trim())
-        .join(" "),
+      declarations.map(publicDeclarationText).join(" "),
     );
   }
   return signatures;
@@ -569,6 +596,7 @@ function validateDependencies() {
     "dependencies",
     "peerDependencies",
     "peerDependenciesMeta",
+    "optionalDependencies",
   ]) {
     const expected = JSON.stringify(source[field] ?? {});
     const actual = JSON.stringify(built[field] ?? {});
@@ -615,13 +643,17 @@ function validateDependencies() {
           rootPackage[field],
         ),
     ),
-    ...["dependencies", "peerDependencies", "peerDependenciesMeta"].flatMap(
-      (field) =>
-        dependencyChanges(
-          `projects/bulud-ng/package.json ${field}`,
-          baseLibrary[field],
-          source[field],
-        ),
+    ...[
+      "dependencies",
+      "peerDependencies",
+      "peerDependenciesMeta",
+      "optionalDependencies",
+    ].flatMap((field) =>
+      dependencyChanges(
+        `projects/bulud-ng/package.json ${field}`,
+        baseLibrary[field],
+        source[field],
+      ),
     ),
   ];
   const baseLockfile = readBaseJson(baseRef, "package-lock.json");
@@ -648,23 +680,17 @@ function stableValue(value) {
 }
 
 function normalizedLockfile(lockfile) {
-  // Preserve every package-record field. Only object-key ordering is normalized;
-  // fields such as dev, optional, peer, install scripts, os, and cpu can affect
-  // npm installation or consumer runtime behavior and must remain comparable.
-  return Object.fromEntries(
-    Object.keys(lockfile.packages ?? {})
-      .sort()
-      .map((path) => {
-        const packageRecord = lockfile.packages[path] ?? {};
-        return [path, stableValue(packageRecord)];
-      }),
-  );
+  // Preserve every top-level and package-record field. Only object-key ordering
+  // is normalized; npm behavior-affecting metadata must remain comparable.
+  return stableValue(lockfile);
 }
 
 function lockfileContractChanges(baseline, current) {
-  const basePackages = normalizedLockfile(baseline);
-  const currentPackages = normalizedLockfile(current);
+  const baseContract = normalizedLockfile(baseline);
+  const currentContract = normalizedLockfile(current);
   const changes = [];
+  const basePackages = baseContract.packages ?? {};
+  const currentPackages = currentContract.packages ?? {};
   const paths = new Set([
     ...Object.keys(basePackages),
     ...Object.keys(currentPackages),
@@ -694,6 +720,20 @@ function lockfileContractChanges(baseline, current) {
           `${label}.${field}: ${JSON.stringify(baseRecord[field])} -> ${JSON.stringify(currentRecord[field])}`,
         );
     }
+  }
+  const topLevelFields = new Set([
+    ...Object.keys(baseContract),
+    ...Object.keys(currentContract),
+  ]);
+  topLevelFields.delete("packages");
+  for (const field of sorted(topLevelFields)) {
+    if (
+      JSON.stringify(baseContract[field]) !==
+      JSON.stringify(currentContract[field])
+    )
+      changes.push(
+        `package-lock ${field}: ${JSON.stringify(baseContract[field])} -> ${JSON.stringify(currentContract[field])}`,
+      );
   }
   return changes;
 }
