@@ -446,6 +446,44 @@ function angularDeclarationProgram(apiRoot, toolchainRoot, typescript = ts) {
   }
 }
 
+function expectedEntryExports(sourceEntries, packageName) {
+  return new Map(
+    [...sourceEntries.keys()].map((entry) => {
+      const name =
+        entry === "." ? packageName : `${packageName}-${entry.slice(2)}`;
+      const declaration =
+        entry === "." ? "./index.d.ts" : `${entry}/index.d.ts`;
+      return [
+        entry,
+        {
+          types: declaration,
+          default: `./fesm2022/${name}.mjs`,
+        },
+      ];
+    }),
+  );
+}
+
+function validateBuiltEntryExports(packageJson, sourceEntries) {
+  const expected = expectedEntryExports(sourceEntries, packageJson.name);
+  const actual = packageExports(packageJson);
+  const mismatches = [];
+  for (const [key, expectedTarget] of expected) {
+    const actualTarget = actual.get(key);
+    if (
+      JSON.stringify(stableValue(expectedTarget)) !==
+      JSON.stringify(stableValue(actualTarget))
+    )
+      mismatches.push(
+        `export key=${key} expected target=${JSON.stringify(stableValue(expectedTarget))} actual target=${JSON.stringify(stableValue(actualTarget))}`,
+      );
+  }
+  if (mismatches.length)
+    fail(
+      `built JavaScript/declaration export targets differ from source entry points:\n${mismatches.map((mismatch) => `- ${mismatch}`).join("\n")}`,
+    );
+}
+
 function publicDeclarationNode(declaration, typescript = ts) {
   let printable = declaration;
   if (typescript.isClassDeclaration(declaration)) {
@@ -596,6 +634,42 @@ function validateApiBaseline(currentEntries, baseRef) {
   );
   try {
     const differences = [];
+    const baselineManifest = readJson(
+      join(baselineRoot, "projects", "bulud-ng", "package.json"),
+    );
+    const currentManifest = readJson(sourcePackagePath);
+    const baselineCssExports = new Map(
+      [...packageExports(baselineManifest)].filter(([key]) =>
+        key.endsWith(".css"),
+      ),
+    );
+    const currentCssExports = new Map(
+      [...packageExports(currentManifest)].filter(([key]) =>
+        key.endsWith(".css"),
+      ),
+    );
+    const cssExportKeys = sorted(
+      new Set([...baselineCssExports.keys(), ...currentCssExports.keys()]),
+    );
+    for (const key of cssExportKeys) {
+      const had = baselineCssExports.has(key);
+      const has = currentCssExports.has(key);
+      if (!had)
+        differences.push(
+          `CSS export added: ${key} target=${cssExportTarget(currentCssExports.get(key))}`,
+        );
+      else if (!has)
+        differences.push(
+          `CSS export removed: ${key} target=${cssExportTarget(baselineCssExports.get(key))}`,
+        );
+      else if (
+        cssExportTarget(baselineCssExports.get(key)) !==
+        cssExportTarget(currentCssExports.get(key))
+      )
+        differences.push(
+          `CSS export changed: ${key} baseline=${cssExportTarget(baselineCssExports.get(key))} current=${cssExportTarget(currentCssExports.get(key))}`,
+        );
+    }
     const currentNames = new Set(currentEntries.keys());
     const baselineNames = new Set(baselineEntries.keys());
     for (const entry of sorted(baselineNames)) {
@@ -665,6 +739,7 @@ function validateApi() {
   const baseRef = dependencyBaseRef();
   validateApiBaseline(sourceEntries, baseRef);
   validatePackageJsEntries(packageJson);
+  validateBuiltEntryExports(packageJson, sourceEntries);
 
   const docs = readFileSync(publicApiDocsPath, "utf8");
   const documentedEntries = new Set(
@@ -919,7 +994,9 @@ function validatePackage() {
     fail(`built package is missing at ${relative(root, packageRoot)}`);
   const packageJson = readJson(join(packageRoot, "package.json"));
   const exports = packageExports(packageJson);
+  const sourceEntries = sourceEntryPoints();
   validatePackageJsEntries(packageJson);
+  validateBuiltEntryExports(packageJson, sourceEntries);
   const source = readJson(
     join(root, "projects", "bulud-ng", "ng-package.json"),
   );
