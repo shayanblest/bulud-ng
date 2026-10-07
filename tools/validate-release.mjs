@@ -244,6 +244,18 @@ function cssExportTarget(value) {
   return JSON.stringify(stableValue(value));
 }
 
+function sourceCustomPropertyNames(apiRoot) {
+  const names = new Set();
+  for (const path of walkFiles(apiRoot).filter((file) =>
+    /\.(?:css|scss)$/.test(file),
+  )) {
+    const source = readFileSync(join(apiRoot, path), "utf8");
+    for (const match of source.matchAll(/--bulud-[A-Za-z0-9_-]+/g))
+      names.add(match[0]);
+  }
+  return names;
+}
+
 function approvedPackageJsEntries() {
   return new Set(
     [...sourceEntryPoints().keys()].map((entry) =>
@@ -558,11 +570,14 @@ function moduleDeclarationSignatures(
       !relativePath.startsWith("/")
     );
   };
-  const isReachableTypeDeclaration = (declaration) =>
+  const isReachablePublicDeclaration = (declaration) =>
     typescript.isClassDeclaration(declaration) ||
     typescript.isEnumDeclaration(declaration) ||
     typescript.isInterfaceDeclaration(declaration) ||
-    typescript.isTypeAliasDeclaration(declaration);
+    typescript.isTypeAliasDeclaration(declaration) ||
+    typescript.isVariableDeclaration(declaration) ||
+    typescript.isFunctionDeclaration(declaration) ||
+    typescript.isModuleDeclaration(declaration);
   const referencedSymbols = (declaration) => {
     const references = new Set();
     const visit = (node) => {
@@ -574,7 +589,7 @@ function moduleDeclarationSignatures(
             resolved.declarations?.some(
               (candidate) =>
                 isInternalDeclaration(candidate) &&
-                isReachableTypeDeclaration(candidate),
+                isReachablePublicDeclaration(candidate),
             )
           )
             references.add(resolved);
@@ -670,6 +685,22 @@ function validateApiBaseline(currentEntries, baseRef) {
           `CSS export changed: ${key} baseline=${cssExportTarget(baselineCssExports.get(key))} current=${cssExportTarget(currentCssExports.get(key))}`,
         );
     }
+    const baselineCustomProperties = sourceCustomPropertyNames(
+      join(baselineRoot, "projects", "bulud-ng"),
+    );
+    const currentCustomProperties = sourceCustomPropertyNames(sourceApiRoot);
+    for (const name of sorted(
+      [...currentCustomProperties].filter(
+        (property) => !baselineCustomProperties.has(property),
+      ),
+    ))
+      differences.push(`CSS custom property added: ${name}`);
+    for (const name of sorted(
+      [...baselineCustomProperties].filter(
+        (property) => !currentCustomProperties.has(property),
+      ),
+    ))
+      differences.push(`CSS custom property removed: ${name}`);
     const currentNames = new Set(currentEntries.keys());
     const baselineNames = new Set(baselineEntries.keys());
     for (const entry of sorted(baselineNames)) {
@@ -1165,6 +1196,7 @@ async function validateSmokeImports() {
         `isolated package installation failed; npm could not install the packed package and explicit peers in the temporary consumer: ${error instanceof Error ? error.message : error}`,
       );
     }
+    validateInstalledCssExports(temporaryRoot, packageJson);
     const smokeScript = join(temporaryRoot, "smoke.mjs");
     writeFileSync(
       smokeScript,
@@ -1200,6 +1232,40 @@ function smokePackageVersion(name) {
       `isolated package smoke test requires installed peer dependency ${name}; install the declared peer dependency before running smoke validation`,
     );
   return readJson(manifestPath).version;
+}
+
+function validateInstalledCssExports(temporaryRoot, packageJson) {
+  const installedPackageRoot = join(
+    temporaryRoot,
+    "node_modules",
+    ...packageJson.name.split("/"),
+  );
+  const installedManifestPath = join(installedPackageRoot, "package.json");
+  if (!statSafe(installedManifestPath))
+    fail(
+      `packed package installation is missing its manifest at ${relative(root, installedManifestPath)}`,
+    );
+  const installedManifest = readJson(installedManifestPath);
+  const cssExports = [...packageExports(installedManifest)].filter(([key]) =>
+    key.endsWith(".css"),
+  );
+  for (const [key, value] of cssExports) {
+    const targets = [...new Set(exportTargets(value))];
+    if (targets.length === 0)
+      fail(
+        `installed CSS export has no target: export key=${key} target=${cssExportTarget(value)}`,
+      );
+    for (const target of targets) {
+      const installedPath = join(
+        installedPackageRoot,
+        target.replace(/^\.\//, ""),
+      );
+      if (!statSafe(installedPath))
+        fail(
+          `packed package CSS export is missing: export key=${key} target=${target} missing installed path=${relative(root, installedPath)}`,
+        );
+    }
+  }
 }
 
 function run(command, args) {
