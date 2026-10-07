@@ -122,7 +122,7 @@ function readBaseJson(baseRef, path) {
 function baseRevisionDirectory(baseRef) {
   const directory = mkdtempSync(join(tmpdir(), "bulud-ng-api-baseline-"));
   try {
-    for (const path of ["package.json", "package-lock.json"]) {
+    for (const path of ["package.json", "package-lock.json", "tsconfig.json"]) {
       writeFileSync(
         join(directory, path),
         execFileSync("git", ["show", `${baseRef}:${path}`], {
@@ -156,10 +156,31 @@ function baseRevisionDirectory(baseRef) {
     }
     if (!statSafe(join(projectRoot, "src", "public-api.ts")))
       fail(`API baseline ${baseRef} does not contain the library public API`);
-    execFileSync("npm", ["ci", "--ignore-scripts", "--no-audit", "--no-fund"], {
-      cwd: directory,
-      stdio: "inherit",
-    });
+    const installArgs = ["--ignore-scripts", "--no-audit", "--no-fund"];
+    try {
+      execFileSync("npm", ["ci", ...installArgs], {
+        cwd: directory,
+        stdio: ["ignore", "ignore", "pipe"],
+        encoding: "utf8",
+      });
+    } catch (error) {
+      const stderr = String(error?.stderr ?? "");
+      if (
+        !/package\.json and package-lock\.json are in sync|Missing:/i.test(
+          stderr,
+        )
+      )
+        fail(
+          `could not install isolated API baseline ${baseRef}: ${stderr.trim() || (error instanceof Error ? error.message : error)}`,
+        );
+      console.warn(
+        `Historical API baseline ${baseRef} has an inconsistent lockfile; npm ci failed with a package sync error. Using isolated npm install from the baseline package.json ranges.`,
+      );
+      execFileSync("npm", ["install", "--package-lock=false", ...installArgs], {
+        cwd: directory,
+        stdio: "inherit",
+      });
+    }
     return directory;
   } catch (error) {
     rmSync(directory, { recursive: true, force: true });
@@ -319,71 +340,53 @@ function moduleExportNames(path) {
   );
 }
 
-function declarationProgram(
-  apiRoot,
-  entries,
-  typescript = ts,
-  toolchainRoot = root,
-) {
-  const outputRoot = mkdtempSync(join(tmpdir(), "bulud-ng-api-declarations-"));
-  const paths = {
-    "*": ["node_modules/*"],
-    ...Object.fromEntries(
-      [...entries].map(([entry, sourcePath]) => [
-        entry === "." ? "bulud-ng" : `bulud-ng/${entry.slice(2)}`,
-        [sourcePath],
+function angularDeclarationProgram(apiRoot, toolchainRoot, typescript = ts) {
+  const outputRoot = mkdtempSync(join(tmpdir(), "bulud-ng-angular-api-"));
+  try {
+    execFileSync(
+      join(toolchainRoot, "node_modules", ".bin", "ngc"),
+      [
+        "-p",
+        join(apiRoot, "tsconfig.lib.prod.json"),
+        "--outDir",
+        outputRoot,
+        "--sourceMap",
+      ],
+      { cwd: toolchainRoot, stdio: "inherit" },
+    );
+    const declarationFiles = walkFiles(outputRoot)
+      .filter((path) => path.endsWith(".d.ts"))
+      .map((path) => join(outputRoot, path));
+    const program = typescript.createProgram(declarationFiles, {
+      allowJs: false,
+      module: typescript.ModuleKind.ESNext,
+      moduleResolution: typescript.ModuleResolutionKind.Bundler,
+      noEmit: true,
+      skipLibCheck: true,
+      target: typescript.ScriptTarget.ES2022,
+    });
+    const declarationEntries = new Map(
+      [...sourceEntryPoints(apiRoot)].map(([entry, sourcePath]) => [
+        entry,
+        join(
+          outputRoot,
+          relative(apiRoot, sourcePath).replace(/\.ts$/, ".d.ts"),
+        ),
       ]),
-    ),
-  };
-  const sourceProgram = typescript.createProgram([...entries.values()], {
-    allowJs: false,
-    baseUrl: toolchainRoot,
-    declaration: true,
-    emitDeclarationOnly: true,
-    experimentalDecorators: true,
-    module: typescript.ModuleKind.ESNext,
-    moduleResolution: typescript.ModuleResolutionKind.Bundler,
-    outDir: outputRoot,
-    removeComments: true,
-    rootDir: apiRoot,
-    paths,
-    skipLibCheck: true,
-    strict: true,
-    target: typescript.ScriptTarget.ES2022,
-  });
-  const diagnostics = typescript.getPreEmitDiagnostics(sourceProgram);
-  if (diagnostics.length) {
+    );
+    return {
+      declarationEntries,
+      outputRoot,
+      program,
+      typescript,
+      toolchainRoot,
+    };
+  } catch (error) {
     rmSync(outputRoot, { recursive: true, force: true });
     fail(
-      `could not emit API declarations from ${relative(root, apiRoot)}:\n${diagnostics
-        .map((diagnostic) =>
-          ts.flattenDiagnosticMessageText(diagnostic.messageText, " "),
-        )
-        .join("\n")}`,
+      `could not emit Angular API declarations from ${relative(root, apiRoot)}: ${error instanceof Error ? error.message : error}`,
     );
   }
-  if (sourceProgram.emit().emitSkipped) {
-    rmSync(outputRoot, { recursive: true, force: true });
-    fail(`could not emit API declarations from ${relative(root, apiRoot)}`);
-  }
-  const declarationFiles = walkFiles(outputRoot)
-    .filter((path) => path.endsWith(".d.ts"))
-    .map((path) => join(outputRoot, path));
-  const program = typescript.createProgram(declarationFiles, {
-    allowJs: false,
-    module: typescript.ModuleKind.ESNext,
-    moduleResolution: typescript.ModuleResolutionKind.Bundler,
-    noEmit: true,
-    skipLibCheck: true,
-    target: typescript.ScriptTarget.ES2022,
-  });
-  const declarationEntries = new Map(
-    [...entries].map(([entry, sourcePath]) => [
-      entry,
-      join(outputRoot, relative(apiRoot, sourcePath).replace(/\.ts$/, ".d.ts")),
-    ]),
-  );
-  return { declarationEntries, outputRoot, program, typescript, toolchainRoot };
 }
 
 function publicDeclarationNode(declaration, typescript = ts) {
@@ -522,18 +525,17 @@ function moduleDeclarationSignatures(
 
 function validateApiBaseline(currentEntries, baseRef) {
   const baselineRoot = baseRevisionDirectory(baseRef);
-  const currentDeclarations = declarationProgram(sourceApiRoot, currentEntries);
+  const currentDeclarations = angularDeclarationProgram(sourceApiRoot, root);
   const baselineTypescript = createRequire(join(baselineRoot, "package.json"))(
     "typescript",
   );
   const baselineEntries = sourceEntryPoints(
     join(baselineRoot, "projects", "bulud-ng"),
   );
-  const baselineDeclarations = declarationProgram(
+  const baselineDeclarations = angularDeclarationProgram(
     join(baselineRoot, "projects", "bulud-ng"),
-    baselineEntries,
-    baselineTypescript,
     baselineRoot,
+    baselineTypescript,
   );
   try {
     const differences = [];
