@@ -290,11 +290,46 @@ function packageNameFromSpecifier(specifier) {
   return specifier.split("/")[0];
 }
 
+function isExternalPackageSpecifier(specifier) {
+  return !specifier.startsWith(".") && !specifier.startsWith("node:");
+}
+
+function declarationImportSpecifiers(path) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    readFileSync(path, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const specifiers = [];
+  const addStringSpecifier = (value) => {
+    if (ts.isStringLiteralLike(value)) specifiers.push(value.text);
+  };
+  const visit = (node) => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
+      if (node.moduleSpecifier) addStringSpecifier(node.moduleSpecifier);
+    if (ts.isImportEqualsDeclaration(node)) {
+      const reference = node.moduleReference;
+      if (ts.isExternalModuleReference(reference) && reference.expression)
+        addStringSpecifier(reference.expression);
+    }
+    if (ts.isImportTypeNode(node)) {
+      const argument = node.argument;
+      if (ts.isLiteralTypeNode(argument)) addStringSpecifier(argument.literal);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return specifiers;
+}
+
 function validateBuiltImportContract(packageJson) {
   const declared = new Set([
     packageJson.name,
     ...Object.keys(packageJson.dependencies ?? {}),
     ...Object.keys(packageJson.peerDependencies ?? {}),
+    ...Object.keys(packageJson.optionalDependencies ?? {}),
   ]);
   const unexpected = [];
   for (const target of [...packageExports(packageJson).values()]
@@ -306,7 +341,7 @@ function validateBuiltImportContract(packageJson) {
       /\b(?:from\s+|import\s*\(\s*|import\s+)["']([^"']+)["']/g,
     )) {
       const specifier = match[1];
-      if (specifier.startsWith(".") || specifier.startsWith("node:")) continue;
+      if (!isExternalPackageSpecifier(specifier)) continue;
       const packageName = packageNameFromSpecifier(specifier);
       if (!declared.has(packageName))
         unexpected.push(`${relative(root, path)} -> ${specifier}`);
@@ -315,6 +350,28 @@ function validateBuiltImportContract(packageJson) {
   if (unexpected.length)
     fail(
       `built package contains undeclared bare imports; add an intentional dependency/peer dependency or remove the import:\n${unexpected.map((item) => `- ${item}`).join("\n")}`,
+    );
+  const undeclaredDeclarations = [];
+  for (const path of walkFiles(packageRoot).filter((file) =>
+    file.endsWith(".d.ts"),
+  )) {
+    for (const specifier of declarationImportSpecifiers(
+      join(packageRoot, path),
+    )) {
+      if (!isExternalPackageSpecifier(specifier)) continue;
+      const packageName = packageNameFromSpecifier(specifier);
+      if (!declared.has(packageName))
+        undeclaredDeclarations.push({ path, specifier, packageName });
+    }
+  }
+  if (undeclaredDeclarations.length)
+    fail(
+      `built package declarations contain undeclared bare imports; add an intentional dependency/peer/optional dependency or remove the declaration import:\n${undeclaredDeclarations
+        .map(
+          ({ path, specifier, packageName }) =>
+            `- declaration file=${path} specifier=${specifier} normalized package=${packageName}`,
+        )
+        .join("\n")}`,
     );
 }
 
