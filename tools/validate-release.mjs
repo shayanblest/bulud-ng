@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
+import { createRequire } from "node:module";
 import ts from "typescript";
 
 const root = resolve(dirname(new URL(import.meta.url).pathname), "..");
@@ -121,6 +122,16 @@ function readBaseJson(baseRef, path) {
 function baseRevisionDirectory(baseRef) {
   const directory = mkdtempSync(join(tmpdir(), "bulud-ng-api-baseline-"));
   try {
+    for (const path of ["package.json", "package-lock.json"]) {
+      writeFileSync(
+        join(directory, path),
+        execFileSync("git", ["show", `${baseRef}:${path}`], {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+        }),
+      );
+    }
     const projectPrefix = "projects/bulud-ng/";
     const projectRoot = join(directory, projectPrefix);
     const paths = gitOutput([
@@ -145,10 +156,16 @@ function baseRevisionDirectory(baseRef) {
     }
     if (!statSafe(join(projectRoot, "src", "public-api.ts")))
       fail(`API baseline ${baseRef} does not contain the library public API`);
+    execFileSync("npm", ["ci", "--ignore-scripts", "--no-audit", "--no-fund"], {
+      cwd: directory,
+      stdio: "inherit",
+    });
     return directory;
-  } catch {
+  } catch (error) {
     rmSync(directory, { recursive: true, force: true });
-    fail(`could not materialize API baseline ${baseRef}`);
+    fail(
+      `could not materialize isolated API baseline ${baseRef}: ${error instanceof Error ? error.message : error}`,
+    );
   }
 }
 
@@ -200,6 +217,10 @@ function statSafe(path) {
 
 function packageExports(packageJson) {
   return new Map(Object.entries(packageJson.exports ?? {}));
+}
+
+function cssExportTarget(value) {
+  return JSON.stringify(stableValue(value));
 }
 
 function approvedPackageJsEntries() {
@@ -298,7 +319,12 @@ function moduleExportNames(path) {
   );
 }
 
-function declarationProgram(apiRoot, entries) {
+function declarationProgram(
+  apiRoot,
+  entries,
+  typescript = ts,
+  toolchainRoot = root,
+) {
   const outputRoot = mkdtempSync(join(tmpdir(), "bulud-ng-api-declarations-"));
   const paths = {
     "*": ["node_modules/*"],
@@ -309,23 +335,23 @@ function declarationProgram(apiRoot, entries) {
       ]),
     ),
   };
-  const sourceProgram = ts.createProgram([...entries.values()], {
+  const sourceProgram = typescript.createProgram([...entries.values()], {
     allowJs: false,
-    baseUrl: root,
+    baseUrl: toolchainRoot,
     declaration: true,
     emitDeclarationOnly: true,
     experimentalDecorators: true,
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    module: typescript.ModuleKind.ESNext,
+    moduleResolution: typescript.ModuleResolutionKind.Bundler,
     outDir: outputRoot,
     removeComments: true,
     rootDir: apiRoot,
     paths,
     skipLibCheck: true,
     strict: true,
-    target: ts.ScriptTarget.ES2022,
+    target: typescript.ScriptTarget.ES2022,
   });
-  const diagnostics = ts.getPreEmitDiagnostics(sourceProgram);
+  const diagnostics = typescript.getPreEmitDiagnostics(sourceProgram);
   if (diagnostics.length) {
     rmSync(outputRoot, { recursive: true, force: true });
     fail(
@@ -343,13 +369,13 @@ function declarationProgram(apiRoot, entries) {
   const declarationFiles = walkFiles(outputRoot)
     .filter((path) => path.endsWith(".d.ts"))
     .map((path) => join(outputRoot, path));
-  const program = ts.createProgram(declarationFiles, {
+  const program = typescript.createProgram(declarationFiles, {
     allowJs: false,
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    module: typescript.ModuleKind.ESNext,
+    moduleResolution: typescript.ModuleResolutionKind.Bundler,
     noEmit: true,
     skipLibCheck: true,
-    target: ts.ScriptTarget.ES2022,
+    target: typescript.ScriptTarget.ES2022,
   });
   const declarationEntries = new Map(
     [...entries].map(([entry, sourcePath]) => [
@@ -357,24 +383,24 @@ function declarationProgram(apiRoot, entries) {
       join(outputRoot, relative(apiRoot, sourcePath).replace(/\.ts$/, ".d.ts")),
     ]),
   );
-  return { declarationEntries, outputRoot, program };
+  return { declarationEntries, outputRoot, program, typescript, toolchainRoot };
 }
 
-function publicDeclarationNode(declaration) {
+function publicDeclarationNode(declaration, typescript = ts) {
   let printable = declaration;
-  if (ts.isClassDeclaration(declaration)) {
+  if (typescript.isClassDeclaration(declaration)) {
     const members = declaration.members.filter((member) => {
-      const modifiers = ts.getModifiers(member) ?? [];
+      const modifiers = typescript.getModifiers(member) ?? [];
       return (
         !modifiers.some(
-          (modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword,
+          (modifier) => modifier.kind === typescript.SyntaxKind.PrivateKeyword,
         ) &&
-        (!member.name || !ts.isPrivateIdentifier(member.name))
+        (!member.name || !typescript.isPrivateIdentifier(member.name))
       );
     });
-    printable = ts.factory.updateClassDeclaration(
+    printable = typescript.factory.updateClassDeclaration(
       declaration,
-      ts.getModifiers(declaration),
+      typescript.getModifiers(declaration),
       declaration.name,
       declaration.typeParameters,
       declaration.heritageClauses,
@@ -384,20 +410,25 @@ function publicDeclarationNode(declaration) {
   return printable;
 }
 
-function publicDeclarationText(declaration) {
+function publicDeclarationText(declaration, typescript = ts) {
   const sourceFile = declaration.getSourceFile();
-  return ts
+  return typescript
     .createPrinter({ removeComments: true })
     .printNode(
-      ts.EmitHint.Unspecified,
-      publicDeclarationNode(declaration),
+      typescript.EmitHint.Unspecified,
+      publicDeclarationNode(declaration, typescript),
       sourceFile,
     )
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function moduleDeclarationSignatures(program, path, declarationRoot) {
+function moduleDeclarationSignatures(
+  program,
+  path,
+  declarationRoot,
+  typescript = ts,
+) {
   const sourceFile = program.getSourceFile(path);
   if (!sourceFile)
     fail(`could not read declarations from ${relative(root, path)}`);
@@ -415,7 +446,7 @@ function moduleDeclarationSignatures(program, path, declarationRoot) {
     return leftFile - rightFile || left.getStart() - right.getStart();
   };
   const resolvedSymbol = (symbol) =>
-    symbol.flags & ts.SymbolFlags.Alias
+    symbol.flags & typescript.SymbolFlags.Alias
       ? checker.getAliasedSymbol(symbol)
       : symbol;
   const isInternalDeclaration = (declaration) => {
@@ -430,14 +461,14 @@ function moduleDeclarationSignatures(program, path, declarationRoot) {
     );
   };
   const isReachableTypeDeclaration = (declaration) =>
-    ts.isClassDeclaration(declaration) ||
-    ts.isEnumDeclaration(declaration) ||
-    ts.isInterfaceDeclaration(declaration) ||
-    ts.isTypeAliasDeclaration(declaration);
+    typescript.isClassDeclaration(declaration) ||
+    typescript.isEnumDeclaration(declaration) ||
+    typescript.isInterfaceDeclaration(declaration) ||
+    typescript.isTypeAliasDeclaration(declaration);
   const referencedSymbols = (declaration) => {
     const references = new Set();
     const visit = (node) => {
-      if (ts.isIdentifier(node)) {
+      if (typescript.isIdentifier(node)) {
         const symbol = checker.getSymbolAtLocation(node);
         if (symbol) {
           const resolved = resolvedSymbol(symbol);
@@ -451,9 +482,9 @@ function moduleDeclarationSignatures(program, path, declarationRoot) {
             references.add(resolved);
         }
       }
-      ts.forEachChild(node, visit);
+      typescript.forEachChild(node, visit);
     };
-    visit(publicDeclarationNode(declaration));
+    visit(publicDeclarationNode(declaration, typescript));
     return [...references];
   };
   const signatures = new Map();
@@ -467,7 +498,11 @@ function moduleDeclarationSignatures(program, path, declarationRoot) {
       const declarations = [...(resolved.declarations ?? [])].sort(
         declarationOrder,
       );
-      parts.push(...declarations.map(publicDeclarationText));
+      parts.push(
+        ...declarations.map((declaration) =>
+          publicDeclarationText(declaration, typescript),
+        ),
+      );
       const references = declarations
         .flatMap(referencedSymbols)
         .sort((left, right) => {
@@ -488,12 +523,17 @@ function moduleDeclarationSignatures(program, path, declarationRoot) {
 function validateApiBaseline(currentEntries, baseRef) {
   const baselineRoot = baseRevisionDirectory(baseRef);
   const currentDeclarations = declarationProgram(sourceApiRoot, currentEntries);
+  const baselineTypescript = createRequire(join(baselineRoot, "package.json"))(
+    "typescript",
+  );
   const baselineEntries = sourceEntryPoints(
     join(baselineRoot, "projects", "bulud-ng"),
   );
   const baselineDeclarations = declarationProgram(
     join(baselineRoot, "projects", "bulud-ng"),
     baselineEntries,
+    baselineTypescript,
+    baselineRoot,
   );
   try {
     const differences = [];
@@ -518,11 +558,13 @@ function validateApiBaseline(currentEntries, baseRef) {
         currentDeclarations.program,
         currentDeclarations.declarationEntries.get(entry),
         currentDeclarations.outputRoot,
+        currentDeclarations.typescript,
       );
       const baselineSymbols = moduleDeclarationSignatures(
         baselineDeclarations.program,
         baselineDeclarations.declarationEntries.get(entry),
         baselineDeclarations.outputRoot,
+        baselineDeclarations.typescript,
       );
       const removed = sorted(
         [...baselineSymbols.keys()].filter((name) => !currentSymbols.has(name)),
@@ -822,6 +864,7 @@ function validatePackage() {
   const source = readJson(
     join(root, "projects", "bulud-ng", "ng-package.json"),
   );
+  const sourceManifest = readJson(sourcePackagePath);
   const assetPaths = new Set(
     (source.assets ?? []).map((asset) =>
       typeof asset === "string" ? asset : asset.destination,
@@ -862,18 +905,42 @@ function validatePackage() {
   const cssExports = new Set(
     [...exports.keys()].filter((key) => key.endsWith(".css")),
   );
-  const expectedCssExports = new Set(
-    [...assetPaths].map((asset) => `./${asset}`),
+  const sourceCssExports = new Map(
+    [...packageExports(sourceManifest)].filter(([key]) => key.endsWith(".css")),
   );
   const unexpectedCssExports = sorted(
-    [...cssExports].filter((entry) => !expectedCssExports.has(entry)),
+    [...cssExports].filter((entry) => !sourceCssExports.has(entry)),
   );
   const missingCssExports = sorted(
-    [...expectedCssExports].filter((entry) => !cssExports.has(entry)),
+    [...sourceCssExports.keys()].filter((entry) => !cssExports.has(entry)),
   );
   if (unexpectedCssExports.length || missingCssExports.length)
     fail(
-      `CSS package exports differ from ng-package assets; unexpected=${formatList(unexpectedCssExports)} missing=${formatList(missingCssExports)}`,
+      `CSS package export keys differ from projects/bulud-ng/package.json; unexpected=${formatList(unexpectedCssExports)} missing=${formatList(missingCssExports)}`,
+    );
+  const cssTargetMismatches = sorted([...sourceCssExports.keys()])
+    .filter(
+      (key) =>
+        cssExportTarget(sourceCssExports.get(key)) !==
+        cssExportTarget(exports.get(key)),
+    )
+    .map(
+      (key) =>
+        `${key}: expected target=${cssExportTarget(sourceCssExports.get(key))} actual target=${cssExportTarget(exports.get(key))}`,
+    );
+  if (cssTargetMismatches.length)
+    fail(
+      `CSS package export targets differ from projects/bulud-ng/package.json:\n${cssTargetMismatches.map((mismatch) => `- ${mismatch}`).join("\n")}`,
+    );
+  const expectedCssExports = new Set(
+    [...assetPaths].map((asset) => `./${asset}`),
+  );
+  const assetCssExportMismatches = sorted(
+    [...expectedCssExports].filter((entry) => !sourceCssExports.has(entry)),
+  );
+  if (assetCssExportMismatches.length)
+    fail(
+      `CSS source package exports do not cover configured ng-package assets: ${formatList(assetCssExportMismatches)}`,
     );
   const requiredAssets = ["theme.css", "tailwind.css"];
   const missingAssets = requiredAssets.filter(
