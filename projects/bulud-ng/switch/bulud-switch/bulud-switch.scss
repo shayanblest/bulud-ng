@@ -86,8 +86,8 @@
   );
 }
 
-:host(.bulud-switch-host--invalid)
-  .bulud-switch__input:checked
+:host
+  .bulud-switch__input[aria-invalid="true"]:checked
   + .bulud-switch__label
   .bulud-switch__track {
   border-color: var(--bulud-color-danger, #dc2626);

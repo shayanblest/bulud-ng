@@ -261,7 +261,7 @@ function validateBuiltImportContract(packageJson) {
     const path = join(packageRoot, target.replace(/^\.\//, ""));
     const source = readFileSync(path, "utf8");
     for (const match of source.matchAll(
-      /\b(?:from\s+|import\s*\(\s*)["']([^"']+)["']/g,
+      /\b(?:from\s+|import\s*\(\s*|import\s+)["']([^"']+)["']/g,
     )) {
       const specifier = match[1];
       if (specifier.startsWith(".") || specifier.startsWith("node:")) continue;
@@ -360,8 +360,7 @@ function declarationProgram(apiRoot, entries) {
   return { declarationEntries, outputRoot, program };
 }
 
-function publicDeclarationText(declaration) {
-  const sourceFile = declaration.getSourceFile();
+function publicDeclarationNode(declaration) {
   let printable = declaration;
   if (ts.isClassDeclaration(declaration)) {
     const members = declaration.members.filter((member) => {
@@ -382,14 +381,23 @@ function publicDeclarationText(declaration) {
       members,
     );
   }
+  return printable;
+}
+
+function publicDeclarationText(declaration) {
+  const sourceFile = declaration.getSourceFile();
   return ts
     .createPrinter({ removeComments: true })
-    .printNode(ts.EmitHint.Unspecified, printable, sourceFile)
+    .printNode(
+      ts.EmitHint.Unspecified,
+      publicDeclarationNode(declaration),
+      sourceFile,
+    )
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function moduleDeclarationSignatures(program, path) {
+function moduleDeclarationSignatures(program, path, declarationRoot) {
   const sourceFile = program.getSourceFile(path);
   if (!sourceFile)
     fail(`could not read declarations from ${relative(root, path)}`);
@@ -400,26 +408,79 @@ function moduleDeclarationSignatures(program, path) {
   const sourceOrder = new Map(
     program.getSourceFiles().map((file, index) => [file.fileName, index]),
   );
+  const declarationOrder = (left, right) => {
+    const leftFile = sourceOrder.get(left.getSourceFile().fileName) ?? Infinity;
+    const rightFile =
+      sourceOrder.get(right.getSourceFile().fileName) ?? Infinity;
+    return leftFile - rightFile || left.getStart() - right.getStart();
+  };
+  const resolvedSymbol = (symbol) =>
+    symbol.flags & ts.SymbolFlags.Alias
+      ? checker.getAliasedSymbol(symbol)
+      : symbol;
+  const isInternalDeclaration = (declaration) => {
+    const relativePath = relative(
+      declarationRoot,
+      declaration.getSourceFile().fileName,
+    );
+    return (
+      relativePath !== "" &&
+      !relativePath.startsWith("..") &&
+      !relativePath.startsWith("/")
+    );
+  };
+  const isReachableTypeDeclaration = (declaration) =>
+    ts.isClassDeclaration(declaration) ||
+    ts.isEnumDeclaration(declaration) ||
+    ts.isInterfaceDeclaration(declaration) ||
+    ts.isTypeAliasDeclaration(declaration);
+  const referencedSymbols = (declaration) => {
+    const references = new Set();
+    const visit = (node) => {
+      if (ts.isIdentifier(node)) {
+        const symbol = checker.getSymbolAtLocation(node);
+        if (symbol) {
+          const resolved = resolvedSymbol(symbol);
+          if (
+            resolved.declarations?.some(
+              (candidate) =>
+                isInternalDeclaration(candidate) &&
+                isReachableTypeDeclaration(candidate),
+            )
+          )
+            references.add(resolved);
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(publicDeclarationNode(declaration));
+    return [...references];
+  };
   const signatures = new Map();
   for (const exported of checker.getExportsOfModule(moduleSymbol)) {
-    const symbol =
-      exported.flags & ts.SymbolFlags.Alias
-        ? checker.getAliasedSymbol(exported)
-        : exported;
-    const declarations = [...(symbol.declarations ?? [])].sort(
-      (left, right) => {
-        const leftFile =
-          sourceOrder.get(left.getSourceFile().fileName) ?? Infinity;
-        const rightFile =
-          sourceOrder.get(right.getSourceFile().fileName) ?? Infinity;
-        return leftFile - rightFile || left.getStart() - right.getStart();
-      },
-    );
-    if (declarations.length === 0) continue;
-    signatures.set(
-      exported.name,
-      declarations.map(publicDeclarationText).join(" "),
-    );
+    const visited = new Set();
+    const parts = [];
+    const visit = (symbol) => {
+      const resolved = resolvedSymbol(symbol);
+      if (visited.has(resolved)) return;
+      visited.add(resolved);
+      const declarations = [...(resolved.declarations ?? [])].sort(
+        declarationOrder,
+      );
+      parts.push(...declarations.map(publicDeclarationText));
+      const references = declarations
+        .flatMap(referencedSymbols)
+        .sort((left, right) => {
+          const leftDeclaration = left.declarations?.[0];
+          const rightDeclaration = right.declarations?.[0];
+          return leftDeclaration && rightDeclaration
+            ? declarationOrder(leftDeclaration, rightDeclaration)
+            : 0;
+        });
+      for (const reference of references) visit(reference);
+    };
+    visit(exported);
+    if (parts.length) signatures.set(exported.name, parts.join(" "));
   }
   return signatures;
 }
@@ -456,10 +517,12 @@ function validateApiBaseline(currentEntries, baseRef) {
       const currentSymbols = moduleDeclarationSignatures(
         currentDeclarations.program,
         currentDeclarations.declarationEntries.get(entry),
+        currentDeclarations.outputRoot,
       );
       const baselineSymbols = moduleDeclarationSignatures(
         baselineDeclarations.program,
         baselineDeclarations.declarationEntries.get(entry),
+        baselineDeclarations.outputRoot,
       );
       const removed = sorted(
         [...baselineSymbols.keys()].filter((name) => !currentSymbols.has(name)),
@@ -859,32 +922,39 @@ async function validateSmokeImports() {
       name.endsWith(".tgz"),
     );
     if (!packedFilename) fail("npm pack produced no package tarball");
-    const peerPackages = Object.keys(packageJson.peerDependencies ?? {})
+    const peerDependencies = Object.keys(packageJson.peerDependencies ?? {})
       .filter(
         (dependency) =>
           !packageJson.peerDependenciesMeta?.[dependency]?.optional,
       )
-      .map((dependency) => `${dependency}@${smokePackageVersion(dependency)}`);
-    const smokeDependencies = [
-      `@angular/compiler@${smokePackageVersion("@angular/compiler")}`,
-      ...peerPackages,
-    ];
+      .map((dependency) => [dependency, smokePackageVersion(dependency)]);
+    const smokeManifest = {
+      name: "bulud-ng-package-smoke",
+      private: true,
+      version: "0.0.0",
+      dependencies: Object.fromEntries([
+        ["@angular/compiler", smokePackageVersion("@angular/compiler")],
+        ...peerDependencies,
+      ]),
+    };
+    writeFileSync(
+      join(temporaryRoot, "package.json"),
+      JSON.stringify(smokeManifest, null, 2),
+    );
     try {
       execFileSync(
         "npm",
-        [
-          "install",
-          "--prefix",
-          temporaryRoot,
-          "--install-strategy=nested",
-          "--ignore-scripts",
-          "--no-audit",
-          "--no-fund",
-          "--package-lock=false",
-          "--no-save",
-          join(temporaryRoot, packedFilename),
-          ...smokeDependencies,
-        ],
+        ["install", "--ignore-scripts", "--no-audit", "--no-fund"],
+        { cwd: temporaryRoot, env: smokeNpmEnv, stdio: "inherit" },
+      );
+      smokeManifest.dependencies["bulud-ng"] = `file:./${packedFilename}`;
+      writeFileSync(
+        join(temporaryRoot, "package.json"),
+        JSON.stringify(smokeManifest, null, 2),
+      );
+      execFileSync(
+        "npm",
+        ["install", "--ignore-scripts", "--no-audit", "--no-fund"],
         { cwd: temporaryRoot, env: smokeNpmEnv, stdio: "inherit" },
       );
     } catch (error) {
@@ -905,7 +975,7 @@ async function validateSmokeImports() {
       });
     } catch (error) {
       fail(
-        `isolated package-path import failed after nested consumer installation; check the package's declared dependencies and peers: ${error instanceof Error ? error.message : error}`,
+        `isolated package-path import failed after consumer installation; check the package's declared dependencies and peers: ${error instanceof Error ? error.message : error}`,
       );
     }
     console.log(
