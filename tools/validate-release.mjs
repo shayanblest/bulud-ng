@@ -513,8 +513,15 @@ function emittedJsImportSpecifiers(path) {
     else if (
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword
-    )
+    ) {
       specifier = node.arguments[0];
+      if (specifier && ts.isTemplateExpression(specifier)) {
+        const head = specifier.head.text;
+        // A trailing slash completes the package name before interpolation.
+        if (/^(?:@[a-z\d_~.-]+\/)?[a-z\d_~-][a-z\d_~.-]*\//i.test(head))
+          specifiers.push(head);
+      }
+    }
     if (specifier && ts.isStringLiteralLike(specifier))
       specifiers.push(specifier.text);
     ts.forEachChild(node, visit);
@@ -1075,6 +1082,13 @@ function validateApi() {
   );
 }
 
+function validateBuiltSideEffects(source, built) {
+  if (JSON.stringify(source.sideEffects) !== JSON.stringify(built.sideEffects))
+    fail(
+      "sideEffects in dist/package.json differs from projects/bulud-ng/package.json",
+    );
+}
+
 function validateDependencies() {
   const source = readJson(sourcePackagePath);
   const built = readJson(join(packageRoot, "package.json"));
@@ -1091,6 +1105,7 @@ function validateDependencies() {
         `${field} in dist/package.json differs from projects/bulud-ng/package.json`,
       );
   }
+  validateBuiltSideEffects(source, built);
   const rootPackage = readJson(join(root, "package.json"));
   const lockfile = readJson(join(root, "package-lock.json"));
   const lockedRoot = lockfile.packages?.[""] ?? {};
@@ -1142,6 +1157,13 @@ function validateDependencies() {
       ),
     ),
   ];
+  if (
+    JSON.stringify(baseLibrary.sideEffects) !==
+    JSON.stringify(source.sideEffects)
+  )
+    baselineChanges.push(
+      `projects/bulud-ng/package.json sideEffects: changed ${JSON.stringify(baseLibrary.sideEffects)} -> ${JSON.stringify(source.sideEffects)}`,
+    );
   const baseLockfile = readBaseJson(baseRef, "package-lock.json");
   const lockfileChanges = lockfileContractChanges(baseLockfile, lockfile);
   enforceApprovedChanges(
@@ -1248,6 +1270,7 @@ function validatePackage() {
     join(root, "projects", "bulud-ng", "ng-package.json"),
   );
   const sourceManifest = readJson(sourcePackagePath);
+  validateBuiltSideEffects(sourceManifest, packageJson);
   const assetPaths = new Set(
     (source.assets ?? []).map((asset) =>
       typeof asset === "string" ? asset : asset.destination,
