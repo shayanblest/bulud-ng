@@ -296,8 +296,20 @@ function validatePackageJsEntries(packageJson) {
 
 function exportTargets(value) {
   if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(exportTargets);
   if (!value || typeof value !== "object") return [];
   return Object.values(value).flatMap(exportTargets);
+}
+
+function exportConditionTargets(value, condition) {
+  if (Array.isArray(value))
+    return value.flatMap((entry) => exportConditionTargets(entry, condition));
+  if (!value || typeof value !== "object") return [];
+  return Object.entries(value).flatMap(([key, target]) =>
+    key === condition
+      ? exportTargets(target)
+      : exportConditionTargets(target, condition),
+  );
 }
 
 function packageNameFromSpecifier(specifier) {
@@ -1215,6 +1227,7 @@ async function validateSmokeImports() {
       );
     }
     validateInstalledCssExports(temporaryRoot, packageJson);
+    validateInstalledTypesExports(temporaryRoot, packageJson);
     const smokeScript = join(temporaryRoot, "smoke.mjs");
     writeFileSync(
       smokeScript,
@@ -1281,6 +1294,33 @@ function validateInstalledCssExports(temporaryRoot, packageJson) {
       if (!statSafe(installedPath))
         fail(
           `packed package CSS export is missing: export key=${key} target=${target} missing installed path=${relative(root, installedPath)}`,
+        );
+    }
+  }
+}
+
+function validateInstalledTypesExports(temporaryRoot, packageJson) {
+  const installedPackageRoot = join(
+    temporaryRoot,
+    "node_modules",
+    ...packageJson.name.split("/"),
+  );
+  const installedManifestPath = join(installedPackageRoot, "package.json");
+  if (!statSafe(installedManifestPath))
+    fail(
+      `packed package installation is missing its manifest at ${relative(root, installedManifestPath)}`,
+    );
+  const installedManifest = readJson(installedManifestPath);
+  for (const [key, value] of packageExports(installedManifest)) {
+    const targets = [...new Set(exportConditionTargets(value, "types"))];
+    for (const target of targets) {
+      const installedPath = join(
+        installedPackageRoot,
+        target.replace(/^\.\//, ""),
+      );
+      if (!statSafe(installedPath))
+        fail(
+          `packed package types export is missing: export key=${key} types target=${target} missing installed path=${relative(root, installedPath)}`,
         );
     }
   }
