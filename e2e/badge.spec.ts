@@ -4,36 +4,80 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
-test('dismisses once with pointer, Enter and Space and restores focus', async ({
-  page,
-}) => {
-  const scope = page.locator('#badge-states');
-  const restore = scope.getByRole('button', { name: 'Restore badge' });
-  for (const [index, key] of ['Enter', 'Space', 'pointer'].entries()) {
-    await restore.click();
-    const dismiss = scope.getByRole('button', {
-      name: 'Remove published status',
+for (const direction of ['rtl', 'ltr'] as const) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`dismisses every size with pointer, Enter and Space and restores focus in ${theme} ${direction}`, async ({
+      page,
+    }) => {
+      const scope = page.locator('#badge-states');
+      if (direction === 'ltr') {
+        await page.locator('#demo-language-toggle').click();
+      }
+      if (theme === 'dark') {
+        await scope.getByLabel('Dark badge theme').check();
+      }
+      const restore = scope.getByRole('button', { name: 'Restore badge' });
+      const host = scope.locator('#badge-removable');
+      const badge = host.locator('.bulud-badge');
+      const dismiss = scope.getByRole('button', {
+        name: 'Remove published status',
+      });
+      let dismissals = 0;
+      for (const [size, height] of [
+        ['small', '26px'],
+        ['medium', '32px'],
+        ['large', '36px'],
+      ]) {
+        await restore.click();
+        const sizeControl = scope
+          .getByRole('group', { name: 'Dismissible badge size' })
+          .getByRole('radio', { name: size, exact: true });
+        await sizeControl.check();
+        await expect(sizeControl).toBeChecked();
+        await expect(badge).toHaveCSS('min-height', height);
+        for (const key of ['Enter', 'Space', 'pointer']) {
+          await restore.click();
+          await expect(dismiss).toHaveAttribute('type', 'button');
+          await expect(badge).toHaveCSS('direction', direction);
+          await expect(badge).toHaveCSS('min-height', height);
+          await expect(badge).toHaveCSS(
+            'background-color',
+            theme === 'dark' ? 'rgb(30, 41, 59)' : 'rgb(248, 250, 252)',
+          );
+          const dismissBox = await dismiss.boundingBox();
+          const contentBox = await host
+            .locator('.bulud-badge__content')
+            .boundingBox();
+          expect(dismissBox).not.toBeNull();
+          expect(contentBox).not.toBeNull();
+          expect(dismissBox!.x < contentBox!.x).toBe(direction === 'rtl');
+          await restore.focus();
+          await page.keyboard.press('Tab');
+          await expect(dismiss).toBeFocused();
+          await expect(dismiss).toHaveCSS('outline-style', 'solid');
+          await expect(dismiss).toHaveCSS('outline-width', '2px');
+          await expect(dismiss).toHaveCSS('outline-offset', '2px');
+          await expect(dismiss).toHaveCSS(
+            'outline-color',
+            await badge.evaluate((el) => getComputedStyle(el).color),
+          );
+          await dismiss.hover();
+          await expect(dismiss).toHaveCSS(
+            'background-color',
+            'rgba(15, 23, 42, 0.1)',
+          );
+          if (key === 'pointer') await dismiss.click();
+          else await page.keyboard.press(key);
+          await expect(host).toHaveCount(0);
+          await expect(restore).toBeFocused();
+          await expect(scope.locator('#badge-dismiss-count')).toHaveText(
+            `Dismissals: ${++dismissals}`,
+          );
+        }
+      }
     });
-    await expect(dismiss).toBeVisible();
-    await restore.focus();
-    await page.keyboard.press('Tab');
-    await expect(dismiss).toBeFocused();
-    await expect(dismiss).toHaveCSS('outline-style', 'solid');
-    await expect(dismiss).toHaveCSS('outline-width', '2px');
-    await dismiss.hover();
-    await expect(dismiss).toHaveCSS(
-      'background-color',
-      'rgba(15, 23, 42, 0.1)',
-    );
-    if (key === 'pointer') await dismiss.click();
-    else await page.keyboard.press(key);
-    await expect(scope.locator('#badge-removable')).toHaveCount(0);
-    await expect(restore).toBeFocused();
-    await expect(scope.locator('#badge-dismiss-count')).toHaveText(
-      `Dismissals: ${index + 1}`,
-    );
   }
-});
+}
 
 test('covers variants, sizes, passive empty/text semantics, dots, RTL and theme precedence', async ({
   page,
@@ -105,7 +149,11 @@ for (const marker of ['class', 'data-theme'] as const) {
     page,
   }) => {
     const scope = page.locator('#badge');
-    await scope.evaluate((el, attr) => el.setAttribute(attr, 'dark'), marker);
+    if (marker === 'class') {
+      await scope.getByLabel('Dark badge theme').check();
+    } else {
+      await scope.evaluate((el) => el.setAttribute('data-theme', 'dark'));
+    }
     for (const [variant, color] of [
       ['neutral', 'rgb(30, 41, 59)'],
       ['primary', 'rgb(30, 58, 138)'],

@@ -664,6 +664,7 @@
         <section
           id="badge"
           class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+          [class.dark]="badgeDark()"
         >
           <div class="mb-7">
             <p
@@ -697,11 +698,7 @@
               Dismissible
             </bulud-badge>
           </div>
-          <div
-            id="badge-states"
-            class="mt-5 flex flex-wrap items-center gap-3"
-            [class.dark]="badgeDark()"
-          >
+          <div id="badge-states" class="mt-5 flex flex-wrap items-center gap-3">
             @for (size of badgeSizes; track size) {
               <bulud-badge [id]="'demo-badge-size-' + size" [size]="size">
                 {{ size }}
@@ -728,6 +725,23 @@
               />
               Dark badge theme</label
             >
+            <fieldset class="flex flex-wrap items-center gap-3">
+              <legend class="text-sm font-semibold">
+                Dismissible badge size
+              </legend>
+              @for (size of badgeSizes; track size) {
+                <label class="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="badge-size"
+                    [value]="size"
+                    [checked]="badgeSize() === size"
+                    (change)="badgeSize.set(size)"
+                  />
+                  {{ size }}
+                </label>
+              }
+            </fieldset>
             <button
               id="demo-badge-restore"
               #restoreBadge
@@ -739,6 +753,7 @@
             @if (badgeVisible()) {
               <bulud-badge
                 id="badge-removable"
+                [size]="badgeSize()"
                 dismissible
                 dismissLabel="Remove published status"
                 (dismissed)="
@@ -961,6 +976,7 @@
             <article
               id="dropdown-forms"
               class="mt-6 rounded-2xl border border-bulud-border bg-bulud-surface p-5"
+              [attr.data-theme]="componentDark() ? 'dark' : null"
             >
               <h4 class="font-extrabold text-bulud-on-surface">
                 Required reactive form control
