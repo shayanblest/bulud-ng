@@ -67,7 +67,7 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(track).toHaveCSS('background-color', 'rgb(96, 165, 250)');
 
   const instance = section.getByRole('switch', { name: 'Instance theme' });
-  const instanceWrapper = instance.locator('xpath=ancestor::bulud-switch');
+  const instanceWrapper = instance.locator('xpath=ancestor::bulud-switch[1]');
   const instanceTrack = instanceWrapper.locator('.bulud-switch__track');
   const thumb = wrapper.locator('.bulud-switch__thumb');
   await expect(instance).toBeChecked();
@@ -80,6 +80,33 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(invalid).not.toBeChecked();
   await section.getByText('Invalid', { exact: true }).click();
   await expect(invalid).toHaveAttribute('aria-invalid', 'true');
+  const invalidHost = section.locator(
+    'bulud-switch:has(> .bulud-switch > input[aria-label="Invalid notifications switch"])',
+  );
+  const invalidTrack = invalidHost.locator(
+    ':scope > .bulud-switch > .bulud-switch__label > .bulud-switch__track',
+  );
+  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(251, 113, 133)');
+  await invalid.press('Space');
+  await expect(invalid).toBeChecked();
+  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(251, 113, 133)');
+
+  await instanceWrapper.evaluate((element) => {
+    document
+      .querySelector('input#switch-invalid')!
+      .closest('bulud-switch')!
+      .querySelector('.bulud-switch__content')!
+      .append(element);
+  });
+  await expect(instance).not.toHaveAttribute('aria-invalid');
+  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(20, 83, 45)');
+  await instance.press('Space');
+  await expect(instance).not.toBeChecked();
+  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(71, 85, 105)');
+  await invalid.press('Space');
+  await expect(invalid).not.toBeChecked();
+  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(251, 113, 133)');
+  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(71, 85, 105)');
 
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect(control).toBeChecked();

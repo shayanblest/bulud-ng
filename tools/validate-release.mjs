@@ -1363,6 +1363,9 @@ async function validateSmokeImports() {
         ["@angular/compiler", smokePackageVersion("@angular/compiler")],
         ...peerDependencies,
       ]),
+      devDependencies: {
+        typescript: smokePackageVersion("typescript"),
+      },
     };
     writeFileSync(
       join(temporaryRoot, "package.json"),
@@ -1391,6 +1394,7 @@ async function validateSmokeImports() {
     }
     validateInstalledCssExports(temporaryRoot, packageJson);
     validateInstalledTypesExports(temporaryRoot, packageJson);
+    compileInstalledDeclarations(temporaryRoot, expectedImports);
     const smokeScript = join(temporaryRoot, "smoke.mjs");
     writeFileSync(
       smokeScript,
@@ -1417,6 +1421,64 @@ async function validateSmokeImports() {
 
 function smokePackagePath(name) {
   return join(root, "node_modules", ...name.split("/"));
+}
+
+function compileInstalledDeclarations(temporaryRoot, packagePaths) {
+  writeFileSync(
+    join(temporaryRoot, "consumer.ts"),
+    packagePaths
+      .map(
+        (specifier, index) =>
+          `import * as value${index} from ${JSON.stringify(specifier)};\n` +
+          `import type * as Type${index} from ${JSON.stringify(specifier)};\n` +
+          `export type Entry${index} = typeof Type${index};\nvoid value${index};\n`,
+      )
+      .join("\n"),
+  );
+  const configPath = join(temporaryRoot, "tsconfig.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify(
+      {
+        compilerOptions: {
+          strict: true,
+          noEmit: true,
+          skipLibCheck: false,
+          target: "ES2022",
+          module: "ESNext",
+          moduleResolution: "Bundler",
+          types: [],
+        },
+        files: ["consumer.ts"],
+      },
+      null,
+      2,
+    ),
+  );
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        join(temporaryRoot, "node_modules", "typescript", "bin", "tsc"),
+        "--project",
+        configPath,
+        "--pretty",
+        "false",
+      ],
+      {
+        cwd: temporaryRoot,
+        env: { ...process.env, NODE_PATH: "" },
+        stdio: "inherit",
+      },
+    );
+  } catch (error) {
+    fail(
+      `installed declaration graph failed consumer compilation: ${error instanceof Error ? error.message : error}`,
+    );
+  }
+  console.log(
+    `Installed declarations compiled: ${packagePaths.length} public paths with skipLibCheck disabled.`,
+  );
 }
 
 function smokePackageVersion(name) {
