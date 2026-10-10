@@ -184,11 +184,25 @@ precedence. Consumers provide the native textarea label/description/ARIA.
 ### `bulud-ng/clickoutside`
 
 Exports `BuludClickOutside`, `BuludClickOutsideTrigger`
-(`pointerdown` or `focusin`), and `BuludClickOutsideEvent` (`trigger`). Inputs
-are `enabled` and `triggers`; `outside` emits the typed trigger after an
-outside interaction. Pointerdown followed by focusin for the same target is
-coalesced. The directive adds no semantics, focus management, or keyboard
-behavior; consumers supply those for the host content.
+(`'pointerdown' | 'focusin'`), and `BuludClickOutsideEvent` with readonly
+`trigger: BuludClickOutsideTrigger`. The standalone directive's selector is
+`[buludClickOutside]`. Inputs are `enabled: boolean` (default `true`) and
+`triggers: readonly BuludClickOutsideTrigger[]` (default
+`['pointerdown', 'focusin']`); `outside` emits `BuludClickOutsideEvent` after
+an outside interaction.
+
+Interactions on the host or its descendants do not emit. With both triggers
+enabled, pointerdown followed by focusin on the same outside target is coalesced
+into one event with `trigger: 'pointerdown'`. Duplicate configured triggers are
+deduplicated. Disabling or destroying the directive removes its document
+listeners. It runs only in the browser; during SSR it installs no listeners and
+emits no fake outside events.
+
+The directive adds no semantics, focus management, keyboard behavior, theme
+contract, or Forms contract. Consumers own accessible names, roles, ARIA
+relationships/state, and keyboard/focus behavior for the UI using it. The
+[ClickOutside section of the consumer guide](../projects/bulud-ng/README.md#clickoutside)
+contains import and usage examples and the complete input/output contract.
 
 ### `bulud-ng/resize-observer`
 
