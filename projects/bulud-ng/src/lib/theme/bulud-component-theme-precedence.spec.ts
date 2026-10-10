@@ -663,9 +663,23 @@ describe('Existing component theme precedence', () => {
         if (token.state === 'focus') {
           target.focus();
           expect(document.activeElement).toBe(target);
-          restoreState = activateStateStyle(target, 'focus-visible');
+          const { restore, matchedRuleCount } = activateStateStyle(
+            target,
+            'focus-visible',
+          );
+          restoreState = restore;
+          expect(matchedRuleCount)
+            .withContext('Expected an authored :focus-visible rule')
+            .toBeGreaterThan(0);
         } else if (token.state) {
-          restoreState = activateStateStyle(target, token.state);
+          const { restore, matchedRuleCount } = activateStateStyle(
+            target,
+            token.state,
+          );
+          restoreState = restore;
+          expect(matchedRuleCount)
+            .withContext(`Expected an authored :${token.state} rule`)
+            .toBeGreaterThan(0);
         }
         const value = () =>
           getComputedStyle(target).getPropertyValue(token.property);

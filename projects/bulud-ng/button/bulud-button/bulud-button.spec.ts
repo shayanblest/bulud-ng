@@ -307,7 +307,11 @@ describe('BuludButton', () => {
         const button = getButton();
         button.style.transition = 'none';
         button.focus();
-        const restoreFocusStyle = activateStateStyle(button, 'focus-visible');
+        const { restore: restoreFocusStyle, matchedRuleCount } =
+          activateStateStyle(button, 'focus-visible');
+        expect(matchedRuleCount)
+          .withContext('Expected an authored :focus-visible rule')
+          .toBeGreaterThan(0);
         const previous = document.head.querySelector('style[data-bulud-theme]');
         const previousText = previous?.textContent ?? null;
         const rootStyle = document.createElement('style');
@@ -354,7 +358,11 @@ describe('BuludButton', () => {
       button.style.transition = 'none';
       button.focus();
       expect(document.activeElement).toBe(button);
-      const restoreFocusStyle = activateStateStyle(button, 'focus-visible');
+      const { restore: restoreFocusStyle, matchedRuleCount } =
+        activateStateStyle(button, 'focus-visible');
+      expect(matchedRuleCount)
+        .withContext('Expected an authored :focus-visible rule')
+        .toBeGreaterThan(0);
       const value = () =>
         getComputedStyle(button).getPropertyValue(token.property);
       expect(createBuludThemeVariables()[token.variable]).toBe(token.fallback);

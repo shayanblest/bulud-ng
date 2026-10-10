@@ -388,7 +388,11 @@ describe('Badge geometry theme precedence', () => {
       const target = host.querySelector<HTMLElement>(token.selector)!;
       const dismiss = host.querySelector('button')!;
       dismiss.focus();
-      const restoreFocusStyle = activateStateStyle(dismiss, 'focus-visible');
+      const { restore: restoreFocusStyle, matchedRuleCount } =
+        activateStateStyle(dismiss, 'focus-visible');
+      expect(matchedRuleCount)
+        .withContext('Expected an authored :focus-visible rule')
+        .toBeGreaterThan(0);
       const original = document.head.querySelector(
         'style[data-bulud-theme]',
       )?.textContent;

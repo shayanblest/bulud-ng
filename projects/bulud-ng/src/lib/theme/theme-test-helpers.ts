@@ -5,7 +5,7 @@
 export function activateStateStyle(
   target: HTMLElement,
   state: 'hover' | 'active' | 'focus-visible',
-): () => void {
+): { restore: () => void; matchedRuleCount: number } {
   const attribute = `data-theme-test-${state}`;
   const changed: { rule: CSSStyleRule; selector: string }[] = [];
   target.setAttribute(attribute, '');
@@ -26,13 +26,13 @@ export function activateStateStyle(
       }
     }
   }
-  expect(changed.length)
-    .withContext(`Expected an authored :${state} rule`)
-    .toBeGreaterThan(0);
-  return () => {
-    changed.forEach(({ rule, selector }) => {
-      rule.selectorText = selector;
-    });
-    target.removeAttribute(attribute);
+  return {
+    matchedRuleCount: changed.length,
+    restore: () => {
+      changed.forEach(({ rule, selector }) => {
+        rule.selectorText = selector;
+      });
+      target.removeAttribute(attribute);
+    },
   };
 }
