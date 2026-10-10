@@ -701,6 +701,7 @@ function publicDeclarationNode(declaration, typescript = ts) {
   let printable = declaration;
   if (typescript.isClassDeclaration(declaration)) {
     const members = declaration.members.filter((member) => {
+      if (typescript.isConstructorDeclaration(member)) return true;
       const modifiers = typescript.getModifiers(member) ?? [];
       return (
         !modifiers.some(
