@@ -1,11 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import { existsSync } from 'node:fs';
 
-const chromiumExecutable = [
-  '/snap/bin/chromium',
-  '/usr/bin/google-chrome',
-  '/usr/bin/chromium',
-].find((path) => existsSync(path));
+const chromiumExecutable = process.env.CI
+  ? undefined
+  : [
+      '/snap/bin/chromium',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium',
+    ].find((path) => existsSync(path));
 
 export default defineConfig({
   testDir: './e2e',

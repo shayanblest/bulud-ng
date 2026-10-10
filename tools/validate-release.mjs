@@ -12,6 +12,10 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import {
+  customPropertyUsageChanges,
+  sourceCustomPropertyUsage,
+} from "./custom-property-contract.mjs";
 
 const root = resolve(dirname(new URL(import.meta.url).pathname), "..");
 const packageRoot = join(root, "dist", "bulud-ng");
@@ -242,22 +246,6 @@ function packageExports(packageJson) {
 
 function cssExportTarget(value) {
   return JSON.stringify(stableValue(value));
-}
-
-function sourceCustomPropertyUsage(apiRoot) {
-  const usage = new Map();
-  for (const path of walkFiles(apiRoot).filter(
-    (file) =>
-      /\.(?:css|scss)$/.test(file) &&
-      !/(?:^|[/.])[^/]*\.spec\.[^/]*$/.test(file),
-  )) {
-    const source = readFileSync(join(apiRoot, path), "utf8");
-    const names = new Set(
-      [...source.matchAll(/--bulud-[A-Za-z0-9_-]+/g)].map((match) => match[0]),
-    );
-    if (names.size) usage.set(path, sorted(names));
-  }
-  return usage;
 }
 
 function approvedPackageJsEntries() {
@@ -898,32 +886,12 @@ function validateApiBaseline(currentEntries, baseRef) {
       join(baselineRoot, "projects", "bulud-ng"),
     );
     const currentCustomPropertyUsage = sourceCustomPropertyUsage(sourceApiRoot);
-    const customPropertySurfaces = sorted(
-      new Set([
-        ...baselineCustomPropertyUsage.keys(),
-        ...currentCustomPropertyUsage.keys(),
-      ]),
+    differences.push(
+      ...customPropertyUsageChanges(
+        baselineCustomPropertyUsage,
+        currentCustomPropertyUsage,
+      ),
     );
-    for (const surface of customPropertySurfaces) {
-      const baselineProperties = new Set(
-        baselineCustomPropertyUsage.get(surface) ?? [],
-      );
-      const currentProperties = new Set(
-        currentCustomPropertyUsage.get(surface) ?? [],
-      );
-      for (const property of sorted(
-        [...currentProperties].filter((name) => !baselineProperties.has(name)),
-      ))
-        differences.push(
-          `CSS custom property usage added: ${surface}: ${property}`,
-        );
-      for (const property of sorted(
-        [...baselineProperties].filter((name) => !currentProperties.has(name)),
-      ))
-        differences.push(
-          `CSS custom property usage removed: ${surface}: ${property}`,
-        );
-    }
     const currentNames = new Set(currentEntries.keys());
     const baselineNames = new Set(baselineEntries.keys());
     for (const entry of sorted(baselineNames)) {
