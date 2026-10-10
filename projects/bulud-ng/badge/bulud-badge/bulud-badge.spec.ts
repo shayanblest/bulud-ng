@@ -13,6 +13,7 @@ import {
   resolveBuludTheme,
   provideBuludTheme,
 } from '../../src/lib/theme/bulud-theme';
+import { activateStateStyle } from '../../src/lib/theme/theme-test-helpers';
 import { BuludBadge } from './bulud-badge';
 
 @Component({
@@ -385,7 +386,13 @@ describe('Badge geometry theme precedence', () => {
       const scope: HTMLElement = fixture.nativeElement;
       const host = scope.querySelector<HTMLElement>('bulud-badge')!;
       const target = host.querySelector<HTMLElement>(token.selector)!;
-      host.querySelector('button')!.focus();
+      const dismiss = host.querySelector('button')!;
+      dismiss.focus();
+      const { restore: restoreFocusStyle, matchedRuleCount } =
+        activateStateStyle(dismiss, 'focus-visible');
+      expect(matchedRuleCount)
+        .withContext('Expected an authored :focus-visible rule')
+        .toBeGreaterThan(0);
       const original = document.head.querySelector(
         'style[data-bulud-theme]',
       )?.textContent;
@@ -455,6 +462,7 @@ describe('Badge geometry theme precedence', () => {
           '20px',
         );
       } finally {
+        restoreFocusStyle();
         rootStyle.remove();
         injectors.forEach((injector) => injector.destroy());
         const style = document.head.querySelector('style[data-bulud-theme]');

@@ -13,6 +13,7 @@ import {
   createBuludThemeVariables,
   provideBuludTheme,
 } from '../../src/lib/theme/bulud-theme';
+import { activateStateStyle } from '../../src/lib/theme/theme-test-helpers';
 
 import {
   BuludButton,
@@ -306,6 +307,11 @@ describe('BuludButton', () => {
         const button = getButton();
         button.style.transition = 'none';
         button.focus();
+        const { restore: restoreFocusStyle, matchedRuleCount } =
+          activateStateStyle(button, 'focus-visible');
+        expect(matchedRuleCount)
+          .withContext('Expected an authored :focus-visible rule')
+          .toBeGreaterThan(0);
         const previous = document.head.querySelector('style[data-bulud-theme]');
         const previousText = previous?.textContent ?? null;
         const rootStyle = document.createElement('style');
@@ -334,6 +340,7 @@ describe('BuludButton', () => {
               : token.fallback,
           );
         } finally {
+          restoreFocusStyle();
           rootStyle.remove();
           button.blur();
           injector.destroy();
@@ -350,7 +357,12 @@ describe('BuludButton', () => {
       const scope: HTMLElement = fixture.nativeElement;
       button.style.transition = 'none';
       button.focus();
-      expect(button.matches(':focus-visible')).toBeTrue();
+      expect(document.activeElement).toBe(button);
+      const { restore: restoreFocusStyle, matchedRuleCount } =
+        activateStateStyle(button, 'focus-visible');
+      expect(matchedRuleCount)
+        .withContext('Expected an authored :focus-visible rule')
+        .toBeGreaterThan(0);
       const value = () =>
         getComputedStyle(button).getPropertyValue(token.property);
       expect(createBuludThemeVariables()[token.variable]).toBe(token.fallback);
@@ -388,6 +400,7 @@ describe('BuludButton', () => {
         scope.style.removeProperty(token.variable);
         expect(value()).toBe(token.global);
       } finally {
+        restoreFocusStyle();
         rootStyle.remove();
         host.style.removeProperty(token.variable);
         scope.style.removeProperty(token.variable);
