@@ -123,7 +123,7 @@ test('supports dark theme, RTL, and instance geometry override', async ({
   const dialog = page.getByRole('dialog', { name: 'Review changes' });
 
   await expect(dialog).toHaveCSS('background-color', 'rgb(15, 23, 42)');
-  await expect(dialog).toHaveCSS('max-width', '640px');
+  await expect(dialog).toHaveCSS('inline-size', '640px');
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveCSS('direction', 'rtl');

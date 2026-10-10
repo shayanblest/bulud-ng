@@ -86,7 +86,7 @@
   );
 }
 
-:host(.bulud-switch-host--invalid)
+:host-context(.bulud-switch-host--invalid)
   .bulud-switch__input:checked
   + .bulud-switch__label
   .bulud-switch__track {
@@ -104,7 +104,7 @@
   opacity: var(--bulud-switch-disabled-opacity, 0.55);
 }
 
-:host(.bulud-switch-host--invalid) .bulud-switch__track {
+:host-context(.bulud-switch-host--invalid) .bulud-switch__track {
   border-color: var(--bulud-color-danger, #dc2626);
 }
 

@@ -9,7 +9,7 @@ test('supports switch semantics, projected label, and keyboard interaction', asy
 }) => {
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
-  const wrapper = section.locator('.bulud-switch').filter({ has: control });
+  const wrapper = control.locator('xpath=ancestor::bulud-switch');
   const label = wrapper.locator('.bulud-switch__label');
   const track = label.locator('.bulud-switch__track');
 
@@ -41,7 +41,7 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
 }) => {
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
-  const wrapper = section.locator('.bulud-switch').filter({ has: control });
+  const wrapper = control.locator('xpath=ancestor::bulud-switch');
   const track = wrapper.locator('.bulud-switch__track');
   const label = wrapper.locator('.bulud-switch__label');
   const focusStart = section.locator('#switch-focus-start');
@@ -54,6 +54,7 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(control).not.toBeChecked();
 
   await section.getByText('Disabled', { exact: true }).click();
+  await expect(control).toBeEnabled();
   await focusStart.focus();
   await page.keyboard.press('Tab');
   await expect(control).toBeFocused();
@@ -66,9 +67,7 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(track).toHaveCSS('background-color', 'rgb(96, 165, 250)');
 
   const instance = section.getByRole('switch', { name: 'Instance theme' });
-  const instanceWrapper = section
-    .locator('.bulud-switch')
-    .filter({ has: instance });
+  const instanceWrapper = instance.locator('xpath=ancestor::bulud-switch');
   const instanceTrack = instanceWrapper.locator('.bulud-switch__track');
   const thumb = wrapper.locator('.bulud-switch__thumb');
   await expect(instance).toBeChecked();
@@ -103,7 +102,7 @@ test('suppresses switch motion when reduced motion is requested', async ({
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const section = page.locator('#switch');
   const control = section.getByRole('switch', { name: 'Enable notifications' });
-  const wrapper = section.locator('.bulud-switch').filter({ has: control });
+  const wrapper = control.locator('xpath=ancestor::bulud-switch');
   const label = wrapper.locator('.bulud-switch__label');
   const track = label.locator('.bulud-switch__track');
   const thumb = label.locator('.bulud-switch__thumb');

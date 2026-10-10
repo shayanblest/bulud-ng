@@ -137,6 +137,8 @@ export class BuludTextareaAutosize
   private pointerInvalidationScheduled = false;
   private pendingResizeForValueChange = false;
   private deferredRemeasurementScheduled = false;
+  private deferredRemeasurementAttempts = 0;
+  private lastExternalInlineMeasurementSignature: string | null = null;
   private composing = false;
   private resizeAfterComposition = false;
   private destroyed = false;
@@ -355,6 +357,8 @@ export class BuludTextareaAutosize
     this.ownedOverflowY = nextOverflowY;
     this.ownedOverflowYPriority = 'important';
     this.lastValue = textarea.value;
+    this.lastExternalInlineMeasurementSignature =
+      getInlineExternalMeasurementSignature(textarea.style);
     restoreTextareaInteractionState(textarea, interactionState);
   }
 
@@ -390,11 +394,7 @@ export class BuludTextareaAutosize
       }
 
       if (isResolvingCssMaxHeight(textarea)) {
-        scheduleMicrotask(() => {
-          if (!this.destroyed && this.enabled()) {
-            this.remeasureIfNeeded();
-          }
-        });
+        this.scheduleDeferredRemeasurement();
         return;
       }
 
@@ -454,13 +454,25 @@ export class BuludTextareaAutosize
     }
 
     this.mutationObserver = new MutationObserver((records) => {
+      const relevantRecords = records.filter(
+        (record) =>
+          record.target !== this.element.nativeElement ||
+          record.type !== 'attributes' ||
+          record.attributeName !== 'style' ||
+          this.hasExternalOwnedSizingChange() ||
+          this.lastExternalInlineMeasurementSignature !==
+            getInlineExternalMeasurementSignature(
+              this.element.nativeElement.style,
+            ),
+      );
+      if (relevantRecords.length === 0) return;
       if (!this.destroyed && this.enabled()) {
         const ancestorChainMoved = metricObservationWasMoved(
-          records,
+          relevantRecords,
           this.element.nativeElement,
         );
         const stylesheetMutation = stylesheetMutationMayAffectMeasurement(
-          records,
+          relevantRecords,
           this.document,
           this.element.nativeElement,
         );
@@ -470,7 +482,7 @@ export class BuludTextareaAutosize
         }
         const measurementMayBeAffected =
           mutationMayAffectMeasurement(
-            records,
+            relevantRecords,
             this.element.nativeElement,
             ancestorChainMoved,
           ) || stylesheetMutation;
@@ -481,7 +493,7 @@ export class BuludTextareaAutosize
         }
         if (
           !ancestorChainMoved &&
-          records.some(
+          relevantRecords.some(
             (record) =>
               record.type === 'childList' &&
               record.target === this.document.body,
@@ -494,13 +506,7 @@ export class BuludTextareaAutosize
           this.updateQueryContainerObservation();
         }
         if (measurementMayBeAffected) {
-          if (
-            isResolvingCssMaxHeight(this.element.nativeElement) &&
-            mutationIncludesExternalMeasurementChange(
-              records,
-              this.element.nativeElement,
-            )
-          ) {
+          if (isResolvingCssMaxHeight(this.element.nativeElement)) {
             this.scheduleDeferredRemeasurement();
           } else if (!isResolvingCssMaxHeight(this.element.nativeElement)) {
             this.remeasureIfNeeded();
@@ -1081,21 +1087,29 @@ export class BuludTextareaAutosize
     }
 
     this.deferredRemeasurementScheduled = true;
+    const attempt = ++this.deferredRemeasurementAttempts;
     const generation = this.pointerInvalidationGeneration;
-    scheduleMicrotask(() => {
+    setTimeout(() => {
       this.deferredRemeasurementScheduled = false;
       if (generation !== this.pointerInvalidationGeneration) {
+        this.deferredRemeasurementAttempts = 0;
         return;
       }
 
       if (!this.destroyed && this.enabled()) {
         if (isResolvingCssMaxHeight(this.element.nativeElement)) {
-          this.scheduleDeferredRemeasurement();
+          if (attempt < 4) {
+            this.scheduleDeferredRemeasurement();
+          } else {
+            this.deferredRemeasurementAttempts = 0;
+            this.remeasureIfNeeded();
+          }
         } else {
+          this.deferredRemeasurementAttempts = 0;
           this.remeasureIfNeeded();
         }
       }
-    });
+    }, 0);
   }
 
   private remeasureIfNeeded(): void {
@@ -1740,36 +1754,9 @@ function isElementNode(node: Node | null): node is Element {
   return node?.nodeType === 1;
 }
 
-function mutationIncludesExternalMeasurementChange(
-  records: readonly MutationRecord[],
-  textarea: HTMLTextAreaElement,
-): boolean {
-  return records.some(
-    (record) =>
-      record.target !== textarea ||
-      record.type !== 'attributes' ||
-      record.attributeName !== 'style' ||
-      inlineMeasurementStyleChanged(record, textarea),
-  );
-}
-
-function inlineMeasurementStyleChanged(
-  record: MutationRecord,
-  textarea: HTMLTextAreaElement,
-): boolean {
-  if (record.oldValue === null) {
-    return true;
-  }
-
-  const previousStyle = textarea.ownerDocument.createElement('textarea').style;
-  previousStyle.cssText = record.oldValue;
-  return (
-    getInlineMeasurementSignature(previousStyle) !==
-    getInlineMeasurementSignature(textarea.style)
-  );
-}
-
-function getInlineMeasurementSignature(styles: CSSStyleDeclaration): string {
+function getInlineExternalMeasurementSignature(
+  styles: CSSStyleDeclaration,
+): string {
   return INLINE_MEASUREMENT_PROPERTIES.map(
     (property) =>
       `${property}:${styles.getPropertyValue(property)}:${styles.getPropertyPriority(property)}`,

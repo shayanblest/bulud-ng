@@ -318,8 +318,106 @@ function packageNameFromSpecifier(specifier) {
   return specifier.split("/")[0];
 }
 
+function declaredPackageNames(packageJson) {
+  return new Set([
+    packageJson.name,
+    ...Object.keys(packageJson.dependencies ?? {}),
+    ...Object.keys(packageJson.peerDependencies ?? {}),
+    ...Object.keys(packageJson.optionalDependencies ?? {}),
+  ]);
+}
+
 function isExternalPackageSpecifier(specifier) {
   return !specifier.startsWith(".") && !specifier.startsWith("node:");
+}
+
+function isExternalDeclarationReference(kind, specifier) {
+  const normalized = specifier.trim();
+  if (
+    !normalized ||
+    normalized.startsWith(".") ||
+    normalized.startsWith("/") ||
+    normalized.startsWith("#") ||
+    normalized.startsWith("node_modules/") ||
+    /^[a-z][a-z\d+.-]*:/i.test(normalized)
+  )
+    return false;
+  return kind === "types" || kind === "path";
+}
+
+function isExternalStylesheetSpecifier(specifier) {
+  const normalized = specifier.trim();
+  return (
+    normalized.length > 0 &&
+    !normalized.startsWith(".") &&
+    !normalized.startsWith("/") &&
+    !normalized.startsWith("#") &&
+    !/^[a-z][a-z\d+.-]*:/i.test(normalized) &&
+    !normalized.startsWith("//")
+  );
+}
+
+function stripStylesheetComments(source) {
+  let result = "";
+  let quote = null;
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (quote) {
+      result += character;
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === quote) quote = null;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      result += character;
+    } else if (character === "/" && next === "*") {
+      result += "  ";
+      index += 1;
+      while (index + 1 < source.length) {
+        index += 1;
+        if (source[index] === "*" && source[index + 1] === "/") {
+          result += "  ";
+          index += 1;
+          break;
+        }
+        result += source[index] === "\n" ? "\n" : " ";
+      }
+    } else {
+      result += character;
+    }
+  }
+  return result;
+}
+
+function stylesheetImportSpecifiers(source) {
+  const withoutComments = stripStylesheetComments(source);
+  const imports = [];
+  const importPattern =
+    /@import\s+(?:(["'])(.*?)\1|url\(\s*(?:(['"])(.*?)\3|([^\s)]+))\s*\))/gis;
+  for (const match of withoutComments.matchAll(importPattern))
+    imports.push(match[2] ?? match[4] ?? match[5]);
+  return imports;
+}
+
+function stylesheetSassSpecifiers(source) {
+  const withoutComments = stripStylesheetComments(source);
+  return [...withoutComments.matchAll(/@(use|forward)\s+(['"])(.*?)\2/gi)].map(
+    (match) => match[3],
+  );
+}
+
+function exportedStylesheetTargets(packageJson) {
+  return [
+    ...new Set(
+      [...packageExports(packageJson).values()]
+        .flatMap(exportTargets)
+        .filter((target) => /\.(?:css|scss)$/.test(target)),
+    ),
+  ];
 }
 
 function declarationImportSpecifiers(path) {
@@ -352,17 +450,59 @@ function declarationImportSpecifiers(path) {
   return specifiers;
 }
 
+function declarationReferenceSpecifiers(path) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    readFileSync(path, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  return [
+    ...sourceFile.typeReferenceDirectives.map((directive) => ({
+      kind: "types",
+      specifier: directive.fileName,
+    })),
+    // libReferenceDirectives are standard TypeScript libs, not npm packages.
+    ...sourceFile.referencedFiles.map((directive) => ({
+      kind: "path",
+      specifier: directive.fileName,
+    })),
+  ];
+}
+
+function validateBuiltStylesheetDependencies(packageJson, declared) {
+  const undeclared = [];
+  for (const target of exportedStylesheetTargets(packageJson)) {
+    const path = join(packageRoot, target.replace(/^\.\//, ""));
+    const source = readFileSync(path, "utf8");
+    const specifiers = stylesheetImportSpecifiers(source);
+    if (target.endsWith(".scss"))
+      specifiers.push(...stylesheetSassSpecifiers(source));
+    for (const specifier of new Set(specifiers)) {
+      if (!isExternalStylesheetSpecifier(specifier)) continue;
+      const packageName = packageNameFromSpecifier(specifier);
+      if (!declared.has(packageName))
+        undeclared.push({ path, target, specifier, packageName });
+    }
+  }
+  if (undeclared.length)
+    fail(
+      `built exported stylesheets contain undeclared package imports; declare each package as a dependency, peerDependency, or optionalDependency:\n${undeclared
+        .map(
+          ({ path, target, specifier, packageName }) =>
+            `- stylesheet=${relative(root, path)} export=${target} specifier=${specifier} normalized package=${packageName}`,
+        )
+        .join("\n")}`,
+    );
+}
+
 function validateBuiltImportContract(packageJson) {
-  const declared = new Set([
-    packageJson.name,
-    ...Object.keys(packageJson.dependencies ?? {}),
-    ...Object.keys(packageJson.peerDependencies ?? {}),
-    ...Object.keys(packageJson.optionalDependencies ?? {}),
-  ]);
+  const declared = declaredPackageNames(packageJson);
   const unexpected = [];
   for (const target of [...packageExports(packageJson).values()]
     .flatMap(exportTargets)
-    .filter((target) => target.endsWith(".mjs"))) {
+    .filter((target) => /\.(?:mjs|cjs|js)$/.test(target))) {
     const path = join(packageRoot, target.replace(/^\.\//, ""));
     const source = readFileSync(path, "utf8");
     for (const match of source.matchAll(
@@ -401,6 +541,29 @@ function validateBuiltImportContract(packageJson) {
         )
         .join("\n")}`,
     );
+  const undeclaredReferences = [];
+  for (const path of walkFiles(packageRoot).filter((file) =>
+    file.endsWith(".d.ts"),
+  )) {
+    for (const { kind, specifier } of declarationReferenceSpecifiers(
+      join(packageRoot, path),
+    )) {
+      if (!isExternalDeclarationReference(kind, specifier)) continue;
+      const packageName = packageNameFromSpecifier(specifier);
+      if (!declared.has(packageName))
+        undeclaredReferences.push({ path, kind, specifier, packageName });
+    }
+  }
+  if (undeclaredReferences.length)
+    fail(
+      `built package declarations contain undeclared reference directives; add an intentional dependency/peer/optional dependency or remove the directive:\n${undeclaredReferences
+        .map(
+          ({ path, kind, specifier, packageName }) =>
+            `- declaration file=${relative(root, join(packageRoot, path))} directive=${kind} specifier=${specifier} normalized package=${packageName}`,
+        )
+        .join("\n")}`,
+    );
+  validateBuiltStylesheetDependencies(packageJson, declared);
 }
 
 function moduleExportNames(path) {

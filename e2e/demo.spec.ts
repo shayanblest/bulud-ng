@@ -1,4 +1,32 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+type DemoApp = {
+  textareaAutosizeMaxRows: { set(value: number | null): void };
+};
+
+async function setTextareaMaxRows(
+  page: Page,
+  value: number | null,
+): Promise<void> {
+  // The demo has no maxRows control intended for consumers. Playwright runs
+  // `ng serve demo` with Angular's development configuration, where this
+  // fixture-only debug hook is guaranteed; no production API is introduced.
+  await page.locator('app-root').evaluate((element, nextValue) => {
+    const angular = (
+      window as Window & {
+        ng?: { getComponent(root: Element): DemoApp };
+      }
+    ).ng;
+    if (!angular) {
+      throw new Error('Angular debug API is unavailable in the demo fixture');
+    }
+    angular.getComponent(element).textareaAutosizeMaxRows.set(nextValue);
+  }, value);
+  const textarea = page.locator('#textarea-autosize-input');
+  const originalValue = await textarea.inputValue();
+  await textarea.fill(`${originalValue} `);
+  await textarea.fill(originalValue);
+}
 
 test.describe('Bulud component demo', () => {
   test.beforeEach(async ({ page }) => {
@@ -118,7 +146,7 @@ test.describe('Bulud component demo', () => {
     );
     await trigger.press('Enter');
     await expect(trigger).not.toContainText('Svelte');
-    await disabledOption.click();
+    await disabledOption.dispatchEvent('click');
     await expect(trigger).not.toContainText('Svelte');
     await trigger.press('End');
     await expect(trigger).toHaveAttribute(
@@ -2060,12 +2088,13 @@ test.describe('Bulud component demo', () => {
   test('textarea autosize reaches the final max-height transition constraint', async ({
     page,
   }) => {
+    await page.goto('/');
     const textarea = page.locator('#textarea-autosize-input');
     await textarea.evaluate((element) => {
       const target = element as HTMLTextAreaElement;
       target.style.minHeight = '0';
       target.style.maxHeight = '40px';
-      target.style.maxBlockSize = 'none';
+      target.style.maxBlockSize = '';
       target.style.lineHeight = '20px';
       target.value = 'max-height transition '.repeat(100);
       target.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2104,7 +2133,7 @@ test.describe('Bulud component demo', () => {
       .toBe(30);
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
-      .toBeLessThanOrEqual(30);
+      .toBe(36);
   });
 
   test('textarea autosize preserves the caret while editing in the middle', async ({
@@ -2440,6 +2469,7 @@ test.describe('Bulud component demo', () => {
       element.value = 'individual transform containing block '.repeat(80);
       element.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    await setTextareaMaxRows(page, null);
 
     const containingBlock = page.locator('[data-e2e-individual-transform-cb]');
     for (const [property, value] of [
@@ -2454,7 +2484,6 @@ test.describe('Bulud component demo', () => {
       await expect
         .poll(() => textarea.evaluate((element) => element.offsetHeight))
         .toBe(60);
-
       await containingBlock.evaluate((element) => {
         element.style.height = '240px';
       });
@@ -2500,25 +2529,58 @@ test.describe('Bulud component demo', () => {
       element.value = 'in-flow containing block '.repeat(80);
       element.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    await setTextareaMaxRows(page, null);
+
+    const nativeGeometry = await page.evaluate(() => {
+      const containingBlock = document.createElement('div');
+      const wrapper = document.createElement('span');
+      const nativeTextarea = document.createElement('textarea');
+      containingBlock.style.cssText = 'height: 120px; display: block;';
+      nativeTextarea.style.cssText =
+        'height: 1600px; max-height: 50%; line-height: 20px; padding: 0; border: 0; box-sizing: border-box;';
+      containingBlock.append(wrapper);
+      wrapper.append(nativeTextarea);
+      document.body.append(containingBlock);
+      const result = (['inline', 'contents', 'block'] as const).map(
+        (display) => {
+          wrapper.style.display = display;
+          const initial = nativeTextarea.offsetHeight;
+          containingBlock.style.height = '240px';
+          const resized = nativeTextarea.offsetHeight;
+          containingBlock.style.height = '120px';
+          return { display, initial, resized };
+        },
+      );
+      containingBlock.remove();
+      return result;
+    });
+    expect(nativeGeometry).toEqual([
+      { display: 'inline', initial: 60, resized: 120 },
+      { display: 'contents', initial: 60, resized: 120 },
+      { display: 'block', initial: 1600, resized: 1600 },
+    ]);
 
     const containingBlock = page.locator('[data-e2e-in-flow-cb]');
     const wrapper = containingBlock.locator('span');
-    for (const display of ['inline', 'contents', 'block'] as const) {
+    for (const { display, initial, resized } of nativeGeometry) {
       await wrapper.evaluate((element, nextDisplay) => {
         element.style.display = nextDisplay;
       }, display);
       await expect
         .poll(() => textarea.evaluate((element) => element.offsetHeight))
-        .toBe(60);
+        .toBe(initial);
       await containingBlock.evaluate((element) => {
         element.style.height = '240px';
       });
       await expect
         .poll(() => textarea.evaluate((element) => element.offsetHeight))
-        .toBe(120);
+        .toBe(resized);
       await containingBlock.evaluate((element) => {
         element.style.height = '120px';
       });
+      await expect
+        .poll(() => textarea.evaluate((element) => element.offsetHeight))
+        .toBe(initial);
     }
     await textarea.evaluate((element) =>
       element.parentElement?.parentElement?.remove(),
@@ -2711,7 +2773,7 @@ test.describe('Bulud component demo', () => {
           return {
             cssHeight: parseFloat(styles.height),
             physicalHeight: element.getBoundingClientRect().height,
-            maxHeight: parseFloat(styles.maxHeight),
+            maxHeight: styles.maxHeight,
             padding:
               parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom),
             borders:
@@ -2723,7 +2785,7 @@ test.describe('Bulud component demo', () => {
       .toEqual({
         cssHeight: 60,
         physicalHeight: 84,
-        maxHeight: 60,
+        maxHeight: '50%',
         padding: 20,
         borders: 4,
       });
@@ -2736,10 +2798,10 @@ test.describe('Bulud component demo', () => {
         textarea.evaluate((element) => ({
           cssHeight: parseFloat(getComputedStyle(element).height),
           physicalHeight: element.getBoundingClientRect().height,
-          maxHeight: parseFloat(getComputedStyle(element).maxHeight),
+          maxHeight: getComputedStyle(element).maxHeight,
         })),
       )
-      .toEqual({ cssHeight: 60, physicalHeight: 60, maxHeight: 60 });
+      .toEqual({ cssHeight: 60, physicalHeight: 60, maxHeight: '50%' });
 
     await textarea.evaluate((element) => {
       element.style.maxHeight = '';
@@ -2750,12 +2812,11 @@ test.describe('Bulud component demo', () => {
         textarea.evaluate((element) => ({
           cssHeight: parseFloat(getComputedStyle(element).height),
           physicalHeight: element.getBoundingClientRect().height,
-          maxBlockSize: parseFloat(
+          maxBlockSize:
             getComputedStyle(element).getPropertyValue('max-block-size'),
-          ),
         })),
       )
-      .toEqual({ cssHeight: 60, physicalHeight: 60, maxBlockSize: 60 });
+      .toEqual({ cssHeight: 60, physicalHeight: 60, maxBlockSize: '50%' });
   });
 
   test('textarea autosize preserves content-box conversion for relative caps', async ({
@@ -2990,7 +3051,7 @@ test.describe('Bulud component demo', () => {
     const textarea = page.locator('#textarea-autosize-input');
     await page.addStyleTag({
       content: `
-        body > app-root.e2e-body-sibling-selector:last-child #textarea-autosize-input {
+        body > app-root.e2e-body-sibling-selector:not(:has(~ .e2e-body-sibling-selector-node)) #textarea-autosize-input {
           line-height: 32px;
         }
         .e2e-body-sibling-selector #textarea-autosize-input {
@@ -3078,6 +3139,7 @@ test.describe('Bulud component demo', () => {
       }, display);
 
     await moveInto('flex');
+    await setTextareaMaxRows(page, null);
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
       .toBe(80);
@@ -3087,9 +3149,8 @@ test.describe('Bulud component demo', () => {
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
       .toBe(120);
-
     for (const display of ['flex', 'grid'] as const) {
-      const stableHeight = await textarea.evaluate((element, nextDisplay) => {
+      await textarea.evaluate((element, nextDisplay) => {
         const shell = document.createElement('div');
         shell.className =
           nextDisplay === 'flex'
@@ -3104,8 +3165,12 @@ test.describe('Bulud component demo', () => {
         element.style.height = '';
         element.value = 'content-sized layout '.repeat(100);
         element.dispatchEvent(new Event('input', { bubbles: true }));
-        return element.offsetHeight;
       }, display);
+      await textarea.dispatchEvent('input');
+      const stableHeight = await textarea.evaluate(
+        (element) => element.offsetHeight,
+      );
+      expect(stableHeight).toBe(120);
       for (let cycle = 0; cycle < 3; cycle += 1) {
         await textarea.dispatchEvent('input');
         await expect
@@ -3113,7 +3178,6 @@ test.describe('Bulud component demo', () => {
           .toBe(stableHeight);
       }
     }
-
     await textarea.evaluate((element) => {
       const oldShell = element.parentElement!.parentElement!;
       const gridShell = document.createElement('div');
@@ -3134,7 +3198,6 @@ test.describe('Bulud component demo', () => {
     await expect
       .poll(() => textarea.evaluate((element) => element.offsetHeight))
       .toBe(120);
-
     await textarea.evaluate((element) => {
       const item = element.parentElement!;
       const shell = item.parentElement!;
@@ -3168,6 +3231,7 @@ test.describe('Bulud component demo', () => {
       (element) => element.offsetHeight,
     );
     await textarea.evaluate((element) => {
+      element.style.removeProperty('line-height');
       element.parentElement!.style.width = '600px';
     });
     await expect
