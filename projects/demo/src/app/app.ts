@@ -92,6 +92,7 @@ export class App {
     'large',
   ];
   protected readonly badgeVisible = signal(true);
+  protected readonly badgeSize = signal<BuludBadgeSize>('medium');
   protected readonly badgeDismissCount = signal(0);
   protected readonly badgeDark = signal(false);
   protected readonly badgeVariants: readonly BuludBadgeVariant[] = [
