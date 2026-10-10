@@ -201,8 +201,8 @@ emits no fake outside events.
 The directive adds no semantics, focus management, keyboard behavior, theme
 contract, or Forms contract. Consumers own accessible names, roles, ARIA
 relationships/state, and keyboard/focus behavior for the UI using it. The
-[ClickOutside README](../projects/bulud-ng/clickoutside/README.md) contains import
-and usage examples and the complete input/output contract.
+[ClickOutside section of the consumer guide](../projects/bulud-ng/README.md#clickoutside)
+contains import and usage examples and the complete input/output contract.
 
 ### `bulud-ng/resize-observer`
 

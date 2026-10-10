@@ -601,32 +601,67 @@ not add semantics or ARIA; consumers must provide the appropriate native
 element, accessible name, and keyboard behavior when observing an interactive
 element.
 
-## Click outside
+## ClickOutside
 
-Import the standalone directive and listen to its typed `outside` output:
+Import `BuludClickOutside` and its public event/trigger types from
+`bulud-ng/clickoutside`. The standalone directive's selector is
+`[buludClickOutside]`:
 
 ```ts
 import { Component } from "@angular/core";
-import { BuludClickOutside, type BuludClickOutsideEvent } from "bulud-ng/clickoutside";
+import { BuludClickOutside, type BuludClickOutsideEvent, type BuludClickOutsideTrigger } from "bulud-ng/clickoutside";
 
 @Component({
   imports: [BuludClickOutside],
-  template: ` <div buludClickOutside (outside)="closeMenu($event)">Menu content</div> `,
+  template: ` <div buludClickOutside [triggers]="triggers" (outside)="closeMenu($event)">Menu content</div> `,
 })
 export class Menu {
+  readonly triggers: readonly BuludClickOutsideTrigger[] = ["pointerdown", "focusin"];
+
   closeMenu(event: BuludClickOutsideEvent): void {
     // event.trigger is "pointerdown" or "focusin".
+    // The consumer implements closing and any appropriate focus handling here.
   }
 }
 ```
 
-`BuludClickOutside` has `enabled` (default `true`) and `triggers` inputs. The
-default triggers are `pointerdown` and `focusin`; duplicate trigger names are
-deduplicated. A pointerdown followed by focusin for the same target emits only
-the pointer event. The directive emits only for targets outside its host and
-does not add ARIA, keyboard, focus-management, or close behavior. Consumers
-must provide the host semantics, accessible names, focus handling, and any
-keyboard behavior required by the surrounding interaction.
+| Input      | Type                                  | Default                      | Description                                                |
+| ---------- | ------------------------------------- | ---------------------------- | ---------------------------------------------------------- |
+| `enabled`  | `boolean`                             | `true`                       | Enables outside detection; uses boolean attribute coercion |
+| `triggers` | `readonly BuludClickOutsideTrigger[]` | `['pointerdown', 'focusin']` | Selects the document events that cause notifications       |
+
+`BuludClickOutsideTrigger` is `'pointerdown' | 'focusin'`. The `outside` output
+is created with `output<BuludClickOutsideEvent>()` and emits an event containing
+only readonly `trigger: BuludClickOutsideTrigger`. It does not include the
+original DOM event or target.
+
+Detection is enabled by default for both triggers. Interactions on the host or
+its descendants do not emit. With both triggers enabled, pointerdown followed
+by focusin on the same outside target is coalesced into one event with
+`trigger: 'pointerdown'`. A focusin on a different outside target still emits
+`trigger: 'focusin'`. Duplicate configured triggers are deduplicated. Use
+`[triggers]="['pointerdown']"` or `[triggers]="['focusin']"` for only one
+interaction kind; an empty array listens to neither event.
+
+Setting `[enabled]="false"` removes the outside document listeners. Re-enabling
+installs listeners for the configured triggers; changing `triggers` updates
+the listeners. Destroying the directive removes its listeners. It runs only in
+the browser; during SSR it installs no listeners and emits no fake outside
+events. There is no global configuration token or provider; the inputs configure
+each instance directly.
+
+The directive adds no semantics, focus management, keyboard behavior, or close
+behavior. Consumers own accessible names, roles, ARIA relationships/state, and
+keyboard/focus behavior for the UI using it. Use semantic native elements and
+implement the keyboard pattern required by your UI, including Escape handling,
+focus placement, and focus restoration where appropriate. A `focusin`
+notification reports focus movement; it does not move or trap focus.
+
+Theming is not applicable: the directive has no visual styling, CSS custom
+properties, theme input, or theme contract. Consumers style the host and its
+content. Forms integration is not applicable: it has no form value or validation
+state, implements neither `ControlValueAccessor` nor `Validator`, and adds no
+Forms contract to its host.
 
 ## Textarea autosize
 
