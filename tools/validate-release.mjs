@@ -497,6 +497,32 @@ function validateBuiltStylesheetDependencies(packageJson, declared) {
     );
 }
 
+function emittedJsImportSpecifiers(path) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    readFileSync(path, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS,
+  );
+  const specifiers = [];
+  const visit = (node) => {
+    let specifier;
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
+      specifier = node.moduleSpecifier;
+    else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    )
+      specifier = node.arguments[0];
+    if (specifier && ts.isStringLiteralLike(specifier))
+      specifiers.push(specifier.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return specifiers;
+}
+
 function validateBuiltImportContract(packageJson) {
   const declared = declaredPackageNames(packageJson);
   const unexpected = [];
@@ -504,11 +530,7 @@ function validateBuiltImportContract(packageJson) {
     .flatMap(exportTargets)
     .filter((target) => /\.(?:mjs|cjs|js)$/.test(target))) {
     const path = join(packageRoot, target.replace(/^\.\//, ""));
-    const source = readFileSync(path, "utf8");
-    for (const match of source.matchAll(
-      /\b(?:from\s+|import\s*\(\s*|import\s+)["']([^"']+)["']/g,
-    )) {
-      const specifier = match[1];
+    for (const specifier of emittedJsImportSpecifiers(path)) {
       if (!isExternalPackageSpecifier(specifier)) continue;
       const packageName = packageNameFromSpecifier(specifier);
       if (!declared.has(packageName))
