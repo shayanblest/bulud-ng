@@ -244,16 +244,20 @@ function cssExportTarget(value) {
   return JSON.stringify(stableValue(value));
 }
 
-function sourceCustomPropertyNames(apiRoot) {
-  const names = new Set();
-  for (const path of walkFiles(apiRoot).filter((file) =>
-    /\.(?:css|scss)$/.test(file),
+function sourceCustomPropertyUsage(apiRoot) {
+  const usage = new Map();
+  for (const path of walkFiles(apiRoot).filter(
+    (file) =>
+      /\.(?:css|scss)$/.test(file) &&
+      !/(?:^|[/.])[^/]*\.spec\.[^/]*$/.test(file),
   )) {
     const source = readFileSync(join(apiRoot, path), "utf8");
-    for (const match of source.matchAll(/--bulud-[A-Za-z0-9_-]+/g))
-      names.add(match[0]);
+    const names = new Set(
+      [...source.matchAll(/--bulud-[A-Za-z0-9_-]+/g)].map((match) => match[0]),
+    );
+    if (names.size) usage.set(path, sorted(names));
   }
-  return names;
+  return usage;
 }
 
 function approvedPackageJsEntries() {
@@ -685,22 +689,36 @@ function validateApiBaseline(currentEntries, baseRef) {
           `CSS export changed: ${key} baseline=${cssExportTarget(baselineCssExports.get(key))} current=${cssExportTarget(currentCssExports.get(key))}`,
         );
     }
-    const baselineCustomProperties = sourceCustomPropertyNames(
+    const baselineCustomPropertyUsage = sourceCustomPropertyUsage(
       join(baselineRoot, "projects", "bulud-ng"),
     );
-    const currentCustomProperties = sourceCustomPropertyNames(sourceApiRoot);
-    for (const name of sorted(
-      [...currentCustomProperties].filter(
-        (property) => !baselineCustomProperties.has(property),
-      ),
-    ))
-      differences.push(`CSS custom property added: ${name}`);
-    for (const name of sorted(
-      [...baselineCustomProperties].filter(
-        (property) => !currentCustomProperties.has(property),
-      ),
-    ))
-      differences.push(`CSS custom property removed: ${name}`);
+    const currentCustomPropertyUsage = sourceCustomPropertyUsage(sourceApiRoot);
+    const customPropertySurfaces = sorted(
+      new Set([
+        ...baselineCustomPropertyUsage.keys(),
+        ...currentCustomPropertyUsage.keys(),
+      ]),
+    );
+    for (const surface of customPropertySurfaces) {
+      const baselineProperties = new Set(
+        baselineCustomPropertyUsage.get(surface) ?? [],
+      );
+      const currentProperties = new Set(
+        currentCustomPropertyUsage.get(surface) ?? [],
+      );
+      for (const property of sorted(
+        [...currentProperties].filter((name) => !baselineProperties.has(name)),
+      ))
+        differences.push(
+          `CSS custom property usage added: ${surface}: ${property}`,
+        );
+      for (const property of sorted(
+        [...baselineProperties].filter((name) => !currentProperties.has(name)),
+      ))
+        differences.push(
+          `CSS custom property usage removed: ${surface}: ${property}`,
+        );
+    }
     const currentNames = new Set(currentEntries.keys());
     const baselineNames = new Set(baselineEntries.keys());
     for (const entry of sorted(baselineNames)) {
