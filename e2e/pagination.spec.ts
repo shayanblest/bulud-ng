@@ -174,11 +174,14 @@ test('contains narrow multi-digit pagination overflow and keeps every control re
   ).toBe(true);
 
   const buttons = navigation.getByRole('button');
+  // Use keyboard modality so containment includes the visible focus outline.
+  await page.keyboard.press('Tab');
   for (let index = 0; index < (await buttons.count()); index += 1) {
     const button = buttons.nth(index);
     await button.scrollIntoViewIfNeeded();
     await button.focus();
     await expect(button).toBeFocused();
+    await expect(button).toHaveCSS('outline-width', '3px');
     expect(
       await button.evaluate((element) => {
         const host = element

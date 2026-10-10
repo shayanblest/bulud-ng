@@ -137,6 +137,7 @@ export class BuludTextareaAutosize
   private pointerInvalidationScheduled = false;
   private pendingResizeForValueChange = false;
   private deferredRemeasurementScheduled = false;
+  private lastExternalInlineMeasurementSignature: string | null = null;
   private composing = false;
   private resizeAfterComposition = false;
   private destroyed = false;
@@ -355,6 +356,8 @@ export class BuludTextareaAutosize
     this.ownedOverflowY = nextOverflowY;
     this.ownedOverflowYPriority = 'important';
     this.lastValue = textarea.value;
+    this.lastExternalInlineMeasurementSignature =
+      getInlineExternalMeasurementSignature(textarea.style);
     restoreTextareaInteractionState(textarea, interactionState);
   }
 
@@ -390,11 +393,7 @@ export class BuludTextareaAutosize
       }
 
       if (isResolvingCssMaxHeight(textarea)) {
-        scheduleMicrotask(() => {
-          if (!this.destroyed && this.enabled()) {
-            this.remeasureIfNeeded();
-          }
-        });
+        this.scheduleDeferredRemeasurement();
         return;
       }
 
@@ -454,13 +453,25 @@ export class BuludTextareaAutosize
     }
 
     this.mutationObserver = new MutationObserver((records) => {
+      const relevantRecords = records.filter(
+        (record) =>
+          record.target !== this.element.nativeElement ||
+          record.type !== 'attributes' ||
+          record.attributeName !== 'style' ||
+          this.hasExternalOwnedSizingChange() ||
+          this.lastExternalInlineMeasurementSignature !==
+            getInlineExternalMeasurementSignature(
+              this.element.nativeElement.style,
+            ),
+      );
+      if (relevantRecords.length === 0) return;
       if (!this.destroyed && this.enabled()) {
         const ancestorChainMoved = metricObservationWasMoved(
-          records,
+          relevantRecords,
           this.element.nativeElement,
         );
         const stylesheetMutation = stylesheetMutationMayAffectMeasurement(
-          records,
+          relevantRecords,
           this.document,
           this.element.nativeElement,
         );
@@ -470,7 +481,7 @@ export class BuludTextareaAutosize
         }
         const measurementMayBeAffected =
           mutationMayAffectMeasurement(
-            records,
+            relevantRecords,
             this.element.nativeElement,
             ancestorChainMoved,
           ) || stylesheetMutation;
@@ -481,7 +492,7 @@ export class BuludTextareaAutosize
         }
         if (
           !ancestorChainMoved &&
-          records.some(
+          relevantRecords.some(
             (record) =>
               record.type === 'childList' &&
               record.target === this.document.body,
@@ -494,15 +505,9 @@ export class BuludTextareaAutosize
           this.updateQueryContainerObservation();
         }
         if (measurementMayBeAffected) {
-          if (
-            isResolvingCssMaxHeight(this.element.nativeElement) &&
-            mutationIncludesExternalMeasurementChange(
-              records,
-              this.element.nativeElement,
-            )
-          ) {
+          if (isResolvingCssMaxHeight(this.element.nativeElement)) {
             this.scheduleDeferredRemeasurement();
-          } else if (!isResolvingCssMaxHeight(this.element.nativeElement)) {
+          } else {
             this.remeasureIfNeeded();
           }
         }
@@ -923,7 +928,11 @@ export class BuludTextareaAutosize
     }
 
     for (const child of Array.from(body.children)) {
-      this.mutationObserver.observe(child, { attributes: true });
+      // Observing a target again replaces its options. Keep child-list and
+      // subtree observation on current ancestors so wrapper moves stay visible.
+      if (!this.metricAncestors.includes(child)) {
+        this.mutationObserver.observe(child, { attributes: true });
+      }
     }
   }
 
@@ -1082,18 +1091,14 @@ export class BuludTextareaAutosize
 
     this.deferredRemeasurementScheduled = true;
     const generation = this.pointerInvalidationGeneration;
-    scheduleMicrotask(() => {
-      this.deferredRemeasurementScheduled = false;
+    onCssMaxHeightResolved(this.element.nativeElement, () => {
       if (generation !== this.pointerInvalidationGeneration) {
         return;
       }
 
+      this.deferredRemeasurementScheduled = false;
       if (!this.destroyed && this.enabled()) {
-        if (isResolvingCssMaxHeight(this.element.nativeElement)) {
-          this.scheduleDeferredRemeasurement();
-        } else {
-          this.remeasureIfNeeded();
-        }
+        this.remeasureIfNeeded();
       }
     });
   }
@@ -1740,36 +1745,9 @@ function isElementNode(node: Node | null): node is Element {
   return node?.nodeType === 1;
 }
 
-function mutationIncludesExternalMeasurementChange(
-  records: readonly MutationRecord[],
-  textarea: HTMLTextAreaElement,
-): boolean {
-  return records.some(
-    (record) =>
-      record.target !== textarea ||
-      record.type !== 'attributes' ||
-      record.attributeName !== 'style' ||
-      inlineMeasurementStyleChanged(record, textarea),
-  );
-}
-
-function inlineMeasurementStyleChanged(
-  record: MutationRecord,
-  textarea: HTMLTextAreaElement,
-): boolean {
-  if (record.oldValue === null) {
-    return true;
-  }
-
-  const previousStyle = textarea.ownerDocument.createElement('textarea').style;
-  previousStyle.cssText = record.oldValue;
-  return (
-    getInlineMeasurementSignature(previousStyle) !==
-    getInlineMeasurementSignature(textarea.style)
-  );
-}
-
-function getInlineMeasurementSignature(styles: CSSStyleDeclaration): string {
+function getInlineExternalMeasurementSignature(
+  styles: CSSStyleDeclaration,
+): string {
   return INLINE_MEASUREMENT_PROPERTIES.map(
     (property) =>
       `${property}:${styles.getPropertyValue(property)}:${styles.getPropertyPriority(property)}`,
@@ -2657,7 +2635,9 @@ function resolveCssMaxSize(
     'max-block-size',
   );
   const previousOverflowY = captureInlineStyle(textarea.style, 'overflow-y');
-  resolvingCssMaxHeight.add(textarea);
+  const pendingCompletion = resolvingCssMaxHeight.get(textarea);
+  const completionListeners = pendingCompletion ?? new Set<() => void>();
+  resolvingCssMaxHeight.set(textarea, completionListeners);
 
   try {
     textarea.style.setProperty(
@@ -2704,7 +2684,16 @@ function resolveCssMaxSize(
     restoreInlineStyle(textarea.style, 'max-height', previousMaxHeight);
     restoreInlineStyle(textarea.style, 'max-block-size', previousMaxBlockSize);
     restoreInlineStyle(textarea.style, 'overflow-y', previousOverflowY);
-    scheduleMicrotask(() => resolvingCssMaxHeight.delete(textarea));
+    if (!pendingCompletion) {
+      // Complete after observers have seen the temporary probe writes. Notify
+      // invalidations received during that probe without timers or retries.
+      scheduleMicrotask(() => {
+        resolvingCssMaxHeight.delete(textarea);
+        for (const listener of completionListeners) {
+          listener();
+        }
+      });
+    }
   }
 }
 
@@ -2723,7 +2712,17 @@ function getUntransformedLayoutHeight(
   );
 }
 
-const resolvingCssMaxHeight = new WeakSet<HTMLTextAreaElement>();
+const resolvingCssMaxHeight = new WeakMap<
+  HTMLTextAreaElement,
+  Set<() => void>
+>();
+
+function onCssMaxHeightResolved(
+  textarea: HTMLTextAreaElement,
+  listener: () => void,
+): void {
+  resolvingCssMaxHeight.get(textarea)?.add(listener);
+}
 
 function captureInlineStyle(
   styles: CSSStyleDeclaration,

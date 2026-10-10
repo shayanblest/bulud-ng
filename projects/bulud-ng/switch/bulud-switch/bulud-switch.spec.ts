@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   createEnvironmentInjector,
   EnvironmentInjector,
@@ -64,6 +65,27 @@ class TestHost {
   recordFormCheckedChange(): void {
     this.formCheckedChanges++;
   }
+}
+
+@Component({
+  imports: [BuludSwitch],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <bulud-switch
+      id="outer-invalid"
+      [invalid]="true"
+      [checked]="outerChecked()"
+    >
+      Invalid outer switch
+      <bulud-switch id="nested-valid" [checked]="nestedChecked()">
+        Nested valid switch
+      </bulud-switch>
+    </bulud-switch>
+  `,
+})
+class NestedSwitchHost {
+  readonly outerChecked = signal(true);
+  readonly nestedChecked = signal(false);
 }
 
 const switchThemeTokens = [
@@ -536,23 +558,50 @@ describe('BuludSwitch', () => {
     expect(getInput().disabled).toBeTrue();
   });
 
-  it('keeps the invalid border visible when checked', async () => {
-    const state = fixture.componentInstance;
-    document.body.append(fixture.nativeElement);
-    state.control.setValue(true);
-    state.explicitInvalid.set(true);
-    await fixture.whenStable();
+  it('keeps invalid borders on the current switch without leaking to nested valid switches', async () => {
+    const nestedFixture = TestBed.createComponent(NestedSwitchHost);
+    const state = nestedFixture.componentInstance;
+    document.body.append(nestedFixture.nativeElement);
+    await nestedFixture.whenStable();
 
     try {
-      expect(getInput().checked).toBeTrue();
-      expect(getInput().getAttribute('aria-invalid')).toBe('true');
-      expect(
-        getComputedStyle(
-          getHost().querySelector<HTMLElement>('.bulud-switch__track')!,
-        ).borderTopColor,
-      ).toBe('rgb(220, 38, 38)');
+      const outerHost = (
+        nestedFixture.nativeElement as HTMLElement
+      ).querySelector<HTMLElement>('bulud-switch')!;
+      const outerInput = outerHost.querySelector<HTMLInputElement>('input')!;
+      const outerTrack = outerHost.querySelector<HTMLElement>(
+        '.bulud-switch__track',
+      )!;
+      const nestedHost = outerHost.querySelector<HTMLElement>('bulud-switch')!;
+      const nestedInput = nestedHost.querySelector<HTMLInputElement>('input')!;
+      const nestedTrack = nestedHost.querySelector<HTMLElement>(
+        '.bulud-switch__track',
+      )!;
+      outerTrack.style.transition = 'none';
+      nestedTrack.style.transition = 'none';
+      for (const outerChecked of [true, false]) {
+        state.outerChecked.set(outerChecked);
+        for (const nestedChecked of [false, true]) {
+          state.nestedChecked.set(nestedChecked);
+          await nestedFixture.whenStable();
+          expect(outerInput.checked).toBe(outerChecked);
+          expect(outerInput.getAttribute('aria-invalid')).toBe('true');
+          expect(getComputedStyle(outerTrack).borderTopColor).toBe(
+            'rgb(220, 38, 38)',
+          );
+          expect(nestedInput.getAttribute('aria-invalid')).toBeNull();
+          expect(nestedInput.checked).toBe(nestedChecked);
+          expect(nestedHost.classList).not.toContain(
+            'bulud-switch-host--invalid',
+          );
+          expect(getComputedStyle(nestedTrack).borderTopColor).toBe(
+            nestedChecked ? 'rgb(37, 99, 235)' : 'rgb(203, 213, 225)',
+          );
+        }
+      }
     } finally {
-      fixture.nativeElement.remove();
+      nestedFixture.destroy();
+      nestedFixture.nativeElement.remove();
     }
   });
 

@@ -108,6 +108,11 @@ describe('BuludCheckbox', () => {
     fixture.componentInstance.control.valueChanges.subscribe(() => changes++);
 
     expect(input.id).toBe('terms');
+    const requestedIdElements =
+      fixture.nativeElement.querySelectorAll('[id="terms"]');
+    expect(requestedIdElements.length).toBe(1);
+    expect(requestedIdElements[0]).toBe(input);
+    expect(getHost().getAttribute('id')).toBeNull();
     expect(externalLabel.htmlFor).toBe('terms');
 
     externalLabel.click();

@@ -1,6 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 import { existsSync } from 'node:fs';
 
+const chromiumExecutable = process.env.CI
+  ? undefined
+  : [
+      '/snap/bin/chromium',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium',
+    ].find((path) => existsSync(path));
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,8 +16,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4200',
     trace: 'on-first-retry',
-    ...(existsSync('/snap/bin/chromium')
-      ? { launchOptions: { executablePath: '/snap/bin/chromium' } }
+    ...(chromiumExecutable
+      ? { launchOptions: { executablePath: chromiumExecutable } }
       : {}),
   },
   webServer: {

@@ -8,6 +8,11 @@
     var(--bulud-pagination-focus-width, 3px) +
       var(--bulud-pagination-focus-offset, 2px)
   );
+  // Scroll endpoints can truncate fractional content widths by one CSS pixel.
+  padding-inline: calc(
+    var(--bulud-pagination-focus-width, 3px) +
+      var(--bulud-pagination-focus-offset, 2px) + 1px
+  );
   vertical-align: middle;
 }
 
@@ -47,6 +52,10 @@
   justify-content: center;
   min-block-size: var(--bulud-pagination-size, 2.5rem);
   padding: 0;
+  scroll-margin-inline: calc(
+    var(--bulud-pagination-focus-width, 3px) +
+      var(--bulud-pagination-focus-offset, 2px) + 1px
+  );
   text-align: center;
   transition:
     background-color 120ms ease,
