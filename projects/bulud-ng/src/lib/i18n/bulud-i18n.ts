@@ -41,7 +41,23 @@ export interface BuludPaginationLocale {
   readonly ellipsisLabel: string;
 }
 
+export interface BuludDatepickerLocale {
+  readonly chooseDate: string;
+  readonly placeholder: string;
+  readonly previousMonth: string;
+  readonly nextMonth: string;
+  readonly month: string;
+  readonly year: string;
+  readonly today: string;
+  readonly clear: string;
+  readonly close: string;
+  readonly rangeStart: string;
+  readonly rangeEnd: string;
+  readonly keyboardHelp: string;
+}
+
 export interface BuludLocale {
+  readonly datepicker?: BuludDatepickerLocale;
   readonly language: BuludLanguage;
   readonly direction: BuludDirection;
   readonly dropdown: BuludDropdownLocale;
@@ -54,8 +70,12 @@ export interface BuludLocale {
 }
 
 export type BuludLocaleConfig = Partial<
-  Omit<BuludLocale, 'dropdown' | 'button' | 'badge' | 'pagination'>
+  Omit<
+    BuludLocale,
+    'dropdown' | 'button' | 'badge' | 'pagination' | 'datepicker'
+  >
 > & {
+  readonly datepicker?: Partial<BuludDatepickerLocale>;
   readonly dropdown?: Partial<BuludDropdownLocale>;
   readonly button?: Partial<BuludButtonLocale>;
   readonly badge?: Partial<BuludBadgeLocale>;
@@ -63,6 +83,21 @@ export type BuludLocaleConfig = Partial<
 };
 
 export const BULUD_DEFAULT_LOCALE: BuludLocale = {
+  datepicker: {
+    chooseDate: 'Choose date',
+    placeholder: 'Select a date',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    month: 'Month',
+    year: 'Year',
+    today: 'Today',
+    clear: 'Clear date',
+    close: 'Close calendar',
+    rangeStart: 'Start date',
+    rangeEnd: 'End date',
+    keyboardHelp:
+      'Arrow keys move by day or week. Home and End move within the week. Page Up and Page Down change month; Shift changes year. Escape closes.',
+  },
   language: 'en',
   direction: 'ltr',
   dropdown: {
@@ -92,6 +127,21 @@ export const BULUD_DEFAULT_LOCALE: BuludLocale = {
 };
 
 export const BULUD_PERSIAN_LOCALE: BuludLocale = {
+  datepicker: {
+    chooseDate: 'انتخاب تاریخ',
+    placeholder: 'تاریخ را انتخاب کنید',
+    previousMonth: 'ماه قبل',
+    nextMonth: 'ماه بعد',
+    month: 'ماه',
+    year: 'سال',
+    today: 'امروز',
+    clear: 'پاک کردن تاریخ',
+    close: 'بستن تقویم',
+    rangeStart: 'تاریخ شروع',
+    rangeEnd: 'تاریخ پایان',
+    keyboardHelp:
+      'با کلیدهای جهت میان روزها و هفته‌ها حرکت کنید. Home و End ابتدا و انتهای هفته هستند. Page Up و Page Down ماه و با Shift سال را تغییر می‌دهند. Escape تقویم را می‌بندد.',
+  },
   language: 'fa',
   direction: 'rtl',
   dropdown: {
@@ -146,6 +196,11 @@ export function resolveBuludLocale(
   return {
     ...base,
     ...config,
+    datepicker: {
+      ...BULUD_DEFAULT_LOCALE.datepicker!,
+      ...base.datepicker,
+      ...config.datepicker,
+    },
     dropdown: {
       ...base.dropdown,
       ...config.dropdown,

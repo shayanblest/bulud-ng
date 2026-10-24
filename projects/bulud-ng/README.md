@@ -3,13 +3,28 @@
 Reusable, accessible Angular UI building blocks with standalone APIs and
 tree-shakable feature entry points.
 
+Start with the packaged [quick start](QUICKSTART.md) for a minimal consumer,
+Angour setup, forms and server-rendering notes.
+
 ## Installation
 
+Public npm publication is pending the owner’s package name/account and license decision.
+The library supports Angular 20: the distribution checks exercise 20.3.34 (the minimum patched
+peer version). Compatibility with other Angular major versions has not been verified. Build and install the local package first:
+
 ```bash
-npm install bulud-ng
+# In the library workspace:
+npm run package:local
+# In your Angular application, using the actual absolute path:
+npm install /path/to/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
 ```
 
-Angular packages are peer dependencies. Install a compatible Angular 20
+After public publication, install the chosen registry package with `npm install bulud-ng`
+(or the final scoped name). The private workspace root is never the published artifact.
+The built package has a `prepublishOnly` guard: an owner-selected license and its
+LICENSE file must be included before public publication. No license is assumed.
+
+Angular packages are peer dependencies. Install a compatible Angular 20.3.34+
 version in the consuming application.
 
 Tailwind CSS 4 is optional. Bulud components work without Tailwind.
@@ -26,6 +41,10 @@ its documented secondary entry point:
 | `bulud-ng/badge`             | `BuludBadge`                                         |
 | `bulud-ng/dropdown`          | `BuludDropdown`                                      |
 | `bulud-ng/resize-observer`   | `BuludResizeObserver` and `BuludElementSize`         |
+| `bulud-ng/charts`            | `BuludChart`, line and candlestick data/types        |
+| `bulud-ng/loading-bar`       | `BuludLoadingBar`, `BuludLoadingService`             |
+| `bulud-ng/textarea`          | `BuludTextarea` native styling directive             |
+| `bulud-ng/table`             | `BuludTable`, filters, cells and details             |
 | `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                              |
 | `bulud-ng/digits`            | `BuludPersianDigitsPipe`, `BuludEnglishDigitsPipe`   |
 | `bulud-ng/initials`          | `BuludInitialsPipe`                                  |
@@ -37,10 +56,30 @@ its documented secondary entry point:
 | `bulud-ng/switch`            | `BuludSwitch`                                        |
 | `bulud-ng/dialog`            | `BuludDialog`, `BuludDialogCloseReason`              |
 | `bulud-ng/pagination`        | `BuludPagination`, `BuludPaginationItem`             |
+| `bulud-ng/avatar`            | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/carousel`          | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/chat`              | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/countdown`         | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/confirm`           | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/datepicker`        | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/empty-state`       | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/feedback`          | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/field-label`       | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/file-upload`       | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/otp`               | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/period-picker`     | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/query`             | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/rating`            | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/radio`             | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/skeleton`          | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/stepper`           | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/tooltip`           | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/utilities`         | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/validators`        | See [SHARED.md](SHARED.md) for API and examples      |
 
 Do not import from library source paths or component implementation files. See
-the repository's [`docs/PUBLIC-API.md`](../../docs/PUBLIC-API.md) for the
-complete export contract.
+the packaged [`SHARED.md`](SHARED.md) for additional shared APIs. The full
+export inventory is also available at `docs/PUBLIC-API.md` in the source workspace.
 
 ## Application theme configuration
 
@@ -96,6 +135,57 @@ therefore inherit one application-wide theme without per-component providers.
 Theme configuration supports `colors`, `shape`, `button`, `dropdown`, `badge`,
 `tabs`, `accordion`, `checkbox`, `switch`, and `dialog` tokens. The precedence is instance custom property,
 component token, global provider configuration, then the library default.
+
+## Angour application preset
+
+Angour's navy/gold light and dark design system is available through explicit
+`bulud-ng/angour.css` and optional `bulud-ng/angour-base.css` imports. Activate
+it with `data-bulud-preset="angour"` on your document root or a subtree; switch
+`data-theme="light"` / `data-theme="dark"` in the consuming application.
+The preset includes shared spacing, typography, radii, shadows and colors for
+all Bulud components. No Bootstrap or application services are required.
+
+```css
+@import "bulud-ng/theme.css";
+@import "bulud-ng/angour.css";
+@import "bulud-ng/angour-base.css";
+```
+
+```html
+<section class="bulud-app" lang="fa" dir="rtl" data-bulud-preset="angour" data-theme="dark">
+  <bulud-button>ذخیره</bulud-button>
+</section>
+```
+
+Typed presets `BULUD_ANGOUR_LIGHT_THEME`, `BULUD_ANGOUR_DARK_THEME` and
+`BULUD_ANGOUR_TOKENS` are exported from `bulud-ng`. See
+the source workspace’s `docs/ANGOUR.md` for setup, overrides, font ownership,
+accessibility and the demo at `/#angour`.
+
+## Angour form controls
+
+`bulud-ng/radio` exports `BuludRadioGroup` and `BuludRadio` with native grouping,
+keyboard interaction and Angular Forms integration. `bulud-ng/datepicker`
+exports `BuludDatepicker` with Persian/Gregorian display, ISO date-only values,
+single/range selection, min/max limits, keyboard navigation and Forms support.
+The Angour preset provides the original 16px checkbox and 16px/8px radio geometry,
+plus light/dark calendar styling. Preview at `/#angour-controls`.
+
+```ts
+import { BuludRadio, BuludRadioGroup } from "bulud-ng/radio";
+import { BuludDatepicker } from "bulud-ng/datepicker";
+```
+
+```html
+<bulud-radio-group aria-label="Plan" [(value)]="plan">
+  <bulud-radio value="basic">Basic</bulud-radio>
+  <bulud-radio value="pro">Pro</bulud-radio>
+</bulud-radio-group>
+<bulud-datepicker language="fa" calendar="persian" aria-label="تاریخ" [(value)]="date" />
+```
+
+See the source workspace’s `docs/FORM-CONTROLS.md` for all inputs,
+outputs, defaults, theme/locale configuration and accessibility responsibilities.
 
 ## Accordion
 
@@ -1029,6 +1119,19 @@ exports inferred resolver and injection results to catch inaccessible public typ
 
 ## Button
 
+The Angour preset uses ITB primary and secondary brand fills, gray disabled
+states and a subtle pressed halo. Badges remain compact informational labels
+(20/24/28px), rather than adopting button geometry.
+
+Additional optional `button` theme fields are `secondaryBackground`,
+`secondaryBackgroundHover`, `secondaryBackgroundActive`, `secondaryBorder`,
+`secondaryForeground`, `ghostForeground`, `disabledBackground`,
+`disabledForeground`, `activeShadow` and `dangerActiveShadow`. They map to
+kebab-case `--bulud-button-*` CSS variables. Omitted values preserve legacy
+fallbacks; explicit provider overrides work in both themes, scoped variables
+can replace them on an ancestor, and per-host inline variables take priority.
+No new keyboard interactions are introduced.
+
 Import the standalone component from its public secondary entry point:
 
 ```ts
@@ -1162,3 +1265,87 @@ typed theme → library default. Existing CSS overrides continue to work.
 The component uses `OnPush` change detection, signal inputs, no subscriptions,
 and no browser-global APIs. It is compatible with server rendering and
 zoneless Angular applications.
+
+## Angour application foundation and reusable validators
+
+The workspace includes an independent `base` application using the Angour preset
+globally, persistent language/theme preferences and a lazy validated form route.
+Run `npm run ng -- serve base --port 4310` or build with `npm run ng -- build base`.
+Import reusable pure validators from `bulud-ng/validators`: `buludRequiredText`,
+`buludFiniteNumber`, `buludHttpUrl`, `buludIsoDate`, and `buludMatchFields`.
+See the source workspace’s `docs/BASE.md` for examples, error contracts,
+Dropdown/Radio validation inputs and production measurements.
+
+Reusable Angour tables, URL/list query tools, OTP, file selection, feedback and other shared components are documented in [SHARED.md](SHARED.md) (included in the npm package). Import their dedicated secondary entry points, such as `bulud-ng/table` and `bulud-ng/query`; no backend configuration is embedded in the package.
+
+## Component catalog and installation
+
+In the source workspace, run `npm start` and open http://127.0.0.1:4314/components. Import individual secondary entry points for tree shaking. The packaged [shared API guide](SHARED.md) includes current installation steps, all shared APIs and new period picker, avatar, empty state, donut/progress components. Public registry publication is pending the owner's package and license decision.
+
+See the current component catalog / chat / label / display-pipe contracts in [SHARED.md](SHARED.md).
+
+### Angour theme switch and upload status
+
+`BuludSwitch` accepts `appearance="theme"` for the Angour sun/moon track with a
+white thumb. Its native role, Space key and Forms behavior are unchanged;
+`checked=true` represents dark mode. Supply `aria-label` when no text is projected.
+The application owns theme persistence and the document theme attribute:
+
+```html
+<bulud-switch appearance="theme" aria-label="Toggle theme" [checked]="dark()" (checkedChange)="dark.set($event)" />
+```
+
+Theme appearance has component geometry defaults of 54x22px and a 24px thumb;
+existing `--bulud-switch-*` properties can override them on the component host.
+It uses the Angour neutral track, inherited focus and shadow tokens and preserves
+physical left/right thumb positions in both text directions.
+
+File upload reports pending/completed status once, next to its icon and a compact
+native progress bar. Success hides the duplicate upload action until the selection
+changes; remove/clear/select restores it. Status classes are component-specific
+so application `.success`/`.error` styles do not add borders to these messages.
+
+### Angour skeleton and alerts
+
+Import only the entry you use: `bulud-ng/skeleton`, `bulud-ng/feedback` or
+`bulud-ng/confirm`. All support the shared typed theme precedence and Angour
+light/dark CSS tokens; there are no additional runtime dependencies.
+
+```ts
+import { BuludSkeleton } from "bulud-ng/skeleton";
+import { BuludAlert } from "bulud-ng/feedback";
+import { BuludConfirm } from "bulud-ng/confirm";
+```
+
+```html
+<section aria-busy="true">
+  <bulud-skeleton shape="card" [lines]="3" announce label="Loading content" />
+</section>
+<bulud-alert kind="success" title="Saved" dismissible dismissLabel="Dismiss" (dismissed)="visible.set(false)">Your changes were saved.</bulud-alert>
+<bulud-confirm [open]="open()" (openChange)="open.set($event)" title="Delete item?" kind="rejection" [processing]="saving()" (confirmed)="deleteItem()" confirmLabel="Delete" cancelLabel="Cancel" />
+```
+
+Skeleton shapes: `line`, `circle`, `thumbnail`, `card`. `lines` is bounded to
+1–12 (nonfinite values fall back to 3). `animated=false` stops shimmer; reduced
+motion and forced colors also disable it. Skeletons are decorative unless
+`announce=true`; use one localized loading announcement and mark the actual
+content region `aria-busy`. Geometry has scoped CSS variables such as
+`--bulud-skeleton-card-height` and `--bulud-skeleton-line-height`.
+
+Alert kinds: `primary`, `secondary`, `success`, `info`, `warning`, `danger`,
+`neutral`, `light`, `dark`. Optional `title`, `showIcon`, `dismissible`,
+`dismissLabel`, `announce` and `theme`. Project actions with `buludAlertActions`.
+The consumer handles removal on `dismissed`; danger is assertive and other
+kinds are polite. Set `announce=false` in static examples or when another live
+region already announces the message. Content is projected as safe Angular
+content; strings are never injected as HTML.
+
+Confirmation kinds: `creation`, `confirmation`, `rejection`. Required `title`,
+optional `message`, localized `confirmLabel`, `cancelLabel`, `processingLabel`,
+`theme`, `confirmed` and `cancelled`. It reuses the accessible native dialog and
+button, traps focus and restores it to the trigger. Escape cancels while idle;
+backdrop clicks never confirm. `processing=true` disables repeated actions and
+Escape. The consumer must clear processing on failure or close after success;
+`confirmed` deliberately does not auto-close. Project custom content normally.
+Demos, examples and APIs: `/components/skeleton`, `/components/alert`,
+`/components/confirm`.

@@ -181,6 +181,28 @@ describe('BuludPagination', () => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
+  it('shows every page through five and bounded ellipses from six, retaining first/last/current', async () => {
+    for (const count of [5, 6, 7, 10, 1000000]) {
+      fixture.componentInstance.count.set(count);
+      for (const page of [1, 3, Math.ceil(count / 2), count]) {
+        fixture.componentInstance.page.set(page);
+        await fixture.whenStable();
+        const labels = [
+          ...fixture.nativeElement.querySelectorAll('.bulud-pagination__page'),
+        ].map((b: Element) => Number(b.textContent?.trim()));
+        expect(labels.length).toBeLessThanOrEqual(5);
+        expect(labels).toContain(1);
+        expect(labels).toContain(count);
+        expect(labels).toContain(page);
+        expect(new Set(labels).size).toBe(labels.length);
+        expect(
+          fixture.nativeElement.querySelectorAll('.bulud-pagination__ellipsis')
+            .length > 0,
+        ).toBe(count > 5);
+      }
+    }
+  });
+
   it('accepts only positive safe-integer page counts', async () => {
     const safeMaximum = Number.MAX_SAFE_INTEGER;
     fixture.componentInstance.count.set(safeMaximum);
@@ -193,7 +215,6 @@ describe('BuludPagination', () => {
     ].map((button: Element) => Number(button.textContent?.trim()));
     expect(safeLabels).toEqual([
       1,
-      safeMaximum - 4,
       safeMaximum - 3,
       safeMaximum - 2,
       safeMaximum - 1,
@@ -445,6 +466,8 @@ describe('BuludPagination', () => {
     state.outerDirection.set('rtl');
     state.nearestDirection.set('ltr');
     await fixture.whenStable();
+    expect(getComputedStyle(icon()).direction).toBe('ltr');
+    expect(getComputedStyle(icon()).unicodeBidi).toBe('isolate');
     expect(getComputedStyle(icon()).transform).toBe('none');
 
     state.nearestDirection.set('rtl');
@@ -461,6 +484,8 @@ describe('BuludPagination', () => {
 
     state.nearestDirection.set('ltr');
     await fixture.whenStable();
+    expect(getComputedStyle(icon()).direction).toBe('ltr');
+    expect(getComputedStyle(icon()).unicodeBidi).toBe('isolate');
     expect(getComputedStyle(icon()).transform).toBe('none');
   });
 

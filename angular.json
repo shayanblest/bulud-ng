@@ -39,9 +39,33 @@
               "../tabs/**/*.spec.ts",
               "../accordion/**/*.spec.ts",
               "../checkbox/**/*.spec.ts",
+              "../radio/**/*.spec.ts",
+              "../datepicker/**/*.spec.ts",
               "../switch/**/*.spec.ts",
               "../dialog/**/*.spec.ts",
-              "../pagination/**/*.spec.ts"
+              "../pagination/**/*.spec.ts",
+              "../validators/**/*.spec.ts",
+              "../query/**/*.spec.ts",
+              "../table/**/*.spec.ts",
+              "../otp/**/*.spec.ts",
+              "../file-upload/**/*.spec.ts",
+              "../tooltip/**/*.spec.ts",
+              "../feedback/**/*.spec.ts",
+              "../rating/**/*.spec.ts",
+              "../stepper/**/*.spec.ts",
+              "../carousel/**/*.spec.ts",
+              "../countdown/**/*.spec.ts",
+              "../utilities/**/*.spec.ts",
+              "../textarea/**/*.spec.ts",
+              "../loading-bar/**/*.spec.ts",
+              "../charts/**/*.spec.ts",
+              "../avatar/**/*.spec.ts",
+              "../empty-state/**/*.spec.ts",
+              "../period-picker/**/*.spec.ts",
+              "../chat/**/*.spec.ts",
+              "../field-label/**/*.spec.ts",
+              "../skeleton/**/*.spec.ts",
+              "../confirm/**/*.spec.ts"
             ]
           }
         }
@@ -142,6 +166,57 @@
               }
             ],
             "styles": ["projects/demo/src/styles.css"]
+          }
+        }
+      }
+    },
+    "base": {
+      "projectType": "application",
+      "root": "projects/base",
+      "sourceRoot": "projects/base/src",
+      "prefix": "base",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/base/src/main.ts",
+            "index": "projects/base/src/index.html",
+            "tsConfig": "projects/base/tsconfig.app.json",
+            "styles": ["projects/base/src/styles.css"],
+            "outputPath": "dist/base"
+          },
+          "configurations": {
+            "production": {
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "300kB",
+                  "maximumError": "350kB"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "base:build:production"
+            },
+            "development": {
+              "buildTarget": "base:build:development"
+            }
+          },
+          "defaultConfiguration": "development",
+          "options": {
+            "proxyConfig": "projects/base/proxy.conf.json"
           }
         }
       }

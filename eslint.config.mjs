@@ -13,7 +13,13 @@ export default tseslint.config(
     ],
   },
   {
-    files: ["projects/**/*.ts", "e2e/**/*.ts", "playwright.config.ts"],
+    files: [
+      "projects/**/*.ts",
+      "e2e/**/*.ts",
+      "playwright.config.ts",
+      "e2e-performance/**/*.ts",
+      "playwright.performance.config.ts",
+    ],
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.recommended,

@@ -1,0 +1,64 @@
+:host {
+  display: block;
+  max-inline-size: 100%;
+}
+.lines {
+  display: grid;
+  gap: var(--bulud-skeleton-gap, var(--bulud-spacing-2, 8px));
+}
+.block {
+  background: linear-gradient(
+    90deg,
+    var(--bulud-skeleton-background, var(--bulud-color-border, #cbd5e1)) 25%,
+    var(--bulud-skeleton-muted, var(--bulud-color-subtle, #f1f5f9)) 50%,
+    var(--bulud-skeleton-background, var(--bulud-color-border, #cbd5e1)) 75%
+  );
+  background-size: 200% 100%;
+  animation: bulud-skeleton-shimmer var(--bulud-skeleton-duration, 1.4s)
+    ease-in-out infinite;
+  border-radius: var(--bulud-skeleton-radius, 4px);
+}
+.line {
+  display: block;
+  block-size: var(--bulud-skeleton-line-height, 20px);
+  inline-size: 100%;
+}
+.short {
+  inline-size: var(--bulud-skeleton-last-width, 70%);
+}
+.thumb {
+  inline-size: var(--bulud-skeleton-thumb-width, 50px);
+  block-size: var(--bulud-skeleton-thumb-height, 40px);
+}
+.circle {
+  block-size: var(--bulud-skeleton-thumb-width, 50px);
+  border-radius: 50%;
+}
+.media {
+  inline-size: 100%;
+  block-size: var(--bulud-skeleton-card-height, 156px);
+  margin-block-end: var(--bulud-skeleton-gap, 12px);
+}
+.still .block {
+  animation: none;
+}
+@keyframes bulud-skeleton-shimmer {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .block {
+    animation: none;
+  }
+}
+@media (forced-colors: active) {
+  .block {
+    background: Canvas;
+    border: 1px solid GrayText;
+    animation: none;
+  }
+}

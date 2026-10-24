@@ -1,0 +1,52 @@
+:host {
+  display: block;
+  color: var(--bulud-countdown-foreground, var(--bulud-color-on-surface));
+}
+.surface {
+  background: var(--bulud-countdown-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-countdown-border, var(--bulud-color-border));
+  border-radius: var(
+    --bulud-countdown-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  padding: var(--bulud-countdown-padding, var(--bulud-spacing-4, 16px));
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  background: var(--bulud-countdown-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-countdown-border, var(--bulud-color-border));
+  border-radius: var(
+    --bulud-countdown-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  padding: var(--bulud-spacing-2, 8px) var(--bulud-spacing-3, 12px);
+}
+button:hover:not(:disabled) {
+  background: var(--bulud-color-surface-hover);
+}
+:where(button, input, select):focus-visible {
+  outline: 2px solid var(--bulud-countdown-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+:disabled {
+  opacity: var(--bulud-countdown-disabled-opacity, 0.5);
+  cursor: default;
+}
+.muted {
+  color: var(--bulud-countdown-muted, var(--bulud-color-muted));
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bulud-countdown-gap, var(--bulud-spacing-3, 12px));
+}
+.error {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}

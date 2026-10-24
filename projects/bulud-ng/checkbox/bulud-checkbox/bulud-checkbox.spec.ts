@@ -169,7 +169,7 @@ describe('BuludCheckbox', () => {
     expect(state.control.errors).toEqual({ required: true });
 
     getInput().focus();
-    getInput().blur();
+    getInput().dispatchEvent(new FocusEvent('blur'));
     await fixture.whenStable();
     expect(state.control.touched).toBeTrue();
 

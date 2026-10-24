@@ -1486,6 +1486,11 @@ test.describe('Bulud component demo', () => {
     await metricsStyle.evaluate((element) => element.remove());
 
     await page.locator('#textarea-autosize-long').click();
+    await expect
+      .poll(() =>
+        textarea.evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThan(initialHeight);
     const longHeight = await textarea.evaluate(
       (element) => element.getBoundingClientRect().height,
     );

@@ -23,7 +23,12 @@
     "validate:deps": "node tools/validate-release.mjs deps",
     "validate:package": "node tools/validate-release.mjs package",
     "validate:smoke": "node tools/validate-release.mjs smoke",
-    "validate:release": "node tools/validate-release.mjs release"
+    "validate:release": "node tools/validate-release.mjs release",
+    "start": "node tools/serve-base.mjs --build --port 4314 --demo-uploads",
+    "build:base": "ng build base",
+    "dev": "ng serve base --port 4310",
+    "package:local": "npm run build && mkdir -p dist/packages && npm pack ./dist/bulud-ng --pack-destination dist/packages --cache /tmp/bulud-npm-pack-cache",
+    "validate:tree-shaking": "node tools/verify-tree-shaking.mjs"
   },
   "prettier": {
     "overrides": [
@@ -37,19 +42,19 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "^20.3.0",
-    "@angular/compiler": "^20.3.0",
-    "@angular/core": "^20.3.0",
-    "@angular/forms": "^20.3.0",
-    "@angular/platform-browser": "^20.3.0",
-    "@angular/router": "^20.3.0",
+    "@angular/common": "^20.3.34",
+    "@angular/compiler": "^20.3.34",
+    "@angular/core": "^20.3.34",
+    "@angular/forms": "^20.3.34",
+    "@angular/platform-browser": "^20.3.34",
+    "@angular/router": "^20.3.34",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular/build": "^20.3.1",
     "@angular/cli": "^20.3.1",
-    "@angular/compiler-cli": "^20.3.0",
+    "@angular/compiler-cli": "^20.3.34",
     "@eslint/js": "10.0.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/cli": "^4.3.3",
@@ -69,5 +74,6 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2",
     "typescript-eslint": "8.70.0"
-  }
+  },
+  "packageManager": "npm@10.9.8"
 }

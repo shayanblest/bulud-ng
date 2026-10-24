@@ -1,0 +1,44 @@
+section {
+  text-align: center;
+  color: var(--bulud-confirm-foreground, var(--bulud-color-on-surface));
+  background: var(--bulud-confirm-background, var(--bulud-color-surface));
+  border-radius: var(--bulud-confirm-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-confirm-padding, 16px);
+}
+.icon {
+  inline-size: var(--bulud-confirm-icon-size, 48px);
+  block-size: var(--bulud-confirm-icon-size, 48px);
+  fill: none;
+  stroke: var(--bulud-confirm-accent, var(--bulud-color-primary));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+[data-kind="creation"] .icon {
+  stroke: var(--bulud-confirm-accent, var(--bulud-color-success));
+}
+[data-kind="rejection"] .icon {
+  stroke: var(
+    --bulud-confirm-accent,
+    var(--bulud-color-danger-text, var(--bulud-color-danger))
+  );
+}
+h2 {
+  font: inherit;
+  font-size: var(--bulud-font-size-4, 18px);
+  font-weight: 600;
+  margin-block: var(--bulud-confirm-gap, 12px);
+  overflow-wrap: anywhere;
+}
+p {
+  margin-block: var(--bulud-confirm-gap, 12px);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--bulud-confirm-gap, 16px);
+  margin-block-start: var(--bulud-spacing-5, 24px);
+}

@@ -1,4 +1,11 @@
 import {
+  BuludRadioTheme,
+  BuludDatepickerTheme,
+  FORM_CONTROL_THEME_DEFAULTS,
+  FORM_CONTROL_GEOMETRY,
+  formThemeVariables,
+} from './form-control-themes';
+import {
   DOCUMENT,
   EnvironmentProviders,
   InjectionToken,
@@ -41,6 +48,17 @@ export interface BuludButtonSizeTheme {
 
 /** Button-specific tokens that are not general color or shape decisions. */
 export interface BuludButtonTheme {
+  readonly secondaryBackground?: string;
+  readonly secondaryBackgroundHover?: string;
+  readonly secondaryBackgroundActive?: string;
+  readonly secondaryBorder?: string;
+  readonly secondaryForeground?: string;
+  readonly ghostForeground?: string;
+  readonly disabledBackground?: string;
+  readonly disabledForeground?: string;
+  readonly activeShadow?: string;
+  readonly dangerActiveShadow?: string;
+
   readonly borderWidth?: string;
   readonly focusWidth?: string;
   readonly focusOffset?: string;
@@ -231,6 +249,8 @@ export interface BuludPaginationTheme {
 
 /** Consumer theme; omitted optional tokens use library defaults. */
 export interface BuludTheme {
+  readonly radio?: BuludRadioTheme;
+  readonly datepicker?: BuludDatepickerTheme;
   readonly colors: BuludColorTheme;
   readonly shape: BuludShapeTheme;
   readonly button: BuludButtonTheme;
@@ -253,6 +273,8 @@ export interface ResolvedBuludTheme extends Omit<
   BuludTheme,
   'checkbox' | 'switch'
 > {
+  readonly radio: BuludRadioTheme;
+  readonly datepicker: BuludDatepickerTheme;
   readonly dropdown: Required<BuludDropdownTheme>;
   readonly button: Required<BuludButtonTheme>;
   readonly badge: Required<BuludBadgeTheme>;
@@ -264,6 +286,8 @@ export interface ResolvedBuludTheme extends Omit<
 
 /** Consumer overrides accepted by {@link provideBuludTheme}. */
 export interface BuludThemeConfig {
+  readonly radio?: Partial<BuludRadioTheme>;
+  readonly datepicker?: Partial<BuludDatepickerTheme>;
   readonly colors?: Partial<BuludColorTheme>;
   readonly shape?: Partial<BuludShapeTheme>;
   readonly button?: Partial<
@@ -388,6 +412,7 @@ const BULUD_PAGINATION_THEME_VARIABLES = {
 
 /** Concrete defaults retained internally for theme resolution. */
 const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
+  ...FORM_CONTROL_THEME_DEFAULTS,
   colors: {
     primary: '#2563eb',
     primaryHover: '#1d4ed8',
@@ -409,6 +434,16 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     controlRadius: '0.5rem',
   },
   button: {
+    secondaryBackground: 'var(--bulud-color-surface, #ffffff)',
+    secondaryBackgroundHover: 'var(--bulud-color-surface-hover, #f8fafc)',
+    secondaryBackgroundActive: 'var(--bulud-color-surface-active, #f1f5f9)',
+    secondaryBorder: 'var(--bulud-color-border, #cbd5e1)',
+    secondaryForeground: 'var(--bulud-color-on-surface, #0f172a)',
+    ghostForeground: 'var(--bulud-color-on-surface, #0f172a)',
+    disabledBackground: 'var(--_background)',
+    disabledForeground: 'var(--_foreground)',
+    activeShadow: 'none',
+    dangerActiveShadow: 'var(--bulud-button-active-shadow, none)',
     borderWidth: '1px',
     focusWidth: '3px',
     focusOffset: '2px',
@@ -666,6 +701,8 @@ export function resolveBuludTheme(
     RESOLVED_DEFAULT_THEME.dropdown.invalidBorder;
 
   return {
+    radio: { ...RESOLVED_DEFAULT_THEME.radio, ...config.radio },
+    datepicker: { ...RESOLVED_DEFAULT_THEME.datepicker, ...config.datepicker },
     colors: {
       ...BULUD_DEFAULT_THEME.colors,
       ...config.colors,
@@ -677,6 +714,36 @@ export function resolveBuludTheme(
     button: {
       ...BULUD_DEFAULT_THEME.button,
       ...config.button,
+      secondaryBackground:
+        config.button?.secondaryBackground ??
+        RESOLVED_DEFAULT_THEME.button.secondaryBackground,
+      secondaryBackgroundHover:
+        config.button?.secondaryBackgroundHover ??
+        RESOLVED_DEFAULT_THEME.button.secondaryBackgroundHover,
+      secondaryBackgroundActive:
+        config.button?.secondaryBackgroundActive ??
+        RESOLVED_DEFAULT_THEME.button.secondaryBackgroundActive,
+      secondaryBorder:
+        config.button?.secondaryBorder ??
+        RESOLVED_DEFAULT_THEME.button.secondaryBorder,
+      secondaryForeground:
+        config.button?.secondaryForeground ??
+        RESOLVED_DEFAULT_THEME.button.secondaryForeground,
+      ghostForeground:
+        config.button?.ghostForeground ??
+        RESOLVED_DEFAULT_THEME.button.ghostForeground,
+      disabledBackground:
+        config.button?.disabledBackground ??
+        RESOLVED_DEFAULT_THEME.button.disabledBackground,
+      disabledForeground:
+        config.button?.disabledForeground ??
+        RESOLVED_DEFAULT_THEME.button.disabledForeground,
+      activeShadow:
+        config.button?.activeShadow ??
+        RESOLVED_DEFAULT_THEME.button.activeShadow,
+      dangerActiveShadow:
+        config.button?.dangerActiveShadow ??
+        RESOLVED_DEFAULT_THEME.button.dangerActiveShadow,
       borderWidth:
         config.button?.borderWidth ?? RESOLVED_DEFAULT_THEME.button.borderWidth,
       focusWidth:
@@ -810,6 +877,8 @@ export function createBuludThemeVariables(
   const theme = resolveBuludTheme(config);
 
   return {
+    ...formThemeVariables('radio', theme.radio),
+    ...formThemeVariables('datepicker', theme.datepicker),
     '--bulud-color-primary': theme.colors.primary,
     '--bulud-color-primary-hover': theme.colors.primaryHover,
     '--bulud-color-primary-active': theme.colors.primaryActive,
@@ -832,6 +901,19 @@ export function createBuludThemeVariables(
     '--bulud-button-ghost-background': theme.button.ghostBackground,
     '--bulud-button-disabled-opacity': theme.button.disabledOpacity,
     '--bulud-button-font-weight': theme.button.fontWeight,
+    '--bulud-button-secondary-background': theme.button.secondaryBackground,
+    '--bulud-button-secondary-background-hover':
+      theme.button.secondaryBackgroundHover,
+    '--bulud-button-secondary-background-active':
+      theme.button.secondaryBackgroundActive,
+    '--bulud-button-secondary-border': theme.button.secondaryBorder,
+    '--bulud-button-secondary-foreground': theme.button.secondaryForeground,
+    '--bulud-button-ghost-foreground': theme.button.ghostForeground,
+    '--bulud-button-disabled-background': theme.button.disabledBackground,
+    '--bulud-button-disabled-foreground': theme.button.disabledForeground,
+    '--bulud-button-active-shadow': theme.button.activeShadow,
+    '--bulud-button-danger-active-shadow': theme.button.dangerActiveShadow,
+
     '--bulud-button-gap': theme.button.gap,
     '--bulud-button-height-small': theme.button.small.height,
     '--bulud-button-font-size-small': theme.button.small.fontSize,
@@ -1005,7 +1087,19 @@ function createBuludThemeCss(
   const declarations = (entries: readonly (readonly [string, string])[]) =>
     entries.map(([property, value]) => `  ${property}: ${value};`).join('\n');
 
+  const isFormVariable = (property: string) =>
+    property.startsWith('--bulud-radio-') ||
+    property.startsWith('--bulud-datepicker-');
+  const isFormGeometry = (property: string) =>
+    isFormVariable(property) &&
+    FORM_CONTROL_GEOMETRY.has(
+      property.replace(/^--bulud-(radio|datepicker)-/, ''),
+    );
   const entries = Object.entries(variables);
+  const formGeometry = entries.filter(([property]) => isFormGeometry(property));
+  const formDarkVariables = entries.filter(
+    ([property]) => isFormVariable(property) && !isFormGeometry(property),
+  );
   const badgeGeometry = entries.filter(([property]) =>
     BULUD_BADGE_GEOMETRY_VARIABLES.has(property),
   );
@@ -1023,6 +1117,7 @@ function createBuludThemeCss(
   );
   const lightModeVariables = entries.filter(
     ([property]) =>
+      !isFormGeometry(property) &&
       !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property) &&
@@ -1033,6 +1128,20 @@ function createBuludThemeCss(
     ([property]) =>
       property.startsWith('--bulud-switch-') &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
+  );
+  const buttonDarkModeVariables = entries.filter(([property]) =>
+    [
+      '--bulud-button-secondary-background',
+      '--bulud-button-secondary-background-hover',
+      '--bulud-button-secondary-background-active',
+      '--bulud-button-secondary-border',
+      '--bulud-button-secondary-foreground',
+      '--bulud-button-ghost-foreground',
+      '--bulud-button-disabled-background',
+      '--bulud-button-disabled-foreground',
+      '--bulud-button-active-shadow',
+      '--bulud-button-danger-active-shadow',
+    ].includes(property),
   );
   const dropdownDarkModeVariables = entries.filter(
     ([property]) => property === '--bulud-dropdown-invalid-border',
@@ -1048,7 +1157,7 @@ function createBuludThemeCss(
       !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations([...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...dropdownDarkModeVariables, ...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...formGeometry, ...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...formDarkVariables, ...buttonDarkModeVariables, ...dropdownDarkModeVariables, ...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
 }
 
 /**
@@ -1071,6 +1180,14 @@ export function provideBuludTheme(
   const theme = resolveBuludTheme(config);
   const variables = { ...createBuludThemeVariables(theme) };
 
+  for (const prefix of ['radio', 'datepicker'] as const) {
+    const allowed = formThemeVariables(prefix, config[prefix] ?? {});
+    for (const variable of Object.keys(variables) as BuludThemeCssVariable[]) {
+      if (variable.startsWith(`--bulud-${prefix}-`) && !(variable in allowed))
+        delete variables[variable];
+    }
+  }
+
   // Omitted optional tokens must remain CSS fallbacks, not high-specificity
   // provider declarations that override consumer :root rules.
   if (config.dropdown?.invalidBorder === undefined) {
@@ -1082,6 +1199,16 @@ export function provideBuludTheme(
     ['focusWidth', '--bulud-button-focus-width'],
     ['focusOffset', '--bulud-button-focus-offset'],
     ['ghostBackground', '--bulud-button-ghost-background'],
+    ['secondaryBackground', '--bulud-button-secondary-background'],
+    ['secondaryBackgroundHover', '--bulud-button-secondary-background-hover'],
+    ['secondaryBackgroundActive', '--bulud-button-secondary-background-active'],
+    ['secondaryBorder', '--bulud-button-secondary-border'],
+    ['secondaryForeground', '--bulud-button-secondary-foreground'],
+    ['ghostForeground', '--bulud-button-ghost-foreground'],
+    ['disabledBackground', '--bulud-button-disabled-background'],
+    ['disabledForeground', '--bulud-button-disabled-foreground'],
+    ['activeShadow', '--bulud-button-active-shadow'],
+    ['dangerActiveShadow', '--bulud-button-danger-active-shadow'],
   ] as const) {
     if (config.button?.[field] === undefined) {
       delete variables[variable];

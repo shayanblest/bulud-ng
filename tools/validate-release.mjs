@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import {
+  globSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -12,6 +13,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import { documentedIdentifiers } from "./public-api-docs.mjs";
 import {
   customPropertyUsageChanges,
   sourceCustomPropertyUsage,
@@ -192,14 +194,6 @@ function baseRevisionDirectory(baseRef) {
       `could not materialize isolated API baseline ${baseRef}: ${error instanceof Error ? error.message : error}`,
     );
   }
-}
-
-function documentedIdentifiers(text) {
-  return new Set(
-    text.match(
-      /\b(?:Bulud[A-Za-z0-9_$]*|[A-Za-z_$][A-Za-z0-9_$]*Bulud[A-Za-z0-9_$]*|BULUD[A-Za-z0-9_$]*)\b/g,
-    ) ?? [],
-  );
 }
 
 function documentationSection(text, entry) {
@@ -1017,6 +1011,7 @@ function validateApi() {
     }
     const documentedNames = documentedIdentifiers(
       documentationSection(docs, entry),
+      sourceNames,
     );
     undocumentedSymbols.push(
       ...[...sourceNames]
@@ -1240,9 +1235,13 @@ function validatePackage() {
   const sourceManifest = readJson(sourcePackagePath);
   validateBuiltSideEffects(sourceManifest, packageJson);
   const assetPaths = new Set(
-    (source.assets ?? []).map((asset) =>
-      typeof asset === "string" ? asset : asset.destination,
-    ),
+    (source.assets ?? []).flatMap((asset) => {
+      if (typeof asset !== "string") return [asset.destination];
+      if (!/[?*{[]/.test(asset)) return [asset];
+      return globSync(asset, { cwd: dirname(sourcePackagePath) }).filter(
+        (name) => statSync(join(dirname(sourcePackagePath), name)).isFile(),
+      );
+    }),
   );
   const expected = new Set([
     "package.json",
@@ -1307,7 +1306,9 @@ function validatePackage() {
       `CSS package export targets differ from projects/bulud-ng/package.json:\n${cssTargetMismatches.map((mismatch) => `- ${mismatch}`).join("\n")}`,
     );
   const expectedCssExports = new Set(
-    [...assetPaths].map((asset) => `./${asset}`),
+    [...assetPaths]
+      .filter((asset) => asset.endsWith(".css"))
+      .map((asset) => `./${asset}`),
   );
   const assetCssExportMismatches = sorted(
     [...expectedCssExports].filter((entry) => !sourceCssExports.has(entry)),

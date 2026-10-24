@@ -115,7 +115,7 @@
   border-color: var(--bulud-color-danger, #dc2626);
 }
 
-:host-context([dir="rtl"])
+:host-context([dir="rtl"]):not(.bulud-switch-host--theme)
   .bulud-switch__input:checked
   + .bulud-switch__label
   .bulud-switch__thumb {
@@ -166,4 +166,50 @@
     color: GrayText;
     opacity: 1;
   }
+}
+
+:host(.bulud-switch-host--theme) {
+  --bulud-switch-width: 54px;
+  --bulud-switch-height: 22px;
+  --bulud-switch-thumb-size: 24px;
+  --bulud-switch-padding: 0px;
+  --bulud-switch-border-width: 0px;
+  --bulud-switch-thumb: #fff;
+  --bulud-switch-checked-thumb: var(--bulud-switch-thumb);
+  --bulud-switch-background: var(--bulud-color-subtle, rgba(30, 30, 38, 0.15));
+  --bulud-switch-background-hover: var(--bulud-switch-background);
+  --bulud-switch-checked-background: var(--bulud-switch-background);
+}
+:host(.bulud-switch-host--theme) .bulud-switch__track {
+  position: relative;
+  direction: ltr;
+}
+:host(.bulud-switch-host--theme) .bulud-switch__thumb {
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--bulud-shadow-medium, 0 2px 8px rgba(0, 0, 0, 0.15));
+}
+.bulud-switch__theme-icon {
+  position: absolute;
+  inset-inline-end: 4px;
+  inline-size: 18px;
+  block-size: 18px;
+  fill: none;
+  stroke: var(--bulud-switch-foreground, var(--bulud-color-muted, #64748b));
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bulud-switch__theme-icon--moon {
+  inset-inline-end: auto;
+  inset-inline-start: 4px;
+}
+@media (forced-colors: active) {
+  :host(.bulud-switch-host--theme) .bulud-switch__thumb {
+    outline: 1px solid ButtonText;
+  }
+}
+
+:host(.bulud-switch-host--theme) .bulud-switch__content:empty {
+  display: none;
 }

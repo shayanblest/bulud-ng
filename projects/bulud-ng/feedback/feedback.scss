@@ -1,0 +1,163 @@
+:host {
+  display: block;
+  color: var(--bulud-feedback-foreground, var(--bulud-color-on-surface));
+}
+.surface {
+  background: var(--bulud-feedback-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-feedback-border, var(--bulud-color-border));
+  border-radius: var(--bulud-feedback-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-feedback-padding, var(--bulud-spacing-4, 16px));
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  background: var(--bulud-feedback-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-feedback-border, var(--bulud-color-border));
+  border-radius: var(--bulud-feedback-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-spacing-2, 8px) var(--bulud-spacing-3, 12px);
+}
+button:hover:not(:disabled) {
+  background: var(--bulud-color-surface-hover);
+}
+:where(button, input, select):focus-visible {
+  outline: 2px solid var(--bulud-feedback-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+:disabled {
+  opacity: var(--bulud-feedback-disabled-opacity, 0.5);
+  cursor: default;
+}
+.muted {
+  color: var(--bulud-feedback-muted, var(--bulud-color-muted));
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bulud-feedback-gap, var(--bulud-spacing-3, 12px));
+}
+.error {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+
+.notice {
+  --notice-tone: var(--bulud-color-info, var(--bulud-color-primary, #541adb));
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 70%,
+    var(--bulud-color-on-surface, #000) 30%
+  );
+  --notice-opacity: 10%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bulud-feedback-gap, 12px);
+  margin-block-end: var(--bulud-spacing-3, 12px);
+  border: 1px solid var(--bulud-feedback-border, var(--notice-tone));
+  border-radius: var(--bulud-feedback-radius, 6px);
+  background: var(
+    --bulud-feedback-background,
+    color-mix(in srgb, var(--notice-tone) var(--notice-opacity), transparent)
+  );
+  color: var(--bulud-feedback-foreground, var(--notice-emphasis));
+}
+.notice:hover {
+  background: var(
+    --bulud-feedback-background,
+    color-mix(in srgb, var(--notice-tone) 21%, transparent)
+  );
+}
+.notice[data-kind="success"] {
+  --notice-tone: var(--bulud-color-success, #2e7d32);
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 90%,
+    var(--bulud-color-on-surface, #000) 10%
+  );
+}
+.notice[data-kind="danger"] {
+  --notice-tone: var(--bulud-color-danger, #a11729);
+  --notice-emphasis: var(--bulud-color-danger-text, var(--notice-tone));
+}
+.notice[data-kind="warning"] {
+  --notice-tone: var(--bulud-color-warning, #ffcc19);
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 50%,
+    var(--bulud-color-on-surface, #000) 50%
+  );
+}
+.notice[data-kind="primary"] {
+  --notice-tone: var(--bulud-color-primary, #0c2340);
+  --notice-emphasis: var(--notice-tone);
+  --notice-opacity: var(--bulud-alert-brand-opacity, 20%);
+}
+.notice[data-kind="secondary"] {
+  --notice-tone: var(--bulud-color-secondary, #fdb515);
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 50%,
+    var(--bulud-color-on-surface, #000) 50%
+  );
+  --notice-opacity: var(--bulud-alert-brand-opacity, 20%);
+}
+.notice[data-kind="neutral"] {
+  --notice-tone: var(--bulud-color-muted, #64748b);
+  --notice-emphasis: var(--bulud-color-on-surface, #000);
+}
+.notice[data-kind="light"] {
+  --notice-opacity: var(--bulud-alert-neutral-opacity, 10%);
+  --notice-tone: var(--bulud-color-on-primary, #fff);
+  --notice-emphasis: var(--bulud-color-on-surface, #000);
+}
+.notice[data-kind="dark"] {
+  --notice-opacity: var(--bulud-alert-neutral-opacity, 10%);
+  --notice-tone: var(--bulud-color-on-surface, #000);
+  --notice-emphasis: var(--notice-tone);
+}
+.notice-icon {
+  color: var(--bulud-feedback-foreground, var(--notice-tone));
+}
+
+.notice-body {
+  flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.notice-body strong {
+  display: block;
+}
+.notice-icon,
+.notice button svg {
+  inline-size: 20px;
+  block-size: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.notice button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  padding: var(--bulud-spacing-1, 4px);
+  min-inline-size: 28px;
+  min-block-size: 28px;
+}
+.notice-actions:empty {
+  display: none;
+}
+@media (forced-colors: active) {
+  .notice {
+    border-color: CanvasText;
+    color: CanvasText;
+  }
+}

@@ -197,3 +197,46 @@
   --bulud-pagination-muted-foreground: #cbd5e1;
   --bulud-pagination-focus: #bfdbfe;
 }
+
+/* Radio and Datepicker inherit the consuming palette in any scope. */
+:root {
+  --bulud-radio-background: transparent;
+  --bulud-radio-border: var(--bulud-color-border);
+  --bulud-radio-checked: var(--bulud-color-primary);
+  --bulud-radio-foreground: var(--bulud-color-on-surface);
+  --bulud-radio-focus: var(--bulud-color-focus);
+  --bulud-datepicker-background: var(--bulud-color-surface);
+  --bulud-datepicker-foreground: var(--bulud-color-on-surface);
+  --bulud-datepicker-border: var(--bulud-color-border);
+  --bulud-datepicker-focus: var(--bulud-color-focus);
+  --bulud-datepicker-hover-background: var(--bulud-color-surface-hover);
+  --bulud-datepicker-selected-background: var(--bulud-color-primary);
+  --bulud-datepicker-selected-foreground: var(--bulud-color-on-primary);
+  --bulud-datepicker-muted: #64748b;
+  --bulud-datepicker-range-background: #eff6ff;
+  --bulud-datepicker-range-endpoint-background: var(--bulud-color-primary);
+  --bulud-datepicker-range-endpoint-foreground: var(--bulud-color-on-primary);
+  --bulud-datepicker-year-background: var(--bulud-color-surface);
+  --bulud-datepicker-year-selected-background: #e2e8f0;
+}
+:root.dark,
+:root[data-theme="dark"],
+:where(.dark, [data-theme="dark"]) {
+  --bulud-radio-border: var(--bulud-color-border);
+  --bulud-radio-checked: var(--bulud-color-primary);
+  --bulud-radio-foreground: var(--bulud-color-on-surface);
+  --bulud-radio-focus: var(--bulud-color-focus);
+  --bulud-datepicker-background: var(--bulud-color-surface);
+  --bulud-datepicker-foreground: var(--bulud-color-on-surface);
+  --bulud-datepicker-border: var(--bulud-color-border);
+  --bulud-datepicker-focus: var(--bulud-color-focus);
+  --bulud-datepicker-hover-background: var(--bulud-color-surface-hover);
+  --bulud-datepicker-selected-background: var(--bulud-color-primary);
+  --bulud-datepicker-selected-foreground: var(--bulud-color-on-primary);
+  --bulud-datepicker-muted: #cbd5e1;
+  --bulud-datepicker-range-background: #1e3a8a;
+  --bulud-datepicker-range-endpoint-background: var(--bulud-color-primary);
+  --bulud-datepicker-range-endpoint-foreground: var(--bulud-color-on-primary);
+  --bulud-datepicker-year-background: var(--bulud-color-surface);
+  --bulud-datepicker-year-selected-background: #334155;
+}

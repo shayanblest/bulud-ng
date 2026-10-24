@@ -1,3 +1,4 @@
+import { activateStateStyle } from '../src/lib/theme/theme-test-helpers';
 import { DOCUMENT } from '@angular/common';
 import {
   Component,
@@ -1125,8 +1126,15 @@ describe('BuludTextareaAutosize', () => {
 
       expect(textarea.style.height).toBe('40px');
       const width = textarea.getBoundingClientRect().width;
+      const focusedStyle = activateStateStyle(
+        textarea,
+        'focus-within',
+        ancestor,
+      );
       button.focus();
+      button.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
       await fixture.whenStable();
+      focusedStyle.restore();
 
       expect(textarea.value).toBe('');
       expect(textarea.getBoundingClientRect().width).toBe(width);

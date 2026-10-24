@@ -165,3 +165,53 @@ jobs:
           path: dist/bulud-ng
       - name: Validate package-path imports
         run: npm run validate:smoke
+
+  base-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build:base
+      - run: node tools/measure-base.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.base.config.ts
+      - run: node --test tools/*.test.mjs
+
+  packed-consumers:
+    needs: library-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: bulud-ng-dist
+          path: dist/bulud-ng
+      - run: npm run validate:tree-shaking
+
+  server-consumers:
+    needs: library-build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        angular: ["20.3.34"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: bulud-ng-dist
+          path: dist/bulud-ng
+      - run: node tools/verify-server-consumer.mjs ${{ matrix.angular }}

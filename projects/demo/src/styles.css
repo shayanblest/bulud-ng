@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "../../bulud-ng/tailwind.css";
 @import "../../bulud-ng/theme.css";
+@import "../../bulud-ng/angour.css";
+@import "../../bulud-ng/angour-base.css";
 
 @theme {
   --font-sans:

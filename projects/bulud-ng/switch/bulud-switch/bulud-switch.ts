@@ -49,6 +49,7 @@ let nextSwitchId = 0;
     '[attr.aria-errormessage]': 'null',
     '[class.bulud-switch-host--disabled]': 'isDisabled()',
     '[class.bulud-switch-host--invalid]': 'isInvalid()',
+    '[class.bulud-switch-host--theme]': "appearance() === 'theme'",
   },
   templateUrl: './bulud-switch.html',
   styleUrl: './bulud-switch.scss',
@@ -89,6 +90,9 @@ export class BuludSwitch implements ControlValueAccessor, Validator {
 
   /** Current switch value. Use `[(checked)]` for controlled state. */
   readonly checked = input(false, { transform: booleanAttribute });
+
+  /** Optional Angour sun/moon treatment. Checked means dark mode; default retains the regular switch. */
+  readonly appearance = input<'default' | 'theme'>('default');
 
   /** Emits once when the user changes the native switch. */
   readonly checkedChange = output<boolean>();

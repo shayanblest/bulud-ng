@@ -7,7 +7,9 @@ theming, and accessible native interaction patterns.
 ## Install and configure
 
 ```bash
-npm install bulud-ng
+npm run package:local
+# In the consumer application, until public publication:
+npm install /absolute/path/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
 ```
 
 Angular 20 is a peer dependency. Tailwind CSS 4 is optional; components work
@@ -111,8 +113,13 @@ branches.
 
 ## Development
 
+Use Node 22.22.3 from `.nvmrc` and npm 10.9.8. Regenerate `package-lock.json`
+with that npm version so the clean install matches GitHub Actions.
+
 ```bash
-npm install
+nvm use
+# npm 10.9.8, matching packageManager and CI
+npm ci --ignore-scripts
 npm run test:ci
 npm run build
 npm run demo
@@ -133,3 +140,13 @@ docs/PUBLIC-API.md       generated-export documentation inventory
 
 Repository implementation and contribution rules are in
 [`AGENTS.md`](./AGENTS.md).
+
+For reusable components/services transferred from Angour and a live `/shared` example, see [SHARED.md](SHARED.md) and [the transfer audit](SHARED-TRANSFER-AUDIT.md).
+
+## Component catalog and local npm package
+
+Run `npm start`, then open http://127.0.0.1:4314/components. Components, services and pipes have dedicated lazy pages with source examples. See [Demo and packaging](DEMO-AND-PACKAGING.md). Public publication is deferred; `npm run package:local` creates a locally installable tarball.
+
+See [component catalog and new shared APIs](COMPONENT-CATALOG.md).
+
+See [npm release checklist](RELEASING.md) and the [consumer quick start](projects/bulud-ng/QUICKSTART.md).

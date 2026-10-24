@@ -1,0 +1,164 @@
+{
+  "initial": {
+    "initial": [
+      {
+        "asset": "styles-ZOPB2HAW.css",
+        "bytes": 36123,
+        "gzipBytes": 4669
+      },
+      {
+        "asset": "chunk-APROU2O2.js",
+        "bytes": 3003,
+        "gzipBytes": 1326
+      },
+      {
+        "asset": "chunk-MRYFOJPK.js",
+        "bytes": 341,
+        "gzipBytes": 301
+      },
+      {
+        "asset": "chunk-TLYPRVIC.js",
+        "bytes": 88342,
+        "gzipBytes": 24855
+      },
+      {
+        "asset": "chunk-XZJOZUSP.js",
+        "bytes": 2536,
+        "gzipBytes": 1109
+      },
+      {
+        "asset": "chunk-6KSB2ZMI.js",
+        "bytes": 1101,
+        "gzipBytes": 603
+      },
+      {
+        "asset": "chunk-JF5LE2QC.js",
+        "bytes": 7849,
+        "gzipBytes": 2555
+      },
+      {
+        "asset": "chunk-FPPZ4BUR.js",
+        "bytes": 229,
+        "gzipBytes": 194
+      },
+      {
+        "asset": "chunk-KIT2ZZ75.js",
+        "bytes": 155110,
+        "gzipBytes": 52309
+      },
+      {
+        "asset": "chunk-2NFLSA4Y.js",
+        "bytes": 449,
+        "gzipBytes": 265
+      },
+      {
+        "asset": "main-7WP3AZFH.js",
+        "bytes": 3519,
+        "gzipBytes": 1662
+      }
+    ],
+    "totalBytes": 298602,
+    "totalGzipBytes": 89848
+  },
+  "treeShaking": {
+    "package": "bulud-ng-0.0.1.tgz",
+    "fixtures": [
+      {
+        "fixture": "button",
+        "bytes": 121089,
+        "gzipBytes": 39766,
+        "unusedFeaturesAbsent": [
+          "bulud-chart",
+          "bulud-donut-chart",
+          "bulud-file-upload",
+          "bulud-period-picker",
+          "XMLHttpRequest",
+          "bulud-chat",
+          "buludNumber",
+          "buludRelativeTime"
+        ]
+      },
+      {
+        "fixture": "donut",
+        "bytes": 126412,
+        "gzipBytes": 42266,
+        "unusedFeaturesAbsent": [
+          "bulud-chart",
+          "bulud-progress",
+          "bulud-file-upload",
+          "bulud-period-picker"
+        ]
+      },
+      {
+        "fixture": "period",
+        "bytes": 150580,
+        "gzipBytes": 50097,
+        "unusedFeaturesAbsent": [
+          "bulud-datepicker",
+          "bulud-chart",
+          "bulud-file-upload"
+        ]
+      },
+      {
+        "fixture": "chat",
+        "bytes": 159261,
+        "gzipBytes": 51985,
+        "unusedFeaturesAbsent": [
+          "bulud-file-upload",
+          "bulud-chart",
+          "bulud-dropdown",
+          "buludNumber",
+          "buludRelativeTime"
+        ]
+      },
+      {
+        "fixture": "number-pipe",
+        "bytes": 93175,
+        "gzipBytes": 30910,
+        "unusedFeaturesAbsent": [
+          "bulud-chat",
+          "bulud-chart",
+          "buludFileExtension",
+          "buludRelativeTime"
+        ]
+      }
+    ]
+  },
+  "lighthouse": {
+    "overview": {
+      "version": "13.5.0",
+      "categories": {
+        "performance": 0.97,
+        "accessibility": 1,
+        "best-practices": 1,
+        "seo": 1,
+        "agentic-browsing": 1
+      },
+      "audits": {
+        "largest-contentful-paint": 2287.2815,
+        "first-contentful-paint": 1745.8252000000002,
+        "total-blocking-time": 94.5,
+        "cumulative-layout-shift": 0
+      }
+    },
+    "chat": {
+      "version": "13.5.0",
+      "categories": {
+        "performance": 0.96
+      },
+      "audits": {
+        "largest-contentful-paint": 2413.3463,
+        "first-contentful-paint": 1732.5641999999998,
+        "total-blocking-time": 107,
+        "cumulative-layout-shift": 0
+      }
+    }
+  },
+  "lighthouseStatus": "completed",
+  "tests": {
+    "unit": 688,
+    "baseE2E": 36,
+    "legacyE2E": 97,
+    "productionE2E": 2
+  }
+}

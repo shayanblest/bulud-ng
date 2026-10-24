@@ -63,6 +63,21 @@ The locale provider does not set `document.dir` or CSS direction. Components
 inherit the nearest ancestor direction, so language and layout direction can be
 chosen independently.
 
+### Angour, forms and shared configuration
+
+Additional root exports are `BULUD_ANGOUR_TOKENS`, `BULUD_ANGOUR_LIGHT_THEME`,
+`BULUD_ANGOUR_DARK_THEME`, `BuludRadioTheme`, `BuludDatepickerTheme`, and
+`BuludDatepickerLocale`. Import the Angour CSS explicitly; the application owns
+ancestor light/dark and direction attributes.
+
+`BULUD_SHARED_UI_CONFIG`, `BuludSharedUiConfig`, `BuludSharedUiFeature`,
+`BuludSharedUiTheme`, and `buludSharedUiStyles` configure the shared feature
+surfaces. The style helper resolves instance theme, component theme, global
+shared theme, then inherited CSS defaults. No stylesheet is automatically
+injected. See [shared configuration](../projects/bulud-ng/SHARED.md#shared-typed-theme-configuration)
+for a typed provider example. Theme and datepicker locale additions retain
+partial consumer configuration support.
+
 ## Secondary entry points
 
 ### `bulud-ng/button`
@@ -123,7 +138,8 @@ with the instance input.
 
 ### `bulud-ng/switch`
 
-Exports `BuludSwitch`. Inputs are `checked`, `disabled`, `required`, `invalid`,
+Exports `BuludSwitch`. Inputs include `appearance` (`default` or icon-based
+`theme`), `checked`, `disabled`, `required`, `invalid`,
 `id`, `aria-label`, `aria-describedby`, and `aria-errormessage`; `checkedChange`
 emits user changes. It implements ControlValueAccessor and Validator, renders
 switch semantics, uses native Space/label activation, and treats required as
@@ -242,3 +258,345 @@ negative sign.
 `bulud-ng/theme.css` contains explicit light/dark CSS custom-property defaults.
 `bulud-ng/tailwind.css` maps the shared color, shape, and control-size tokens
 to Tailwind CSS 4 utilities. Neither stylesheet is auto-injected.
+
+## Angour preset exports (root entry point)
+
+| Export                     | Kind  | Purpose                                                          |
+| -------------------------- | ----- | ---------------------------------------------------------------- |
+| `BULUD_ANGOUR_TOKENS`      | const | Readonly Angour palettes, spacing, typography, radii and shadows |
+| `BULUD_ANGOUR_LIGHT_THEME` | const | Light theme configuration for the existing theme helpers         |
+| `BULUD_ANGOUR_DARK_THEME`  | const | Dark theme configuration for the existing theme helpers          |
+
+Explicit style exports: `bulud-ng/angour.css` and `bulud-ng/angour-base.css`.
+See [Angour application foundations](ANGOUR.md) for API behavior, examples,
+precedence, switching and accessibility responsibilities. No existing public
+export or dependency is removed.
+
+## Radio and Datepicker
+
+- `bulud-ng/radio`: `BuludRadioGroup`, `BuludRadio`, `BuludRadioValue`.
+- `bulud-ng/datepicker`: `BuludDatepicker`, `BuludCalendar`, `BuludDatepickerMode`,
+  `BuludDatepickerValue`, `BuludDatepickerConfig`, `BULUD_DATEPICKER_CONFIG`,
+  `provideBuludDatepicker`.
+- Root theme types: `BuludRadioTheme`, `BuludDatepickerTheme`; optional `radio`
+  and `datepicker` sections in theme configuration and resolved defaults.
+- Root locale type: `BuludDatepickerLocale`; optional `BuludLocale.datepicker`
+  and partial locale configuration, with English/Persian strings.
+
+See [Angour form controls](FORM-CONTROLS.md) for typed inputs, outputs, Forms,
+configuration precedence, all theme hooks, accessibility, and usage examples.
+
+### `bulud-ng/validators`
+
+Exports `buludRequiredText`, `buludFiniteNumber`, `buludHttpUrl`, `buludIsoDate`,
+and `buludMatchFields(first, second)`. These compose with Angular validators;
+see [BASE.md](BASE.md) for error keys, examples and the updated Dropdown/Radio
+validation and error-relationship inputs.
+
+## Reusable Angour shared transfer
+
+See [SHARED.md](../projects/bulud-ng/SHARED.md) for the complete typed public surface and usage examples.
+
+Secondary entries added: `bulud-ng/query`, `bulud-ng/table`, `bulud-ng/otp`, `bulud-ng/file-upload`, `bulud-ng/tooltip`, `bulud-ng/feedback`, `bulud-ng/rating`, `bulud-ng/stepper`, `bulud-ng/carousel`, `bulud-ng/countdown`, `bulud-ng/utilities`.
+
+Root adds only `BULUD_SHARED_UI_CONFIG`, `BuludSharedUiConfig`, `BuludSharedUiTheme`, `BuludSharedUiFeature`, `buludSharedUiStyles`. Feature implementation stays tree-shakable in secondary entry points. No dependency changes.
+
+### `bulud-ng/table`
+
+Exports `BuludTable`, `BuludTableColumn`, `BuludTableSort`, `BuludTableLabels`,
+`BuludTableCellContext`, `BuludTableCell`, `BuludTableDetail`, `BuludTableFilters`,
+`BuludTableFilterDefinition`, `BuludTableFilterValues`, `filterBuludTableRows`,
+and `buildBuludTableFilterQuery`. Filters are opt-in, composed with local
+sorting/paging or emitted in server mode; invalid active typed filters match no
+local rows. The explicit query bridge validates/escapes values. Icon-only detail
+buttons preserve localized labels, expansion state and controls relationship.
+See [SHARED.md](../projects/bulud-ng/SHARED.md) for input defaults, examples and keyboard behavior.
+
+### `bulud-ng/textarea`
+
+Exports `BuludTextarea`, a native textarea styling directive. Inputs are `theme`
+and `buludTextareaInvalid` (false). Import the optional Angour base skin. Native
+Angular forms, validators, editing and resize continue to work. The consumer
+supplies a visible label, validation rules and error description.
+See [SHARED.md](../projects/bulud-ng/SHARED.md) for usage and precedence.
+
+### `bulud-ng/loading-bar`
+
+Exports `BuludLoadingBar` and `BuludLoadingService`. The bar follows concurrent
+service tasks, or explicit `active`/`value` inputs, and exposes named determinate
+or indeterminate progress. Other inputs are `label` and `theme`. Service methods
+are `start`, `update`, `finish`, `during`; reactive state is `active`/`progress`.
+See [SHARED.md](../projects/bulud-ng/SHARED.md) for cleanup, router composition and defaults.
+
+### `bulud-ng/charts`
+
+Exports `BuludChart`, `BuludLinePoint`, `BuludCandlePoint`, `BuludChartType`,
+`BuludChartLabels`, `buludChartDomain`, `BuludDonutChart`,
+`BuludDonutSegment`, and `BuludProgress`. The responsive SVG has line/candlestick
+modes, typed data validation, localized labels, empty/loading/error/disabled
+states, theme precedence, and an accessible data table. It has no chart-package
+dependency. See [SHARED.md](../projects/bulud-ng/SHARED.md) for inputs, limits and usage.
+
+### `bulud-ng/file-upload`
+
+Exports `BuludFileUpload`, `BuludFileConstraints`, `validateBuludFiles`,
+`BuludUploadOptions`, `BuludUploadEvent`, `BuludUploadError`,
+`BuludUploadService` and `BULUD_UPLOAD_REQUEST_FACTORY`. Native selection, Forms
+validation, drag/drop, bounded raster previews and object-URL cleanup are
+independent of optional multipart transport. Explicit Upload starts a request;
+progress, cancel, retry and error states are supported. No business endpoint or
+auth configuration is embedded. See [SHARED.md](../projects/bulud-ng/SHARED.md) for all typed
+inputs, constraints, events, adapter responsibilities and usage examples.
+
+### `bulud-ng/skeleton`
+
+Exports `BuludSkeleton` and `BuludSkeletonShape`. Bounded CSS-only line, circle,
+thumbnail and card loading placeholders; animation, reduced motion, opt-in
+announcement and shared theme configuration. See the packaged shared guide.
+
+### `bulud-ng/confirm`
+
+Exports `BuludConfirm` and `BuludConfirmKind`. Controlled create/confirm/reject
+composition of the accessible dialog and button; async processing guards,
+localized action labels, safe content projection and focus restoration.
+
+### `bulud-ng/feedback`
+
+Exports `BuludAlert`, `BuludNotifications`, `BuludNotificationService`,
+`BuludNotice`, `BuludNoticeKind`. Nine alert kinds, title/icon, projected actions,
+controlled dismissal and a shared immutable notification outlet. See
+[SHARED.md](../projects/bulud-ng/SHARED.md) for usage and defaults.
+
+### `bulud-ng/avatar`
+
+Exports `BuludAvatar`. Inputs are `name`, optional image `src`, accessible
+`label`, and partial `theme`. A failed image falls back to up to two initials;
+the host has image semantics and the visible name or explicit label supplies
+its accessible name. It has no Forms contract or outputs.
+
+```html
+<bulud-avatar name="Example User" label="Account owner" />
+```
+
+### `bulud-ng/empty-state`
+
+Exports `BuludEmptyState`. Required `title`, optional `description` and `theme`
+render an empty result with projected actions and an optional `[buludEmptyIcon]`.
+Use a meaningful heading and native, named buttons for any recovery action.
+There are no custom outputs or Forms behavior.
+
+```html
+<bulud-empty-state title="No results" description="Try another search">
+  <button type="button" (click)="clearSearch()">Clear search</button>
+</bulud-empty-state>
+```
+
+### `bulud-ng/field-label`
+
+Exports `BuludFieldLabel`, applied to a native label, legend or span. Inputs are
+`control` (an Angular control or null), optional `required` override, and `theme`.
+It reacts to required-validator metadata and control events; it does not probe
+validators with fake values. The star is decorative; consumers retain native
+label association and the actual control's required/error semantics.
+
+```html
+<label for="email" buludFieldLabel [control]="email">Email</label> <input id="email" [formControl]="email" />
+```
+
+### `bulud-ng/radio`
+
+Exports `BuludRadioGroup`, `BuludRadio`, and `BuludRadioValue` (`string | number`).
+The group supports a `value` model, required/disabled/invalid state, accessible
+name/description/error relationships and partial theme. Each projected radio
+requires a `value` and accepts disabled state and an accessible name.
+The group implements ControlValueAccessor and Validator; native radio controls
+supply keyboard selection. Provide visible option labels and a group name.
+See [form controls](FORM-CONTROLS.md) for all inputs and configuration.
+
+```html
+<bulud-radio-group aria-label="Plan" [(value)]="plan">
+  <bulud-radio value="basic">Basic</bulud-radio>
+  <bulud-radio value="pro">Pro</bulud-radio>
+</bulud-radio-group>
+```
+
+### `bulud-ng/datepicker`
+
+Exports `BuludDatepicker`, `BuludCalendar`, `BuludDatepickerMode`,
+`BuludDatepickerValue`, `BuludDatepickerConfig`, `BULUD_DATEPICKER_CONFIG`,
+`provideBuludDatepicker`, `BuludCalendarDate`, `buludCalendarDate`,
+`buludCalendarParts`, and `buludParseIsoDate`. The Forms control supports
+single/range dates, Gregorian/Persian calendars, min/max bounds, required and
+disabled states. Configuration precedence and full typed inputs are in
+[form controls](FORM-CONTROLS.md). Supply a visible label. Keyboard calendar
+navigation, focus restoration and localized announcements are built in.
+
+A non-null date or range exposes a localized pointer-accessible clear action;
+clearing restores trigger focus and preserves required validation semantics.
+
+The pure helpers convert calendar parts to a UTC-noon Date or null, read
+calendar-qualified parts, and strictly parse real four-digit ISO dates.
+
+```html
+<bulud-datepicker label="Start date" [formControl]="startDate" />
+```
+
+### `bulud-ng/period-picker`
+
+Exports `BuludPeriodPicker`, `BuludPeriodValue`, `BuludPeriodRange`, and
+`buludPeriodRange`. The value is `{calendar, year, month?}`; `mode` selects
+month or year, with `label`, `calendar`, `language`, `min`, `max`, `required`,
+`disabled`, `invalid`, description/action labels and `theme` inputs. The value
+model emits changes and supports ControlValueAccessor/Validator. The helper
+returns inclusive four-digit ISO `{from,to}` boundaries or null. Gregorian year
+9999 and its December end at `9999-12-31`.
+
+Native year/month controls support keyboard activation; supply a label and
+an error description. Malformed/reversed bounds return `periodBounds`; invalid
+values/configuration and out-of-bounds values have distinct validation errors.
+See [period contracts](../projects/bulud-ng/SHARED.md#added-apis).
+
+```html
+<bulud-period-picker label="Reporting month" [formControl]="period" required />
+```
+
+### `bulud-ng/query`
+
+Exports `BuludQueryValue`, `BuludQueryParams`, `BuludQuerySource`,
+`BuludListRequest`, `BuludListFilter`, `BuludFilters`, `readBuludQuery`,
+`convertToRequestParams`, `parseFilters`, `buildFilterString`,
+`updateBuludQuery`, and `BuludQueryService`. Pure helpers accept a query string,
+URL, parameters or parameter record, map paging to bounded take/skip, parse and
+serialize filters, and immutably patch a URL. The injectable facade adds
+`toHttpParams` and performs no navigation or network request. No UI or ARIA
+behavior is introduced; consumers validate backend field/operator permissions.
+See [query grammar and examples](../projects/bulud-ng/SHARED.md#url--list-request-and-filters-bulud-ngquery).
+
+```ts
+import { convertToRequestParams } from "bulud-ng/query";
+const request = convertToRequestParams("?page=2&take=10");
+// {take: 10, skip: 10}
+```
+
+### `bulud-ng/otp`
+
+Exports `BuludOtp` and `normalizeBuludOtp`. Inputs include required accessible
+`label`, `length`, required/disabled/invalid states, `describedBy` and `theme`. The Forms
+value is a string; `completed` emits the normalized complete code.
+The native text input supports normalized Latin/Persian/Arabic digits, paste
+and one-time-code autofill; Forms callbacks and validation operate on the
+normalized string. The helper normalizes digit text independently. Consumers
+provide a meaningful label and an associated validation message.
+
+```html
+<bulud-otp label="Verification code" [formControl]="code" [length]="6" required />
+```
+
+### `bulud-ng/rating`
+
+Exports `BuludRating`, a labeled native radio rating group with five fixed values (1–5),
+required/disabled/invalid states, `describedBy` and `theme`. The Forms value is
+a number; there is no configurable maximum or public value model. It implements Forms change,
+touched, disabled and required/range validation. Native radio keyboard behavior
+is retained; callers supply the required group label. Stars use the active theme.
+
+```html
+<bulud-rating label="Rating" [formControl]="rating" />
+```
+
+### `bulud-ng/tooltip`
+
+Exports `BuludTooltip`, a component with required `text` and optional
+`theme`. Project one focusable trigger inside it. It displays plain text on hover/focus, associates its generated
+accessible description with the trigger and closes on Escape or focus exit.
+Provide a keyboard-focusable, named trigger; the tooltip is supplemental and
+must not be the only source of an action's name.
+
+```html
+<bulud-tooltip text="Refresh the list">
+  <button type="button">Refresh</button>
+</bulud-tooltip>
+```
+
+### `bulud-ng/stepper`
+
+Exports `BuludStepper` and `BuludStep`. The container requires `label` and accepts
+an `active` index model, `disabled` and `theme`. Named projected templates use
+`buludStep` and may be disabled. Native step buttons support Enter/Space and
+expose the current step; callers provide unique, meaningful names and form
+validation before advancing. See [steps and slides](../projects/bulud-ng/SHARED.md#steps-and-slides).
+
+```html
+<bulud-stepper label="Setup" [(active)]="step">
+  <ng-template buludStep="Account">Account form</ng-template>
+  <ng-template buludStep="Review">Review details</ng-template>
+</bulud-stepper>
+```
+
+### `bulud-ng/carousel`
+
+Exports `BuludCarousel` and `BuludSlide`. Inputs are required `label`, an `active`
+index model, `disabled`, previous/next action labels and `theme`. Projected
+`buludSlide` templates provide slide names; `[buludCarouselEmpty]` supplies the
+empty state. Manual native controls announce position and stop at boundaries;
+there is no autoplay. Provide meaningful region and slide names.
+
+```html
+<bulud-carousel label="Highlights">
+  <ng-template buludSlide="First highlight">First</ng-template>
+  <ng-template buludSlide="Second highlight">Second</ng-template>
+</bulud-carousel>
+```
+
+### `bulud-ng/countdown`
+
+Exports `BuludCountdown`. Inputs are required accessible `label`, an epoch-
+millisecond `deadline` or null, and `theme`; `expired` emits once per deadline.
+The timer uses elapsed wall-clock time, cleans up on destruction, and schedules
+nothing for invalid/null deadlines or on the server. Its timer has live
+announcements off; consumers may announce expiration once.
+
+```html
+<bulud-countdown label="Time remaining" [deadline]="deadlineMs" (expired)="onExpiry()" />
+```
+
+### `bulud-ng/chat`
+
+Exports `BuludChat`, `BuludChatMessage`, `BuludChatAttachment`, and
+`BuludChatLabels`. Controlled inputs include `messages`, a `draft` model,
+`disabled`, `loading`, `sending`, `error`, `maxLength`, `language`, `timeZone`,
+partial `labels` and `theme`. Send/retry/attachment intents are emitted; the
+component owns no backend or message persistence. The application updates the
+immutable transcript and upload/transport state. Incoming/outgoing bubbles
+inherit RTL/LTR and theme. The transcript has log semantics, composer has a
+visible label, and scrolling follows new messages only when already near the
+bottom. See [chat contract and complete example](../projects/bulud-ng/SHARED.md#controlled-chat-bulud-ngchat).
+
+```html
+<bulud-chat [messages]="messages" [(draft)]="draft" language="en" (send)="sendMessage($event)" />
+```
+
+### `bulud-ng/utilities`
+
+Exports pure display pipes `BuludFileExtensionPipe`, `BuludIsImagePipe`,
+`BuludMaskEmailPipe`, `BuludPascalCasePipe`, `BuludCardNumberPipe`,
+`BuludTimestampPipe`, `BuludDateTimePipe`, `BuludUnixTimeConverterPipe`,
+`BuludNumberPipe`, `BuludRelativeTimePipe`, `BuludDurationPipe`,
+`BuludTruncatePipe`, and `BuludFallbackPipe`. Helpers are `buludFileExtension`,
+`buludUnixTimestamp`, `buludDateRange`, `buludRemoveEmptyFields`,
+`buludShiftYears`, `buludSecondsUntil`, and `buludTimeSlots`, with
+`BuludDatePeriod` and `BuludTimeSlot` types. Injectable facades are
+`BuludDateService`, `BuludConnectionService`, and `BuludPasswordService`.
+
+Dates have explicit units and bounded Intl caches; malformed display values
+use documented fallbacks. Relative time accepts an explicit current time and
+creates no interval. Connectivity is browser connectivity with null on SSR;
+password generation uses cryptographic randomness. These APIs add no ARIA
+semantics or network requests. Supply context/labels around rendered values.
+See [utilities](../projects/bulud-ng/SHARED.md#utilities-bulud-ngutilities) and
+[pure display pipes](../projects/bulud-ng/SHARED.md#pure-general-pipes-bulud-ngutilities)
+for signatures, defaults and usage.
+
+```html
+{{ 1735689600 | buludDateTime:false:'fa':'UTC' }} {{ 'user@example.com' | buludMaskEmail }}
+```

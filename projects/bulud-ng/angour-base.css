@@ -1,0 +1,133 @@
+/* Optional application primitives; import after angour.css. */
+.bulud-app {
+  background: var(--bulud-body-bg);
+  color: var(--bulud-body-color);
+  font-family: var(--bulud-font-sans, system-ui, sans-serif);
+  font-size: var(--bulud-font-size-6, 14px);
+  line-height: 1.5;
+  padding: var(--bulud-spacing-5, 24px);
+}
+.bulud-app:lang(fa) {
+  font-family: var(--bulud-font-persian, Tahoma, sans-serif);
+}
+.bulud-app:lang(ar) {
+  font-family: var(--bulud-font-arabic, Tahoma, sans-serif);
+}
+.bulud-app,
+.bulud-app *,
+.bulud-app *::before,
+.bulud-app *::after {
+  box-sizing: border-box;
+}
+.bulud-app :is(button, input, select, textarea) {
+  font: inherit;
+}
+.bulud-panel {
+  background: var(--bulud-color-surface);
+  color: var(--bulud-color-on-surface);
+  border: 1px solid var(--bulud-color-border);
+  border-radius: var(--bulud-radius-extraLarge, 12px);
+  padding: var(--bulud-spacing-5, 24px);
+  box-shadow: var(--bulud-shadow-small);
+}
+.bulud-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bulud-spacing-4, 16px);
+}
+.bulud-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--bulud-spacing-3, 12px);
+}
+.bulud-muted {
+  color: var(--bulud-color-muted);
+}
+.bulud-input {
+  background: var(--bulud-body-bg);
+  color: var(--bulud-color-on-surface);
+  border: 1px solid var(--bulud-color-border);
+  border-radius: var(--bulud-radius-control, 8px);
+  padding: var(--bulud-spacing-3, 12px);
+  inline-size: 100%;
+}
+.bulud-input::placeholder {
+  color: var(--bulud-color-muted);
+  opacity: 1;
+}
+.bulud-input:focus-visible {
+  outline: 3px solid var(--bulud-color-focus);
+  outline-offset: 2px;
+}
+.bulud-input[aria-invalid="true"] {
+  border-color: var(--bulud-color-danger);
+}
+.bulud-input:disabled {
+  opacity: var(--bulud-button-disabled-opacity, 0.55);
+  cursor: not-allowed;
+}
+.bulud-table-container {
+  overflow-x: auto;
+}
+.bulud-table {
+  border-collapse: collapse;
+  inline-size: 100%;
+  text-align: start;
+}
+.bulud-table :is(td, th) {
+  border-block-end: 1px solid var(--bulud-color-border);
+  padding: var(--bulud-spacing-4, 16px) var(--bulud-spacing-2, 8px);
+  text-align: start;
+}
+.bulud-table th {
+  font-weight: 600;
+}
+.bulud-table caption {
+  text-align: start;
+  padding-block: var(--bulud-spacing-3, 12px);
+}
+
+/* Native textarea skin; works with Angular's native forms accessor. */
+.bulud-textarea {
+  display: block;
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: var(--bulud-textarea-min-height, 126px);
+  resize: vertical;
+  font: inherit;
+  line-height: var(--bulud-textarea-line-height, 1.6);
+  text-align: start;
+  background: var(
+    --bulud-textarea-background,
+    var(--bulud-body-bg, var(--bulud-color-surface))
+  );
+  color: var(--bulud-textarea-foreground, var(--bulud-color-on-surface));
+  border: 1px solid var(--bulud-textarea-border, var(--bulud-color-border));
+  border-radius: var(--bulud-textarea-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-textarea-padding, var(--bulud-spacing-3, 12px));
+}
+.bulud-textarea::placeholder {
+  color: var(--bulud-textarea-muted, var(--bulud-color-muted));
+  opacity: 1;
+}
+.bulud-textarea:focus {
+  outline: none;
+  border-color: var(--bulud-textarea-focus, var(--bulud-color-primary));
+}
+.bulud-textarea:focus-visible {
+  box-shadow: 0 0 0 1px var(--bulud-textarea-focus, var(--bulud-color-primary));
+}
+.bulud-textarea[aria-invalid="true"],
+.bulud-textarea.ng-invalid.ng-touched {
+  border-color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+.bulud-textarea:disabled {
+  opacity: var(--bulud-textarea-disabled-opacity, 0.5);
+  cursor: default;
+}
+@media (forced-colors: active) {
+  .bulud-textarea:focus-visible {
+    outline: 1px solid Highlight;
+  }
+}

@@ -1,6 +1,7 @@
 :host {
   box-sizing: border-box;
-  display: inline-block;
+  display: block;
+  text-align: center;
   max-inline-size: 100%;
   overflow-x: auto;
   overflow-y: hidden;
@@ -123,6 +124,14 @@
 }
 
 .bulud-pagination__direction-icon {
+  // SVG geometry stays centered independently of font baseline and text direction.
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1em;
+  block-size: 1em;
   font-size: var(--bulud-pagination-direction-icon-size, 1.5em);
   line-height: 1;
 }
@@ -141,4 +150,10 @@
   .bulud-pagination__control {
     transition: none;
   }
+}
+
+.bulud-pagination__direction-icon svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
 }

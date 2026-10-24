@@ -119,6 +119,7 @@ describe('BuludTabs', () => {
     expect(panels[0].getAttribute('aria-labelledby')).toBe(tabs[0].id);
     expect(panels[0].hidden).toBeFalse();
     expect(panels[1].hidden).toBeTrue();
+    expect(getComputedStyle(panels[1]).display).toBe('none');
   });
 
   it('supports controlled selection and emits user selection', () => {

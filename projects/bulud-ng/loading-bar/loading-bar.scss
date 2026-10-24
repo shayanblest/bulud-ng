@@ -1,0 +1,45 @@
+:host {
+  display: none;
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: var(--bulud-loading-bar-height, 7px);
+  z-index: var(--bulud-loading-bar-z-index, 10000);
+  pointer-events: none;
+  overflow: hidden;
+}
+:host(.active) {
+  display: block;
+}
+.line {
+  block-size: 100%;
+  margin-inline-end: auto;
+  background: var(--bulud-loading-bar-accent, var(--bulud-color-primary));
+  transition: width 120ms linear;
+}
+:host(.indeterminate) .line {
+  animation: bulud-loading-sweep 1.1s infinite ease-in-out;
+}
+@keyframes bulud-loading-sweep {
+  from {
+    transform: translateX(var(--bulud-loading-bar-sweep-start, -100%));
+  }
+  to {
+    transform: translateX(var(--bulud-loading-bar-sweep-end, 400%));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    transition: none;
+  }
+  :host(.indeterminate) .line {
+    animation: none;
+    width: 100% !important;
+    opacity: 0.6;
+  }
+}
+
+:host-context([dir="rtl"]) {
+  --bulud-loading-bar-sweep-start: 100%;
+  --bulud-loading-bar-sweep-end: -400%;
+}

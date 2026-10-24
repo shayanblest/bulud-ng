@@ -1,0 +1,313 @@
+<div class="page-heading">
+  <p class="eyebrow">{{ p.text("فرم‌های مشترک", "SHARED FORMS") }}</p>
+  <h1>
+    {{
+      p.text(
+        "فرم آماده، رفتار قابل پیش‌بینی.",
+        "Ready forms. Predictable behavior."
+      )
+    }}
+  </h1>
+  <p class="lead">
+    {{
+      p.text(
+        "ولیدیشن سمت کاربر، پیام‌های خطای مرتبط و کامپوننت‌های هماهنگ با انگور.",
+        "Client validation, connected error messages and consistent Angour controls."
+      )
+    }}
+  </p>
+</div>
+<form class="surface" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-grid">
+    <div class="field">
+      <label buludFieldLabel [control]="form.controls.name" for="base-name">{{
+        p.text("نام کامل", "Full name")
+      }}</label
+      ><input
+        id="base-name"
+        class="bulud-input"
+        formControlName="name"
+        required
+        autocomplete="name"
+        [attr.aria-invalid]="invalid('name')"
+        aria-describedby="name-error"
+      />
+      <p class="error" id="name-error">
+        {{ invalid("name") ? error("name") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label buludFieldLabel [control]="form.controls.email" for="base-email">{{
+        p.text("ایمیل", "Email")
+      }}</label
+      ><input
+        id="base-email"
+        class="bulud-input"
+        type="email"
+        formControlName="email"
+        required
+        autocomplete="email"
+        dir="ltr"
+        [attr.aria-invalid]="invalid('email')"
+        aria-describedby="email-error email-hint"
+      /><small id="email-hint">{{
+        p.text(
+          "برای تست اعتبارسنجی غیرهمزمان: used@example.com",
+          "Async validation example: used@example.com"
+        )
+      }}</small>
+      <p class="error" id="email-error">
+        {{ invalid("email") ? error("email") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label buludFieldLabel [control]="form.controls.key" for="base-key">{{
+        p.text("شناسه پروژه", "Project key")
+      }}</label
+      ><input
+        id="base-key"
+        class="bulud-input"
+        formControlName="key"
+        required
+        dir="ltr"
+        autocapitalize="off"
+        spellcheck="false"
+        [attr.aria-invalid]="invalid('key')"
+        aria-describedby="key-error key-hint"
+      /><small id="key-hint">{{
+        p.text(
+          "۳ تا ۲۴ حرف لاتین کوچک، عدد یا خط تیره؛ شروع با حرف.",
+          "3–24 lowercase letters, numbers or hyphens; start with a letter."
+        )
+      }}</small>
+      <p class="error" id="key-error">
+        {{ invalid("key") ? error("key") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label
+        buludFieldLabel
+        [control]="form.controls.budget"
+        for="base-budget"
+        >{{ p.text("بودجه", "Budget") }}</label
+      ><input
+        id="base-budget"
+        class="bulud-input"
+        type="number"
+        formControlName="budget"
+        required
+        min="0"
+        max="1000000"
+        step="1"
+        [attr.aria-invalid]="invalid('budget')"
+        aria-describedby="budget-error"
+      />
+      <p class="error" id="budget-error">
+        {{ invalid("budget") ? error("budget") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label
+        buludFieldLabel
+        [control]="form.controls.website"
+        for="base-website"
+        >{{ p.text("وب‌سایت (اختیاری)", "Website (optional)") }}</label
+      ><input
+        id="base-website"
+        class="bulud-input"
+        type="url"
+        formControlName="website"
+        dir="ltr"
+        autocomplete="url"
+        [attr.aria-invalid]="invalid('website')"
+        aria-describedby="website-error"
+      />
+      <p class="error" id="website-error">
+        {{ invalid("website") ? error("website") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label
+        buludFieldLabel
+        [control]="form.controls.frameworks"
+        for="base-frameworks"
+        >{{ p.text("فریم‌ورک‌ها", "Frameworks") }}</label
+      ><bulud-dropdown
+        inputId="base-frameworks"
+        formControlName="frameworks"
+        [language]="p.language()"
+        [placeholder]="p.text('انتخاب فریم‌ورک', 'Select frameworks')"
+        [searchPlaceholder]="p.text('جست‌وجو…', 'Search…')"
+        [searchLabel]="p.text('جست‌وجوی فریم‌ورک', 'Search frameworks')"
+        [clearLabel]="p.text('پاک کردن انتخاب', 'Clear selection')"
+        [noResultsText]="p.text('نتیجه‌ای یافت نشد', 'No results')"
+        [emptyText]="p.text('گزینه‌ای وجود ندارد', 'No options')"
+        [options]="frameworks"
+        multiple
+        required
+        requireOption
+        [minSelected]="1"
+        [maxSelected]="2"
+        [aria-label]="p.text('فریم‌ورک‌ها', 'Frameworks')"
+        aria-describedby="frameworks-error"
+        [aria-errormessage]="invalid('frameworks') ? 'frameworks-error' : null"
+      />
+      <p class="error" id="frameworks-error">
+        {{ invalid("frameworks") ? error("frameworks") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label
+        buludFieldLabel
+        [control]="form.controls.password"
+        for="base-password"
+        >{{ p.text("رمز عبور", "Password") }}</label
+      ><input
+        id="base-password"
+        class="bulud-input"
+        type="password"
+        formControlName="password"
+        required
+        autocomplete="new-password"
+        minlength="8"
+        maxlength="128"
+        [attr.aria-invalid]="invalid('password')"
+        aria-describedby="password-error password-hint"
+      /><small id="password-hint">{{
+        p.text("حداقل ۸ کاراکتر.", "At least 8 characters.")
+      }}</small>
+      <p class="error" id="password-error">
+        {{ invalid("password") ? error("password") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label
+        buludFieldLabel
+        [control]="form.controls.confirm"
+        for="base-confirm"
+        >{{ p.text("تکرار رمز عبور", "Confirm password") }}</label
+      ><input
+        id="base-confirm"
+        class="bulud-input"
+        type="password"
+        formControlName="confirm"
+        required
+        autocomplete="new-password"
+        [attr.aria-invalid]="invalid('confirm')"
+        aria-describedby="confirm-error"
+      />
+      <p class="error" id="confirm-error">
+        {{ invalid("confirm") ? error("confirm") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label buludFieldLabel [control]="form.controls.date" for="base-date">{{
+        p.text("تاریخ شروع", "Start date")
+      }}</label
+      ><bulud-datepicker
+        id="base-date"
+        formControlName="date"
+        required
+        min="1900-01-01"
+        max="2100-12-31"
+        [language]="p.language()"
+        [aria-label]="p.text('تاریخ شروع', 'Start date')"
+        aria-describedby="date-error"
+      />
+      <p class="error" id="date-error">
+        {{ invalid("date") ? error("date") : "" }}
+      </p>
+    </div>
+    <div class="field">
+      <label buludFieldLabel [control]="form.controls.range" for="base-range">{{
+        p.text("بازه تاریخ (اختیاری)", "Date range (optional)")
+      }}</label
+      ><bulud-datepicker
+        id="base-range"
+        formControlName="range"
+        mode="range"
+        [language]="p.language()"
+        [aria-label]="p.text('بازه تاریخ', 'Date range')"
+        aria-describedby="range-error"
+      />
+      <p class="error" id="range-error">
+        {{ invalid("range") ? error("range") : "" }}
+      </p>
+    </div>
+    <fieldset class="field wide">
+      <legend buludFieldLabel [control]="form.controls.plan">
+        {{ p.text("طرح پروژه", "Project plan") }}
+      </legend>
+      <bulud-radio-group
+        formControlName="plan"
+        required
+        requireOption
+        [aria-label]="p.text('طرح پروژه', 'Project plan')"
+        aria-describedby="plan-error"
+        [aria-errormessage]="invalid('plan') ? 'plan-error' : null"
+        ><bulud-radio value="basic">{{ p.text("پایه", "Basic") }}</bulud-radio
+        ><bulud-radio value="pro">{{ p.text("حرفه‌ای", "Pro") }}</bulud-radio
+        ><bulud-radio value="enterprise" disabled>{{
+          p.text("سازمانی (غیرفعال)", "Enterprise (disabled)")
+        }}</bulud-radio></bulud-radio-group
+      >
+      <p class="error" id="plan-error">
+        {{ invalid("plan") ? error("plan") : "" }}
+      </p>
+    </fieldset>
+    <div class="field wide">
+      <label buludFieldLabel [control]="form.controls.notes" for="base-notes">{{
+        p.text("یادداشت (حداکثر ۵۰۰ کاراکتر)", "Notes (500 characters maximum)")
+      }}</label
+      ><textarea
+        id="base-notes"
+        buludTextarea
+        formControlName="notes"
+        rows="4"
+        maxlength="500"
+        [buludTextareaInvalid]="invalid('notes')"
+        aria-describedby="notes-error"
+      ></textarea>
+      <p class="error" id="notes-error">
+        {{ invalid("notes") ? error("notes") : "" }}
+      </p>
+    </div>
+    <div class="field wide">
+      <bulud-checkbox
+        formControlName="terms"
+        required
+        aria-describedby="terms-error"
+        ><span buludFieldLabel [control]="form.controls.terms">{{
+          p.text("قوانین استفاده را می‌پذیرم", "I accept the terms of use")
+        }}</span></bulud-checkbox
+      >
+      <p class="error" id="terms-error">
+        {{ invalid("terms") ? error("terms") : "" }}
+      </p>
+      <bulud-switch formControlName="notifications">{{
+        p.text("دریافت اعلان‌ها", "Receive notifications")
+      }}</bulud-switch>
+    </div>
+  </div>
+  <div class="form-actions">
+    <div class="toolbar">
+      <bulud-button type="submit" [disabled]="form.pending">{{
+        p.text("بررسی فرم", "Validate form")
+      }}</bulud-button
+      ><bulud-button variant="secondary" type="button" (click)="reset()">{{
+        p.text("بازنشانی", "Reset")
+      }}</bulud-button>
+    </div>
+    <output class="form-status" aria-live="polite">{{ status() }}</output>
+  </div>
+  @if (success()) {
+    <p class="notice" role="status">
+      {{
+        p.text(
+          "اعتبارسنجی موفق بود. این نمونه داده‌ای به سرور ارسال نمی‌کند.",
+          "Validation succeeded. This sample does not send data to a server."
+        )
+      }}
+    </p>
+  }
+</form>
