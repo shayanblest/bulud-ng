@@ -1,0 +1,51 @@
+:host {
+  background: transparent;
+  border: 0;
+  border-block-end: 2px solid transparent;
+  border-radius: var(--bulud-tabs-radius) var(--bulud-tabs-radius) 0 0;
+  color: var(--bulud-tabs-foreground);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font: inherit;
+  font-weight: 600;
+  min-block-size: 3rem;
+  padding-block: 0.75rem;
+  padding-inline: 1rem;
+  text-align: start;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+:host:hover:not(:disabled) {
+  background: var(--bulud-tabs-hover-background);
+}
+
+:host([aria-selected="true"]) {
+  border-block-end-color: var(--bulud-tabs-active-border);
+  border-inline-end-color: var(--bulud-tabs-active-border);
+  color: var(--bulud-tabs-active-foreground);
+}
+
+:host(:focus-visible) {
+  outline: 3px solid var(--bulud-tabs-focus);
+  outline-offset: -3px;
+}
+
+:host(:disabled) {
+  cursor: not-allowed;
+  opacity: var(--bulud-tabs-disabled-opacity);
+}
+
+:host-context(.bulud-tabs--vertical) {
+  border-block-end: 0;
+  border-inline-end: 2px solid transparent;
+  border-radius: var(--bulud-tabs-radius) 0 0 var(--bulud-tabs-radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition: none;
+  }
+}

@@ -1,0 +1,17 @@
+<div
+  class="bulud-tabs"
+  [class.bulud-tabs--vertical]="orientation() === 'vertical'"
+>
+  <div
+    class="bulud-tabs__list"
+    role="tablist"
+    [attr.aria-orientation]="orientation() === 'vertical' ? 'vertical' : null"
+    [attr.aria-label]="ariaLabel()"
+  >
+    <ng-content select="[buludTab]" />
+  </div>
+
+  <div class="bulud-tabs__panels">
+    <ng-content select="[buludTabPanel]" />
+  </div>
+</div>

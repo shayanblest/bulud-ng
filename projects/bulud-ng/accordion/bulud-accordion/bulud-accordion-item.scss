@@ -1,0 +1,99 @@
+:host {
+  border-block-start: 1px solid
+    var(--bulud-accordion-border, var(--bulud-color-border, #cbd5e1));
+  display: block;
+}
+
+:host:first-child {
+  border-block-start: 0;
+}
+
+.bulud-accordion-item__heading {
+  margin: 0;
+}
+
+.bulud-accordion-item__trigger {
+  align-items: center;
+  background: var(
+    --bulud-accordion-background,
+    var(--bulud-color-surface, #ffffff)
+  );
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: 700;
+  gap: 1rem;
+  inline-size: 100%;
+  justify-content: space-between;
+  min-block-size: 3.5rem;
+  padding-block: 1rem;
+  padding-inline: 1.25rem;
+  text-align: start;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.bulud-accordion-item__trigger:hover:not(:disabled) {
+  background: var(
+    --bulud-accordion-hover-background,
+    var(--bulud-color-surface-hover, #f8fafc)
+  );
+}
+
+.bulud-accordion-item__trigger:focus-visible {
+  outline: 3px solid
+    var(--bulud-accordion-focus, var(--bulud-color-focus, #93c5fd));
+  outline-offset: -3px;
+}
+
+.bulud-accordion-item__trigger:disabled {
+  cursor: not-allowed;
+  opacity: var(--bulud-accordion-disabled-opacity, 0.55);
+}
+
+.bulud-accordion-item__title {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.bulud-accordion-item__icon {
+  color: var(--bulud-accordion-icon, var(--bulud-color-primary, #2563eb));
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 120ms ease;
+}
+
+:host(.bulud-accordion-item-host--expanded) .bulud-accordion-item__icon {
+  transform: rotate(45deg);
+}
+
+.bulud-accordion-item__panel {
+  background: var(
+    --bulud-accordion-panel-background,
+    var(--bulud-color-surface, #ffffff)
+  );
+  border-block-start: 1px solid
+    var(--bulud-accordion-border, var(--bulud-color-border, #cbd5e1));
+}
+
+.bulud-accordion-item__content {
+  padding: 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-accordion-item__trigger,
+  .bulud-accordion-item__icon {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .bulud-accordion-item__trigger {
+    border: 1px solid ButtonText;
+  }
+}

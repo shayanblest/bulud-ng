@@ -1,0 +1,6 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bulud-radio-gap, 8px);
+  color: var(--bulud-radio-foreground, var(--bulud-color-on-surface, #0f172a));
+}

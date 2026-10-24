@@ -1,0 +1,56 @@
+{
+  "name": "bulud-ng",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^20.3.34",
+    "@angular/core": "^20.3.34",
+    "@angular/forms": "^20.3.34",
+    "rxjs": "~7.8.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tailwind.css": {
+      "style": "./tailwind.css",
+      "default": "./tailwind.css"
+    },
+    "./theme.css": {
+      "style": "./theme.css",
+      "default": "./theme.css"
+    },
+    "./angour.css": {
+      "style": "./angour.css",
+      "default": "./angour.css"
+    },
+    "./angour-base.css": {
+      "style": "./angour-base.css",
+      "default": "./angour-base.css"
+    }
+  },
+  "description": "Standalone Angular UI components, forms, charts and shared utilities with explicit Angour light/dark themes.",
+  "keywords": [
+    "angular",
+    "components",
+    "standalone",
+    "rtl",
+    "persian",
+    "design-system"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "prepublishOnly": "node ./publish-check.mjs"
+  }
+}

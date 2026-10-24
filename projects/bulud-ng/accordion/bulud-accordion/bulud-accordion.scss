@@ -1,0 +1,23 @@
+:host {
+  direction: inherit;
+  display: block;
+  max-inline-size: 100%;
+}
+
+.bulud-accordion {
+  background: var(
+    --bulud-accordion-background,
+    var(--bulud-color-surface, #ffffff)
+  );
+  border: 1px solid
+    var(--bulud-accordion-border, var(--bulud-color-border, #cbd5e1));
+  border-radius: var(
+    --bulud-accordion-radius,
+    var(--bulud-radius-control, 0.5rem)
+  );
+  color: var(
+    --bulud-accordion-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+  overflow: hidden;
+}

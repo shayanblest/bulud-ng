@@ -1,8 +1,56 @@
-/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
-/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "paths": {
+      "bulud-ng": ["./projects/bulud-ng/src/public-api.ts"],
+      "bulud-ng/radio": ["./projects/bulud-ng/radio/public-api.ts"],
+      "bulud-ng/datepicker": ["./projects/bulud-ng/datepicker/public-api.ts"],
+      "bulud-ng/button": ["./projects/bulud-ng/button/public-api.ts"],
+      "bulud-ng/dropdown": ["./projects/bulud-ng/dropdown/public-api.ts"],
+      "bulud-ng/badge": ["./projects/bulud-ng/badge/public-api.ts"],
+      "bulud-ng/resize-observer": [
+        "./projects/bulud-ng/resize-observer/public-api.ts"
+      ],
+      "bulud-ng/textarea-autosize": [
+        "./projects/bulud-ng/textarea-autosize/public-api.ts"
+      ],
+      "bulud-ng/digits": ["./projects/bulud-ng/digits/public-api.ts"],
+      "bulud-ng/initials": ["./projects/bulud-ng/initials/public-api.ts"],
+      "bulud-ng/filesize": ["./projects/bulud-ng/filesize/public-api.ts"],
+      "bulud-ng/clickoutside": [
+        "./projects/bulud-ng/clickoutside/public-api.ts"
+      ],
+      "bulud-ng/tabs": ["./projects/bulud-ng/tabs/public-api.ts"],
+      "bulud-ng/accordion": ["./projects/bulud-ng/accordion/public-api.ts"],
+      "bulud-ng/checkbox": ["./projects/bulud-ng/checkbox/public-api.ts"],
+      "bulud-ng/switch": ["./projects/bulud-ng/switch/public-api.ts"],
+      "bulud-ng/dialog": ["./projects/bulud-ng/dialog/public-api.ts"],
+      "bulud-ng/pagination": ["./projects/bulud-ng/pagination/public-api.ts"],
+      "bulud-ng/validators": ["./projects/bulud-ng/validators/public-api.ts"],
+      "bulud-ng/query": ["./projects/bulud-ng/query/public-api.ts"],
+      "bulud-ng/table": ["./projects/bulud-ng/table/public-api.ts"],
+      "bulud-ng/otp": ["./projects/bulud-ng/otp/public-api.ts"],
+      "bulud-ng/file-upload": ["./projects/bulud-ng/file-upload/public-api.ts"],
+      "bulud-ng/tooltip": ["./projects/bulud-ng/tooltip/public-api.ts"],
+      "bulud-ng/feedback": ["./projects/bulud-ng/feedback/public-api.ts"],
+      "bulud-ng/rating": ["./projects/bulud-ng/rating/public-api.ts"],
+      "bulud-ng/stepper": ["./projects/bulud-ng/stepper/public-api.ts"],
+      "bulud-ng/carousel": ["./projects/bulud-ng/carousel/public-api.ts"],
+      "bulud-ng/countdown": ["./projects/bulud-ng/countdown/public-api.ts"],
+      "bulud-ng/utilities": ["./projects/bulud-ng/utilities/public-api.ts"],
+      "bulud-ng/textarea": ["./projects/bulud-ng/textarea/public-api.ts"],
+      "bulud-ng/loading-bar": ["./projects/bulud-ng/loading-bar/public-api.ts"],
+      "bulud-ng/charts": ["./projects/bulud-ng/charts/public-api.ts"],
+      "bulud-ng/avatar": ["./projects/bulud-ng/avatar/public-api.ts"],
+      "bulud-ng/empty-state": ["./projects/bulud-ng/empty-state/public-api.ts"],
+      "bulud-ng/period-picker": [
+        "./projects/bulud-ng/period-picker/public-api.ts"
+      ],
+      "bulud-ng/chat": ["./projects/bulud-ng/chat/public-api.ts"],
+      "bulud-ng/field-label": ["./projects/bulud-ng/field-label/public-api.ts"],
+      "bulud-ng/skeleton": ["./projects/bulud-ng/skeleton/public-api.ts"],
+      "bulud-ng/confirm": ["./projects/bulud-ng/confirm/public-api.ts"]
+    },
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -22,5 +70,16 @@
     "typeCheckHostBindings": true,
     "strictTemplates": true
   },
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/bulud-ng/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/bulud-ng/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/demo/tsconfig.app.json"
+    }
+  ]
 }

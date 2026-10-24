@@ -1,0 +1,21 @@
+@theme inline {
+  --color-bulud-primary: var(--bulud-color-primary, #2563eb);
+  --color-bulud-primary-hover: var(--bulud-color-primary-hover, #1d4ed8);
+  --color-bulud-primary-active: var(--bulud-color-primary-active, #1e40af);
+  --color-bulud-on-primary: var(--bulud-color-on-primary, #ffffff);
+  --color-bulud-surface: var(--bulud-color-surface, #ffffff);
+  --color-bulud-surface-hover: var(--bulud-color-surface-hover, #f8fafc);
+  --color-bulud-surface-active: var(--bulud-color-surface-active, #f1f5f9);
+  --color-bulud-on-surface: var(--bulud-color-on-surface, #0f172a);
+  --color-bulud-border: var(--bulud-color-border, #cbd5e1);
+  --color-bulud-danger: var(--bulud-color-danger, #dc2626);
+  --color-bulud-danger-hover: var(--bulud-color-danger-hover, #b91c1c);
+  --color-bulud-danger-active: var(--bulud-color-danger-active, #991b1b);
+  --color-bulud-on-danger: var(--bulud-color-on-danger, #ffffff);
+  --color-bulud-focus: var(--bulud-color-focus, #93c5fd);
+  --radius-bulud-control: var(--bulud-radius-control, 0.5rem);
+  --font-weight-bulud-button: var(--bulud-button-font-weight, 600);
+  --spacing-bulud-control-sm: var(--bulud-button-height-small, 2rem);
+  --spacing-bulud-control-md: var(--bulud-button-height-medium, 2.5rem);
+  --spacing-bulud-control-lg: var(--bulud-button-height-large, 3rem);
+}

@@ -1,0 +1,229 @@
+import {
+  DOCUMENT,
+  EnvironmentProviders,
+  InjectionToken,
+  inject,
+  makeEnvironmentProviders,
+  provideEnvironmentInitializer,
+} from '@angular/core';
+
+export type BuludLanguage = 'en' | 'fa' | (string & {});
+export type BuludDirection = 'ltr' | 'rtl';
+
+export interface BuludDropdownLocale {
+  readonly placeholder: string;
+  readonly searchPlaceholder: string;
+  readonly noResultsText: string;
+  readonly loadingText: string;
+  readonly emptyText: string;
+  readonly selectedText: (count: number) => string;
+  readonly clearLabel: string;
+  readonly searchLabel: string;
+}
+
+/** Accessible and visible status text used by the Button component. */
+export interface BuludButtonLocale {
+  readonly loadingLabel: string;
+}
+
+/** Accessible text used by the dismissible Badge component. */
+export interface BuludBadgeLocale {
+  readonly dismissLabel: string;
+}
+
+/** Accessible strings used by the Pagination component. */
+export interface BuludPaginationLocale {
+  readonly navigationLabel: string;
+  readonly previousPageLabel: string;
+  readonly nextPageLabel: string;
+  readonly pageLabel: (page: number) => string;
+  readonly currentPageLabel: (page: number) => string;
+  readonly ellipsisLabel: string;
+}
+
+export interface BuludDatepickerLocale {
+  readonly chooseDate: string;
+  readonly placeholder: string;
+  readonly previousMonth: string;
+  readonly nextMonth: string;
+  readonly month: string;
+  readonly year: string;
+  readonly today: string;
+  readonly clear: string;
+  readonly close: string;
+  readonly rangeStart: string;
+  readonly rangeEnd: string;
+  readonly keyboardHelp: string;
+}
+
+export interface BuludLocale {
+  readonly datepicker?: BuludDatepickerLocale;
+  readonly language: BuludLanguage;
+  readonly direction: BuludDirection;
+  readonly dropdown: BuludDropdownLocale;
+  /** Optional for compatibility with locale objects created before Button. */
+  readonly button?: BuludButtonLocale;
+  /** Optional for compatibility with locale objects created before Badge. */
+  readonly badge?: BuludBadgeLocale;
+  /** Optional for compatibility with locale objects created before Pagination. */
+  readonly pagination?: BuludPaginationLocale;
+}
+
+export type BuludLocaleConfig = Partial<
+  Omit<
+    BuludLocale,
+    'dropdown' | 'button' | 'badge' | 'pagination' | 'datepicker'
+  >
+> & {
+  readonly datepicker?: Partial<BuludDatepickerLocale>;
+  readonly dropdown?: Partial<BuludDropdownLocale>;
+  readonly button?: Partial<BuludButtonLocale>;
+  readonly badge?: Partial<BuludBadgeLocale>;
+  readonly pagination?: Partial<BuludPaginationLocale>;
+};
+
+export const BULUD_DEFAULT_LOCALE: BuludLocale = {
+  datepicker: {
+    chooseDate: 'Choose date',
+    placeholder: 'Select a date',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    month: 'Month',
+    year: 'Year',
+    today: 'Today',
+    clear: 'Clear date',
+    close: 'Close calendar',
+    rangeStart: 'Start date',
+    rangeEnd: 'End date',
+    keyboardHelp:
+      'Arrow keys move by day or week. Home and End move within the week. Page Up and Page Down change month; Shift changes year. Escape closes.',
+  },
+  language: 'en',
+  direction: 'ltr',
+  dropdown: {
+    placeholder: 'Select an option',
+    searchPlaceholder: 'Search options',
+    noResultsText: 'No options found',
+    loadingText: 'Loading options…',
+    emptyText: 'No options available',
+    selectedText: (count) => `${count} selected`,
+    clearLabel: 'Clear selection',
+    searchLabel: 'Search options',
+  },
+  button: {
+    loadingLabel: 'Loading',
+  },
+  badge: {
+    dismissLabel: 'Remove badge',
+  },
+  pagination: {
+    navigationLabel: 'Pagination',
+    previousPageLabel: 'Previous page',
+    nextPageLabel: 'Next page',
+    pageLabel: (page) => `Page ${page}`,
+    currentPageLabel: (page) => `Current page, ${page}`,
+    ellipsisLabel: 'More pages',
+  },
+};
+
+export const BULUD_PERSIAN_LOCALE: BuludLocale = {
+  datepicker: {
+    chooseDate: 'انتخاب تاریخ',
+    placeholder: 'تاریخ را انتخاب کنید',
+    previousMonth: 'ماه قبل',
+    nextMonth: 'ماه بعد',
+    month: 'ماه',
+    year: 'سال',
+    today: 'امروز',
+    clear: 'پاک کردن تاریخ',
+    close: 'بستن تقویم',
+    rangeStart: 'تاریخ شروع',
+    rangeEnd: 'تاریخ پایان',
+    keyboardHelp:
+      'با کلیدهای جهت میان روزها و هفته‌ها حرکت کنید. Home و End ابتدا و انتهای هفته هستند. Page Up و Page Down ماه و با Shift سال را تغییر می‌دهند. Escape تقویم را می‌بندد.',
+  },
+  language: 'fa',
+  direction: 'rtl',
+  dropdown: {
+    placeholder: 'یک گزینه انتخاب کنید',
+    searchPlaceholder: 'جست‌وجوی گزینه‌ها',
+    noResultsText: 'گزینه‌ای پیدا نشد',
+    loadingText: 'در حال بارگذاری…',
+    emptyText: 'گزینه‌ای موجود نیست',
+    selectedText: (count) => `${count} مورد انتخاب شد`,
+    clearLabel: 'پاک کردن انتخاب',
+    searchLabel: 'جست‌وجوی گزینه‌ها',
+  },
+  button: {
+    loadingLabel: 'در حال بارگذاری',
+  },
+  badge: {
+    dismissLabel: 'حذف نشان',
+  },
+  pagination: {
+    navigationLabel: 'صفحه‌بندی',
+    previousPageLabel: 'صفحه قبلی',
+    nextPageLabel: 'صفحه بعدی',
+    pageLabel: (page) => `صفحه ${page}`,
+    currentPageLabel: (page) => `صفحه فعلی، ${page}`,
+    ellipsisLabel: 'صفحه‌های بیشتر',
+  },
+};
+
+export const BULUD_LOCALE = new InjectionToken<BuludLocale>('BULUD_LOCALE', {
+  factory: () => BULUD_DEFAULT_LOCALE,
+});
+
+export function resolveBuludLocale(
+  config: BuludLocaleConfig = {},
+): BuludLocale {
+  const base =
+    config.language === 'fa' ? BULUD_PERSIAN_LOCALE : BULUD_DEFAULT_LOCALE;
+  const pagination = base.pagination ?? BULUD_DEFAULT_LOCALE.pagination!;
+  const button: BuludButtonLocale = {
+    loadingLabel:
+      config.button?.loadingLabel ??
+      base.button?.loadingLabel ??
+      BULUD_DEFAULT_LOCALE.button!.loadingLabel,
+  };
+  const badge: BuludBadgeLocale = {
+    dismissLabel:
+      config.badge?.dismissLabel ??
+      base.badge?.dismissLabel ??
+      BULUD_DEFAULT_LOCALE.badge!.dismissLabel,
+  };
+
+  return {
+    ...base,
+    ...config,
+    datepicker: {
+      ...BULUD_DEFAULT_LOCALE.datepicker!,
+      ...base.datepicker,
+      ...config.datepicker,
+    },
+    dropdown: {
+      ...base.dropdown,
+      ...config.dropdown,
+    },
+    button,
+    badge,
+    pagination: {
+      ...pagination,
+      ...config.pagination,
+    },
+  };
+}
+
+export function provideBuludLocale(
+  config: BuludLocaleConfig = {},
+): EnvironmentProviders {
+  const locale = resolveBuludLocale(config);
+
+  return makeEnvironmentProviders([
+    { provide: BULUD_LOCALE, useValue: locale },
+    provideEnvironmentInitializer(() => {
+      const document = inject(DOCUMENT);
+      document.documentElement.setAttribute('lang', locale.language);
+    }),
+  ]);
+}

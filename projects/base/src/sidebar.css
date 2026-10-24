@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  max-block-size: calc(100dvh - 88px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bulud-color-border) transparent;
+  padding: var(--bulud-spacing-4);
+  background: var(--bulud-color-surface);
+  border-inline-end: 1px solid var(--bulud-color-border);
+}
+a,
+button {
+  color: var(--bulud-color-on-surface);
+  font: inherit;
+  text-decoration: none;
+  box-sizing: border-box;
+  min-inline-size: 0;
+}
+a {
+  display: block;
+  padding: 10px 8px;
+}
+button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: start;
+}
+a:hover,
+button:hover {
+  background: var(--bulud-color-surface-hover);
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--bulud-color-focus);
+  outline-offset: -2px;
+  border-radius: var(--bulud-radius-control);
+}
+.active {
+  font-weight: 700;
+  color: var(--bulud-color-primary);
+}
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  inline-size: 100%;
+  min-block-size: 48px;
+  padding: 12px 8px;
+}
+.menu-row span {
+  flex: 1;
+}
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.menu-icon {
+  inline-size: 20px;
+  block-size: 20px;
+}
+.chevron {
+  inline-size: 18px;
+  block-size: 18px;
+  transition: transform 0.18s ease;
+}
+[aria-expanded="true"] > .chevron {
+  transform: rotate(180deg);
+}
+.group-items {
+  margin-inline-start: 10px;
+  padding-inline-start: 8px;
+  border-inline-start: 1px solid var(--bulud-color-primary);
+}
+.feature-row {
+  display: flex;
+  align-items: center;
+}
+.feature-row a {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.feature-toggle {
+  display: grid;
+  place-items: center;
+  min-inline-size: 36px;
+  min-block-size: 44px;
+  padding: 8px;
+}
+.subnav {
+  margin-inline-start: 8px;
+  padding-inline-start: 8px;
+  border-inline-start: 1px solid var(--bulud-color-border);
+  font-size: 0.875rem;
+}
+[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}
+@media (max-width: 640px) {
+  .sidebar {
+    position: static;
+    max-block-size: 350px;
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--bulud-color-border);
+  }
+}

@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  margin-block-end: var(
+    --bulud-table-filters-gap,
+    var(--bulud-spacing-4, 16px)
+  );
+  color: var(--bulud-table-filters-foreground, var(--bulud-color-on-surface));
+}
+.filter-panel {
+  border: 1px solid var(--bulud-table-filters-border, var(--bulud-color-border));
+  border-radius: var(
+    --bulud-table-filters-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  padding: var(--bulud-table-filters-padding, var(--bulud-spacing-3, 12px));
+  background: var(--bulud-table-filters-background, var(--bulud-color-surface));
+}
+summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--bulud-spacing-2, 8px);
+  width: fit-content;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--bulud-table-filters-accent, var(--bulud-color-primary));
+  fill: none;
+  stroke-width: 1.5;
+}
+.count {
+  border-radius: var(--bulud-radius-control, 8px);
+  padding-inline: 8px;
+  background: var(--bulud-color-primary);
+  color: var(--bulud-color-on-primary);
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: var(--bulud-table-filters-gap, var(--bulud-spacing-4, 16px));
+  margin-block: 16px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+input,
+button {
+  font: inherit;
+  color: inherit;
+  background: var(--bulud-body-bg, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-table-filters-border, var(--bulud-color-border));
+  border-radius: var(
+    --bulud-table-filters-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  padding: 12px;
+}
+input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+button {
+  cursor: pointer;
+}
+:disabled {
+  opacity: var(--bulud-table-filters-disabled-opacity, 0.5);
+  cursor: default;
+}
+:is(summary, input, button):focus-visible {
+  outline: 2px solid var(--bulud-table-filters-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+input[aria-invalid="true"] {
+  border-color: var(--bulud-color-danger);
+}

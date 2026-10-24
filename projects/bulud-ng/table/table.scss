@@ -1,0 +1,140 @@
+:host {
+  display: block;
+  color: var(--bulud-table-foreground, var(--bulud-color-on-surface));
+}
+.surface {
+  background: var(--bulud-table-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-table-border, var(--bulud-color-border));
+  border-radius: var(--bulud-table-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-table-padding, var(--bulud-spacing-4, 16px));
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  background: var(--bulud-table-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-table-border, var(--bulud-color-border));
+  border-radius: var(--bulud-table-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-spacing-2, 8px) var(--bulud-spacing-3, 12px);
+}
+button:hover:not(:disabled) {
+  background: var(--bulud-color-surface-hover);
+}
+:where(button, input, select):focus-visible {
+  outline: 2px solid var(--bulud-table-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+:disabled {
+  opacity: var(--bulud-table-disabled-opacity, 0.5);
+  cursor: default;
+}
+.muted {
+  color: var(--bulud-table-muted, var(--bulud-color-muted));
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bulud-table-gap, var(--bulud-spacing-3, 12px));
+}
+.error {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+.table-scroll {
+  overflow-x: auto;
+  padding: 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+caption {
+  text-align: start;
+  padding: var(--bulud-table-padding, var(--bulud-spacing-4, 16px));
+  font-weight: 600;
+}
+th,
+td {
+  padding: var(--bulud-table-padding, var(--bulud-spacing-4, 16px));
+  border-block-end: 1px solid
+    var(--bulud-table-accent, var(--bulud-color-primary));
+  white-space: nowrap;
+}
+th {
+  font-weight: 500;
+  color: var(--bulud-table-muted, var(--bulud-color-muted));
+}
+th button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.details td {
+  white-space: normal;
+  text-align: start;
+  background: var(--bulud-body-bg, var(--bulud-color-surface));
+}
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: var(--bulud-spacing-4, 16px);
+}
+.table-scroll {
+  border-width: 0;
+  border-radius: 0;
+}
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: var(--bulud-spacing-2, 8px);
+}
+.detail-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.detail-toggle svg.expanded {
+  transform: rotate(180deg);
+}
+tr[data-expanded="true"] td {
+  border-block-start: 1px solid
+    var(--bulud-table-border, var(--bulud-color-border));
+  border-block-end: 0;
+}
+tr[data-expanded="true"] td:first-child {
+  border-inline-start: 1px solid
+    var(--bulud-table-border, var(--bulud-color-border));
+  border-start-start-radius: var(--bulud-table-radius, 8px);
+}
+tr[data-expanded="true"] td:last-child {
+  border-inline-end: 1px solid
+    var(--bulud-table-border, var(--bulud-color-border));
+  border-start-end-radius: var(--bulud-table-radius, 8px);
+}
+.details td {
+  background: var(--bulud-table-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-table-border, var(--bulud-color-border));
+  border-block-start: 0;
+  border-end-start-radius: var(--bulud-table-radius, 8px);
+  border-end-end-radius: var(--bulud-table-radius, 8px);
+  padding: var(--bulud-spacing-5, 24px);
+}
+.pagination {
+  justify-content: center;
+}

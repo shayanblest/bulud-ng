@@ -1,0 +1,1351 @@
+# Bulud NG
+
+Reusable, accessible Angular UI building blocks with standalone APIs and
+tree-shakable feature entry points.
+
+Start with the packaged [quick start](QUICKSTART.md) for a minimal consumer,
+Angour setup, forms and server-rendering notes.
+
+## Installation
+
+Public npm publication is pending the owner’s package name/account and license decision.
+The library supports Angular 20: the distribution checks exercise 20.3.34 (the minimum patched
+peer version). Compatibility with other Angular major versions has not been verified. Build and install the local package first:
+
+```bash
+# In the library workspace:
+npm run package:local
+# In your Angular application, using the actual absolute path:
+npm install /path/to/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+```
+
+After public publication, install the chosen registry package with `npm install bulud-ng`
+(or the final scoped name). The private workspace root is never the published artifact.
+The built package has a `prepublishOnly` guard: an owner-selected license and its
+LICENSE file must be included before public publication. No license is assumed.
+
+Angular packages are peer dependencies. Install a compatible Angular 20.3.34+
+version in the consuming application.
+
+Tailwind CSS 4 is optional. Bulud components work without Tailwind.
+
+## Public API and entry points
+
+Import shared theme and locale APIs from `bulud-ng`, and each UI feature from
+its documented secondary entry point:
+
+| Package path                 | Feature                                              |
+| ---------------------------- | ---------------------------------------------------- |
+| `bulud-ng`                   | Theme and locale providers, types, and token helpers |
+| `bulud-ng/button`            | `BuludButton`                                        |
+| `bulud-ng/badge`             | `BuludBadge`                                         |
+| `bulud-ng/dropdown`          | `BuludDropdown`                                      |
+| `bulud-ng/resize-observer`   | `BuludResizeObserver` and `BuludElementSize`         |
+| `bulud-ng/charts`            | `BuludChart`, line and candlestick data/types        |
+| `bulud-ng/loading-bar`       | `BuludLoadingBar`, `BuludLoadingService`             |
+| `bulud-ng/textarea`          | `BuludTextarea` native styling directive             |
+| `bulud-ng/table`             | `BuludTable`, filters, cells and details             |
+| `bulud-ng/textarea-autosize` | `BuludTextareaAutosize`                              |
+| `bulud-ng/digits`            | `BuludPersianDigitsPipe`, `BuludEnglishDigitsPipe`   |
+| `bulud-ng/initials`          | `BuludInitialsPipe`                                  |
+| `bulud-ng/filesize`          | `BuludFileSizePipe`                                  |
+| `bulud-ng/clickoutside`      | `BuludClickOutside` and related trigger types        |
+| `bulud-ng/tabs`              | `BuludTabs`, `BuludTab`, and `BuludTabPanel`         |
+| `bulud-ng/accordion`         | `BuludAccordion` and `BuludAccordionItem`            |
+| `bulud-ng/checkbox`          | `BuludCheckbox`                                      |
+| `bulud-ng/switch`            | `BuludSwitch`                                        |
+| `bulud-ng/dialog`            | `BuludDialog`, `BuludDialogCloseReason`              |
+| `bulud-ng/pagination`        | `BuludPagination`, `BuludPaginationItem`             |
+| `bulud-ng/avatar`            | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/carousel`          | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/chat`              | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/countdown`         | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/confirm`           | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/datepicker`        | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/empty-state`       | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/feedback`          | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/field-label`       | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/file-upload`       | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/otp`               | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/period-picker`     | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/query`             | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/rating`            | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/radio`             | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/skeleton`          | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/stepper`           | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/tooltip`           | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/utilities`         | See [SHARED.md](SHARED.md) for API and examples      |
+| `bulud-ng/validators`        | See [SHARED.md](SHARED.md) for API and examples      |
+
+Do not import from library source paths or component implementation files. See
+the packaged [`SHARED.md`](SHARED.md) for additional shared APIs. The full
+export inventory is also available at `docs/PUBLIC-API.md` in the source workspace.
+
+## Application theme configuration
+
+Create a consumer-owned `src/bulud.config.ts`:
+
+```ts
+import { defineBuludTheme } from "bulud-ng";
+
+export const buludTheme = defineBuludTheme({
+  colors: {
+    primary: "#7c3aed",
+    primaryHover: "#6d28d9",
+    primaryActive: "#5b21b6",
+    focus: "#c4b5fd",
+  },
+  shape: {
+    controlRadius: "0.75rem",
+  },
+  button: {
+    fontWeight: "700",
+    medium: {
+      height: "2.75rem",
+      paddingInline: "1.25rem",
+    },
+  },
+});
+```
+
+Import the optional default light/dark CSS explicitly in the application's
+global stylesheet. Dark mode follows an ancestor `.dark` class or
+`data-theme="dark"` attribute:
+
+```css
+@import "bulud-ng/theme.css";
+```
+
+Register that configuration once in the application configuration:
+
+```ts
+import { ApplicationConfig } from "@angular/core";
+import { provideBuludTheme } from "bulud-ng";
+
+import { buludTheme } from "./bulud.config";
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideBuludTheme(buludTheme)],
+};
+```
+
+The provider resolves omitted values against `BULUD_DEFAULT_THEME` and writes
+the resulting `--bulud-*` custom properties to the document root. Components
+therefore inherit one application-wide theme without per-component providers.
+Theme configuration supports `colors`, `shape`, `button`, `dropdown`, `badge`,
+`tabs`, `accordion`, `checkbox`, `switch`, and `dialog` tokens. The precedence is instance custom property,
+component token, global provider configuration, then the library default.
+
+## Angour application preset
+
+Angour's navy/gold light and dark design system is available through explicit
+`bulud-ng/angour.css` and optional `bulud-ng/angour-base.css` imports. Activate
+it with `data-bulud-preset="angour"` on your document root or a subtree; switch
+`data-theme="light"` / `data-theme="dark"` in the consuming application.
+The preset includes shared spacing, typography, radii, shadows and colors for
+all Bulud components. No Bootstrap or application services are required.
+
+```css
+@import "bulud-ng/theme.css";
+@import "bulud-ng/angour.css";
+@import "bulud-ng/angour-base.css";
+```
+
+```html
+<section class="bulud-app" lang="fa" dir="rtl" data-bulud-preset="angour" data-theme="dark">
+  <bulud-button>ذخیره</bulud-button>
+</section>
+```
+
+Typed presets `BULUD_ANGOUR_LIGHT_THEME`, `BULUD_ANGOUR_DARK_THEME` and
+`BULUD_ANGOUR_TOKENS` are exported from `bulud-ng`. See
+the source workspace’s `docs/ANGOUR.md` for setup, overrides, font ownership,
+accessibility and the demo at `/#angour`.
+
+## Angour form controls
+
+`bulud-ng/radio` exports `BuludRadioGroup` and `BuludRadio` with native grouping,
+keyboard interaction and Angular Forms integration. `bulud-ng/datepicker`
+exports `BuludDatepicker` with Persian/Gregorian display, ISO date-only values,
+single/range selection, min/max limits, keyboard navigation and Forms support.
+The Angour preset provides the original 16px checkbox and 16px/8px radio geometry,
+plus light/dark calendar styling. Preview at `/#angour-controls`.
+
+```ts
+import { BuludRadio, BuludRadioGroup } from "bulud-ng/radio";
+import { BuludDatepicker } from "bulud-ng/datepicker";
+```
+
+```html
+<bulud-radio-group aria-label="Plan" [(value)]="plan">
+  <bulud-radio value="basic">Basic</bulud-radio>
+  <bulud-radio value="pro">Pro</bulud-radio>
+</bulud-radio-group>
+<bulud-datepicker language="fa" calendar="persian" aria-label="تاریخ" [(value)]="date" />
+```
+
+See the source workspace’s `docs/FORM-CONTROLS.md` for all inputs,
+outputs, defaults, theme/locale configuration and accessibility responsibilities.
+
+## Accordion
+
+Import the standalone accordion pieces from the accordion secondary entry
+point:
+
+```ts
+import { BuludAccordion, BuludAccordionItem } from "bulud-ng/accordion";
+```
+
+Project item content with a stable identifier, a trigger marker, and a panel
+marker. The item supplies a semantic heading and native button, and the panel
+receives the matching `role="region"` relationship automatically:
+
+```html
+<bulud-accordion [(expanded)]="expandedSection">
+  <section [buludAccordionItem]="'overview'">
+    <span buludAccordionTrigger>Overview</span>
+    <p buludAccordionPanel>Workspace overview content.</p>
+  </section>
+  <section [buludAccordionItem]="'details'">
+    <span buludAccordionTrigger>Details</span>
+    <p buludAccordionPanel>Account details content.</p>
+  </section>
+</bulud-accordion>
+```
+
+Single mode is the default and binds `expanded` to a string or `null`. Set
+`multiple` to bind a readonly string array and keep several panels open:
+
+```html
+<bulud-accordion multiple [(expanded)]="expandedSections">
+  <!-- projected accordion items -->
+</bulud-accordion>
+```
+
+Items can be disabled with `[disabled]`. Enter and Space use native button
+activation; Up/Down move between enabled headings, while Home/End move to the
+first or last enabled heading. Collapsed panels are hidden from the focus order
+and focus returns to the trigger if a user collapses a panel containing focus.
+Consumers must provide unique item identifiers and meaningful projected
+trigger content. The accordion follows ancestor `dir` and supports light/dark
+theme selectors through the shared CSS variables. Instance custom properties
+override the global `provideBuludTheme` values.
+
+## Tailwind CSS integration
+
+In the consumer application's global CSS, import the Bulud Tailwind bridge
+after Tailwind:
+
+```css
+@import "tailwindcss";
+@import "bulud-ng/tailwind.css";
+```
+
+The bridge exposes Bulud tokens as Tailwind utilities:
+
+```html
+<section class="rounded-bulud-control border border-bulud-border bg-bulud-surface p-6 text-bulud-on-surface">
+  <h2 class="text-bulud-primary">Account</h2>
+
+  <bulud-button class="mt-4 w-full md:w-auto">Save</bulud-button>
+</section>
+```
+
+Available token-driven utility names include:
+
+- `bg-bulud-primary`, `text-bulud-on-primary`, and primary state colors;
+- `bg-bulud-surface`, `text-bulud-on-surface`, and `border-bulud-border`;
+- `bg-bulud-danger` and `text-bulud-on-danger`;
+- `ring-bulud-focus`;
+- `rounded-bulud-control`;
+- `font-bulud-button`;
+- `h-bulud-control-sm`, `h-bulud-control-md`, and
+  `h-bulud-control-lg`.
+
+Tailwind remains a build-time, optional peer. Bulud's Angular runtime does not
+import or execute Tailwind, and Bulud component templates do not require the
+consumer to scan library files for utility classes.
+
+## Dropdown
+
+Import `BuludDropdown` from its own secondary entry point:
+
+```ts
+import { Component } from "@angular/core";
+import { BuludDropdown } from "bulud-ng/dropdown";
+
+interface Framework {
+  readonly id: string;
+  readonly label: string;
+}
+
+@Component({
+  imports: [BuludDropdown],
+  template: `
+    <bulud-dropdown aria-label="Choose a framework" [options]="frameworks" [optionLabel]="label" [(value)]="framework">
+      <ng-template #optionTemplate let-option let-selected="selected">
+        <span>{{ option.label }}</span>
+        @if (selected) {
+          <span aria-hidden="true">✓</span>
+        }
+      </ng-template>
+    </bulud-dropdown>
+  `,
+})
+export class FrameworkPicker {
+  readonly frameworks: readonly Framework[] = [
+    { id: "angular", label: "Angular" },
+    { id: "react", label: "React" },
+  ];
+  framework: Framework | null = null;
+  readonly label = (option: Framework): string => option.label;
+}
+```
+
+`BuludDropdown` supports single and multiple selection, searchable filtering,
+loading and empty states, clearable values, disabled options, custom comparison functions, and
+projected `#optionTemplate`/`#selectedTemplate` templates. In multiple mode,
+bind `[(value)]` to a readonly array:
+
+```html
+<bulud-dropdown multiple [options]="teamMembers" [optionLabel]="memberLabel" [(value)]="selectedMembers" />
+```
+
+When text inputs are omitted, the dropdown uses the injected locale. Configure
+English or Persian defaults with `provideBuludLocale`; explicit instance inputs
+such as `placeholder`, `loadingText`, `clearLabel`, and `searchLabel` take
+precedence. The provider sets the document `lang`; it does not set `dir` or
+CSS direction. The component follows the nearest ancestor direction and does
+not switch it.
+
+```ts
+import { provideBuludLocale } from "bulud-ng";
+
+export const appConfig = {
+  providers: [provideBuludLocale({ language: "fa" })],
+};
+```
+
+The trigger needs a consumer-provided `aria-label` when its visible content is
+not an adequate accessible name. Search and clear actions receive localized
+accessible labels automatically, with `searchLabel` and `clearLabel` available
+for one-off overrides.
+
+The trigger follows the combobox/listbox keyboard pattern: `ArrowDown` and
+`ArrowUp` open and move the active option, `Home` and `End` jump to the first
+and last option, `Enter` or `Space` selects, and `Escape` closes and restores
+focus to the trigger. Navigation wraps at either end. Options matched by
+`optionDisabled` remain discoverable during keyboard navigation, expose
+`aria-disabled="true"`, and cannot be activated or selected. In a searchable
+panel, `ArrowUp` and `ArrowDown` move from the search field into the options; `Home` and `End`
+remain native text-editing keys while the search field has focus. Tab and
+Shift+Tab retain native focus navigation and close the panel when focus leaves.
+Pointer interaction outside the dropdown also closes an open panel. Consumers
+should provide an accurate `aria-label` when the projected trigger content is
+not sufficient.
+
+For Angular Forms, bind the dropdown with `formControl`/`formControlName` or
+`[(ngModel)]`. Single-select controls use the selected option value and
+multiple-select controls use a readonly array. The `required` input adds the
+standard `required` validation error, propagates disabled state from the form,
+emits changes after user selection/clearing, and marks the control touched when
+focus leaves the dropdown.
+
+`writeValue` updates the view without emitting a user change. Selection and
+clearing emit one form change. Angular Forms `reset()` without an explicit value
+passes `null` through the CVA in both single and multiple modes; multiple mode
+renders that value as an empty selection. Pass an explicit `[]` when the form
+model must reset to an array. The instance `disabled` input and Forms disabled
+state combine, so either one prevents interaction.
+
+### Dropdown inputs
+
+| Input               | Type                             | Default          | Description                                               |
+| ------------------- | -------------------------------- | ---------------- | --------------------------------------------------------- |
+| `options`           | `readonly T[]`                   | `[]`             | Options rendered in the listbox                           |
+| `value`             | `T \| readonly T[] \| null`      | `null`           | Selected value; use an array with `multiple`              |
+| `multiple`          | `boolean`                        | `false`          | Keeps the panel open and toggles multiple values          |
+| `searchable`        | `boolean`                        | `true`           | Shows the search field                                    |
+| `clearable`         | `boolean`                        | `true`           | Shows the clear action for a selected value               |
+| `disabled`          | `boolean`                        | `false`          | Prevents opening and interaction                          |
+| `loading`           | `boolean`                        | `false`          | Shows a loading status instead of options                 |
+| `required`          | `boolean`                        | `false`          | Enables the standard Forms `required` validator           |
+| `optionDisabled`    | `(option: T) => boolean`         | `() => false`    | Marks options unavailable while keeping them discoverable |
+| `placeholder`       | `string \| undefined`            | locale default   | Empty-selection trigger text                              |
+| `searchPlaceholder` | `string \| undefined`            | locale default   | Search input placeholder                                  |
+| `noResultsText`     | `string \| undefined`            | locale default   | Message for a filtered empty result                       |
+| `loadingText`       | `string \| undefined`            | locale default   | Loading-state message                                     |
+| `emptyText`         | `string \| undefined`            | locale default   | Message for an empty option collection                    |
+| `clearLabel`        | `string \| undefined`            | locale default   | Accessible name for the clear action                      |
+| `searchLabel`       | `string \| undefined`            | locale default   | Accessible name for the search field                      |
+| `aria-label`        | `string \| null`                 | `null`           | Accessible name for the combobox trigger                  |
+| `optionLabel`       | `(option: T) => string`          | `String(option)` | Visible and searchable option text                        |
+| `compareWith`       | `(left: T, right: T) => boolean` | `Object.is`      | Equality function for selected values                     |
+
+`clearLabel` and `searchLabel` override the localized accessible names for the
+clear action and search field. The component exposes `valueChange` through its
+model binding; Angular Forms users should prefer `formControl`, `formControlName`,
+or `ngModel` when participating in form state.
+
+The option template receives `let-option` and `let-selected="selected"`; its
+context exposes the option as both the implicit value and `option`, plus the
+boolean `selected`. The selected-value template receives the selected `value`
+and the `multiple` boolean. Keep projected option content text-equivalent to
+the value returned by `optionLabel`, and provide an accessible trigger label
+when the projected content is not sufficient.
+
+## Checkbox
+
+Import `BuludCheckbox` from the checkbox secondary entry point:
+
+```ts
+import { BuludCheckbox } from "bulud-ng/checkbox";
+```
+
+Use projected content as the label and bind the boolean value with Angular
+Forms or `[(checked)]`:
+
+```html
+<bulud-checkbox [(checked)]="accepted" required> Accept the terms </bulud-checkbox>
+```
+
+`BuludCheckbox` keeps a native checkbox as the focusable and interactive
+element. Space or projected-label activation toggles it once. `indeterminate`,
+`disabled`, `required`, `invalid`, `id`, and `aria-label` are typed inputs;
+`aria-describedby`, and `aria-errormessage` are also typed inputs and are
+forwarded to the native checkbox. `checkedChange` and `indeterminateChange` are
+generated by the public models for `checked` and `indeterminate`, respectively,
+and support Angular's two-way binding contract. Native activation clears the
+current mixed state; set `indeterminate` again when the parent needs to reassert
+it. The native label supplies
+the accessible name when projected text is present. Provide `aria-label` (or
+an external label associated with `id`) when the projected content is not a
+meaningful name.
+
+The control implements `ControlValueAccessor` and `Validator`: user changes
+update the form value, blur marks it touched, `required` returns the standard
+`required` error, and a disabled Angular control disables the native input.
+Checkbox theme values use the shared CSS variables and follow the normal
+instance, component token, global provider, and library-default precedence.
+Reactive Forms and template-driven forms are both supported:
+
+```html
+<bulud-checkbox [formControl]="acceptedControl">Accept terms</bulud-checkbox>
+```
+
+```ts
+import { FormControl } from "@angular/forms";
+
+acceptedControl = new FormControl<boolean>(false, { nonNullable: true });
+```
+
+```html
+<bulud-checkbox [(ngModel)]="accepted">Accept terms</bulud-checkbox>
+```
+
+```ts
+accepted = false;
+```
+
+For nullable/default Angular Forms controls, `reset()` without an explicit
+value may pass `null` to `writeValue`; a `nonNullable` control such as the
+example resets to its initial value instead. Only `true` renders as checked, so
+`null` and other non-true values render unchecked. Because `writeValue` uses the
+`checked` model setter, a changed value is reflected through the generated
+`checkedChange` output; this is distinct from the registered Forms `onChange`
+callback, which `writeValue` does not call. An instance `[disabled]` value and
+Forms `disable()` state are combined; both must be clear before interaction
+resumes.
+
+### Checkbox inputs
+
+| Input               | Type             | Default | Description                                        |
+| ------------------- | ---------------- | ------- | -------------------------------------------------- |
+| `checked`           | `boolean`        | `false` | Current checked value; supports `[(checked)]`      |
+| `indeterminate`     | `boolean`        | `false` | Displays the native mixed state                    |
+| `disabled`          | `boolean`        | `false` | Prevents interaction                               |
+| `required`          | `boolean`        | `false` | Enables native and Forms required validation       |
+| `invalid`           | `boolean`        | `false` | Explicit invalid presentation                      |
+| `id`                | `string \| null` | `null`  | Native input id for external labels                |
+| `aria-label`        | `string \| null` | `null`  | Accessible name override                           |
+| `aria-describedby`  | `string \| null` | `null`  | IDs forwarded to the native input for description  |
+| `aria-errormessage` | `string \| null` | `null`  | ID forwarded to the native input for error message |
+
+### Checkbox model outputs
+
+| Output                | Type      | Description                                                    |
+| --------------------- | --------- | -------------------------------------------------------------- |
+| `checkedChange`       | `boolean` | Generated by the `checked` model for `[(checked)]`             |
+| `indeterminateChange` | `boolean` | Generated by the `indeterminate` model for `[(indeterminate)]` |
+
+The native checkbox handles Space and label activation. Consumers should keep
+the projected label meaningful and provide `aria-label` when it is not.
+
+## Switch
+
+Import `BuludSwitch` from the switch secondary entry point:
+
+```ts
+import { BuludSwitch } from "bulud-ng/switch";
+```
+
+Use projected content as the accessible name and bind the boolean value with
+Angular Forms or `[(checked)]`:
+
+```html
+<bulud-switch [(checked)]="notificationsEnabled"> Enable notifications </bulud-switch>
+```
+
+`BuludSwitch` uses a native checkbox with `role="switch"`, so Space and label
+activation use browser-native keyboard and pointer behavior while exposing the
+APG switch role and checked state. Consumers should provide meaningful
+projected content or `aria-label`, and can use `id` with an external label.
+`disabled`, `required`, `invalid`, `aria-describedby`, and
+`aria-errormessage` are typed inputs. The component implements
+`ControlValueAccessor` and `Validator`; user changes update Forms, blur marks
+the control touched, required returns `{ required: true }`, and Angular Forms
+disabled state disables the native control. Switch transitions are disabled
+when the user requests reduced motion.
+
+Switch theme values use CSS custom properties and follow instance override,
+global `provideBuludTheme` configuration, and library-default precedence. The
+explicitly imported `theme.css` provides light and dark defaults.
+
+### Switch inputs
+
+| Input               | Type             | Default | Description                                    |
+| ------------------- | ---------------- | ------- | ---------------------------------------------- |
+| `checked`           | `boolean`        | `false` | Current switch state; supports two-way binding |
+| `disabled`          | `boolean`        | `false` | Prevents interaction                           |
+| `required`          | `boolean`        | `false` | Enables required validation                    |
+| `invalid`           | `boolean`        | `false` | Explicit invalid presentation                  |
+| `id`                | `string \| null` | `null`  | Native input id                                |
+| `aria-label`        | `string \| null` | `null`  | Accessible name override                       |
+| `aria-describedby`  | `string \| null` | `null`  | Description relationship                       |
+| `aria-errormessage` | `string \| null` | `null`  | Error relationship                             |
+
+`checkedChange` emits once for each user change; programmatic Angular Forms
+writes or resets do not call the registered Forms `onChange` callback. For
+nullable/default controls, `reset()` without an explicit value may pass
+`null` or another false-like value to `writeValue`; a `nonNullable` control
+resets to its initial value instead. BuludSwitch renders according to the value
+supplied through `writeValue`, so only a true value renders on. Reactive Forms
+and template-driven forms are both supported:
+
+```html
+<bulud-switch [formControl]="notificationsControl">Notifications</bulud-switch>
+```
+
+```ts
+import { FormControl } from "@angular/forms";
+
+notificationsControl = new FormControl<boolean>(false, { nonNullable: true });
+```
+
+```html
+<bulud-switch [(ngModel)]="notifications">Notifications</bulud-switch>
+```
+
+```ts
+notifications = false;
+```
+
+An instance `[disabled]` value and Forms `disable()` state are combined. The
+native switch handles Space and projected-label activation; Enter is not
+required by the switch APG pattern.
+
+## Dialog
+
+Import the standalone modal from `bulud-ng/dialog` and project its content.
+The dialog requires an accessible name through `aria-label` or
+`aria-labelledby`; use `aria-describedby` for supporting text:
+
+```ts
+import { BuludDialog, type BuludDialogCloseReason } from "bulud-ng/dialog";
+
+@Component({
+  imports: [BuludDialog],
+  template: `
+    <button type="button" (click)="open.set(true)">Edit profile</button>
+    <bulud-dialog [(open)]="open" aria-labelledby="profile-title" aria-describedby="profile-description" [initialFocus]="'#profile-name'" (closeRequest)="lastCloseReason.set($event)">
+      <h2 id="profile-title">Edit profile</h2>
+      <p id="profile-description">Update your public profile.</p>
+      <input id="profile-name" />
+      <button type="button" (click)="open.set(false)">Cancel</button>
+    </bulud-dialog>
+  `,
+})
+export class ProfileEditor {
+  readonly open = signal(false);
+  readonly lastCloseReason = signal<BuludDialogCloseReason | null>(null);
+}
+```
+
+`open` is a controlled signal model and supports `[(open)]`. `close()` is a
+programmatic close method; `closeRequest` is emitted only for enabled user
+Escape or backdrop requests and reports `"escape"` or `"backdrop"`. Set
+`closeOnEscape` or `closeOnBackdrop` to `false` to disable either policy.
+`initialFocus` is an optional CSS selector scoped to the projected dialog
+surface. Without it, focus moves to the first enabled, visible tabbable child,
+or to the dialog surface itself. Tab and Shift+Tab wrap dynamically, and focus
+returns to the opening element when it remains connected and focusable.
+
+The Dialog focus tokens style the Dialog surface's fallback focus ring. Projected
+controls retain their own focus styles so consumers can intentionally style them
+without the component leaking descendant CSS into consumer content.
+
+The dialog uses `role="dialog"`, `aria-modal="true"`, a viewport backdrop, and
+reference-counted body scroll locking. Consumer-provided labels and IDs must be
+unique and must identify visible projected content. Consumers should provide a
+visible close action inside the projected footer; Escape/backdrop behavior is
+optional and policy-controlled. The component follows ancestor `dir` and dark
+theme selectors, respects `prefers-reduced-motion`, and supports `dialog`
+theme tokens—including border color/width and focus color/width/offset—plus per-instance `[theme]`
+overrides. The `viewportGutter` token controls the viewport edge spacing used by
+both the backdrop and the surface max-height; `stackBase` controls the viewport overlay's stacking base;
+each open Dialog adds its registry stack level to that base.
+
+## Tabs
+
+Import the standalone tabs pieces from the tabs secondary entry point:
+
+```ts
+import { BuludTab, BuludTabPanel, BuludTabs } from "bulud-ng/tabs";
+```
+
+Pair a native button carrying `buludTab` with a projected panel carrying the
+same `buludTabPanel` identifier. The first enabled tab is selected by default;
+use `[(activeId)]` for a controlled, typed selection model:
+
+```html
+<bulud-tabs [(activeId)]="activeTab">
+  <button type="button" [buludTab]="'overview'">Overview</button>
+  <button type="button" [buludTab]="'details'">Details</button>
+
+  <section [buludTabPanel]="'overview'">Overview content</section>
+  <section [buludTabPanel]="'details'">Details content</section>
+</bulud-tabs>
+```
+
+Set `[orientation]="'vertical'"` for a vertical tablist. Horizontal tabs use
+Left/Right, Home, and End; vertical tabs use Up/Down, Home, and End. Arrow
+navigation skips disabled tabs, moves focus, and activates the destination.
+The component supplies stable tab/panel IDs, `aria-selected`, `aria-controls`,
+`aria-labelledby`, and `tabpanel` visibility. Each tab identifier must be
+unique within its tabs instance. Consumers should provide an accessible name
+for the tablist with `aria-label` when the visible page context does not name
+it.
+
+### Tabs inputs and outputs
+
+| Input/output                  | Type                         | Default           | Description                                                              |
+| ----------------------------- | ---------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `activeId` / `activeIdChange` | `BuludTabId \| null`         | First enabled tab | Controlled selection model; use `[(activeId)]` for two-way binding       |
+| `orientation`                 | `'horizontal' \| 'vertical'` | `'horizontal'`    | Layout and arrow-key axis                                                |
+| `aria-label`                  | `string \| null`             | `null`            | Accessible name for the tablist when surrounding context is insufficient |
+| `buludTab`                    | `BuludTabId`                 | Required          | Identifier on a native tab button                                        |
+| `disabled`                    | `boolean`                    | `false`           | Removes a tab from selection and arrow-key navigation                    |
+| `buludTabPanel`               | `BuludTabId`                 | Required          | Identifier matching the panel's tab                                      |
+
+Horizontal tabs use Left/Right, Home, and End; vertical tabs use Up/Down,
+Home, and End. Consumers must provide unique tab identifiers and an accessible
+tablist name where the surrounding page context does not provide one.
+
+## Resize observer
+
+Import `BuludResizeObserver` from its secondary entry point to observe an
+element's content-box size:
+
+```ts
+import { Component } from "@angular/core";
+import { BuludResizeObserver, BuludElementSize } from "bulud-ng/resize-observer";
+
+@Component({
+  imports: [BuludResizeObserver],
+  template: ` <section buludResizeObserver (sizeChange)="size = $event">{{ size.width }} × {{ size.height }}px</section> `,
+})
+export class ResizablePanel {
+  size: BuludElementSize = { width: 0, height: 0 };
+}
+```
+
+The `sizeChange` output emits typed CSS-pixel physical `width` and `height` values,
+including the browser's initial asynchronous notification after observation
+starts. Identical consecutive dimensions are suppressed. Set
+`[enabled]="false"` to pause observation; the default is `true`. Re-enabling
+observes again and emits its first measurement only when it differs from the
+last emitted measurement, so a size change while disabled is reported. A size
+that changes and then returns to the last emitted value before re-enabling is
+not observable and is correctly suppressed.
+
+The directive prefers the physical `contentRect.width` and `contentRect.height`
+content-box dimensions. When only `contentBoxSize` is available, it reads both
+array and single-object browser shapes and maps logical inline/block axes to
+physical width/height using the host writing mode. If the injected document has no
+`defaultView` or that view has no `ResizeObserver`, it remains inactive without
+emitting a fake measurement. Destroying the directive disconnects observation;
+queued callbacks after disable or destroy are ignored. There is no global
+configuration or theme state for this directive, so its `enabled` input is the
+only configuration and takes direct instance precedence. The directive does
+not add semantics or ARIA; consumers must provide the appropriate native
+element, accessible name, and keyboard behavior when observing an interactive
+element.
+
+## ClickOutside
+
+Import `BuludClickOutside` and its public event/trigger types from
+`bulud-ng/clickoutside`. The standalone directive's selector is
+`[buludClickOutside]`:
+
+```ts
+import { Component } from "@angular/core";
+import { BuludClickOutside, type BuludClickOutsideEvent, type BuludClickOutsideTrigger } from "bulud-ng/clickoutside";
+
+@Component({
+  imports: [BuludClickOutside],
+  template: ` <div buludClickOutside [triggers]="triggers" (outside)="closeMenu($event)">Menu content</div> `,
+})
+export class Menu {
+  readonly triggers: readonly BuludClickOutsideTrigger[] = ["pointerdown", "focusin"];
+
+  closeMenu(event: BuludClickOutsideEvent): void {
+    // event.trigger is "pointerdown" or "focusin".
+    // The consumer implements closing and any appropriate focus handling here.
+  }
+}
+```
+
+| Input      | Type                                  | Default                      | Description                                                |
+| ---------- | ------------------------------------- | ---------------------------- | ---------------------------------------------------------- |
+| `enabled`  | `boolean`                             | `true`                       | Enables outside detection; uses boolean attribute coercion |
+| `triggers` | `readonly BuludClickOutsideTrigger[]` | `['pointerdown', 'focusin']` | Selects the document events that cause notifications       |
+
+`BuludClickOutsideTrigger` is `'pointerdown' | 'focusin'`. The `outside` output
+is created with `output<BuludClickOutsideEvent>()` and emits an event containing
+only readonly `trigger: BuludClickOutsideTrigger`. It does not include the
+original DOM event or target.
+
+Detection is enabled by default for both triggers. Interactions on the host or
+its descendants do not emit. With both triggers enabled, pointerdown followed
+by focusin on the same outside target is coalesced into one event with
+`trigger: 'pointerdown'`. A focusin on a different outside target still emits
+`trigger: 'focusin'`. Duplicate configured triggers are deduplicated. Use
+`[triggers]="['pointerdown']"` or `[triggers]="['focusin']"` for only one
+interaction kind; an empty array listens to neither event.
+
+Setting `[enabled]="false"` removes the outside document listeners. Re-enabling
+installs listeners for the configured triggers; changing `triggers` updates
+the listeners. Destroying the directive removes its listeners. It runs only in
+the browser; during SSR it installs no listeners and emits no fake outside
+events. There is no global configuration token or provider; the inputs configure
+each instance directly.
+
+The directive adds no semantics, focus management, keyboard behavior, or close
+behavior. Consumers own accessible names, roles, ARIA relationships/state, and
+keyboard/focus behavior for the UI using it. Use semantic native elements and
+implement the keyboard pattern required by your UI, including Escape handling,
+focus placement, and focus restoration where appropriate. A `focusin`
+notification reports focus movement; it does not move or trap focus.
+
+Theming is not applicable: the directive has no visual styling, CSS custom
+properties, theme input, or theme contract. Consumers style the host and its
+content. Forms integration is not applicable: it has no form value or validation
+state, implements neither `ControlValueAccessor` nor `Validator`, and adds no
+Forms contract to its host.
+
+## Textarea autosize
+
+Import `BuludTextareaAutosize` from its secondary entry point and opt in on a
+native textarea:
+
+```ts
+import { BuludTextareaAutosize } from "bulud-ng/textarea-autosize";
+
+@Component({
+  imports: [BuludTextareaAutosize],
+  template: ` <textarea buludTextareaAutosize [minRows]="2" [maxRows]="6" aria-label="Message"></textarea> `,
+})
+export class MessageField {}
+```
+
+The directive measures the textarea's content box after initialization and on
+`input`, then grows or shrinks the native control without polling. Its typed
+inputs are `enabled` (default `true`), `minRows`, and `maxRows`; finite row
+values of at least `1` are rounded down, while values below `1` and other
+invalid values are ignored. At `maxRows`, the
+textarea keeps its native keyboard semantics and uses vertical scrolling so
+content remains reachable. The calculation accounts for line height, padding,
+border widths, and both `content-box` and `border-box` sizing.
+
+Programmatic values assigned through Angular bindings are detected during
+Angular change detection. Direct DOM assignments outside Angular should dispatch
+an `input` event to request a measurement. Width changes are observed when the
+browser provides `ResizeObserver`; the directive reacts only to width changes,
+so its own height writes do not create a feedback loop. Disabling restores the
+textarea's original inline height and overflow styles; re-enabling measures the
+current value immediately. It is a safe no-op during SSR or when layout APIs
+are unavailable, and it removes listeners and observers on destroy. The
+directive preserves native textarea accessibility and does not add ARIA.
+
+Global row defaults use `BuludTextareaAutosizeConfig` and
+`provideBuludTextareaAutosize`:
+
+```ts
+import { ApplicationConfig } from "@angular/core";
+import { provideBuludTextareaAutosize } from "bulud-ng/textarea-autosize";
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideBuludTextareaAutosize({ minRows: 2, maxRows: 6 })],
+};
+```
+
+The config fields are `minRows` and `maxRows`; each accepts a finite row number
+or `null`. Resolution precedence is instance override → directive default →
+global config → library default. An omitted or `undefined` value falls through
+to the next layer. Explicit `null` is preserved at that layer and disables the
+corresponding row limit; the library default is also `null`. The
+`BULUD_TEXTAREA_AUTOSIZE_CONFIG` token is available for typed injection when a
+consumer needs to read the configured defaults.
+
+### Dropdown accessibility
+
+The trigger is a `role="combobox"` controlling a `role="listbox"`. Its active
+option is exposed through `aria-activedescendant`; the component supplies stable
+IDs, `aria-selected`, `aria-disabled`, `aria-required`, and form-driven
+`aria-invalid` state. The search field has its own localized accessible name
+and listbox relationship. Consumers must provide `aria-label` when the visible
+trigger content is not an adequate accessible name. Direction is inherited
+from the nearest ancestor CSS/`dir` context; locale selection never forces a
+component direction.
+
+## Badge
+
+Import the standalone component from its secondary entry point:
+
+```ts
+import { BuludBadge } from "bulud-ng/badge";
+```
+
+`BuludBadge` renders projected content with optional status dot and dismiss
+action. Its `dismissed` output emits after the dismiss button is activated.
+
+| Input/output   | Type                                                           | Default        | Description                                |
+| -------------- | -------------------------------------------------------------- | -------------- | ------------------------------------------ |
+| `variant`      | `'neutral' \| 'primary' \| 'success' \| 'warning' \| 'danger'` | `'neutral'`    | Visual treatment                           |
+| `size`         | `'small' \| 'medium' \| 'large'`                               | `'medium'`     | Badge size                                 |
+| `dot`          | `boolean`                                                      | `false`        | Shows a decorative status dot              |
+| `dismissible`  | `boolean`                                                      | `false`        | Shows a keyboard-accessible dismiss button |
+| `dismissLabel` | `string \| undefined`                                          | locale default | Accessible name for dismiss                |
+| `dismissed`    | `Output<void>`                                                 | —              | Emits when dismissal is activated          |
+
+The badge is passive text, with no implicit live region, button role, or tab
+stop. Variants communicate appearance; include meaningful text rather than
+relying on color. The dot and dismiss icon are decorative. For dot-only content,
+project visually hidden text (an empty decorative badge conveys no status).
+Badge is not a form control and has no disabled, loading, or invalid state.
+
+The native dismiss button supports Tab, Enter, Space, and pointer activation.
+It never submits a surrounding form and its click does not bubble. Supply a
+localized, contextual `dismissLabel`; blank labels fall back to `Remove badge`.
+`dismissed` emits once per activation without removing the badge. The consumer
+owns removal and must move focus to a meaningful remaining control:
+
+```html
+<button #restore type="button" (click)="visible.set(true)">Restore badge</button>
+@if (visible()) {
+<bulud-badge variant="success" dot dismissible dismissLabel="Remove published status" (dismissed)="visible.set(false); restore.focus()">Published</bulud-badge>
+}
+```
+
+Import `bulud-ng/theme.css` explicitly for light/dark defaults. Ancestor `.dark`
+or `[data-theme="dark"]` and `dir` control theme and direction. Configure typed
+colors with `provideBuludTheme({ badge: { success: { background: '#14532d' } } })`.
+`BuludBadgeTheme` also configures each variant's border/foreground, radius,
+fontWeight, dismissHoverBackground, and focus. Precedence is instance CSS custom
+property → scoped component token → typed global theme → library fallback;
+behavioral inputs have instance and library defaults only.
+
+For example, `[style.--bulud-badge-success-background]="background()"` overrides
+the global success color. CSS hooks also include `--bulud-badge-height-{size}`,
+`--bulud-badge-font-size-{size}`, `--bulud-badge-padding-inline-{size}`,
+`--bulud-badge-border-width`, `--bulud-badge-line-height`, `--bulud-badge-dot-size`,
+`--bulud-badge-dot-gap`, `--bulud-badge-dismiss-size`, `--bulud-badge-dismiss-gap`,
+`--bulud-badge-dismiss-margin`, `--bulud-badge-dismiss-padding`,
+`--bulud-badge-dismiss-icon-size`, `--bulud-badge-focus-width`, and
+`--bulud-badge-focus-offset`. The dismiss target defaults to at least 24 × 24px.
+
+All geometry/focus hooks above have optional string fields in `BuludBadgeTheme`:
+`heightSmall`, `heightMedium`, `heightLarge`, `fontSizeSmall`, `fontSizeMedium`,
+`fontSizeLarge`, `paddingInlineSmall`, `paddingInlineMedium`, `paddingInlineLarge`,
+`borderWidth`, `lineHeight`, `dotSize`, `dotGap`, `dismissSize`, `dismissGap`,
+`dismissMargin`, `dismissPadding`, `dismissIconSize`, `focusWidth`, and `focusOffset`.
+Each maps to the corresponding kebab-case `--bulud-badge-*` variable.
+
+```ts
+provideBuludTheme({ badge: { heightMedium: "2.5rem", focusWidth: "3px" } });
+```
+
+Existing Badge theme objects remain valid. Public defaults omit these optional
+fields; the provider only emits them when explicitly supplied, preserving consumer
+`:root` and scoped CSS. `resolveBuludTheme()` and `BULUD_THEME` expose concrete
+string defaults for every Badge field. `createBuludThemeVariables()` includes all
+resolved variables. The provider retains its existing dark-mode scoping, and
+spacing continues to use logical CSS properties for RTL.
+
+## Pagination
+
+Import the standalone controlled component from its secondary entry point:
+
+```ts
+import { BuludPagination } from "bulud-ng/pagination";
+
+@Component({
+  imports: [BuludPagination],
+  template: ` <bulud-pagination [currentPage]="page()" [pageCount]="100" (pageChange)="page.set($event)" /> `,
+})
+export class ResultsPage {
+  readonly page = signal(1);
+}
+```
+
+`currentPage` and `pageCount` are typed number inputs; `disabled` disables the
+whole control; and `pageChange` requests a new page without mutating the input.
+The parent must update `currentPage`, making programmatic input changes silent.
+Only positive safe-integer page counts render controls; non-integers, non-finite
+values, and values outside JavaScript's safe-integer range render the empty
+state. Invalid current pages are clamped for safe rendering only; the input
+itself is never changed. Finite fractions are floored only when they are below
+the safe page count, and unsafe positive values clamp to the last safe page.
+
+The page window shows all pages through seven pages. Larger collections show
+the first and last pages plus a bounded neighborhood around the current page;
+ellipsis markers are non-interactive. Instance label inputs override the
+injected locale. Configure English/Persian or custom labels through
+`provideBuludLocale({ pagination: { ... } })`:
+
+```ts
+provideBuludLocale({
+  pagination: {
+    navigationLabel: "نتایج",
+    pageLabel: (page) => `صفحه ${page}`,
+    currentPageLabel: (page) => `صفحه فعلی، ${page}`,
+  },
+});
+```
+
+Previous and next are logical page operations and remain correct in RTL; only
+their directional presentation changes. Import `bulud-ng/theme.css` for the
+default light/dark theme. Pagination CSS variables, including `pagePadding` and
+`directionIconSize`, can be set at root/scope, through the typed `pagination`
+theme provider config, or on an individual host with `[style]`; instance styles
+have the highest precedence. Native buttons
+provide keyboard activation, focus-visible indication, disabled semantics, and
+`aria-current="page"` on the selected page. The navigation landmark receives
+an accessible label from the locale or `aria-label`. Non-interactive ellipsis
+list items expose their localized `ellipsisLabel` without entering the Tab
+order.
+
+## Locale API
+
+`provideBuludLocale` supplies typed English or Persian defaults for Dropdown,
+Pagination, Button loading status, and Badge dismiss actions through
+`BULUD_LOCALE`. The precedence for all integrated text is explicit instance
+text, configured locale defaults, then the library's English fallback. The
+provider sets the document `lang`, but does not set `dir` or CSS `direction`:
+components inherit the nearest ancestor direction naturally, so an application
+or component ancestor can choose LTR or RTL independently of language.
+
+```ts
+import { provideBuludLocale } from "bulud-ng";
+
+export const appConfig = {
+  providers: [
+    provideBuludLocale({
+      language: "fa",
+      button: { loadingLabel: "در حال بارگذاری" },
+      badge: { dismissLabel: "حذف نشان" },
+      dropdown: { clearLabel: "حذف انتخاب" },
+    }),
+  ],
+};
+```
+
+The built-in English defaults are `Loading`, `Remove badge`, `Select an
+option`, `Search options`, `No options found`, `Loading options…`, `No options
+available`, `Clear selection`, `Pagination`, `Previous page`, `Next page`, and
+`More pages` (with page-number functions for page labels). Persian defaults are
+`در حال بارگذاری`, `حذف نشان`, `یک گزینه انتخاب کنید`, `جست‌وجوی گزینه‌ها`,
+`گزینه‌ای پیدا نشد`, `در حال بارگذاری…`, `گزینه‌ای موجود نیست`, `پاک کردن
+انتخاب`, `صفحه‌بندی`, `صفحه قبلی`, `صفحه بعدی`, and `صفحه‌های بیشتر` (with
+Persian page-number functions). Consumers may override any typed field in the
+provider or on the component instance.
+
+Accessible names and status/placeholder messages are localized only when the
+component's corresponding instance input is omitted. Consumers should still
+provide projected labels or `aria-label`/`aria-labelledby` where a component's
+content does not provide an accessible name.
+
+## Digit conversion pipes
+
+Import the pure, standalone digit conversion pipes from the digits secondary
+entry point. The direction is explicit in the pipe name and independent of
+the injected locale:
+
+```ts
+import { BuludEnglishDigitsPipe, BuludPersianDigitsPipe } from "bulud-ng/digits";
+
+@Component({
+  imports: [BuludPersianDigitsPipe, BuludEnglishDigitsPipe],
+  template: `
+    <p>{{ "Order 12 / شماره ۳۴" | buludPersianDigits }}</p>
+    <p>{{ "Order 12 / شماره ۳۴" | buludEnglishDigits }}</p>
+  `,
+})
+export class OrderSummary {}
+```
+
+`BuludPersianDigitsPipe` converts `0-9` to `۰-۹`, and
+`BuludEnglishDigitsPipe` converts `۰-۹` to `0-9`. Both preserve non-digit text,
+leave digits already in the target form unchanged, and convert mixed strings
+one digit at a time. Their typed input is `string | number | null | undefined`
+and their output is always a string. `null` and `undefined` return an empty
+string; an empty string remains empty. The pipes are pure and do not mutate
+their input.
+
+## Initials pipe
+
+Import the pure, standalone initials pipe from the initials secondary entry
+point:
+
+```ts
+import { BuludInitialsPipe } from "bulud-ng/initials";
+
+@Component({
+  imports: [BuludInitialsPipe],
+  template: `
+    <span>{{ "Ada Lovelace" | buludInitials }}</span>
+    <span>{{ "مریم احمدی" | buludInitials }}</span>
+  `,
+})
+export class ProfileLabel {}
+```
+
+`BuludInitialsPipe` trims Unicode whitespace, splits the value on one or more
+whitespace characters, takes the first Unicode grapheme of each word, and
+joins those graphemes without a separator. Therefore `Ada Lovelace` becomes
+`AL`, `مریم احمدی` becomes `ما`, and `Jean-Luc Picard` becomes `JP`; punctuation,
+hyphens, emoji, and symbols at the start of a word are preserved. Grapheme
+boundaries are determined by the standards-compliant `Intl.Segmenter` API with
+grapheme granularity, so combining characters, emoji ZWJ sequences, regional
+indicator flags, keycaps, and script-specific clusters remain intact. Its typed
+input is `string | null | undefined`, and its output is always a string. `null`,
+`undefined`, the empty string, and whitespace-only strings return `""`. The
+pipe is pure and does not mutate its input. It uses the locale-neutral `und`
+locale and has no transliteration behavior. Consumers should provide any
+accessible name for the surrounding control or label; this pipe only derives
+display text.
+
+## File size pipe
+
+Import the pure, standalone file-size pipe from the `filesize` secondary entry
+point:
+
+```ts
+import { BuludFileSizePipe, type BuludFileSizeOptions } from "bulud-ng/filesize";
+
+@Component({
+  imports: [BuludFileSizePipe],
+  template: `
+    <p>{{ 1500000 | buludFileSize }}</p>
+    <p>{{ 1536 | buludFileSize: binary }}</p>
+  `,
+})
+export class FileSummary {
+  protected readonly binary: BuludFileSizeOptions = { base: "binary" };
+}
+```
+
+`BuludFileSizePipe` accepts `number | null | undefined` and returns a string.
+It uses decimal base 1000 by default with `B`, `kB`, `MB`, `GB`, `TB`, `PB`,
+`EB`, `ZB`, and `YB`. Pass `{ base: "binary" }` for base 1024 and the matching
+`B`, `KiB`, `MiB`, `GiB`, `TiB`, `PiB`, `EiB`, `ZiB`, and `YiB` units. The
+default precision is two maximum fraction digits; `precision` accepts integer
+values from 0 through 3, and invalid precision values use the default. Zero is
+`0 B`, negative values preserve their sign, and values beyond the largest unit
+are capped at that unit; very large capped values use deterministic scientific
+notation when fixed-point output is not practical. Nullish, `NaN`, and infinite
+values return `""`.
+Formatting is locale-independent and always uses `.` as the decimal separator;
+the pipe does not use implicit locale configuration or grouping separators.
+The pipe only formats display text and has no interaction semantics of its own.
+Consumers must provide meaningful surrounding text, a label, accessible name,
+or appropriate ARIA context when the formatted value would otherwise be unclear.
+
+## Theme API
+
+`defineBuludTheme` provides type inference for consumer configuration and
+`provideBuludTheme` registers the resolved theme. `BULUD_THEME` exposes the
+fully resolved typed value for advanced integrations. Theme values resolve in
+this order: per-instance CSS custom property, component token, global provider
+configuration, then library default. Import `bulud-ng/theme.css` explicitly to
+ship the default light and dark variable sets.
+
+All public theme interfaces (`BuludColorTheme`, `BuludShapeTheme`,
+`BuludButtonSizeTheme`, `BuludButtonTheme`, `BuludDropdownTheme`,
+`BuludBadgeVariantTheme`, `BuludBadgeTheme`, `BuludTabsTheme`,
+`BuludAccordionTheme`, `BuludCheckboxTheme`, `BuludSwitchTheme`,
+`BuludDialogTheme`, `BuludPaginationTheme`, `BuludTheme`,
+`ResolvedBuludTheme`, `BuludThemeConfig`, and `BuludThemeCssVariable`) are
+exported from the root entry point.
+
+`ResolvedBuludTheme` is also exported for values returned by `resolveBuludTheme()`
+and injected through `BULUD_THEME`. Its button and badge fields are all required strings,
+including optional consumer tokens. `BuludTheme`, `BuludButtonTheme`,
+and `typeof BULUD_DEFAULT_THEME` continue to accept legacy consumer objects
+without those tokens. This type has no keyboard or ARIA requirements.
+
+```ts
+import { resolveBuludTheme, type ResolvedBuludTheme } from "bulud-ng";
+
+export const theme: ResolvedBuludTheme = resolveBuludTheme({
+  button: { focusWidth: "4px" },
+});
+```
+
+To check downstream declaration emission against the built package, run
+`npm run build` followed by
+`npx tsc -p projects/declaration-tests/tsconfig.json`. The fixture deliberately
+exports inferred resolver and injection results to catch inaccessible public types.
+
+## Button
+
+The Angour preset uses ITB primary and secondary brand fills, gray disabled
+states and a subtle pressed halo. Badges remain compact informational labels
+(20/24/28px), rather than adopting button geometry.
+
+Additional optional `button` theme fields are `secondaryBackground`,
+`secondaryBackgroundHover`, `secondaryBackgroundActive`, `secondaryBorder`,
+`secondaryForeground`, `ghostForeground`, `disabledBackground`,
+`disabledForeground`, `activeShadow` and `dangerActiveShadow`. They map to
+kebab-case `--bulud-button-*` CSS variables. Omitted values preserve legacy
+fallbacks; explicit provider overrides work in both themes, scoped variables
+can replace them on an ancestor, and per-host inline variables take priority.
+No new keyboard interactions are introduced.
+
+Import the standalone component from its public secondary entry point:
+
+```ts
+import { Component } from "@angular/core";
+import { BuludButton } from "bulud-ng/button";
+
+@Component({
+  selector: "app-save-action",
+  imports: [BuludButton],
+  template: ` <bulud-button variant="primary" [loading]="saving" loadingLabel="Saving changes" (click)="save()"> Save </bulud-button> `,
+})
+export class SaveAction {
+  saving = false;
+
+  save(): void {
+    // Persist changes.
+  }
+}
+```
+
+`BuludButton` renders a native `<button>`, so standard keyboard activation and
+click behavior are preserved.
+
+### Inputs
+
+| Input          | Type                                              | Default        | Description                                      |
+| -------------- | ------------------------------------------------- | -------------- | ------------------------------------------------ |
+| `type`         | `'button' \| 'submit' \| 'reset'`                 | `'button'`     | Native button type                               |
+| `variant`      | `'primary' \| 'secondary' \| 'danger' \| 'ghost'` | `'primary'`    | Visual treatment                                 |
+| `size`         | `'small' \| 'medium' \| 'large'`                  | `'medium'`     | Control size                                     |
+| `disabled`     | `boolean`                                         | `false`        | Prevents interaction                             |
+| `loading`      | `boolean`                                         | `false`        | Shows progress and prevents repeated interaction |
+| `loadingLabel` | `string \| undefined`                             | locale default | Assistive text for the loading state             |
+| `fullWidth`    | `boolean`                                         | `false`        | Fills the available inline size                  |
+| `aria-label`   | `string \| null`                                  | `null`         | Overrides projected text as the accessible name  |
+
+The component uses the native bubbling `click` event rather than a duplicate
+custom output.
+
+### Local button overrides
+
+Application theme configuration is the preferred way to customize all
+components. For a one-off button, override its component-level properties:
+
+```css
+bulud-button {
+  --bulud-button-background: #4f46e5;
+  --bulud-button-background-hover: #4338ca;
+  --bulud-button-background-active: #3730a3;
+  --bulud-button-foreground: #ffffff;
+  --bulud-button-radius: 0.625rem;
+  --bulud-button-focus-ring: #c7d2fe;
+}
+```
+
+Variant-specific hooks are also available:
+
+- `--bulud-button-secondary-*`
+- `--bulud-button-danger-*`
+- `--bulud-button-ghost-*`
+- `--bulud-button-disabled-opacity`
+
+Local `--bulud-button-*` values take precedence over application-wide
+`--bulud-color-*`, `--bulud-radius-*`, and `--bulud-button-*` theme tokens.
+
+### Accessibility
+
+- Uses a native button for keyboard and form behavior.
+- Defaults to `type="button"` to prevent accidental form submission.
+- Applies native `disabled` behavior while disabled or loading.
+- Exposes loading state through `aria-busy` and a polite live region.
+- Includes visible `:focus-visible`, forced-colors, reduced-motion, and RTL-safe
+  styling.
+
+Enter and Space activate the focused native button. Disabled and loading buttons
+are skipped in the tab order and cannot submit a form. When loading ends, the
+button becomes available again unless `disabled` remains true; focus is not
+moved automatically. Keep projected text stable while loading and supply a
+localized `loadingLabel` for the polite status announcement.
+
+When the button contains only an icon or has empty projected content, provide an
+`aria-label`. Do not project interactive controls inside a button. Attributes
+such as `aria-describedby` placed on the component host are not forwarded to the
+inner button. Button has no value or invalid state and does not implement a form
+value accessor. Use `type="submit"` or `type="reset"` inside a native form.
+
+The demo's Button interactions section exposes loading, disabled, dark theme,
+empty content with an accessible name, instance styling, and form actions. The
+language switch changes the ancestor direction; hover and keyboard focus can be
+exercised on each enabled variant.
+
+Additional CSS hooks are `--bulud-button-border-width`,
+`--bulud-button-focus-width`, `--bulud-button-focus-offset`, and
+`--bulud-button-ghost-background`. These inherit from a scope and can be
+overridden per instance with `[style.--bulud-button-focus-width]`.
+
+The `BuludButtonTheme` fields `borderWidth`, `focusWidth`, `focusOffset`, and
+`ghostBackground` are optional, so existing button and complete `BuludTheme`
+objects remain valid. The resolver and `BULUD_THEME` supply concrete values from
+`BULUD_DEFAULT_THEME` for omitted options. The provider emits these four CSS
+variables only when explicitly configured; omitted or `undefined` options leave
+consumer `:root` CSS free to override the component's library fallback. Explicit
+typed values take precedence over ordinary `:root` rules, while closer scoped
+and per-instance CSS overrides still take precedence over typed values.
+
+`provideBuludTheme` configuration controls shared colors, shape, and button size,
+weight, gap, disabled opacity, and these four hooks; visual variant and behavioral defaults remain
+component inputs. Component color properties override shared color tokens, and
+instance properties override inherited values.
+
+Configure these hooks with string values (CSS lengths for widths/offset and a CSS
+color for the ghost background). Defaults are `1px`, `3px`, `2px`, and
+`transparent`, respectively:
+
+```ts
+provideBuludTheme({
+  button: {
+    borderWidth: "2px",
+    focusWidth: "4px",
+    focusOffset: "3px",
+    ghostBackground: "#f5f3ff",
+  },
+});
+```
+
+Precedence is instance CSS property → component/scoped CSS property → global
+typed theme → library default. Existing CSS overrides continue to work.
+
+### Performance and rendering
+
+The component uses `OnPush` change detection, signal inputs, no subscriptions,
+and no browser-global APIs. It is compatible with server rendering and
+zoneless Angular applications.
+
+## Angour application foundation and reusable validators
+
+The workspace includes an independent `base` application using the Angour preset
+globally, persistent language/theme preferences and a lazy validated form route.
+Run `npm run ng -- serve base --port 4310` or build with `npm run ng -- build base`.
+Import reusable pure validators from `bulud-ng/validators`: `buludRequiredText`,
+`buludFiniteNumber`, `buludHttpUrl`, `buludIsoDate`, and `buludMatchFields`.
+See the source workspace’s `docs/BASE.md` for examples, error contracts,
+Dropdown/Radio validation inputs and production measurements.
+
+Reusable Angour tables, URL/list query tools, OTP, file selection, feedback and other shared components are documented in [SHARED.md](SHARED.md) (included in the npm package). Import their dedicated secondary entry points, such as `bulud-ng/table` and `bulud-ng/query`; no backend configuration is embedded in the package.
+
+## Component catalog and installation
+
+In the source workspace, run `npm start` and open http://127.0.0.1:4314/components. Import individual secondary entry points for tree shaking. The packaged [shared API guide](SHARED.md) includes current installation steps, all shared APIs and new period picker, avatar, empty state, donut/progress components. Public registry publication is pending the owner's package and license decision.
+
+See the current component catalog / chat / label / display-pipe contracts in [SHARED.md](SHARED.md).
+
+### Angour theme switch and upload status
+
+`BuludSwitch` accepts `appearance="theme"` for the Angour sun/moon track with a
+white thumb. Its native role, Space key and Forms behavior are unchanged;
+`checked=true` represents dark mode. Supply `aria-label` when no text is projected.
+The application owns theme persistence and the document theme attribute:
+
+```html
+<bulud-switch appearance="theme" aria-label="Toggle theme" [checked]="dark()" (checkedChange)="dark.set($event)" />
+```
+
+Theme appearance has component geometry defaults of 54x22px and a 24px thumb;
+existing `--bulud-switch-*` properties can override them on the component host.
+It uses the Angour neutral track, inherited focus and shadow tokens and preserves
+physical left/right thumb positions in both text directions.
+
+File upload reports pending/completed status once, next to its icon and a compact
+native progress bar. Success hides the duplicate upload action until the selection
+changes; remove/clear/select restores it. Status classes are component-specific
+so application `.success`/`.error` styles do not add borders to these messages.
+
+### Angour skeleton and alerts
+
+Import only the entry you use: `bulud-ng/skeleton`, `bulud-ng/feedback` or
+`bulud-ng/confirm`. All support the shared typed theme precedence and Angour
+light/dark CSS tokens; there are no additional runtime dependencies.
+
+```ts
+import { BuludSkeleton } from "bulud-ng/skeleton";
+import { BuludAlert } from "bulud-ng/feedback";
+import { BuludConfirm } from "bulud-ng/confirm";
+```
+
+```html
+<section aria-busy="true">
+  <bulud-skeleton shape="card" [lines]="3" announce label="Loading content" />
+</section>
+<bulud-alert kind="success" title="Saved" dismissible dismissLabel="Dismiss" (dismissed)="visible.set(false)">Your changes were saved.</bulud-alert>
+<bulud-confirm [open]="open()" (openChange)="open.set($event)" title="Delete item?" kind="rejection" [processing]="saving()" (confirmed)="deleteItem()" confirmLabel="Delete" cancelLabel="Cancel" />
+```
+
+Skeleton shapes: `line`, `circle`, `thumbnail`, `card`. `lines` is bounded to
+1–12 (nonfinite values fall back to 3). `animated=false` stops shimmer; reduced
+motion and forced colors also disable it. Skeletons are decorative unless
+`announce=true`; use one localized loading announcement and mark the actual
+content region `aria-busy`. Geometry has scoped CSS variables such as
+`--bulud-skeleton-card-height` and `--bulud-skeleton-line-height`.
+
+Alert kinds: `primary`, `secondary`, `success`, `info`, `warning`, `danger`,
+`neutral`, `light`, `dark`. Optional `title`, `showIcon`, `dismissible`,
+`dismissLabel`, `announce` and `theme`. Project actions with `buludAlertActions`.
+The consumer handles removal on `dismissed`; danger is assertive and other
+kinds are polite. Set `announce=false` in static examples or when another live
+region already announces the message. Content is projected as safe Angular
+content; strings are never injected as HTML.
+
+Confirmation kinds: `creation`, `confirmation`, `rejection`. Required `title`,
+optional `message`, localized `confirmLabel`, `cancelLabel`, `processingLabel`,
+`theme`, `confirmed` and `cancelled`. It reuses the accessible native dialog and
+button, traps focus and restores it to the trigger. Escape cancels while idle;
+backdrop clicks never confirm. `processing=true` disables repeated actions and
+Escape. The consumer must clear processing on failure or close after success;
+`confirmed` deliberately does not auto-close. Project custom content normally.
+Demos, examples and APIs: `/components/skeleton`, `/components/alert`,
+`/components/confirm`.

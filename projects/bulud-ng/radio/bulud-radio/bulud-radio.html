@@ -1,0 +1,18 @@
+<span class="bulud-radio">
+  <input
+    class="bulud-radio__input"
+    type="radio"
+    [id]="inputId()"
+    [name]="group.name"
+    [checked]="checked()"
+    [disabled]="isDisabled()"
+    [required]="group.required()"
+    [value]="value()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-describedby]="ariaDescribedby()"
+    [attr.aria-invalid]="group.isInvalid() ? 'true' : null"
+    (change)="change()"
+    (blur)="group.touch()"
+  />
+  <label [for]="inputId()"><ng-content /></label>
+</span>

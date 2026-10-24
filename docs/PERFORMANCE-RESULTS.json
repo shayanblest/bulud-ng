@@ -1,0 +1,48 @@
+{
+  "lighthouseVersion": "13.5.0",
+  "formFactor": "mobile",
+  "throttling": {
+    "rttMs": 150,
+    "throughputKbps": 1638.4,
+    "requestLatencyMs": 562.5,
+    "downloadThroughputKbps": 1474.5600000000002,
+    "uploadThroughputKbps": 675,
+    "cpuSlowdownMultiplier": 4
+  },
+  "development": {
+    "url": "http://127.0.0.1:4310/shared?filter=status:eq(%22draft%22)",
+    "capturedAt": "2026-10-21T09:09:17.101Z",
+    "performanceScore": 47,
+    "lcpMs": 19936.008399999995,
+    "fcpMs": 9444.004725,
+    "tbtMs": 393,
+    "cls": 0,
+    "transferredBytes": 3304579,
+    "auditPass": {
+      "unminified-javascript": 0,
+      "unminified-css": 0,
+      "unused-javascript": 0,
+      "unused-css-rules": 0,
+      "total-byte-weight": 0.5,
+      "bf-cache": 0
+    }
+  },
+  "production": {
+    "url": "http://127.0.0.1:4314/shared?filter=status:eq(%22draft%22)",
+    "capturedAt": "2026-10-21T09:16:12.538Z",
+    "performanceScore": 96,
+    "lcpMs": 2038.0785999999998,
+    "fcpMs": 1801.0589499999999,
+    "tbtMs": 163.5,
+    "cls": 0,
+    "transferredBytes": 122166,
+    "auditPass": {
+      "unminified-javascript": 1,
+      "unminified-css": 1,
+      "unused-javascript": 1,
+      "unused-css-rules": 1,
+      "total-byte-weight": 1,
+      "bf-cache": 1
+    }
+  }
+}

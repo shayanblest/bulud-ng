@@ -1,0 +1,1441 @@
+import {
+  createEnvironmentInjector,
+  DOCUMENT,
+  EnvironmentInjector,
+  provideZonelessChangeDetection,
+} from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import {
+  BULUD_DEFAULT_THEME,
+  BULUD_THEME,
+  BuludButtonTheme,
+  BuludDropdownTheme,
+  BuludTheme,
+  createBuludThemeVariables,
+  defineBuludTheme,
+  provideBuludTheme,
+  resolveBuludTheme,
+} from './bulud-theme';
+
+describe('Bulud theme', () => {
+  const optionalButtonDefaults = {
+    secondaryBackground: 'var(--bulud-color-surface, #ffffff)',
+    secondaryBackgroundHover: 'var(--bulud-color-surface-hover, #f8fafc)',
+    secondaryBackgroundActive: 'var(--bulud-color-surface-active, #f1f5f9)',
+    secondaryBorder: 'var(--bulud-color-border, #cbd5e1)',
+    secondaryForeground: 'var(--bulud-color-on-surface, #0f172a)',
+    ghostForeground: 'var(--bulud-color-on-surface, #0f172a)',
+    disabledBackground: 'var(--_background)',
+    disabledForeground: 'var(--_foreground)',
+    activeShadow: 'none',
+    dangerActiveShadow: 'var(--bulud-button-active-shadow, none)',
+    borderWidth: '1px',
+    focusWidth: '3px',
+    focusOffset: '2px',
+    ghostBackground: 'transparent',
+  };
+
+  it('keeps optional button tokens absent from public defaults at runtime', () => {
+    expect(Object.keys(BULUD_DEFAULT_THEME.button).sort()).toEqual([
+      'disabledOpacity',
+      'fontWeight',
+      'gap',
+      'large',
+      'medium',
+      'small',
+    ]);
+    for (const field of Object.keys(optionalButtonDefaults)) {
+      expect(field in BULUD_DEFAULT_THEME.button).toBeFalse();
+    }
+    expect(resolveBuludTheme(BULUD_DEFAULT_THEME).button).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+    });
+    expect(createBuludThemeVariables(BULUD_DEFAULT_THEME)).toEqual(
+      jasmine.objectContaining({
+        '--bulud-button-border-width': '1px',
+        '--bulud-button-focus-width': '3px',
+        '--bulud-button-focus-offset': '2px',
+        '--bulud-button-ghost-background': 'transparent',
+      }),
+    );
+  });
+
+  it('resolves every public Dialog token to its canonical default', () => {
+    expect(Object.keys(resolveBuludTheme().dialog).sort()).toEqual([
+      'backdrop',
+      'background',
+      'border',
+      'borderWidth',
+      'focus',
+      'focusOffset',
+      'focusWidth',
+      'foreground',
+      'maxWidth',
+      'padding',
+      'radius',
+      'shadow',
+      'stackBase',
+      'viewportGutter',
+    ]);
+    expect(resolveBuludTheme().dialog.borderWidth).toBe('1px');
+    expect(resolveBuludTheme().dialog.viewportGutter).toBe('1rem');
+  });
+
+  it('keeps Dialog omitted from legacy defaults and provider CSS', () => {
+    expect('dialog' in BULUD_DEFAULT_THEME).toBeFalse();
+
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root { --bulud-dialog-background: #ffffff; }
+      :root.dark { --bulud-dialog-background: #0f172a; }
+    `;
+    document.head.append(libraryThemeStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme(BULUD_DEFAULT_THEME)],
+      parentInjector,
+    );
+
+    try {
+      const styleText = document.head.querySelector(
+        'style[data-bulud-theme]',
+      )?.textContent;
+      expect(styleText).not.toContain('--bulud-dialog-background:');
+      root.classList.add('dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-background'),
+      ).toBe('#0f172a');
+    } finally {
+      root.classList.remove('dark');
+      libraryThemeStyle.remove();
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps Pagination out of legacy defaults while resolving concrete defaults', () => {
+    expect('pagination' in BULUD_DEFAULT_THEME).toBeFalse();
+    expect(resolveBuludTheme().pagination).toEqual(
+      resolveBuludTheme(BULUD_DEFAULT_THEME).pagination,
+    );
+    expect(resolveBuludTheme().pagination.activeBackground).toBe('#2563eb');
+    expect(resolveBuludTheme().pagination.pagePadding).toBe('0.5rem');
+    expect(resolveBuludTheme().pagination.directionIconSize).toBe('1.5em');
+  });
+
+  for (const legacyConfig of [
+    {
+      name: 'direct legacy defaults',
+      value: BULUD_DEFAULT_THEME,
+      themeAttribute: 'dark' as const,
+    },
+    {
+      name: 'spread legacy defaults',
+      value: { ...BULUD_DEFAULT_THEME },
+      themeAttribute: 'data-theme' as const,
+    },
+  ]) {
+    it(`does not pin Pagination light defaults with ${legacyConfig.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const libraryThemeStyle = document.createElement('style');
+      libraryThemeStyle.textContent = `
+        :root {
+          --bulud-pagination-background: #ffffff;
+          --bulud-pagination-active-background: #2563eb;
+        }
+        :root.dark, :root[data-theme="dark"] {
+          --bulud-pagination-background: #0f172a;
+          --bulud-pagination-active-background: #7c3aed;
+        }
+      `;
+      document.head.append(libraryThemeStyle);
+      const environmentInjector = createEnvironmentInjector(
+        [provideBuludTheme(legacyConfig.value)],
+        parentInjector,
+      );
+
+      try {
+        if (legacyConfig.themeAttribute === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.setAttribute('data-theme', 'dark');
+        }
+        const computed = document.defaultView?.getComputedStyle(root);
+        expect(
+          computed?.getPropertyValue('--bulud-pagination-background').trim(),
+        ).toBe('#0f172a');
+        expect(
+          computed
+            ?.getPropertyValue('--bulud-pagination-active-background')
+            .trim(),
+        ).toBe('#7c3aed');
+        const styleText =
+          document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+          '';
+        expect(styleText).not.toContain('--bulud-pagination-background:');
+        expect(styleText).not.toContain(
+          '--bulud-pagination-active-background:',
+        );
+      } finally {
+        root.classList.remove('dark');
+        root.removeAttribute('data-theme');
+        libraryThemeStyle.remove();
+        environmentInjector.destroy();
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
+  it('accepts legacy button and complete theme shapes and resolves new defaults', () => {
+    const button: BuludButtonTheme = {
+      disabledOpacity: '0.4',
+      fontWeight: '700',
+      gap: '1rem',
+      small: { height: '2rem', fontSize: '1rem', paddingInline: '1rem' },
+      medium: { height: '3rem', fontSize: '1rem', paddingInline: '1rem' },
+      large: { height: '4rem', fontSize: '1rem', paddingInline: '1rem' },
+    };
+    const legacyTheme: BuludTheme = { ...BULUD_DEFAULT_THEME, button };
+    const resolvedButton: Required<BuludButtonTheme> =
+      resolveBuludTheme(legacyTheme).button;
+
+    expect(defineBuludTheme(legacyTheme)).toBe(legacyTheme);
+    expect(provideBuludTheme(legacyTheme)).toBeDefined();
+    expect<BuludButtonTheme>(resolvedButton).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+      ...button,
+    });
+  });
+
+  it('resolves the invalid border default for legacy dropdown theme objects', () => {
+    const { invalidBorder, ...legacyDropdown } = BULUD_DEFAULT_THEME.dropdown;
+    void invalidBorder;
+    const legacyTheme: BuludTheme = {
+      ...BULUD_DEFAULT_THEME,
+      dropdown: legacyDropdown,
+    };
+    const resolvedDropdown: Required<BuludDropdownTheme> =
+      resolveBuludTheme(legacyTheme).dropdown;
+
+    expect(resolvedDropdown.invalidBorder).toBe(
+      resolveBuludTheme().dropdown.invalidBorder,
+    );
+    expect(createBuludThemeVariables(legacyTheme)).toEqual(
+      jasmine.objectContaining({
+        '--bulud-dropdown-invalid-border':
+          resolveBuludTheme().dropdown.invalidBorder,
+      }),
+    );
+  });
+
+  it('accepts a legacy theme typed using typeof BULUD_DEFAULT_THEME', () => {
+    const legacyTheme: typeof BULUD_DEFAULT_THEME = {
+      ...BULUD_DEFAULT_THEME,
+      button: {
+        disabledOpacity: '0.4',
+        fontWeight: '700',
+        gap: '1rem',
+        small: { height: '2rem', fontSize: '1rem', paddingInline: '1rem' },
+        medium: { height: '3rem', fontSize: '1rem', paddingInline: '1rem' },
+        large: { height: '4rem', fontSize: '1rem', paddingInline: '1rem' },
+      },
+    };
+    const resolvedButton: Required<BuludButtonTheme> =
+      resolveBuludTheme(legacyTheme).button;
+
+    expect(provideBuludTheme(legacyTheme)).toBeDefined();
+    expect<BuludButtonTheme>(resolvedButton).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+      ...legacyTheme.button,
+    });
+  });
+
+  it('keeps checkbox optional for legacy consumer theme objects', () => {
+    const { checkbox, ...legacyShape } = BULUD_DEFAULT_THEME;
+    const legacyTheme: BuludTheme = legacyShape;
+
+    expect(checkbox).toBeDefined();
+    expect(legacyTheme.checkbox).toBeUndefined();
+    expect(resolveBuludTheme(legacyTheme).checkbox).toEqual(
+      resolveBuludTheme().checkbox,
+    );
+  });
+
+  it('resolves checkbox focus geometry defaults and configured values', () => {
+    expect(resolveBuludTheme().checkbox.focusWidth).toBe('3px');
+    expect(resolveBuludTheme().checkbox.focusOffset).toBe('2px');
+    expect(resolveBuludTheme().checkbox.gap).toBe('0.625rem');
+    expect(resolveBuludTheme().checkbox.borderWidth).toBe('1px');
+    expect(resolveBuludTheme().checkbox.labelLineHeight).toBe('1.5');
+
+    const variables = createBuludThemeVariables({
+      checkbox: {
+        focusWidth: '4px',
+        focusOffset: '6px',
+        gap: '1rem',
+        borderWidth: '3px',
+        labelLineHeight: '1.8',
+      },
+    });
+
+    expect(variables['--bulud-checkbox-focus-width']).toBe('4px');
+    expect(variables['--bulud-checkbox-focus-offset']).toBe('6px');
+    expect(variables['--bulud-checkbox-gap']).toBe('1rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-label-line-height']).toBe('1.8');
+  });
+
+  it('provides concrete defaults through the injection token factory', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const button: Required<BuludButtonTheme> =
+      TestBed.inject(BULUD_THEME).button;
+
+    expect<BuludButtonTheme>(button).not.toBe(BULUD_DEFAULT_THEME.button);
+    expect(button.borderWidth).toBe('1px');
+    expect(button.focusWidth).toBe('3px');
+    expect(button.focusOffset).toBe('2px');
+    expect(button.ghostBackground).toBe('transparent');
+  });
+
+  it('uses concrete defaults for explicitly undefined optional button tokens', () => {
+    const button: Required<BuludButtonTheme> = resolveBuludTheme({
+      button: {
+        borderWidth: undefined,
+        focusWidth: undefined,
+        focusOffset: undefined,
+        ghostBackground: undefined,
+      },
+    }).button;
+
+    expect<BuludButtonTheme>(button).toEqual({
+      ...BULUD_DEFAULT_THEME.button,
+      ...optionalButtonDefaults,
+    });
+  });
+
+  it('preserves a consumer configuration for type-safe config files', () => {
+    const config = {
+      colors: {
+        primary: '#7c3aed',
+      },
+    } as const;
+
+    expect(defineBuludTheme(config)).toBe(config);
+  });
+
+  it('merges nested overrides without losing default values', () => {
+    const theme = resolveBuludTheme({
+      colors: {
+        primary: '#7c3aed',
+      },
+      button: {
+        medium: {
+          height: '2.75rem',
+        },
+      },
+    });
+
+    expect(theme.colors.primary).toBe('#7c3aed');
+    expect(theme.colors.primaryHover).toBe(
+      BULUD_DEFAULT_THEME.colors.primaryHover,
+    );
+    expect(theme.button.medium.height).toBe('2.75rem');
+    expect(theme.button.medium.fontSize).toBe(
+      BULUD_DEFAULT_THEME.button.medium.fontSize,
+    );
+  });
+
+  it('resolves component tokens after global values and library defaults', () => {
+    const theme = resolveBuludTheme({
+      colors: { primary: '#7c3aed' },
+      dropdown: { border: '#f97316', invalidBorder: '#b91c1c' },
+      badge: {
+        success: { background: '#14532d' },
+        fontWeight: '700',
+      },
+      tabs: {
+        activeBorder: '#7c3aed',
+      },
+      accordion: {
+        hoverBackground: '#ede9fe',
+      },
+      dialog: {
+        background: '#fef3c7',
+        maxWidth: '40rem',
+        borderWidth: '4px',
+      },
+    });
+
+    expect(theme.colors.primary).toBe('#7c3aed');
+    expect(theme.dropdown.border).toBe('#f97316');
+    expect(theme.dropdown.invalidBorder).toBe('#b91c1c');
+    expect(theme.dropdown.foreground).toBe(
+      BULUD_DEFAULT_THEME.dropdown.foreground,
+    );
+    expect(theme.badge.success.background).toBe('#14532d');
+    expect(theme.badge.success.border).toBe(
+      BULUD_DEFAULT_THEME.badge.success.border,
+    );
+    expect(theme.badge.fontWeight).toBe('700');
+    expect(theme.tabs.activeBorder).toBe('#7c3aed');
+    expect(theme.tabs.foreground).toBe(BULUD_DEFAULT_THEME.tabs.foreground);
+    expect(theme.accordion.hoverBackground).toBe('#ede9fe');
+    expect(theme.accordion.focus).toBe(BULUD_DEFAULT_THEME.accordion.focus);
+    expect(theme.dialog.background).toBe('#fef3c7');
+    expect(theme.dialog.maxWidth).toBe('40rem');
+    expect(theme.dialog.borderWidth).toBe('4px');
+    expect(theme.dialog.shadow).toBe(resolveBuludTheme().dialog.shadow);
+    expect(theme.dialog.viewportGutter).toBe('1rem');
+    expect(theme.dialog.stackBase).toBe('1000');
+  });
+
+  it('creates variables shared by components and Tailwind', () => {
+    const variables = createBuludThemeVariables({
+      colors: {
+        primary: '#7c3aed',
+        danger: '#be123c',
+      },
+      shape: {
+        controlRadius: '0.75rem',
+      },
+      dropdown: {
+        border: '#f97316',
+        invalidBorder: '#b91c1c',
+      },
+      badge: {
+        danger: {
+          foreground: '#881337',
+        },
+      },
+      tabs: {
+        activeBorder: '#7c3aed',
+      },
+      accordion: {
+        icon: '#7c3aed',
+      },
+      dialog: {
+        background: '#fef3c7',
+        maxWidth: '40rem',
+        borderWidth: '4px',
+      },
+    });
+
+    expect(variables['--bulud-color-primary']).toBe('#7c3aed');
+    expect(variables['--bulud-color-danger']).toBe('#be123c');
+    expect(variables['--bulud-radius-control']).toBe('0.75rem');
+    expect(variables['--bulud-dropdown-border']).toBe('#f97316');
+    expect(variables['--bulud-dropdown-invalid-border']).toBe('#b91c1c');
+    expect(variables['--bulud-badge-danger-foreground']).toBe('#881337');
+    expect(variables['--bulud-tabs-active-border']).toBe('#7c3aed');
+    expect(variables['--bulud-accordion-icon']).toBe('#7c3aed');
+    expect(variables['--bulud-dialog-background']).toBe('#fef3c7');
+    expect(variables['--bulud-dialog-max-width']).toBe('40rem');
+    expect(variables['--bulud-dialog-border-width']).toBe('4px');
+    expect(variables['--bulud-dialog-focus-width']).toBe('3px');
+    expect(variables['--bulud-dialog-focus-offset']).toBe('2px');
+    expect(variables['--bulud-dialog-viewport-gutter']).toBe('1rem');
+    expect(variables['--bulud-dialog-stack-base']).toBe('1000');
+    expect(variables['--bulud-color-danger']).toBe('#be123c');
+  });
+
+  it('keeps instance custom properties available above provider values', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    root.style.setProperty('--bulud-dropdown-border', '#f97316');
+
+    const instance = document.createElement('bulud-dropdown');
+    instance.style.setProperty('--bulud-dropdown-border', '#22c55e');
+    root.append(instance);
+
+    try {
+      expect(instance.style.getPropertyValue('--bulud-dropdown-border')).toBe(
+        '#22c55e',
+      );
+      expect(root.style.getPropertyValue('--bulud-dropdown-border')).toBe(
+        '#f97316',
+      );
+    } finally {
+      instance.remove();
+      root.style.removeProperty('--bulud-dropdown-border');
+    }
+  });
+
+  it('provides and applies the resolved theme at environment startup', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          colors: {
+            primary: '#7c3aed',
+            danger: '#be123c',
+          },
+          tabs: {
+            activeBorder: '#7c3aed',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      expect(environmentInjector.get(BULUD_THEME).colors.primary).toBe(
+        '#7c3aed',
+      );
+      expect(environmentInjector.get(BULUD_THEME).tabs.activeBorder).toBe(
+        '#7c3aed',
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-primary'),
+      ).toBe('#7c3aed');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-danger'),
+      ).toBe('#be123c');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-dropdown-invalid-border:');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-tabs-active-border'),
+      ).toBe('#7c3aed');
+    } finally {
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps a tabs instance custom property above global theme values', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    root.style.setProperty('--bulud-tabs-active-border', '#f97316');
+
+    const instance = document.createElement('bulud-tabs');
+    instance.style.setProperty('--bulud-tabs-active-border', '#22c55e');
+    root.append(instance);
+
+    try {
+      expect(
+        instance.style.getPropertyValue('--bulud-tabs-active-border'),
+      ).toBe('#22c55e');
+      expect(root.style.getPropertyValue('--bulud-tabs-active-border')).toBe(
+        '#f97316',
+      );
+    } finally {
+      instance.remove();
+      root.style.removeProperty('--bulud-tabs-active-border');
+    }
+  });
+
+  it('resolves accordion theme from defaults through global and instance overrides', () => {
+    expect(resolveBuludTheme().accordion.icon).toBe(
+      BULUD_DEFAULT_THEME.accordion.icon,
+    );
+
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          accordion: {
+            icon: '#7c3aed',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+    const instance = document.createElement('bulud-accordion');
+    instance.style.setProperty('--bulud-accordion-icon', '#22c55e');
+    document.body.append(instance);
+
+    try {
+      expect(environmentInjector.get(BULUD_THEME).accordion.icon).toBe(
+        '#7c3aed',
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(instance)
+          .getPropertyValue('--bulud-accordion-icon'),
+      ).toBe('#22c55e');
+    } finally {
+      instance.remove();
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('lets an explicit dark ancestor override global light-mode variables', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          colors: {
+            primary: '#7c3aed',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      document.documentElement.setAttribute('data-theme', 'dark');
+
+      expect(
+        document.defaultView
+          ?.getComputedStyle(document.documentElement)
+          .getPropertyValue('--bulud-color-primary'),
+      ).not.toBe('#7c3aed');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).toContain(":root:not(.dark):not([data-theme='dark'])");
+    } finally {
+      document.documentElement.removeAttribute('data-theme');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps explicit dropdown invalid borders in light and dark scopes', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          colors: { danger: '#be123c' },
+          dropdown: { invalidBorder: '#7f1d1d' },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      const styleText =
+        document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+        '';
+      expect(styleText.match(/--bulud-dropdown-invalid-border:/g)).toHaveSize(
+        2,
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+
+      root.classList.add('dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+
+      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'dark');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dropdown-invalid-border'),
+      ).toBe('#7f1d1d');
+    } finally {
+      root.classList.remove('dark');
+      root.removeAttribute('data-theme');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps configured Switch values active in dark mode without leaking omitted tokens', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root { --bulud-switch-background: #ffffff; --bulud-switch-thumb: #64748b; }
+      :root.dark { --bulud-switch-background: #0f172a; --bulud-switch-thumb: #cbd5e1; }
+    `;
+    document.head.append(libraryThemeStyle);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          switch: {
+            background: '#654321',
+            checkedBackground: '#123456',
+            foreground: '#abcdef',
+            disabledOpacity: '0.4',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+    const read = (variable: string, element = instance) =>
+      document.defaultView
+        ?.getComputedStyle(element)
+        .getPropertyValue(variable)
+        .trim();
+
+    try {
+      expect(read('--bulud-switch-background')).toBe('#654321');
+      expect(read('--bulud-switch-checked-background')).toBe('#123456');
+
+      root.classList.add('dark');
+      expect(read('--bulud-switch-background')).toBe('#654321');
+      expect(read('--bulud-switch-checked-background')).toBe('#123456');
+      expect(read('--bulud-switch-foreground')).toBe('#abcdef');
+      expect(read('--bulud-switch-disabled-opacity')).toBe('0.4');
+      expect(read('--bulud-switch-thumb')).toBe('#cbd5e1');
+
+      scope.style.setProperty('--bulud-switch-checked-background', '#234567');
+      expect(read('--bulud-switch-checked-background')).toBe('#234567');
+      instance.style.setProperty(
+        '--bulud-switch-checked-background',
+        '#345678',
+      );
+      expect(read('--bulud-switch-checked-background')).toBe('#345678');
+    } finally {
+      instance.remove();
+      scope.remove();
+      libraryThemeStyle.remove();
+      root.classList.remove('dark');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps configured Dialog values active in dark mode with scoped and instance precedence', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root {
+        --bulud-dialog-background: #ffffff;
+        --bulud-dialog-foreground: #0f172a;
+        --bulud-dialog-radius: 0.75rem;
+        --bulud-dialog-padding: 1.5rem;
+        --bulud-dialog-max-width: 32rem;
+        --bulud-dialog-border-width: 1px;
+        --bulud-dialog-focus-width: 3px;
+        --bulud-dialog-focus-offset: 2px;
+      }
+      :root.dark {
+        --bulud-dialog-background: #0f172a;
+        --bulud-dialog-foreground: #f8fafc;
+      }
+    `;
+    document.head.append(libraryThemeStyle);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          dialog: {
+            background: '#654321',
+            foreground: '#abcdef',
+            radius: '1rem',
+            padding: '2rem',
+            maxWidth: '40rem',
+            borderWidth: '6px',
+            focusWidth: '5px',
+            focusOffset: '7px',
+            viewportGutter: '3rem',
+            stackBase: '3000',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    const read = (variable: string, element = instance) =>
+      document.defaultView
+        ?.getComputedStyle(element)
+        .getPropertyValue(variable)
+        .trim();
+
+    try {
+      root.classList.add('dark');
+      expect(read('--bulud-dialog-background')).toBe('#654321');
+      expect(read('--bulud-dialog-foreground')).toBe('#abcdef');
+      expect(read('--bulud-dialog-radius')).toBe('1rem');
+      expect(read('--bulud-dialog-padding')).toBe('2rem');
+      expect(read('--bulud-dialog-max-width')).toBe('40rem');
+      expect(read('--bulud-dialog-border-width')).toBe('6px');
+      expect(read('--bulud-dialog-focus-width')).toBe('5px');
+      expect(read('--bulud-dialog-focus-offset')).toBe('7px');
+      expect(read('--bulud-dialog-viewport-gutter')).toBe('3rem');
+      expect(read('--bulud-dialog-stack-base')).toBe('3000');
+
+      scope.style.setProperty('--bulud-dialog-background', '#234567');
+      scope.style.setProperty('--bulud-dialog-viewport-gutter', '4rem');
+      scope.style.setProperty('--bulud-dialog-stack-base', '4000');
+      scope.style.setProperty('--bulud-dialog-border-width', '8px');
+      expect(read('--bulud-dialog-background')).toBe('#234567');
+      expect(read('--bulud-dialog-viewport-gutter')).toBe('4rem');
+      expect(read('--bulud-dialog-stack-base')).toBe('4000');
+      expect(read('--bulud-dialog-border-width')).toBe('8px');
+      instance.style.setProperty('--bulud-dialog-background', '#345678');
+      instance.style.setProperty('--bulud-dialog-viewport-gutter', '0px');
+      instance.style.setProperty('--bulud-dialog-stack-base', '5000');
+      instance.style.setProperty('--bulud-dialog-border-width', '0px');
+      expect(read('--bulud-dialog-background')).toBe('#345678');
+      expect(read('--bulud-dialog-viewport-gutter')).toBe('0px');
+      expect(read('--bulud-dialog-stack-base')).toBe('5000');
+      expect(read('--bulud-dialog-border-width')).toBe('0px');
+    } finally {
+      instance.remove();
+      scope.remove();
+      libraryThemeStyle.remove();
+      root.classList.remove('dark');
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps omitted Dialog tokens on imported dark defaults', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const libraryThemeStyle = document.createElement('style');
+    libraryThemeStyle.textContent = `
+      :root {
+        --bulud-dialog-foreground: #0f172a;
+        --bulud-dialog-focus-width: 3px;
+        --bulud-dialog-focus-offset: 2px;
+        --bulud-dialog-viewport-gutter: 5px;
+      }
+      :root.dark {
+        --bulud-dialog-foreground: #f8fafc;
+      }
+    `;
+    document.head.append(libraryThemeStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme({ dialog: { background: '#654321' } })],
+      parentInjector,
+    );
+
+    try {
+      root.classList.add('dark');
+      const styleText = document.head.querySelector(
+        'style[data-bulud-theme]',
+      )?.textContent;
+      expect(styleText).not.toContain('--bulud-dialog-foreground:');
+      expect(styleText).not.toContain('--bulud-dialog-viewport-gutter:');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-foreground'),
+      ).toBe('#f8fafc');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-focus-width'),
+      ).toBe('3px');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-dialog-viewport-gutter'),
+      ).toBe('5px');
+    } finally {
+      root.classList.remove('dark');
+      libraryThemeStyle.remove();
+      environmentInjector.destroy();
+
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  for (const darkMode of [
+    {
+      name: ':root.dark',
+      apply: (root: HTMLElement) => root.classList.add('dark'),
+      remove: (root: HTMLElement) => root.classList.remove('dark'),
+    },
+    {
+      name: ":root[data-theme='dark']",
+      apply: (root: HTMLElement) => root.setAttribute('data-theme', 'dark'),
+      remove: (root: HTMLElement) => root.removeAttribute('data-theme'),
+    },
+  ]) {
+    it(`keeps custom badge geometry available in ${darkMode.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const environmentInjector = createEnvironmentInjector(
+        [
+          provideBuludTheme({
+            colors: { primary: '#7c3aed' },
+            badge: {
+              heightSmall: '3.25rem',
+              fontSizeMedium: '1.125rem',
+            },
+            checkbox: {
+              size: '2rem',
+              radius: '0.75rem',
+              disabledOpacity: '0.3',
+              focusWidth: '4px',
+              focusOffset: '6px',
+              gap: '1rem',
+              borderWidth: '3px',
+              labelLineHeight: '1.8',
+            },
+          }),
+        ],
+        parentInjector,
+      );
+
+      darkMode.apply(root);
+
+      try {
+        const styleText = document.head.querySelector(
+          'style[data-bulud-theme]',
+        )?.textContent;
+
+        expect(styleText).toContain(':root {');
+        expect(styleText).toContain('--bulud-badge-height-small: 3.25rem;');
+        expect(styleText).toContain('--bulud-checkbox-size: 2rem;');
+        expect(styleText).toContain('--bulud-checkbox-radius: 0.75rem;');
+        expect(styleText).toContain('--bulud-checkbox-disabled-opacity: 0.3;');
+        expect(styleText).toContain('--bulud-checkbox-focus-width: 4px;');
+        expect(styleText).toContain('--bulud-checkbox-focus-offset: 6px;');
+        expect(styleText).toContain('--bulud-checkbox-gap: 1rem;');
+        expect(styleText).toContain('--bulud-checkbox-border-width: 3px;');
+        expect(styleText).toContain('--bulud-checkbox-label-line-height: 1.8;');
+        expect(styleText).toContain(
+          '--bulud-badge-font-size-medium: 1.125rem;',
+        );
+        expect(styleText).toContain(
+          ":root:not(.dark):not([data-theme='dark'])",
+        );
+        expect(styleText).toContain('--bulud-color-primary: #7c3aed;');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-badge-height-small'),
+        ).toBe('3.25rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-badge-font-size-medium'),
+        ).toBe('1.125rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-size'),
+        ).toBe('2rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-radius'),
+        ).toBe('0.75rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-disabled-opacity'),
+        ).toBe('0.3');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-focus-width'),
+        ).toBe('4px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-focus-offset'),
+        ).toBe('6px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-gap'),
+        ).toBe('1rem');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-border-width'),
+        ).toBe('3px');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-checkbox-label-line-height'),
+        ).toBe('1.8');
+        expect(
+          document.defaultView
+            ?.getComputedStyle(root)
+            .getPropertyValue('--bulud-color-primary'),
+        ).not.toBe('#7c3aed');
+      } finally {
+        darkMode.remove(root);
+        environmentInjector.destroy();
+
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
+  it('preserves consumer root checkbox variables when provider options are omitted', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    root.style.setProperty('--bulud-checkbox-size', '3rem');
+    root.style.setProperty('--bulud-checkbox-label-line-height', '2');
+
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme()],
+      parentInjector,
+    );
+
+    try {
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-size:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-focus-width:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-gap:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-border-width:');
+      expect(
+        document.head.querySelector('style[data-bulud-theme]')?.textContent,
+      ).not.toContain('--bulud-checkbox-label-line-height:');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-checkbox-size'),
+      ).toBe('3rem');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-checkbox-label-line-height'),
+      ).toBe('2');
+    } finally {
+      root.style.removeProperty('--bulud-checkbox-size');
+      root.style.removeProperty('--bulud-checkbox-label-line-height');
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('emits explicitly configured checkbox variables with provider precedence', () => {
+    const variables = createBuludThemeVariables({
+      checkbox: {
+        size: '2rem',
+        gap: '1rem',
+        borderWidth: '3px',
+        labelLineHeight: '1.8',
+      },
+    });
+
+    expect(variables['--bulud-checkbox-size']).toBe('2rem');
+    expect(variables['--bulud-checkbox-gap']).toBe('1rem');
+    expect(variables['--bulud-checkbox-border-width']).toBe('3px');
+    expect(variables['--bulud-checkbox-label-line-height']).toBe('1.8');
+    expect(createBuludThemeVariables()['--bulud-checkbox-size']).toBe(
+      resolveBuludTheme().checkbox.size,
+    );
+  });
+
+  it('maps every Pagination token to one CSS variable', () => {
+    const expectedVariables = [
+      '--bulud-pagination-background',
+      '--bulud-pagination-background-hover',
+      '--bulud-pagination-active-background',
+      '--bulud-pagination-border',
+      '--bulud-pagination-foreground',
+      '--bulud-pagination-active-foreground',
+      '--bulud-pagination-muted-foreground',
+      '--bulud-pagination-focus',
+      '--bulud-pagination-disabled-opacity',
+      '--bulud-pagination-radius',
+      '--bulud-pagination-size',
+      '--bulud-pagination-page-padding',
+      '--bulud-pagination-direction-icon-size',
+      '--bulud-pagination-gap',
+      '--bulud-pagination-border-width',
+      '--bulud-pagination-focus-width',
+      '--bulud-pagination-focus-offset',
+      '--bulud-pagination-font-weight',
+    ];
+    const actualVariables = Object.keys(createBuludThemeVariables()).filter(
+      (variable) => variable.startsWith('--bulud-pagination-'),
+    );
+
+    expect(actualVariables.sort()).toEqual(expectedVariables.sort());
+    expect(Object.keys(resolveBuludTheme().pagination).length).toBe(
+      expectedVariables.length,
+    );
+  });
+
+  for (const darkMode of [
+    {
+      name: '.dark',
+      apply: (root: HTMLElement) => root.classList.add('dark'),
+      remove: (root: HTMLElement) => root.classList.remove('dark'),
+    },
+    {
+      name: '[data-theme="dark"]',
+      apply: (root: HTMLElement) => root.setAttribute('data-theme', 'dark'),
+      remove: (root: HTMLElement) => root.removeAttribute('data-theme'),
+    },
+  ]) {
+    it(`preserves explicit Pagination colors in ${darkMode.name}`, () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const parentInjector = TestBed.inject(EnvironmentInjector);
+      const document = TestBed.inject(DOCUMENT);
+      const root = document.documentElement;
+      const existingStyle = document.head.querySelector(
+        'style[data-bulud-theme]',
+      );
+      const originalStyleText = existingStyle?.textContent ?? null;
+      const libraryThemeStyle = document.createElement('style');
+      libraryThemeStyle.textContent = `
+        :root { --bulud-pagination-background: #ffffff; }
+        :root.dark, :root[data-theme="dark"] { --bulud-pagination-background: #0f172a; }
+      `;
+      document.head.append(libraryThemeStyle);
+      const pagination = {
+        background: '#101010',
+        backgroundHover: '#202020',
+        activeBackground: '#303030',
+        border: '#404040',
+        foreground: '#505050',
+        activeForeground: '#606060',
+        mutedForeground: '#707070',
+        focus: '#808080',
+        disabledOpacity: '0.31',
+        pagePadding: '0.75rem',
+        directionIconSize: '2em',
+        fontWeight: '700',
+      };
+      const environmentInjector = createEnvironmentInjector(
+        [provideBuludTheme({ pagination })],
+        parentInjector,
+      );
+
+      try {
+        darkMode.apply(root);
+        const computed = document.defaultView?.getComputedStyle(root);
+        for (const [field, value] of Object.entries(pagination)) {
+          const variable = `--bulud-pagination-${field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
+          expect(computed?.getPropertyValue(variable).trim()).toBe(value);
+        }
+      } finally {
+        darkMode.remove(root);
+        environmentInjector.destroy();
+        libraryThemeStyle.remove();
+        if (existingStyle) {
+          existingStyle.textContent = originalStyleText;
+        } else {
+          document.head.querySelector('style[data-bulud-theme]')?.remove();
+        }
+      }
+    });
+  }
+
+  it('omits every unconfigured Pagination token so consumer CSS remains in control', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const root = document.documentElement;
+    root.style.setProperty('--bulud-pagination-font-weight', '400');
+    root.style.setProperty('--bulud-pagination-background-hover', '#abcdef');
+    root.style.setProperty('--bulud-pagination-page-padding', '1rem');
+    root.style.setProperty('--bulud-pagination-direction-icon-size', '2em');
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const environmentInjector = createEnvironmentInjector(
+      [provideBuludTheme({ pagination: { background: '#123456' } })],
+      parentInjector,
+    );
+
+    try {
+      const styleText =
+        document.head.querySelector('style[data-bulud-theme]')?.textContent ??
+        '';
+      expect(styleText).toContain('--bulud-pagination-background: #123456;');
+      expect(styleText).not.toContain('--bulud-pagination-background-hover:');
+      expect(styleText).not.toContain('--bulud-pagination-font-weight:');
+      expect(styleText).not.toContain('--bulud-pagination-page-padding:');
+      expect(styleText).not.toContain(
+        '--bulud-pagination-direction-icon-size:',
+      );
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-background-hover')
+          .trim(),
+      ).toBe('#abcdef');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-font-weight')
+          .trim(),
+      ).toBe('400');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-page-padding')
+          .trim(),
+      ).toBe('1rem');
+      expect(
+        document.defaultView
+          ?.getComputedStyle(root)
+          .getPropertyValue('--bulud-pagination-direction-icon-size')
+          .trim(),
+      ).toBe('2em');
+    } finally {
+      root.style.removeProperty('--bulud-pagination-font-weight');
+      root.style.removeProperty('--bulud-pagination-background-hover');
+      root.style.removeProperty('--bulud-pagination-page-padding');
+      root.style.removeProperty('--bulud-pagination-direction-icon-size');
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+
+  it('keeps Pagination geometry provider, scoped, and instance precedence', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const parentInjector = TestBed.inject(EnvironmentInjector);
+    const document = TestBed.inject(DOCUMENT);
+    const scope = document.createElement('div');
+    const instance = document.createElement('div');
+    scope.append(instance);
+    document.body.append(scope);
+    const existingStyle = document.head.querySelector(
+      'style[data-bulud-theme]',
+    );
+    const originalStyleText = existingStyle?.textContent ?? null;
+    const consumerStyle = document.createElement('style');
+    consumerStyle.textContent =
+      ':root { --bulud-pagination-size: 1rem; --bulud-pagination-page-padding: 1px; --bulud-pagination-direction-icon-size: 1em; }';
+    document.head.append(consumerStyle);
+    const environmentInjector = createEnvironmentInjector(
+      [
+        provideBuludTheme({
+          pagination: {
+            size: '3rem',
+            pagePadding: '3px',
+            directionIconSize: '1.25em',
+          },
+        }),
+      ],
+      parentInjector,
+    );
+
+    try {
+      const read = (variable: string) =>
+        document.defaultView
+          ?.getComputedStyle(instance)
+          .getPropertyValue(variable)
+          .trim();
+      expect(read('--bulud-pagination-size')).toBe('3rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('3px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('1.25em');
+      scope.style.setProperty('--bulud-pagination-size', '4rem');
+      scope.style.setProperty('--bulud-pagination-page-padding', '4px');
+      scope.style.setProperty(
+        '--bulud-pagination-direction-icon-size',
+        '1.5em',
+      );
+      expect(read('--bulud-pagination-size')).toBe('4rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('4px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('1.5em');
+      instance.style.setProperty('--bulud-pagination-size', '5rem');
+      instance.style.setProperty('--bulud-pagination-page-padding', '5px');
+      instance.style.setProperty(
+        '--bulud-pagination-direction-icon-size',
+        '2em',
+      );
+      expect(read('--bulud-pagination-size')).toBe('5rem');
+      expect(read('--bulud-pagination-page-padding')).toBe('5px');
+      expect(read('--bulud-pagination-direction-icon-size')).toBe('2em');
+    } finally {
+      instance.remove();
+      scope.remove();
+      consumerStyle.remove();
+      environmentInjector.destroy();
+      if (existingStyle) {
+        existingStyle.textContent = originalStyleText;
+      } else {
+        document.head.querySelector('style[data-bulud-theme]')?.remove();
+      }
+    }
+  });
+});

@@ -1,0 +1,98 @@
+{
+  "size": {
+    "initial": [
+      {
+        "asset": "styles-Y6SKX5RU.css",
+        "bytes": 35064,
+        "gzipBytes": 4513
+      },
+      {
+        "asset": "chunk-2MWLQFXK.js",
+        "bytes": 3003,
+        "gzipBytes": 1327
+      },
+      {
+        "asset": "chunk-LTAPTUNB.js",
+        "bytes": 88280,
+        "gzipBytes": 25054
+      },
+      {
+        "asset": "chunk-5IC5W2TZ.js",
+        "bytes": 1102,
+        "gzipBytes": 600
+      },
+      {
+        "asset": "chunk-I5KLYCQA.js",
+        "bytes": 955,
+        "gzipBytes": 535
+      },
+      {
+        "asset": "chunk-OOVROTDI.js",
+        "bytes": 341,
+        "gzipBytes": 300
+      },
+      {
+        "asset": "chunk-CARUHIKJ.js",
+        "bytes": 6830,
+        "gzipBytes": 2148
+      },
+      {
+        "asset": "chunk-CYSN5NVX.js",
+        "bytes": 155983,
+        "gzipBytes": 52644
+      },
+      {
+        "asset": "main-K4JU2QFO.js",
+        "bytes": 4056,
+        "gzipBytes": 1704
+      }
+    ],
+    "totalBytes": 295614,
+    "totalGzipBytes": 88825
+  },
+  "lighthouse": {
+    "performance": 0.98,
+    "largest-contentful-paint": 1995.4422499999998,
+    "first-contentful-paint": 1749.3537999999999,
+    "total-blocking-time": 70,
+    "cumulative-layout-shift": 0
+  },
+  "treeShaking": {
+    "package": "bulud-ng-0.0.1.tgz",
+    "fixtures": [
+      {
+        "fixture": "button",
+        "bytes": 121089,
+        "gzipBytes": 39766,
+        "unusedFeaturesAbsent": [
+          "bulud-chart",
+          "bulud-donut-chart",
+          "bulud-file-upload",
+          "bulud-period-picker",
+          "XMLHttpRequest"
+        ]
+      },
+      {
+        "fixture": "donut",
+        "bytes": 126412,
+        "gzipBytes": 42266,
+        "unusedFeaturesAbsent": [
+          "bulud-chart",
+          "bulud-progress",
+          "bulud-file-upload",
+          "bulud-period-picker"
+        ]
+      },
+      {
+        "fixture": "period",
+        "bytes": 136736,
+        "gzipBytes": 45567,
+        "unusedFeaturesAbsent": [
+          "bulud-datepicker",
+          "bulud-chart",
+          "bulud-file-upload"
+        ]
+      }
+    ]
+  }
+}

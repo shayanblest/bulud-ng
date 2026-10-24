@@ -1,0 +1,170 @@
+<button
+  class="bulud-datepicker__trigger"
+  type="button"
+  [id]="id() ?? uid"
+  [disabled]="isDisabled()"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="open() ? uid + '-calendar' : null"
+  [attr.aria-label]="
+    ariaLabelledby() ? null : (ariaLabel() ?? labels().chooseDate)
+  "
+  [attr.aria-labelledby]="ariaLabelledby()"
+  [attr.aria-describedby]="ariaDescribedby()"
+  [attr.aria-errormessage]="ariaErrormessage()"
+  [attr.aria-invalid]="isInvalid() ? 'true' : null"
+  (click)="openCalendar()"
+  (blur)="blur()"
+  (keydown)="triggerKeydown($event)"
+>
+  <span [class.bulud-datepicker__placeholder]="!displayValue()">{{
+    displayValue() || placeholder() || labels().placeholder
+  }}</span>
+</button>
+<div
+  #panel
+  popover="manual"
+  role="dialog"
+  [id]="uid + '-calendar'"
+  class="bulud-datepicker__panel"
+  [dir]="panelDirection()"
+  [class.bulud-datepicker__panel--range]="resolvedMode() === 'range'"
+  [attr.aria-label]="
+    ariaLabelledby() ? null : (ariaLabel() ?? labels().chooseDate)
+  "
+  [attr.aria-labelledby]="ariaLabelledby()"
+  [attr.aria-describedby]="uid + '-help'"
+  (keydown)="panelKeydown($event)"
+  (toggle)="popoverToggle($event)"
+>
+  @if (open()) {
+    <div class="bulud-datepicker__layout">
+      <div class="bulud-datepicker__calendar" [dir]="panelDirection()">
+        <div class="bulud-datepicker__header">
+          <button
+            type="button"
+            class="bulud-datepicker__nav"
+            [disabled]="!canMove(-1)"
+            [attr.aria-label]="labels().previousMonth"
+            (click)="moveMonth(-1)"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="m12 3-7 7 7 7" />
+            </svg>
+          </button>
+          <p
+            [id]="uid + '-heading'"
+            class="bulud-datepicker__heading"
+            aria-live="polite"
+          >
+            {{ heading() }}
+          </p>
+          <button
+            type="button"
+            class="bulud-datepicker__nav"
+            [disabled]="!canMove(1)"
+            [attr.aria-label]="labels().nextMonth"
+            (click)="moveMonth(1)"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="m8 3 7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        @if (status()) {
+          <p class="bulud-datepicker__status" aria-live="polite">
+            {{ status() }}
+          </p>
+        }
+        <table
+          #grid
+          class="bulud-datepicker__grid"
+          role="grid"
+          [attr.aria-labelledby]="uid + '-heading'"
+          [attr.aria-multiselectable]="
+            resolvedMode() === 'range' ? 'true' : null
+          "
+        >
+          <thead>
+            <tr>
+              @for (weekday of weekdays(); track $index) {
+                <th scope="col" [attr.aria-label]="weekday.full">
+                  <abbr [title]="weekday.full">{{ weekday.short }}</abbr>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (week of weeks(); track $index) {
+              <tr>
+                @for (day of week; track $index) {
+                  <td
+                    role="gridcell"
+                    [attr.aria-selected]="day ? selected(day.iso) : null"
+                    [class.bulud-datepicker__range]="day && inRange(day.iso)"
+                  >
+                    @if (day) {
+                      <button
+                        type="button"
+                        class="bulud-datepicker__day"
+                        [class.bulud-datepicker__day--selected]="
+                          selected(day.iso)
+                        "
+                        [attr.data-date]="day.iso"
+                        [attr.aria-label]="day.label"
+                        [attr.aria-current]="
+                          day.iso === todayValue() ? 'date' : null
+                        "
+                        [attr.tabindex]="
+                          viewDate() === day.iso && !day.disabled ? 0 : -1
+                        "
+                        [disabled]="day.disabled"
+                        (click)="choose(day.iso)"
+                        (keydown)="keydown($event, day.iso)"
+                      >
+                        {{ day.number }}
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (value() !== null) {
+          <button
+            type="button"
+            class="bulud-datepicker__clear"
+            [disabled]="isDisabled()"
+            (click)="clear()"
+          >
+            {{ labels().clear }}
+          </button>
+        }
+        <p [id]="uid + '-help'" class="bulud-datepicker__help">
+          {{ labels().keyboardHelp }}
+        </p>
+      </div>
+      <div
+        #yearList
+        class="bulud-datepicker__years"
+        [attr.aria-label]="labels().year"
+        role="group"
+      >
+        @for (year of years(); track $index) {
+          <button
+            type="button"
+            class="bulud-datepicker__year"
+            [attr.data-year]="year"
+            [attr.aria-pressed]="view().year === year"
+            [attr.tabindex]="view().year === year ? 0 : -1"
+            (click)="changeYear(year)"
+            (keydown)="yearKeydown($event, year)"
+          >
+            {{ year }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "bulud_ng",
+  "project_id": "bfbec8b3-b2de-4729-ad97-5f026c050b42"
+}

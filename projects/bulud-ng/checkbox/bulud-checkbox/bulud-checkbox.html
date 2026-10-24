@@ -1,0 +1,21 @@
+<span class="bulud-checkbox">
+  <input
+    class="bulud-checkbox__input"
+    type="checkbox"
+    [id]="inputId()"
+    [checked]="checked()"
+    [indeterminate]="indeterminate()"
+    [disabled]="isDisabled()"
+    [required]="required()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-describedby]="ariaDescribedBy()"
+    [attr.aria-errormessage]="ariaErrorMessage()"
+    [attr.aria-invalid]="isInvalid() ? 'true' : null"
+    (change)="handleChange($event)"
+    (blur)="handleBlur()"
+  />
+  <label class="bulud-checkbox__label" [for]="inputId()">
+    <span class="bulud-checkbox__gap" aria-hidden="true"></span>
+    <ng-content />
+  </label>
+</span>

@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "./tailwind.css";
+
+@source inline("bg-bulud-primary border-bulud-border font-bulud-button h-bulud-control-md ring-bulud-focus rounded-bulud-control text-bulud-on-primary");
