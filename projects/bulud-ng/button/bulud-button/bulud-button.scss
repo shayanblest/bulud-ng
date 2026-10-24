@@ -64,6 +64,7 @@
 
 .bulud-button:active:not(:disabled) {
   background: var(--_background-active);
+  box-shadow: var(--bulud-button-active-shadow, none);
 }
 
 .bulud-button:focus-visible {
@@ -72,6 +73,8 @@
 }
 
 .bulud-button:disabled {
+  background: var(--bulud-button-disabled-background, var(--_background));
+  color: var(--bulud-button-disabled-foreground, var(--_foreground));
   cursor: not-allowed;
   opacity: var(--bulud-button-disabled-opacity, 0.55);
 }
@@ -211,4 +214,11 @@
     color: GrayText;
     opacity: 1;
   }
+}
+
+.bulud-button--danger:active:not(:disabled) {
+  box-shadow: var(
+    --bulud-button-danger-active-shadow,
+    var(--bulud-button-active-shadow, none)
+  );
 }

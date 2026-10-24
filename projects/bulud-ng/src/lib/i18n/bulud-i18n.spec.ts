@@ -65,4 +65,14 @@ describe('Bulud locale', () => {
     expect(document.documentElement.getAttribute('dir')).not.toBe('rtl');
     expect(document.documentElement.style.direction).toBe('');
   });
+  it('resolves partial Datepicker labels over Persian defaults', () => {
+    const locale = resolveBuludLocale({
+      language: 'fa',
+      datepicker: { clear: 'حذف تاریخ' },
+    });
+    expect(locale.datepicker?.clear).toBe('حذف تاریخ');
+    expect(locale.datepicker?.chooseDate).toBe('انتخاب تاریخ');
+    expect(locale.datepicker?.nextMonth).toBe('ماه بعد');
+    expect(locale.direction).toBe('rtl');
+  });
 });

@@ -1,0 +1,68 @@
+:host {
+  display: block;
+  color: var(--bulud-donut-foreground, var(--bulud-color-on-surface));
+}
+figure {
+  margin: 0;
+  padding: var(--bulud-donut-padding, 16px);
+  background: var(--bulud-donut-background, var(--bulud-color-surface));
+  border-radius: var(--bulud-donut-radius, 8px);
+}
+figcaption {
+  font-weight: 600;
+  margin-block-end: 16px;
+}
+.ring {
+  display: block;
+  inline-size: min(100%, 260px);
+  margin-inline: auto;
+  direction: ltr;
+}
+.ring circle {
+  fill: none;
+  stroke-width: var(--bulud-donut-stroke-width, 12px);
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+}
+.track {
+  stroke: var(--bulud-donut-border, var(--bulud-color-border));
+}
+.slice {
+  stroke: var(--bulud-donut-accent, var(--bulud-color-primary));
+}
+.slice:nth-of-type(3n) {
+  stroke: var(--bulud-donut-positive, var(--bulud-color-success));
+}
+.slice:nth-of-type(3n + 1) {
+  stroke: var(--bulud-donut-negative, var(--bulud-color-danger));
+}
+text {
+  fill: currentColor;
+  font: 10px sans-serif;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block: 8px;
+}
+li strong {
+  margin-inline-start: auto;
+}
+.swatch {
+  inline-size: 12px;
+  block-size: 12px;
+  border-radius: 50%;
+  background: var(--bulud-donut-accent, var(--bulud-color-primary));
+}
+li:nth-child(3n + 2) .swatch {
+  background: var(--bulud-donut-positive, var(--bulud-color-success));
+}
+li:nth-child(3n) .swatch {
+  background: var(--bulud-donut-negative, var(--bulud-color-danger));
+}

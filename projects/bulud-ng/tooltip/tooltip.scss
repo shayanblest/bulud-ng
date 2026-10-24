@@ -1,0 +1,61 @@
+:host {
+  display: block;
+  color: var(--bulud-tooltip-foreground, var(--bulud-color-on-surface));
+}
+.surface {
+  background: var(--bulud-tooltip-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-tooltip-border, var(--bulud-color-border));
+  border-radius: var(--bulud-tooltip-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-tooltip-padding, var(--bulud-spacing-4, 16px));
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  background: var(--bulud-tooltip-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-tooltip-border, var(--bulud-color-border));
+  border-radius: var(--bulud-tooltip-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-spacing-2, 8px) var(--bulud-spacing-3, 12px);
+}
+button:hover:not(:disabled) {
+  background: var(--bulud-color-surface-hover);
+}
+:where(button, input, select):focus-visible {
+  outline: 2px solid var(--bulud-tooltip-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+:disabled {
+  opacity: var(--bulud-tooltip-disabled-opacity, 0.5);
+  cursor: default;
+}
+.muted {
+  color: var(--bulud-tooltip-muted, var(--bulud-color-muted));
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bulud-tooltip-gap, var(--bulud-spacing-3, 12px));
+}
+.error {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+:host {
+  display: inline-block;
+  position: relative;
+}
+.tip {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-start: 0;
+  z-index: var(--bulud-tooltip-z-index, 100);
+  width: max-content;
+  max-width: min(24ch, 80vw);
+  white-space: normal;
+  font-size: var(--bulud-font-size-small, 12px);
+  box-shadow: var(--bulud-shadow-lg, none);
+}

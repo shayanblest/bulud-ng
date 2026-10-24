@@ -356,13 +356,16 @@ describe('BuludDropdown', () => {
     );
   });
 
-  it('does not steal focus when focus leaves the component', () => {
+  it('does not steal focus when focus leaves the component', async () => {
     getTrigger().click();
-    fixture.detectChanges();
+    await fixture.whenStable();
     const outside = document.createElement('button');
     document.body.append(outside);
     outside.focus();
-    fixture.detectChanges();
+    getTrigger().dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+    );
+    await fixture.whenStable();
 
     expect(document.activeElement).toBe(outside);
     expect(getTrigger().getAttribute('aria-expanded')).toBe('false');
@@ -469,9 +472,9 @@ describe('BuludDropdown', () => {
     expect(trigger.getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('marks a single control touched only after focus leaves the dropdown', () => {
+  it('marks a single control touched only after focus leaves the dropdown', async () => {
     const formsFixture = TestBed.createComponent(FormsHost);
-    formsFixture.detectChanges();
+    await formsFixture.whenStable();
     const host = formsFixture.componentInstance;
     const dropdown = formsFixture.nativeElement.querySelector(
       'bulud-dropdown',
@@ -481,9 +484,9 @@ describe('BuludDropdown', () => {
     ) as HTMLButtonElement;
 
     trigger.click();
-    formsFixture.detectChanges();
+    await formsFixture.whenStable();
     dropdown.querySelector<HTMLButtonElement>('[role="option"]')?.click();
-    formsFixture.detectChanges();
+    await formsFixture.whenStable();
     expect(host.control.touched).toBeFalse();
 
     const clear = dropdown.querySelector<HTMLButtonElement>(
@@ -491,14 +494,17 @@ describe('BuludDropdown', () => {
     );
     clear?.focus();
     clear?.click();
-    formsFixture.detectChanges();
+    await formsFixture.whenStable();
     expect(host.control.touched).toBeFalse();
 
     const outside = document.createElement('button');
     document.body.append(outside);
     trigger.focus();
     outside.focus();
-    formsFixture.detectChanges();
+    trigger.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+    );
+    await formsFixture.whenStable();
     expect(host.control.touched).toBeTrue();
     outside.blur();
     outside.remove();

@@ -1,0 +1,400 @@
+<div class="page-heading">
+  <p class="eyebrow">ANGOUR SHARED</p>
+  <h1>{{ p.text("ابزارهای مشترک پروژه‌ها", "Shared project tools") }}</h1>
+  <p class="lead">
+    {{
+      p.text(
+        "جدول، فیلتر و اجزای عمومی با دیزاین انگور. جستجو، مرتب‌سازی و صفحه در URL ذخیره می‌شوند.",
+        "Angour tables, filters and reusable controls. Search, sort and page are stored in the URL."
+      )
+    }}
+  </p>
+</div>
+<section class="surface">
+  <h2>{{ p.text("جدول و Query", "Table & query") }}</h2>
+  <div class="form-grid">
+    <label class="field"
+      >{{ p.text("جستجو", "Search") }}
+      <span class="search-field">
+        <svg
+          class="search-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m16 16 4.5 4.5" stroke-linecap="round" />
+        </svg>
+        <input
+          class="bulud-input"
+          type="search"
+          [value]="search()"
+          (input)="searchChanged($event)"
+        />
+      </span>
+    </label>
+    <div class="field">
+      <label for="shared-status">{{ p.text("وضعیت", "Status") }}</label
+      ><bulud-dropdown
+        inputId="shared-status"
+        [options]="statusOptions"
+        [value]="status() || null"
+        (valueChange)="filterChanged($event)"
+        [clearable]="true"
+        [language]="p.language()"
+        [attr.aria-label]="p.text('وضعیت', 'Status')"
+      />
+    </div>
+  </div>
+  <div class="toolbar" style="margin-block: 16px">
+    <bulud-checkbox [(checked)]="loading">{{
+      p.text("بارگذاری", "Loading")
+    }}</bulud-checkbox>
+    <bulud-checkbox [(checked)]="failed">{{
+      p.text("خطا", "Error")
+    }}</bulud-checkbox>
+    <bulud-checkbox [(checked)]="empty">{{
+      p.text("خالی", "Empty")
+    }}</bulud-checkbox>
+    <bulud-checkbox [(checked)]="disabled">{{
+      p.text("غیرفعال", "Disabled")
+    }}</bulud-checkbox>
+    <bulud-checkbox [(checked)]="server">{{
+      p.text("صفحه‌بندی سمت سرور (شبیه‌سازی)", "Server pagination (simulated)")
+    }}</bulud-checkbox>
+    <bulud-checkbox [(checked)]="override">{{
+      p.text("رنگ سفارشی", "Custom theme")
+    }}</bulud-checkbox>
+  </div>
+  <bulud-table
+    [caption]="p.text('پروژه‌ها', 'Projects')"
+    [columns]="columns()"
+    [filterDefinitions]="filterDefinitions()"
+    [filters]="tableFilters()"
+    [filterLabel]="p.text('فیلترها', 'Filters')"
+    [clearFilterLabel]="p.text('حذف فیلترها', 'Clear filters')"
+    [language]="p.language()"
+    [rows]="server() ? serverRows() : filtered()"
+    [rowKey]="rowKey"
+    [pageSize]="request().take"
+    [page]="page()"
+    [sort]="sort()"
+    (stateChange)="tableChanged($event)"
+    [labels]="labels()"
+    [server]="server()"
+    [total]="filtered().length"
+    [loading]="loading()"
+    [error]="failed()"
+    [disabled]="disabled()"
+    [theme]="theme()"
+  >
+    <ng-template buludTableCell="status" let-row
+      ><span class="swatch" [class.success]="row.status === 'active'">{{
+        row.status
+      }}</span></ng-template
+    >
+    <ng-template buludTableDetail let-row
+      ><strong>{{ row.name }}</strong>
+      <p>
+        {{
+          p.text(
+            "محتوای دلخواه ردیف؛ بدون وابستگی به مدل تجاری.",
+            "Projected row content, independent of business models."
+          )
+        }}
+      </p>
+      <label class="field"
+        >{{ p.text("یادداشت", "Note")
+        }}<textarea
+          buludTextarea
+          maxlength="500"
+          [value]="notes()[row.id] ?? ''"
+          (input)="noteChanged(row.id, $event)"
+          [placeholder]="
+            p.text('متن پیام خود را بنویسید…', 'Write your message…')
+          "
+          [disabled]="disabled()"
+          [theme]="theme()"
+        ></textarea></label></ng-template
+  ></bulud-table>
+  <details style="margin-block-start: 16px">
+    <summary>
+      {{ p.text("پارامتر آماده درخواست", "Request parameters") }}
+    </summary>
+    <pre
+      dir="ltr"
+      data-testid="query-output"
+      style="white-space: pre-wrap; overflow-wrap: anywhere"
+      >{{ requestText() }}</pre>
+  </details>
+</section>
+<section class="surface">
+  <h2>{{ p.text("کنترل‌های فرم مشترک", "Shared form controls") }}</h2>
+  <form
+    [formGroup]="form"
+    class="form-grid"
+    (submit)="$event.preventDefault(); form.markAllAsTouched()"
+  >
+    <div class="field">
+      <bulud-otp
+        formControlName="otp"
+        [label]="p.text('کد یک‌بارمصرف', 'One-time code')"
+        required
+        [disabled]="disabled()"
+        [invalid]="form.controls.otp.touched && form.controls.otp.invalid"
+        describedBy="otp-message"
+        [theme]="theme()"
+      />
+      <p id="otp-message" class="error">
+        {{
+          form.controls.otp.touched && form.controls.otp.invalid
+            ? p.text("کد ۶ رقمی را وارد کنید.", "Enter a 6-digit code.")
+            : ""
+        }}
+      </p>
+    </div>
+    <div class="field">
+      <bulud-rating
+        formControlName="rating"
+        [label]="p.text('امتیاز', 'Rating')"
+        [invalid]="form.controls.rating.touched && form.controls.rating.invalid"
+        describedBy="rating-message"
+        required
+        [disabled]="disabled()"
+        [theme]="theme()"
+      />
+      <p id="rating-message" class="error">
+        {{
+          form.controls.rating.touched && form.controls.rating.invalid
+            ? p.text("یک امتیاز انتخاب کنید.", "Choose a rating.")
+            : ""
+        }}
+      </p>
+    </div>
+    <div class="wide">
+      <bulud-file-upload
+        formControlName="files"
+        [label]="p.text('انتخاب تصویر یا CSV', 'Choose images or CSV')"
+        accept="image/*,.csv"
+        multiple
+        [maxFiles]="2"
+        [maxSize]="1048576"
+        [maxTotalSize]="2097152"
+        [uploadOptions]="uploadOptions"
+        [hint]="
+          p.text(
+            'فایل را اینجا رها کنید یا برای انتخاب کلیک کنید',
+            'Drop files here or click to choose'
+          )
+        "
+        [selectedLabel]="p.text('فایل انتخاب شده', 'files selected')"
+        [removeLabel]="p.text('حذف', 'Remove')"
+        [uploadLabel]="p.text('آپلود فایل‌ها', 'Upload files')"
+        [cancelLabel]="p.text('لغو آپلود', 'Cancel upload')"
+        [retryLabel]="p.text('تلاش مجدد', 'Retry upload')"
+        [successLabel]="
+          p.text('فایل‌ها با موفقیت ارسال شدند', 'Files uploaded successfully')
+        "
+        [errorLabel]="
+          p.text(
+            'آپلود ناموفق بود؛ دوباره تلاش کنید',
+            'Upload failed. Try again.'
+          )
+        "
+        [validationLabel]="
+          p.text(
+            'نوع، تعداد و حجم فایل‌ها را بررسی کنید؛ فایل خالی مجاز نیست',
+            'Check file type, size and count. Empty files are not allowed.'
+          )
+        "
+        [disabled]="disabled()"
+        [loading]="loading()"
+        [progress]="loading() ? 55 : null"
+        [invalid]="form.controls.files.invalid"
+        [clearLabel]="p.text('پاک کردن فایل‌ها', 'Clear files')"
+        [loadingLabel]="p.text('در حال ارسال…', 'Uploading…')"
+        describedBy="file-message"
+        [theme]="theme()"
+      />
+      <p class="error" id="file-message">
+        {{
+          form.controls.files.invalid
+            ? p.text(
+                "حداکثر ۲ فایل تصویر یا CSV، هرکدام تا ۱ مگابایت.",
+                "At most 2 images or CSV files, up to 1 MB each."
+              )
+            : ""
+        }}
+      </p>
+      <small>{{
+        p.text(
+          "ارسال به گیرنده محلی نمونه انجام می‌شود؛ فایل‌ها ذخیره نمی‌شوند.",
+          "Uploads go to the local demo receiver; files are not stored."
+        )
+      }}</small>
+    </div>
+    <div class="toolbar wide">
+      <button class="primary-link" type="submit">
+        {{ p.text("بررسی کنترل‌ها", "Validate controls") }}</button
+      ><button class="bulud-input" type="button" (click)="form.reset()">
+        {{ p.text("بازنشانی", "Reset controls") }}</button
+      ><span role="status">{{
+        form.valid
+          ? p.text("معتبر", "Valid")
+          : p.text("نیاز به تکمیل", "Incomplete")
+      }}</span>
+    </div>
+  </form>
+</section>
+<section class="surface">
+  <h2>{{ p.text("راهنما و اعلان", "Hints & notifications") }}</h2>
+  <div class="toolbar">
+    <bulud-tooltip
+      [text]="
+        p.text(
+          'با فوکوس یا قرار دادن نشانگر باز می‌شود؛ Escape آن را می‌بندد.',
+          'Opens on focus or hover; Escape dismisses it.'
+        )
+      "
+      [theme]="theme()"
+      ><button type="button" class="bulud-input">
+        {{ p.text("راهنمای ابزار", "Tooltip help") }}
+      </button></bulud-tooltip
+    ><button
+      type="button"
+      class="primary-link"
+      (click)="
+        notices.show(p.text('عملیات انجام شد', 'Action completed'), 'success')
+      "
+    >
+      {{ p.text("نمایش اعلان", "Show notification") }}
+    </button>
+  </div>
+  @if (showAlert()) {
+    <bulud-alert
+      [dismissible]="true"
+      [dismissLabel]="p.text('بستن پیام', 'Dismiss message')"
+      [theme]="theme()"
+      (dismissed)="showAlert.set(false)"
+      >{{
+        p.text(
+          "پیام عمومی با محتوای دلخواه شما.",
+          "A shared alert with your projected content."
+        )
+      }}</bulud-alert
+    >
+  }
+  <bulud-notifications
+    [label]="p.text('اعلان‌ها', 'Notifications')"
+    [dismissLabel]="p.text('بستن اعلان', 'Dismiss notification')"
+    [theme]="theme()"
+  />
+</section>
+<section class="surface">
+  <h2>{{ p.text("مراحل و نمایش محتوا", "Steps & slides") }}</h2>
+  <bulud-stepper
+    [label]="p.text('مراحل نمونه', 'Example steps')"
+    [(active)]="activeStep"
+    [disabled]="disabled()"
+    [theme]="theme()"
+    ><ng-template [buludStep]="p.text('اطلاعات', 'Information')"
+      ><p>
+        {{ p.text("محتوای مرحله اول", "First step content") }}
+      </p></ng-template
+    ><ng-template [buludStep]="p.text('بازبینی', 'Review')"
+      ><p>{{ p.text("محتوای بازبینی", "Review step content") }}</p></ng-template
+    ><ng-template [buludStep]="p.text('غیرفعال', 'Unavailable')" disabled
+      ><p>Unavailable</p></ng-template
+    ></bulud-stepper
+  >
+  <bulud-carousel
+    [label]="p.text('اسلایدهای نمونه', 'Example slides')"
+    [(active)]="activeSlide"
+    [previousLabel]="p.text('قبلی', 'Previous slide')"
+    [nextLabel]="p.text('بعدی', 'Next slide')"
+    [disabled]="disabled()"
+    [theme]="theme()"
+    ><ng-template [buludSlide]="p.text('اول', 'First')"
+      ><h3>
+        {{
+          p.text(
+            "یک بیس برای پروژه‌های متفاوت",
+            "One foundation for different projects"
+          )
+        }}
+      </h3></ng-template
+    ><ng-template [buludSlide]="p.text('دوم', 'Second')"
+      ><h3>
+        {{
+          p.text(
+            "با دو تم و دو جهت نوشتار",
+            "Two themes and both text directions"
+          )
+        }}
+      </h3></ng-template
+    ></bulud-carousel
+  >
+</section>
+<section class="surface">
+  <h2>{{ p.text("ابزارها و سرویس‌ها", "Utilities & services") }}</h2>
+  <div class="toolbar">
+    <button type="button" class="bulud-input" (click)="start()">
+      {{ p.text("شمارش ۳ ثانیه", "Start 3-second countdown") }}</button
+    ><bulud-countdown
+      [label]="p.text('زمان باقی‌مانده', 'Time remaining')"
+      [deadline]="deadline()"
+      (expired)="notices.show(p.text('زمان تمام شد', 'Time elapsed'))"
+      [theme]="theme()"
+    /><button type="button" class="bulud-input" (click)="generate()">
+      {{ p.text("تولید رمز تصادفی", "Generate random password") }}</button
+    ><output dir="ltr">{{ password() }}</output>
+  </div>
+  <p>
+    {{ p.text("وضعیت مرورگر: ", "Browser connection: ")
+    }}{{
+      connection.online() === null
+        ? "—"
+        : connection.online()
+          ? "Online"
+          : "Offline"
+    }}
+  </p>
+  <p>
+    {{ stamp | buludDateTime: false : p.language() : "UTC" }} ·
+    {{ "user@example.com" | buludMaskEmail }} ·
+    {{ "report.csv?download=1" | buludFileExtension }}
+  </p>
+</section>
+
+<section class="surface">
+  <h2>{{ p.text("پیشرفت بارگذاری صفحه", "Page loading progress") }}</h2>
+  <div class="toolbar">
+    <button
+      type="button"
+      class="primary-link"
+      (click)="startProgress()"
+      [disabled]="progressTask() !== null"
+    >
+      {{ p.text("شروع بارگذاری", "Start page loading") }}
+    </button>
+    <button
+      type="button"
+      class="bulud-input"
+      [disabled]="progressTask() === null"
+      (click)="pageLoading.update(progressTask()!, 70)"
+    >
+      {{ p.text("پیشرفت ۷۰ درصد", "Progress to 70%") }}
+    </button>
+    <button
+      type="button"
+      class="bulud-input"
+      [disabled]="progressTask() === null"
+      (click)="finishProgress()"
+    >
+      {{ p.text("پایان بارگذاری", "Finish page loading") }}
+    </button>
+  </div>
+</section>

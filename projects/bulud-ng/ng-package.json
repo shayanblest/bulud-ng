@@ -3,9 +3,16 @@
   "dest": "../../dist/bulud-ng",
   "assets": [
     "tailwind.css",
-    "theme.css"
+    "theme.css",
+    "angour.css",
+    "angour-base.css",
+    "SHARED.md",
+    "publish-check.mjs",
+    "LICENSE*",
+    "QUICKSTART.md"
   ],
   "lib": {
     "entryFile": "src/public-api.ts"
-  }
+  },
+  "keepLifecycleScripts": true
 }

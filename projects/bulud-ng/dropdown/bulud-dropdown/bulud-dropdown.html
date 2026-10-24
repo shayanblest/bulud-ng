@@ -5,12 +5,16 @@
     type="button"
     role="combobox"
     [disabled]="isDisabled()"
-    [attr.aria-label]="ariaLabel()"
+    [id]="inputId() ?? instanceId + '-trigger'"
+    [attr.aria-labelledby]="ariaLabelledby()"
+    [attr.aria-label]="ariaLabelledby() ? null : ariaLabel()"
     [attr.aria-expanded]="open()"
     [attr.aria-controls]="instanceId + '-listbox'"
     [attr.aria-activedescendant]="activeOptionId()"
     [attr.aria-required]="required() ? 'true' : null"
     [attr.aria-invalid]="isInvalid() ? 'true' : null"
+    [attr.aria-describedby]="ariaDescribedby()"
+    [attr.aria-errormessage]="ariaErrormessage()"
     aria-haspopup="listbox"
     (click)="toggle()"
     (keydown)="openFromKeyboard($event)"
@@ -49,7 +53,7 @@
     <button
       class="bulud-dropdown__clear"
       type="button"
-      [attr.aria-label]="clearLabel() ?? locale.dropdown.clearLabel"
+      [attr.aria-label]="clearLabel() ?? resolvedLocale().dropdown.clearLabel"
       (click)="clear($event)"
     >
       <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
@@ -63,7 +67,7 @@
       @if (searchable()) {
         <label class="bulud-dropdown__search">
           <span class="bulud-visually-hidden">
-            {{ searchLabel() ?? locale.dropdown.searchLabel }}
+            {{ searchLabel() ?? resolvedLocale().dropdown.searchLabel }}
           </span>
           <span class="bulud-dropdown__search-icon" aria-hidden="true">
             <svg viewBox="0 0 20 20" focusable="false">
@@ -76,9 +80,11 @@
             type="search"
             [value]="searchTerm()"
             [placeholder]="
-              searchPlaceholder() ?? locale.dropdown.searchPlaceholder
+              searchPlaceholder() ?? resolvedLocale().dropdown.searchPlaceholder
             "
-            [attr.aria-label]="searchLabel() ?? locale.dropdown.searchLabel"
+            [attr.aria-label]="
+              searchLabel() ?? resolvedLocale().dropdown.searchLabel
+            "
             [attr.aria-controls]="
               hasRenderedListbox() ? instanceId + '-listbox' : null
             "
@@ -92,15 +98,15 @@
       @if (loading()) {
         <div class="bulud-dropdown__message" role="status">
           <span class="bulud-dropdown__spinner" aria-hidden="true"></span>
-          {{ loadingText() ?? locale.dropdown.loadingText }}
+          {{ loadingText() ?? resolvedLocale().dropdown.loadingText }}
         </div>
       } @else if (options().length === 0) {
         <div class="bulud-dropdown__message">
-          {{ emptyText() ?? locale.dropdown.emptyText }}
+          {{ emptyText() ?? resolvedLocale().dropdown.emptyText }}
         </div>
       } @else if (filteredOptions().length === 0) {
         <div class="bulud-dropdown__message">
-          {{ noResultsText() ?? locale.dropdown.noResultsText }}
+          {{ noResultsText() ?? resolvedLocale().dropdown.noResultsText }}
         </div>
       } @else {
         <div

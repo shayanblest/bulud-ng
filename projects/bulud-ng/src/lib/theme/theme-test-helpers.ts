@@ -4,11 +4,12 @@
 // these helpers verify style precedence rather than browser interaction patterns.
 export function activateStateStyle(
   target: HTMLElement,
-  state: 'hover' | 'active' | 'focus-visible',
+  state: 'hover' | 'active' | 'focus-visible' | 'focus-within' | 'focus',
+  stateTarget: HTMLElement = target,
 ): { restore: () => void; matchedRuleCount: number } {
   const attribute = `data-theme-test-${state}`;
   const changed: { rule: CSSStyleRule; selector: string }[] = [];
-  target.setAttribute(attribute, '');
+  stateTarget.setAttribute(attribute, '');
   for (const sheet of Array.from(document.styleSheets)) {
     for (const rule of Array.from(sheet.cssRules)) {
       if (
@@ -16,10 +17,11 @@ export function activateStateStyle(
         !rule.selectorText.includes(`:${state}`)
       )
         continue;
-      const selector = rule.selectorText.replaceAll(
-        `:${state}`,
+      const selector = rule.selectorText.replace(
+        new RegExp(`:${state}(?![a-zA-Z0-9_-])`, 'g'),
         `[${attribute}]`,
       );
+      if (selector === rule.selectorText) continue;
       if (target.matches(selector)) {
         changed.push({ rule, selector: rule.selectorText });
         rule.selectorText = selector;
@@ -32,7 +34,7 @@ export function activateStateStyle(
       changed.forEach(({ rule, selector }) => {
         rule.selectorText = selector;
       });
-      target.removeAttribute(attribute);
+      stateTarget.removeAttribute(attribute);
     },
   };
 }

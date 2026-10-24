@@ -165,30 +165,28 @@ function createPaginationWindow(
   ) {
     return [];
   }
-  if (pageCount <= 7) {
-    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  if (pageCount <= 5) return Array.from({ length: pageCount }, (_, i) => i + 1);
+  const start =
+    currentPage <= 3
+      ? 2
+      : currentPage >= pageCount - 2
+        ? pageCount - 3
+        : currentPage - 1;
+  const end =
+    currentPage <= 3
+      ? 4
+      : currentPage >= pageCount - 2
+        ? pageCount - 1
+        : currentPage + 1;
+  const pages = [1];
+  for (let page = start; page <= end; page++) pages.push(page);
+  pages.push(pageCount);
+  const result: BuludPaginationItem[] = [];
+  for (const page of pages) {
+    const previous = result.at(-1);
+    if (typeof previous === 'number' && page - previous > 1)
+      result.push(page === pageCount ? 'ellipsis-end' : 'ellipsis-start');
+    result.push(page);
   }
-  if (currentPage <= 4) {
-    return [1, 2, 3, 4, 5, 'ellipsis-end', pageCount];
-  }
-  if (currentPage >= pageCount - 3) {
-    return [
-      1,
-      'ellipsis-start',
-      pageCount - 4,
-      pageCount - 3,
-      pageCount - 2,
-      pageCount - 1,
-      pageCount,
-    ];
-  }
-  return [
-    1,
-    'ellipsis-start',
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-    'ellipsis-end',
-    pageCount,
-  ];
+  return result;
 }

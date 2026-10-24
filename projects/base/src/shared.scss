@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+.search-field {
+  position: relative;
+  display: block;
+}
+.search-field input {
+  width: 100%;
+  padding-inline-start: var(--bulud-search-icon-inset, 2.75rem);
+}
+.search-icon {
+  position: absolute;
+  inset-inline-start: var(--bulud-spacing-3, 12px);
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  width: var(--bulud-search-icon-size, 20px);
+  height: var(--bulud-search-icon-size, 20px);
+  color: var(--bulud-color-muted);
+  pointer-events: none;
+}

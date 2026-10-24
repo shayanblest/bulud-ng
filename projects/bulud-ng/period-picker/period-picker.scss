@@ -1,0 +1,78 @@
+:host {
+  display: block;
+  color: var(--bulud-period-picker-foreground, var(--bulud-color-on-surface));
+}
+fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  border: 1px solid var(--bulud-period-picker-border, var(--bulud-color-border));
+  border-radius: var(
+    --bulud-period-picker-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  background: var(--bulud-period-picker-background, var(--bulud-body-bg));
+  padding: var(--bulud-period-picker-padding, 16px);
+}
+legend {
+  padding-inline: 8px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+button,
+input {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  border-radius: var(--bulud-period-picker-radius, 8px);
+  padding: 8px;
+}
+button {
+  cursor: pointer;
+}
+input {
+  min-inline-size: 0;
+  inline-size: 100%;
+  text-align: center;
+  background: var(--bulud-color-surface);
+}
+svg {
+  inline-size: 20px;
+  block-size: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+:dir(rtl) svg {
+  transform: scaleX(-1);
+}
+.months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--bulud-period-picker-gap, 8px);
+  margin-block: 16px;
+}
+.months button[aria-pressed="true"] {
+  background: var(--bulud-period-picker-accent, var(--bulud-color-primary));
+  color: var(--bulud-color-on-primary);
+}
+button:hover:not(:disabled):not([aria-pressed="true"]) {
+  background: var(--bulud-color-surface-hover);
+}
+:is(button, input):focus-visible {
+  outline: 2px solid var(--bulud-period-picker-focus, var(--bulud-color-focus));
+  outline-offset: 1px;
+}
+:disabled {
+  opacity: var(--bulud-period-picker-disabled-opacity, 0.5);
+  cursor: default;
+}
+fieldset[aria-invalid="true"] {
+  border-color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+.clear {
+  color: var(--bulud-period-picker-accent, var(--bulud-color-primary));
+}

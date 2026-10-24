@@ -1,0 +1,68 @@
+:host {
+  display: block;
+  color: var(--bulud-otp-foreground, var(--bulud-color-on-surface));
+}
+.surface {
+  background: var(--bulud-otp-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-otp-border, var(--bulud-color-border));
+  border-radius: var(--bulud-otp-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-otp-padding, var(--bulud-spacing-4, 16px));
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  background: var(--bulud-otp-background, var(--bulud-color-surface));
+  border: 1px solid var(--bulud-otp-border, var(--bulud-color-border));
+  border-radius: var(--bulud-otp-radius, var(--bulud-radius-control, 8px));
+  padding: var(--bulud-spacing-2, 8px) var(--bulud-spacing-3, 12px);
+}
+button:hover:not(:disabled) {
+  background: var(--bulud-color-surface-hover);
+}
+:where(button, input, select):focus-visible {
+  outline: 2px solid var(--bulud-otp-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+:disabled {
+  opacity: var(--bulud-otp-disabled-opacity, 0.5);
+  cursor: default;
+}
+.muted {
+  color: var(--bulud-otp-muted, var(--bulud-color-muted));
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bulud-otp-gap, var(--bulud-spacing-3, 12px));
+}
+.error {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bulud-otp-gap, var(--bulud-spacing-3, 12px));
+}
+input {
+  width: 100%;
+  max-width: var(--bulud-otp-width, 22rem);
+  padding: var(--bulud-otp-padding, var(--bulud-spacing-3, 12px));
+  text-align: center;
+  letter-spacing: var(--bulud-otp-letter-spacing, 0.7em);
+  background: var(
+    --bulud-otp-background,
+    var(--bulud-body-bg, var(--bulud-color-surface))
+  );
+  border: 1px solid var(--bulud-otp-border, var(--bulud-color-border));
+  border-radius: var(--bulud-otp-radius, var(--bulud-radius-control, 8px));
+}
+:host(.ng-invalid.ng-touched) input,
+input[aria-invalid="true"] {
+  border-color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}

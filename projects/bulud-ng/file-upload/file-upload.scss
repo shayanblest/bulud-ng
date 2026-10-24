@@ -1,0 +1,245 @@
+:host {
+  display: block;
+  color: var(--bulud-file-upload-foreground, var(--bulud-color-on-surface));
+}
+.surface {
+  border: 0;
+  background: var(--bulud-file-upload-background, var(--bulud-color-surface));
+  border-radius: var(
+    --bulud-file-upload-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  padding: var(--bulud-file-upload-padding, var(--bulud-spacing-4, 16px));
+}
+.picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--bulud-file-upload-gap, var(--bulud-spacing-3, 12px));
+  min-height: var(--bulud-file-upload-min-height, 200px);
+  padding: var(--bulud-file-upload-padding, var(--bulud-spacing-5, 24px));
+  border: 0;
+  border-radius: var(
+    --bulud-file-upload-radius,
+    var(--bulud-radius-extraLarge, 12px)
+  );
+  background: var(--bulud-body-bg, var(--bulud-color-surface));
+  cursor: pointer;
+}
+.picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: inherit;
+}
+.picker:has(input:focus-visible),
+.picker.dragging {
+  outline: 2px solid var(--bulud-file-upload-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+.picker:has(input:disabled) {
+  opacity: var(--bulud-file-upload-disabled-opacity, 0.5);
+  cursor: default;
+}
+.picker.invalid,
+:host(.ng-invalid.ng-touched) .picker {
+  box-shadow: inset 0 0 0 1px
+    var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+.upload-icon {
+  width: var(--bulud-file-upload-icon-size, 44px);
+  height: var(--bulud-file-upload-icon-size, 44px);
+  color: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+}
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+small,
+.muted {
+  color: var(--bulud-file-upload-muted, var(--bulud-color-muted));
+}
+.file-toolbar,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bulud-file-upload-gap, 12px);
+  margin-block: var(--bulud-spacing-3, 12px);
+  flex-wrap: wrap;
+}
+button {
+  border: 0;
+  border-radius: var(
+    --bulud-file-upload-radius,
+    var(--bulud-radius-control, 8px)
+  );
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+  font: inherit;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--bulud-color-surface-hover);
+}
+button:focus-visible {
+  outline: 2px solid var(--bulud-file-upload-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+button:disabled {
+  opacity: var(--bulud-file-upload-disabled-opacity, 0.5);
+  cursor: default;
+}
+.file-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  background: var(--bulud-body-bg, var(--bulud-color-surface));
+  padding: 12px;
+  border-radius: var(--bulud-file-upload-radius, 12px);
+}
+li img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border: 0;
+  border-radius: var(--bulud-file-upload-radius, 8px);
+}
+.file-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  color: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+}
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
+}
+.remove {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+}
+.remove svg {
+  width: 18px;
+  height: 18px;
+}
+.upload-button {
+  background: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+  color: var(--bulud-color-on-primary);
+}
+.upload-button:hover:not(:disabled) {
+  background: var(--bulud-color-primary-hover);
+  color: var(--bulud-color-on-primary);
+}
+.upload-state {
+  display: flex;
+  align-items: center;
+  gap: var(--bulud-file-upload-gap, 12px);
+  margin-block: var(--bulud-spacing-3, 12px);
+  color: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+}
+.upload-state.complete {
+  color: var(--bulud-color-success);
+}
+.upload-state-icon {
+  inline-size: 24px;
+  block-size: 24px;
+  flex-shrink: 0;
+}
+.upload-progress-details {
+  flex: 1;
+  min-inline-size: 0;
+}
+.upload-progress-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bulud-file-upload-gap, 12px);
+  font-size: var(--bulud-font-size-7, 12px);
+  line-height: 1.5;
+  margin-block-end: var(--bulud-spacing-1, 4px);
+}
+.upload-caption {
+  overflow-wrap: anywhere;
+}
+.upload-percent {
+  flex-shrink: 0;
+  color: var(--bulud-file-upload-muted, var(--bulud-color-muted));
+}
+progress {
+  display: block;
+  width: 100%;
+  height: var(--bulud-file-upload-progress-height, 2px);
+  border: 0;
+  accent-color: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+}
+progress::-webkit-progress-bar {
+  background: var(--bulud-file-upload-border, var(--bulud-color-border));
+}
+progress::-webkit-progress-value {
+  background: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+}
+progress::-moz-progress-bar {
+  background: var(--bulud-file-upload-accent, var(--bulud-color-primary));
+}
+.upload-error {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+.upload-success {
+  color: var(--bulud-color-success);
+}
+@media (forced-colors: active) {
+  .picker {
+    outline: 1px solid ButtonText;
+  }
+  .picker:has(input:focus-visible) {
+    outline: 2px solid Highlight;
+  }
+}
+
+progress.complete {
+  accent-color: var(--bulud-color-success);
+}
+progress.complete::-webkit-progress-value {
+  background: var(--bulud-color-success);
+}
+progress.complete::-moz-progress-bar {
+  background: var(--bulud-color-success);
+}
+
+.upload-button:disabled {
+  background: var(
+    --bulud-button-disabled-background,
+    var(--bulud-color-subtle, var(--bulud-color-surface-hover))
+  );
+  color: var(
+    --bulud-button-disabled-foreground,
+    var(--bulud-file-upload-muted, var(--bulud-color-muted))
+  );
+  opacity: var(--bulud-button-disabled-opacity, 1);
+}
+.actions button {
+  min-block-size: var(--bulud-button-height-medium, 40px);
+}

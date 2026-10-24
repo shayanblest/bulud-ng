@@ -1,0 +1,3 @@
+The lazy `/shared` page demonstrates the domain-independent Angour transfer: sortable/paged tables, URL-backed queries, OTP, file/rating controls, feedback, tooltip, steps, slides and utility services. See [SHARED.md](SHARED.md) for imports and typed API contracts. This sample simulates server paging locally and sends no files/API requests.
+
+For Lighthouse/LCP checks, use the optimized static preview on **4314**, not the development server on 4310: `node tools/serve-base.mjs --build`. Compression, immutable asset caching and HTML revalidation are included. See [PERFORMANCE.md](PERFORMANCE.md).

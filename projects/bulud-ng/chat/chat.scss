@@ -1,0 +1,118 @@
+:host {
+  display: block;
+  color: var(--bulud-chat-foreground, var(--bulud-color-on-surface));
+  min-inline-size: 0;
+}
+section {
+  background: var(--bulud-chat-background, var(--bulud-color-surface));
+  border-radius: var(--bulud-chat-radius, var(--bulud-radius-control));
+  padding: var(--bulud-chat-padding, 24px);
+}
+.transcript {
+  max-block-size: var(--bulud-chat-height, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  scrollbar-gutter: stable;
+}
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bulud-chat-gap, 16px);
+  margin-block: 20px;
+  inline-size: 85%;
+  min-inline-size: 0;
+}
+.message.outgoing {
+  margin-inline-start: auto;
+  flex-direction: row-reverse;
+}
+.bubble {
+  min-inline-size: 0;
+  flex: 1;
+  background: var(--bulud-chat-bubble-background, var(--bulud-body-bg));
+  border: 1px solid var(--bulud-chat-border, var(--bulud-color-border));
+  border-radius: var(--bulud-chat-radius, 8px);
+  padding: 16px;
+}
+.outgoing .bubble {
+  border-inline-start: 3px solid
+    var(--bulud-chat-accent, var(--bulud-color-primary));
+}
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-block: 12px;
+}
+.bubble strong {
+  font-size: 0.875rem;
+}
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--bulud-chat-muted, var(--bulud-color-muted));
+}
+.failed {
+  color: var(--bulud-color-danger-text, var(--bulud-color-danger));
+}
+.composer {
+  margin-block-start: 24px;
+}
+.composer label {
+  display: block;
+  margin-block-end: 8px;
+}
+textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+}
+.compose-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-block-start: 12px;
+}
+button {
+  font: inherit;
+  color: var(--bulud-chat-accent, var(--bulud-color-primary));
+  background: transparent;
+  border: 1px solid var(--bulud-chat-border, var(--bulud-color-border));
+  border-radius: var(--bulud-chat-radius, 8px);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.attachments {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+}
+:is(button, .transcript):focus-visible {
+  outline: 2px solid var(--bulud-chat-focus, var(--bulud-color-focus));
+  outline-offset: 2px;
+}
+:disabled {
+  opacity: var(--bulud-chat-disabled-opacity, 0.55);
+  cursor: default;
+}
+@media (max-width: 600px) {
+  section {
+    padding: 12px;
+  }
+  .message {
+    inline-size: 100%;
+    gap: 8px;
+  }
+  bulud-avatar {
+    --bulud-avatar-size: 32px;
+  }
+  .bubble {
+    padding: 12px;
+  }
+}

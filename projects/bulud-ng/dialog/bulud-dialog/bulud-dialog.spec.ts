@@ -6,6 +6,7 @@ import {
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BuludDialog } from './bulud-dialog';
+import { activateStateStyle } from '../../src/lib/theme/theme-test-helpers';
 
 @Component({
   imports: [BuludDialog],
@@ -1612,8 +1613,18 @@ describe('BuludDialog', () => {
 
     expect(button.style.outlineWidth).toBe('');
     dialog.focus();
-    expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
-    expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
+    const focusStyle = activateStateStyle(dialog, 'focus');
+    try {
+      expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
+    } finally {
+      focusStyle.restore();
+    }
+    const offsetStyle = activateStateStyle(dialog, 'focus');
+    try {
+      expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
+    } finally {
+      offsetStyle.restore();
+    }
     expect(
       getComputedStyle(dialog.closest('dialog') as HTMLDialogElement).zIndex,
     ).toBe('2000');
@@ -1624,8 +1635,18 @@ describe('BuludDialog', () => {
     const dialog = getDialog();
     dialog.focus();
 
-    expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
-    expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
+    const focusStyle = activateStateStyle(dialog, 'focus');
+    try {
+      expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
+    } finally {
+      focusStyle.restore();
+    }
+    const offsetStyle = activateStateStyle(dialog, 'focus');
+    try {
+      expect(getComputedStyle(dialog).outlineOffset).toBe('7px');
+    } finally {
+      offsetStyle.restore();
+    }
   });
 
   it('rejects plain, disabled, hidden, inert, and disconnected explicit targets', async () => {
@@ -1932,7 +1953,12 @@ describe('BuludDialog', () => {
     );
 
     expect(document.activeElement).toBe(dialog);
-    expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
+    const focusStyle = activateStateStyle(dialog, 'focus');
+    try {
+      expect(getComputedStyle(dialog).outlineWidth).toBe('5px');
+    } finally {
+      focusStyle.restore();
+    }
   });
 
   it('closes once for enabled Escape and emits its user close reason', () => {

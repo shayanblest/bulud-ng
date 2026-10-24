@@ -1817,6 +1817,12 @@
         </section>
       </div>
     </section>
+    <app-angour-demo />
+    @defer (on viewport) {
+      <app-angour-controls-demo />
+    } @placeholder {
+      <div id="angour-controls" style="min-height:40rem"></div>
+    }
   </main>
 
   <footer class="border-t border-white/10 bg-slate-950">

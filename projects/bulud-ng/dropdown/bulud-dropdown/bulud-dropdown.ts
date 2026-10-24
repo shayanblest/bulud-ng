@@ -4,6 +4,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DOCUMENT,
+  Renderer2,
+  untracked,
   contentChild,
   ElementRef,
   effect,
@@ -31,7 +34,7 @@ import {
 import { defer, EMPTY } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
-import { BULUD_LOCALE } from 'bulud-ng';
+import { BULUD_LOCALE, resolveBuludLocale } from 'bulud-ng';
 
 /**
  * Context exposed to an option template.
@@ -78,11 +81,13 @@ export interface BuludDropdownSelectedTemplateContext<T> {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'bulud-dropdown-host',
+    '[attr.aria-labelledby]': 'null',
+    '[attr.aria-describedby]': 'null',
+    '[attr.aria-errormessage]': 'null',
     '[class.bulud-dropdown-host--open]': 'open()',
     '[class.bulud-dropdown-host--disabled]': 'isDisabled()',
     '[class.bulud-dropdown-host--invalid]': 'isInvalid()',
     '(focusout)': 'handleFocusOut($event)',
-    '(document:pointerdown)': 'handleDocumentPointerDown($event)',
   },
   templateUrl: './bulud-dropdown.html',
   styleUrl: './bulud-dropdown.scss',
@@ -103,6 +108,12 @@ export class BuludDropdown<T = unknown>
   protected readonly instanceId = `bulud-dropdown-${BuludDropdown.nextId++}`;
 
   /** Options rendered in the listbox. */
+  readonly language = input<string | undefined>(undefined);
+  protected readonly resolvedLocale = computed(() =>
+    this.language()
+      ? resolveBuludLocale({ language: this.language() })
+      : this.locale,
+  );
   readonly options = input<readonly T[]>([]);
 
   /** Selected option or selected options. */
@@ -122,6 +133,20 @@ export class BuludDropdown<T = unknown>
 
   /** Requires at least one selected value when used with Angular Forms. */
   readonly required = input(false, { transform: booleanAttribute });
+
+  /** Explicit invalid state for forms managed by the consumer. */
+  readonly invalid = input(false, { transform: booleanAttribute });
+  readonly ariaDescribedby = input<string | null>(null, {
+    alias: 'aria-describedby',
+  });
+  readonly ariaErrormessage = input<string | null>(null, {
+    alias: 'aria-errormessage',
+  });
+  /** Optional count constraints for multiple selection. */
+  readonly minSelected = input<number | null>(null);
+  readonly maxSelected = input<number | null>(null);
+  /** Validate membership after asynchronous options finish loading. */
+  readonly requireOption = input(false, { transform: booleanAttribute });
 
   /** Shows a loading state instead of options. */
   readonly loading = input(false, { transform: booleanAttribute });
@@ -148,6 +173,10 @@ export class BuludDropdown<T = unknown>
   readonly searchLabel = input<string | undefined>(undefined);
 
   /** Accessible label for the trigger. */
+  readonly inputId = input<string | null>(null);
+  readonly ariaLabelledby = input<string | null>(null, {
+    alias: 'aria-labelledby',
+  });
   readonly ariaLabel = input<string | null>(null, { alias: 'aria-label' });
 
   /** Converts an option into searchable and default visible text. */
@@ -196,9 +225,29 @@ export class BuludDropdown<T = unknown>
   private onValidatorChange: () => void = () => {};
 
   constructor() {
+    const renderer = inject(Renderer2);
+    const document = inject(DOCUMENT);
+    effect((onCleanup) => {
+      if (!this.open()) return;
+      onCleanup(
+        renderer.listen(document, 'pointerdown', (event: PointerEvent) =>
+          this.handleDocumentPointerDown(event),
+        ),
+      );
+    });
+    effect(() => {
+      if (this.isDisabled()) untracked(() => this.close(false));
+    });
     effect(() => {
       this.required();
-      this.onValidatorChange();
+      this.multiple();
+      this.minSelected();
+      this.maxSelected();
+      this.requireOption();
+      this.options();
+      this.loading();
+      this.compareWith();
+      untracked(() => this.onValidatorChange());
     });
     effect(() => {
       const options = this.filteredOptions();
@@ -222,7 +271,10 @@ export class BuludDropdown<T = unknown>
   protected isInvalid(): boolean {
     this.formEvents();
     const control = this.getFormControl();
-    return Boolean(control?.invalid && (control.touched || control.dirty));
+    return (
+      this.invalid() ||
+      Boolean(control?.invalid && (control.touched || control.dirty))
+    );
   }
 
   private getFormControl() {
@@ -246,27 +298,30 @@ export class BuludDropdown<T = unknown>
     return value === null || Array.isArray(value) ? [] : [value as T];
   });
 
+  private readonly searchIndex = computed(() =>
+    this.options().map((option) => ({
+      option,
+      label: this.optionLabel()(option).toLocaleLowerCase(),
+    })),
+  );
   protected readonly filteredOptions = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase();
-
-    if (!term) {
-      return this.options();
-    }
-
-    return this.options().filter((option) =>
-      this.optionLabel()(option).toLocaleLowerCase().includes(term),
-    );
+    return term
+      ? this.searchIndex()
+          .filter((item) => item.label.includes(term))
+          .map((item) => item.option)
+      : this.options();
   });
 
   protected readonly triggerLabel = computed(() => {
     const selected = this.selectedOptions();
 
     if (selected.length === 0) {
-      return this.placeholder() ?? this.locale.dropdown.placeholder;
+      return this.placeholder() ?? this.resolvedLocale().dropdown.placeholder;
     }
 
     if (this.multiple()) {
-      return this.locale.dropdown.selectedText(selected.length);
+      return this.resolvedLocale().dropdown.selectedText(selected.length);
     }
 
     return this.optionLabel()(selected[0]);
@@ -289,8 +344,22 @@ export class BuludDropdown<T = unknown>
     this.open.set(true);
     this.setActiveFromSelection();
     if (this.searchable()) {
+      const trigger = this.triggerElement()?.nativeElement;
+      const activeAtOpen = trigger?.ownerDocument.activeElement;
       runInInjectionContext(this.injector, () => {
-        afterNextRender(() => this.searchInput()?.nativeElement.focus());
+        afterNextRender(() => {
+          if (!this.open() || this.isDisabled()) return;
+          const active = trigger?.ownerDocument.activeElement;
+          if (
+            active !== activeAtOpen &&
+            active &&
+            !trigger?.closest('bulud-dropdown')?.contains(active)
+          ) {
+            this.close(false);
+            return;
+          }
+          this.searchInput()?.nativeElement.focus();
+        });
       });
     }
   }
@@ -438,7 +507,7 @@ export class BuludDropdown<T = unknown>
   }
 
   protected selectOption(option: T): void {
-    if (this.isOptionDisabled(option)) {
+    if (this.isDisabled() || this.loading() || this.isOptionDisabled(option)) {
       return;
     }
 
@@ -471,6 +540,7 @@ export class BuludDropdown<T = unknown>
 
   protected clear(event: Event): void {
     event.stopPropagation();
+    if (this.isDisabled()) return;
     this.triggerElement()?.nativeElement.focus();
     const next = this.multiple() ? [] : null;
     this.value.set(next);
@@ -601,14 +671,40 @@ export class BuludDropdown<T = unknown>
   }
 
   validate(): ValidationErrors | null {
-    if (!this.required()) {
-      return null;
-    }
     const value = this.value();
     const empty =
       value === null ||
       value === undefined ||
       (Array.isArray(value) && value.length === 0);
-    return empty ? { required: true } : null;
+    if (this.required() && empty) return { required: true };
+    if (value != null && this.multiple() !== Array.isArray(value))
+      return { selectionType: { multiple: this.multiple() } };
+    const selected = this.selectedOptions();
+    if (this.multiple()) {
+      const min = this.minSelected(),
+        max = this.maxSelected();
+      if (
+        [min, max].some(
+          (bound) =>
+            bound !== null && (!Number.isSafeInteger(bound) || bound < 0),
+        ) ||
+        (min !== null && max !== null && min > max)
+      )
+        return { selectionBounds: true };
+      if (min !== null && selected.length < min)
+        return { minSelected: { min, actual: selected.length } };
+      if (max !== null && selected.length > max)
+        return { maxSelected: { max, actual: selected.length } };
+    }
+    if (
+      this.requireOption() &&
+      !this.loading() &&
+      selected.some(
+        (item) =>
+          !this.options().some((option) => this.isSameOption(option, item)),
+      )
+    )
+      return { option: true };
+    return null;
   }
 }

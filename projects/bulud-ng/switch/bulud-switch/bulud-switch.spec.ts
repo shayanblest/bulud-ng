@@ -17,6 +17,7 @@ import {
   resolveBuludTheme,
 } from '../../src/lib/theme/bulud-theme';
 import { BuludSwitch } from './bulud-switch';
+import { activateStateStyle } from '../../src/lib/theme/theme-test-helpers';
 
 @Component({
   imports: [BuludSwitch, ReactiveFormsModule],
@@ -503,7 +504,7 @@ describe('BuludSwitch', () => {
 
     getInput().focus();
     getInput().click();
-    getInput().blur();
+    getInput().dispatchEvent(new FocusEvent('blur'));
     await fixture.whenStable();
     expect(changeValue).toBeFalse();
     expect(touched).toBe(1);
@@ -819,6 +820,7 @@ describe('BuludSwitch', () => {
           ? host
           : host.querySelector<HTMLElement>(token.selector)!;
       const input = getInput();
+      let restoreState: (() => void) | undefined;
 
       if ('state' in token) {
         if (token.state === 'checked') {
@@ -826,6 +828,11 @@ describe('BuludSwitch', () => {
         } else if (token.state === 'disabled') {
           state.control.disable();
         } else if (token.state === 'focus') {
+          restoreState = activateStateStyle(
+            target,
+            'focus-visible',
+            input,
+          ).restore;
           input.focus();
         }
       }
@@ -904,6 +911,7 @@ describe('BuludSwitch', () => {
         rootStyle.remove();
         expect(readValue()).toBe(token.fallbackComputed);
       } finally {
+        restoreState?.();
         globalInjector?.destroy();
         fallbackInjector?.destroy();
         rootStyle.remove();
@@ -921,4 +929,41 @@ describe('BuludSwitch', () => {
       }
     });
   }
+});
+
+describe('Angour theme switch appearance', () => {
+  beforeEach(() =>
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    }),
+  );
+  it('keeps default switches unchanged and makes theme icons follow native checked state', async () => {
+    const f = TestBed.createComponent(BuludSwitch);
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('svg')).toBeNull();
+    f.componentRef.setInput('appearance', 'theme');
+    f.componentRef.setInput('aria-label', 'Theme');
+    await f.whenStable();
+    expect(
+      f.nativeElement.classList.contains('bulud-switch-host--theme'),
+    ).toBeTrue();
+    expect(
+      f.nativeElement.querySelector('.bulud-switch__theme-icon--moon'),
+    ).toBeNull();
+    const values: boolean[] = [];
+    f.componentInstance.checkedChange.subscribe((value) => values.push(value));
+    const input = f.nativeElement.querySelector('input') as HTMLInputElement;
+    input.click();
+    await f.whenStable();
+    expect(values).toEqual([true]);
+    expect(
+      f.nativeElement.querySelector('.bulud-switch__theme-icon--moon'),
+    ).not.toBeNull();
+    expect(input.getAttribute('aria-label')).toBe('Theme');
+    f.componentRef.setInput('disabled', true);
+    await f.whenStable();
+    input.click();
+    await f.whenStable();
+    expect(values).toEqual([true]);
+  });
 });

@@ -35,6 +35,9 @@ import {
 import { BuludInitialsPipe } from 'bulud-ng/initials';
 import { BuludFileSizePipe } from 'bulud-ng/filesize';
 
+import { AngourDemo } from './angour-demo';
+import { AngourControlsDemo } from './angour-controls-demo';
+
 interface VariantPreview {
   readonly name: BuludButtonVariant;
   readonly label: string;
@@ -55,6 +58,8 @@ interface DemoOption {
 @Component({
   selector: 'app-root',
   imports: [
+    AngourDemo,
+    AngourControlsDemo,
     BuludButton,
     BuludDropdown,
     BuludBadge,

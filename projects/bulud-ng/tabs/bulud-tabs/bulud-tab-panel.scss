@@ -10,3 +10,7 @@
   outline: 3px solid var(--bulud-tabs-focus);
   outline-offset: -3px;
 }
+
+:host([hidden]) {
+  display: none;
+}

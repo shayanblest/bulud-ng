@@ -20,6 +20,16 @@ import {
 
 describe('Bulud theme', () => {
   const optionalButtonDefaults = {
+    secondaryBackground: 'var(--bulud-color-surface, #ffffff)',
+    secondaryBackgroundHover: 'var(--bulud-color-surface-hover, #f8fafc)',
+    secondaryBackgroundActive: 'var(--bulud-color-surface-active, #f1f5f9)',
+    secondaryBorder: 'var(--bulud-color-border, #cbd5e1)',
+    secondaryForeground: 'var(--bulud-color-on-surface, #0f172a)',
+    ghostForeground: 'var(--bulud-color-on-surface, #0f172a)',
+    disabledBackground: 'var(--_background)',
+    disabledForeground: 'var(--_foreground)',
+    activeShadow: 'none',
+    dangerActiveShadow: 'var(--bulud-button-active-shadow, none)',
     borderWidth: '1px',
     focusWidth: '3px',
     focusOffset: '2px',

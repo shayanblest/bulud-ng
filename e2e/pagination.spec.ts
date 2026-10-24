@@ -102,6 +102,15 @@ test('supports disabled, RTL, dark mode, and instance theme precedence', async (
   );
   await section.getByLabel('Disabled').uncheck();
 
+  const directionIcons = navigation.locator(
+    '.bulud-pagination__direction-icon',
+  );
+  await section.getByLabel('RTL').uncheck();
+  for (const icon of await directionIcons.all()) {
+    await expect(icon).toHaveCSS('direction', 'ltr');
+    await expect(icon).toHaveCSS('unicode-bidi', 'isolate');
+    await expect(icon).toHaveCSS('transform', 'none');
+  }
   await section.getByLabel('RTL').check();
   await expect(section).toHaveAttribute('dir', 'rtl');
   await navigation.getByRole('button', { name: 'صفحه قبلی' }).click();

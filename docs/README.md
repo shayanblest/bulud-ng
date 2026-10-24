@@ -11,6 +11,8 @@ and orchestration rules live in [`../.agents/`](../.agents/).
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — package and Angular architecture.
 - [`PUBLIC-API.md`](./PUBLIC-API.md) — supported package entry points and export rules.
 - [`THEME.md`](./THEME.md) — theme token and override contract.
+- [`FORM-CONTROLS.md`](./FORM-CONTROLS.md) — Angour checkbox, radio and Persian/Gregorian datepicker.
+- [`ANGOUR.md`](./ANGOUR.md) — Angour light/dark application preset and foundations.
 - [`COMPONENT-CHECKLIST.md`](./COMPONENT-CHECKLIST.md) — implementation and audit checklist.
 - [`TASK-TEMPLATE.md`](./TASK-TEMPLATE.md) — PRD-to-task and handoff template.
 - [`REVIEW-CHECKLIST.md`](./REVIEW-CHECKLIST.md) — strict remote PR review checklist.
@@ -26,3 +28,9 @@ When guidance conflicts, use this order:
 
 Keep documentation changes focused and link back to the authoritative rule
 instead of copying it into multiple locations.
+
+- [Angour application foundation, performance and validation](BASE.md)
+- [Complete foundation audit](FOUNDATION-AUDIT.md)
+
+- [Consumer quick start](../projects/bulud-ng/QUICKSTART.md)
+- [npm release checklist](../RELEASING.md)

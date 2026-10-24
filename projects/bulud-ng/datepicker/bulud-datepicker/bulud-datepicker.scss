@@ -1,0 +1,209 @@
+:host {
+  display: inline-block;
+  max-inline-size: 100%;
+}
+.bulud-datepicker__trigger {
+  display: inline-flex;
+  align-items: center;
+  inline-size: 100%;
+  min-block-size: var(--bulud-datepicker-trigger-height, 42px);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  padding: var(--bulud-datepicker-padding, 12px);
+  border-radius: var(--bulud-datepicker-radius, 8px);
+  border: var(--bulud-datepicker-border-width, 1px) solid
+    var(--bulud-datepicker-border, var(--bulud-color-border, #cbd5e1));
+  background: var(
+    --bulud-datepicker-background,
+    var(--bulud-color-surface, #fff)
+  );
+  color: var(
+    --bulud-datepicker-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+}
+.bulud-datepicker__placeholder {
+  color: var(--bulud-datepicker-muted, var(--bulud-color-muted, #64748b));
+}
+.bulud-datepicker__trigger[aria-invalid="true"] {
+  border-color: var(--bulud-color-danger, #dc2626);
+}
+.bulud-datepicker__panel {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  box-sizing: border-box;
+  width: var(--bulud-datepicker-width, 23.375rem);
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  padding: var(--bulud-datepicker-padding, 12px);
+  border: 0;
+  border-radius: var(--bulud-datepicker-radius, 8px);
+  font: inherit;
+  font-size: var(--bulud-datepicker-font-size, 12px);
+  color: var(
+    --bulud-datepicker-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+  background: var(
+    --bulud-datepicker-background,
+    var(--bulud-color-surface, #fff)
+  );
+}
+.bulud-datepicker__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bulud-datepicker-year-width, 60px);
+  gap: var(--bulud-datepicker-gap, 4px);
+  direction: ltr;
+}
+.bulud-datepicker__calendar {
+  min-width: 0;
+}
+.bulud-datepicker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: var(--bulud-datepicker-header-gap, 8px);
+}
+.bulud-datepicker__heading {
+  text-align: center;
+  margin: 0;
+  font-weight: var(--bulud-datepicker-heading-weight, 500);
+}
+.bulud-datepicker__status {
+  color: var(--bulud-datepicker-muted, #64748b);
+  text-align: center;
+  margin-block: var(--bulud-datepicker-gap, 4px);
+}
+.bulud-datepicker__grid {
+  border-collapse: collapse;
+  table-layout: fixed;
+  inline-size: 100%;
+  text-align: center;
+}
+.bulud-datepicker__grid th {
+  color: var(--bulud-datepicker-muted, #64748b);
+  font-weight: var(--bulud-datepicker-weekday-weight, 400);
+  font-size: var(--bulud-datepicker-weekday-size, 1em);
+  inline-size: calc(100% / 7);
+  padding: 0 0 var(--bulud-datepicker-header-gap, 8px);
+  white-space: nowrap;
+}
+.bulud-datepicker__grid abbr {
+  display: block;
+  max-inline-size: 100%;
+  text-align: center;
+  text-decoration: none;
+}
+.bulud-datepicker__grid td {
+  padding: 0;
+  block-size: var(--bulud-datepicker-day-size, 28px);
+}
+.bulud-datepicker__day,
+.bulud-datepicker__nav,
+.bulud-datepicker__clear,
+.bulud-datepicker__year {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--bulud-datepicker-radius, 8px);
+  min-block-size: var(--bulud-datepicker-day-size, 28px);
+  padding: var(--bulud-datepicker-gap, 4px);
+}
+.bulud-datepicker__day {
+  inline-size: 100%;
+}
+.bulud-datepicker__nav {
+  display: grid;
+  place-items: center;
+  inline-size: var(--bulud-datepicker-day-size, 28px);
+}
+.bulud-datepicker__nav svg {
+  width: var(--bulud-datepicker-nav-size, 16px);
+  height: var(--bulud-datepicker-nav-size, 16px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--bulud-datepicker-nav-stroke, 1px);
+}
+.bulud-datepicker__calendar[dir="rtl"] .bulud-datepicker__nav svg {
+  transform: rotate(180deg);
+}
+.bulud-datepicker__years {
+  position: relative;
+  max-height: var(--bulud-datepicker-year-height, 230px);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bulud-datepicker-scrollbar, #d5d5d5) transparent;
+  background: var(
+    --bulud-datepicker-year-background,
+    var(--bulud-color-surface, #fff)
+  );
+  border-radius: var(--bulud-datepicker-radius, 8px);
+  padding: var(--bulud-datepicker-gap, 4px);
+  direction: ltr;
+}
+.bulud-datepicker__year {
+  display: block;
+  width: 100%;
+  min-height: var(--bulud-datepicker-year-size, 34px);
+}
+.bulud-datepicker__year[aria-pressed="true"] {
+  background: var(--bulud-datepicker-year-selected-background, #e2e8f0);
+}
+.bulud-datepicker__panel button:hover:not(:disabled) {
+  background: var(
+    --bulud-datepicker-hover-background,
+    var(--bulud-color-surface-hover, #f1f5f9)
+  );
+}
+.bulud-datepicker__panel .bulud-datepicker__day--selected {
+  background: var(--bulud-datepicker-selected-background, #2563eb);
+  color: var(--bulud-datepicker-selected-foreground, #fff);
+}
+.bulud-datepicker__panel--range .bulud-datepicker__day--selected {
+  background: var(
+    --bulud-datepicker-range-endpoint-background,
+    var(--bulud-color-primary, #2563eb)
+  );
+  color: var(
+    --bulud-datepicker-range-endpoint-foreground,
+    var(--bulud-color-on-primary, #fff)
+  );
+}
+.bulud-datepicker__range {
+  background: var(--bulud-datepicker-range-background, #eff6ff);
+}
+.bulud-datepicker__trigger:disabled,
+.bulud-datepicker__panel button:disabled {
+  opacity: var(--bulud-datepicker-disabled-opacity, 0.55);
+  cursor: not-allowed;
+}
+.bulud-datepicker__trigger:focus-visible,
+.bulud-datepicker__panel button:focus-visible {
+  outline: var(--bulud-datepicker-focus-width, 2px) solid
+    var(--bulud-datepicker-focus, var(--bulud-color-focus, #93c5fd));
+  outline-offset: var(--bulud-datepicker-focus-offset, 0px);
+}
+.bulud-datepicker__help {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (forced-colors: active) {
+  .bulud-datepicker__day--selected,
+  .bulud-datepicker__year[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+}
+
+.bulud-datepicker__clear {
+  margin-block-start: var(--bulud-datepicker-header-gap, 8px);
+  inline-size: 100%;
+}
