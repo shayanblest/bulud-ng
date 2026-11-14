@@ -1358,3 +1358,11 @@ native SVG, signals, OnPush and feature-only Tailwind styles; there is no chart
 runtime dependency. See [the public API](../../docs/PUBLIC-API.md) for the typed
 inputs, theme configuration and keyboard accessibility. Existing `charts`
 exports remain compatible.
+
+## Radial percentages (2.1.0)
+
+Import `BuludRadialChart` from `bulud-ng/radial-chart` for a native scalar
+percentage ring with exact values, rounded caps, responsive name/value placement,
+hover and keyboard/pointer selection. Arbitrary locale and consumer-supplied
+labels update reactively. The separate Tailwind entry imports no Apex or shared
+root config; it does not change existing donut/progress components.

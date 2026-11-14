@@ -1,3 +1,4 @@
+import { RadialChartDemo } from './radial-chart-demo';
 import { LineChartDemo } from './line-chart-demo';
 import {
   ChangeDetectionStrategy,
@@ -60,6 +61,7 @@ interface DemoOption {
   selector: 'app-root',
   imports: [
     LineChartDemo,
+    RadialChartDemo,
     AngourDemo,
     AngourControlsDemo,
     BuludButton,

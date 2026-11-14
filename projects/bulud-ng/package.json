@@ -1,6 +1,6 @@
 {
   "name": "bulud-ng",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "peerDependencies": {
     "@angular/common": "^20.3.34",
     "@angular/core": "^20.3.34",
@@ -39,6 +39,10 @@
     "./line-chart.css": {
       "style": "./line-chart.css",
       "default": "./line-chart.css"
+    },
+    "./radial-chart.css": {
+      "style": "./radial-chart.css",
+      "default": "./radial-chart.css"
     }
   },
   "description": "Standalone Angular UI components, forms, charts and shared utilities with explicit Angour light/dark themes.",

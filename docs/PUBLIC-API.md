@@ -337,6 +337,51 @@ modes, typed data validation, localized labels, empty/loading/error/disabled
 states, theme precedence, and an accessible data table. It has no chart-package
 dependency. See [SHARED.md](../projects/bulud-ng/SHARED.md) for inputs, limits and usage.
 
+### `bulud-ng/radial-chart`
+
+Exports `BuludRadialChart`, `BULUD_RADIAL_CHART_CONFIG`, `BuludRadialChartTheme`
+and `BuludRadialChartConfig`. A scalar percentage ring preserves the percentage
+itself; it never normalizes a single value to a full distribution. The native
+SVG has no chart engine or shared-root configuration dependency. Static
+Tailwind utilities are attached only when the component is used, without
+preflight or an automatically imported palette. Optional `bulud-ng/radial-chart.css`
+exports the same feature utilities. Existing progress/donut APIs remain unchanged.
+
+Required `label` names the SVG group and appears below the centered percentage.
+`value` accepts a finite number from 0 through 100 (default 0), or null for empty.
+`loading`, `error`, `disabled`, `loadingLabel`, `errorLabel`, and `emptyLabel`
+control named states. `selected` is a boolean model with `selectedChange`;
+pointer click/tap or Enter/Space toggles the visual selection without changing
+`value`. Mouse hover lightens the ring; selection darkens it and persists after
+pointer leave. Disabled rings have no tab stop or selection interaction. The
+visible center text and accessible name expose the exact formatted percentage,
+so no information depends on hover. Zero remains a valid zero-percent ring.
+
+`locale` accepts any reactive BCP 47 tag. Precedence: instance → component
+`defaults.locale` → global `locale` → exact JavaScript numeric text plus `%`.
+Invalid locale syntax uses that exact-text fallback. Locale formatting uses
+percent units directly on the original value, avoiding division/multiplication
+rounding artifacts. Supply translated labels/status text from the consuming
+application; there is no language enumeration. The chart keeps clockwise
+geometry in RTL layouts. Resize observation is disconnected on destruction.
+
+`theme` resolves instance → component `defaults.theme` → global `theme` →
+scoped/imported CSS palette. It maps accent, track, foreground, focus,
+fontFamily, labelSize, valueSize and fontWeight to `--bulud-radial-*` properties.
+Scoped CSS and per-instance host style bindings remain usable. Ancestor theme
+variables update the SVG without reloading. The radius, rounded caps and
+name/value placement scale with available width. Loading/empty/error replace
+the SVG with a status; invalid numbers are never drawn as valid percentages.
+
+```ts
+import { BuludRadialChart } from 'bulud-ng/radial-chart';
+// imports: [BuludRadialChart]
+```
+
+```html
+<bulud-radial-chart [label]="translatedWinRate" [value]="winRate" [locale]="locale" [(selected)]="selected" />
+```
+
 ### `bulud-ng/line-chart`
 
 Exports `BuludLineChart`, `BULUD_LINE_CHART_CONFIG`, `buludLineScale`,

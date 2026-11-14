@@ -814,6 +814,12 @@
       "CSS custom property usage added: line-chart.css: --bulud-line-chart-tooltip-shadow",
       "CSS custom property usage added: line-chart.css: --bulud-line-chart-tooltip-title-background",
       "entry point added: bulud-ng/line-chart"
+    ],
+    "561d1572491dcefcd63b75333634b0f4d476e248": [
+      "CSS export added: ./radial-chart.css target={\"default\":\"./radial-chart.css\",\"style\":\"./radial-chart.css\"}",
+      "CSS custom property usage added: radial-chart.css: --bulud-color-focus",
+      "CSS custom property usage added: radial-chart.css: --bulud-radial-focus",
+      "entry point added: bulud-ng/radial-chart"
     ]
   },
   "dependencies": {

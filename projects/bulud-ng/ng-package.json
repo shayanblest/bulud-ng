@@ -10,7 +10,8 @@
     "publish-check.mjs",
     "LICENSE*",
     "QUICKSTART.md",
-    "line-chart.css"
+    "line-chart.css",
+    "radial-chart.css"
   ],
   "lib": {
     "entryFile": "src/public-api.ts"

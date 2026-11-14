@@ -66,7 +66,8 @@
               "../field-label/**/*.spec.ts",
               "../skeleton/**/*.spec.ts",
               "../confirm/**/*.spec.ts",
-              "../line-chart/**/*.spec.ts"
+              "../line-chart/**/*.spec.ts",
+              "../radial-chart/**/*.spec.ts"
             ]
           }
         }
