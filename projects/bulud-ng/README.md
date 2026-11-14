@@ -1349,3 +1349,12 @@ Escape. The consumer must clear processing on failure or close after success;
 `confirmed` deliberately does not auto-close. Project custom content normally.
 Demos, examples and APIs: `/components/skeleton`, `/components/alert`,
 `/components/confirm`.
+
+## Native line charts (2.0.0)
+
+Import `BuludLineChart` from `bulud-ng/line-chart` for multiple series, dashed
+comparisons, explicit axes and custom financial/grade labels. The component uses
+native SVG, signals, OnPush and feature-only Tailwind styles; there is no chart
+runtime dependency. See [the public API](../../docs/PUBLIC-API.md) for the typed
+inputs, theme configuration and keyboard accessibility. Existing `charts`
+exports remain compatible.

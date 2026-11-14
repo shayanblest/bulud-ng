@@ -2,6 +2,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
+      "bulud-ng/line-chart": ["./projects/bulud-ng/line-chart/public-api.ts"],
       "bulud-ng": ["./projects/bulud-ng/src/public-api.ts"],
       "bulud-ng/radio": ["./projects/bulud-ng/radio/public-api.ts"],
       "bulud-ng/datepicker": ["./projects/bulud-ng/datepicker/public-api.ts"],

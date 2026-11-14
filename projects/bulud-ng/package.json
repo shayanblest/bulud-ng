@@ -1,6 +1,6 @@
 {
   "name": "bulud-ng",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "peerDependencies": {
     "@angular/common": "^20.3.34",
     "@angular/core": "^20.3.34",
@@ -35,6 +35,10 @@
     "./angour-base.css": {
       "style": "./angour-base.css",
       "default": "./angour-base.css"
+    },
+    "./line-chart.css": {
+      "style": "./line-chart.css",
+      "default": "./line-chart.css"
     }
   },
   "description": "Standalone Angular UI components, forms, charts and shared utilities with explicit Angour light/dark themes.",
@@ -52,5 +56,17 @@
   },
   "scripts": {
     "prepublishOnly": "node ./publish-check.mjs"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "fatemehshirazmihan"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shayanblest/bulud-ng.git"
+  },
+  "homepage": "https://github.com/shayanblest/bulud-ng#readme",
+  "bugs": {
+    "url": "https://github.com/shayanblest/bulud-ng/issues"
   }
 }

@@ -337,6 +337,53 @@ modes, typed data validation, localized labels, empty/loading/error/disabled
 states, theme precedence, and an accessible data table. It has no chart-package
 dependency. See [SHARED.md](../projects/bulud-ng/SHARED.md) for inputs, limits and usage.
 
+### `bulud-ng/line-chart`
+
+Exports `BuludLineChart`, `BULUD_LINE_CHART_CONFIG`, `buludLineScale`,
+`BuludLineValue`, `BuludLineSeries`, `BuludLineXAxis`, `BuludLineYAxis`,
+`BuludLineAxisLabelStyle`, `BuludLineChartTheme`, `BuludLineChartConfig`, and
+`BuludLineSelection`. Dependency-free native SVG rendering with standalone,
+signals and OnPush. Its feature-only Tailwind utilities have no preflight or
+palette reset and are attached only when the component is used.
+
+Required input: `caption` (accessible chart name). Inputs: `series`, `xaxis`,
+`yaxis`, `height`, `strokeWidth`, `dashArray`, `digits`, `locale`, `theme`, `loading`,
+`error`, `disabled`, `loadingLabel`, `errorLabel`, `keyboardLabel`.
+`pointChange` emits the selected series/point, name, category and exact numeric
+value, or null on dismissal. Multiple series, explicit axis bounds/ticks,
+formatter callbacks, null gaps, negative/constant/zero/empty data, hidden axes,
+custom colors and dashed lines are supported. `buludLineScale` returns null for
+nonfinite data, inverted bounds or invalid tick counts; it never drops values.
+
+`BULUD_LINE_CHART_CONFIG` resolves instance override → `defaults` component
+settings → global `theme` → CSS palette. `BuludLineChartTheme` maps to
+`--bulud-line-chart-*` custom properties; scoped CSS and per-instance host styles
+remain usable. Directions and light/dark colors follow ancestors/CSS variables.
+Optional `bulud-ng/line-chart.css` exports the generated feature utilities for
+non-Angular composition. Existing `bulud-ng/charts` API is unchanged.
+
+```ts
+import { BuludLineChart } from "bulud-ng/line-chart";
+// imports: [BuludLineChart]
+// series = [{name: 'Current Year', data: [12, 18]},
+//           {name: 'Previous Year', data: [9, 14]}];
+```
+
+```html
+<bulud-line-chart caption="Yearly commission" [series]="series" [xaxis]="{categories: ['Jan', 'Feb']}" [dashArray]="[0, 6]" />
+```
+
+Keyboard: focus the named SVG; Left/Right explore points, Up/Down change series,
+Home/End jump to endpoints, Escape dismisses. Pointer/touch chooses the nearest
+point. Null values are skipped during keyboard exploration without connecting
+across missing data. Selection is announced through a polite live description;
+tooltip text is escaped. Consumers translate the caption and state/instruction
+labels. Disabled charts have no tab stop or point interactions. ResizeObserver
+is disconnected on destruction; SSR performs no layout reads. Demo states and
+browser coverage are in `LineChartDemo` and `e2e/line-chart.spec.ts`.
+
+Line chart internationalization: `[locale]` accepts any BCP 47 locale (including languages not used in the demo) and reacts without recreating the chart. Precedence is input → `BULUD_LINE_CHART_CONFIG.defaults.locale` → `BULUD_LINE_CHART_CONFIG.locale` → `en-US`. Invalid locale syntax falls back to `en-US`. Pass translated series names, categories, caption, `keyboardLabel`, `loadingLabel`, and `errorLabel` from your application's translation service; no language list is bundled. Direction inherits the ancestor `dir`. Axis formatters override numeric formatting. For compatibility Angour keeps the existing English numeric notation while translating its text.
+
 ### `bulud-ng/file-upload`
 
 Exports `BuludFileUpload`, `BuludFileConstraints`, `validateBuludFiles`,

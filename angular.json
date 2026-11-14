@@ -65,7 +65,8 @@
               "../chat/**/*.spec.ts",
               "../field-label/**/*.spec.ts",
               "../skeleton/**/*.spec.ts",
-              "../confirm/**/*.spec.ts"
+              "../confirm/**/*.spec.ts",
+              "../line-chart/**/*.spec.ts"
             ]
           }
         }

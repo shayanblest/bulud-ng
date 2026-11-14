@@ -9,7 +9,8 @@
     "SHARED.md",
     "publish-check.mjs",
     "LICENSE*",
-    "QUICKSTART.md"
+    "QUICKSTART.md",
+    "line-chart.css"
   ],
   "lib": {
     "entryFile": "src/public-api.ts"

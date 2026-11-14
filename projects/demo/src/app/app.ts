@@ -1,3 +1,4 @@
+import { LineChartDemo } from './line-chart-demo';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -58,6 +59,7 @@ interface DemoOption {
 @Component({
   selector: 'app-root',
   imports: [
+    LineChartDemo,
     AngourDemo,
     AngourControlsDemo,
     BuludButton,
