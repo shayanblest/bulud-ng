@@ -1,0 +1,49 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply [background:transparent];
+  @apply [border:0];
+  @apply [border-block-end:2px_solid_transparent];
+  @apply [border-radius:var(--bulud-tabs-radius)_var(--bulud-tabs-radius)_0_0];
+  @apply [color:var(--bulud-tabs-foreground)];
+  @apply cursor-pointer;
+  @apply [flex:0_0_auto];
+  @apply [font:inherit];
+  @apply [font-weight:600];
+  @apply [min-block-size:3rem];
+  @apply [padding-block:0.75rem];
+  @apply [padding-inline:1rem];
+  @apply [text-align:start];
+  @apply [transition:background-color_120ms_ease,_border-color_120ms_ease,_color_120ms_ease];
+}
+
+:host:hover:not(:disabled) {
+  @apply [background:var(--bulud-tabs-hover-background)];
+}
+
+:host([aria-selected="true"]) {
+  @apply [border-block-end-color:var(--bulud-tabs-active-border)];
+  @apply [border-inline-end-color:var(--bulud-tabs-active-border)];
+  @apply [color:var(--bulud-tabs-active-foreground)];
+}
+
+:host(:focus-visible) {
+  @apply [outline:3px_solid_var(--bulud-tabs-focus)];
+  @apply [outline-offset:-3px];
+}
+
+:host(:disabled) {
+  @apply cursor-not-allowed;
+  @apply [opacity:var(--bulud-tabs-disabled-opacity)];
+}
+
+:host-context(.bulud-tabs--vertical) {
+  @apply [border-block-end:0];
+  @apply [border-inline-end:2px_solid_transparent];
+  @apply [border-radius:var(--bulud-tabs-radius)_0_0_var(--bulud-tabs-radius)];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    @apply [transition:none];
+  }
+}

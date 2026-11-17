@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -9,6 +10,8 @@ import { BuludAccordion, BuludAccordionItem } from './bulud-accordion';
 
 @Component({
   imports: [BuludAccordion, BuludAccordionItem],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-accordion
       [multiple]="multiple()"
@@ -40,6 +43,8 @@ class TestHost {
 
 @Component({
   imports: [BuludAccordion, BuludAccordionItem],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-accordion multiple>
       @if (showFirst()) {

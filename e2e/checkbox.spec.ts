@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#all');
 });
 
 test('supports accessible label and keyboard/pointer activation exactly once', async ({
@@ -43,7 +43,7 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
 
   await expect(checkbox).toHaveAttribute('aria-invalid', 'true');
   await checkbox.hover();
-  await expect(checkbox).toHaveCSS('border-top-color', 'rgb(225, 29, 72)');
+  await expect(checkbox).toHaveCSS('border-top-color', 'rgb(161, 23, 41)');
   const focusStart = section.locator('#checkbox-focus-start');
   await focusStart.click();
   await expect(focusStart).toBeFocused();
@@ -51,7 +51,7 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   await expect(checkbox).toBeFocused();
   await expect(checkbox).toHaveCSS('outline-width', '3px');
   await expect(checkbox).toHaveCSS('outline-offset', '2px');
-  await expect(checkbox).toHaveCSS('outline-color', 'rgb(147, 197, 253)');
+  await expect(checkbox).toHaveCSS('outline-color', 'rgb(12, 35, 64)');
   await page.keyboard.press('Space');
   await expect(checkbox).toBeChecked();
   await expect(section.locator('#checkbox-state')).toHaveText('Accepted');
@@ -61,10 +61,10 @@ test('supports accessible label and keyboard/pointer activation exactly once', a
   await expect(checkbox).toBeChecked();
   await expect(section.locator('#checkbox-state')).toHaveText('Accepted');
   await checkbox.hover();
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(12, 35, 64)');
   await checkbox.press('Space');
   await expect(checkbox).not.toBeChecked();
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(243, 246, 249)');
 });
 
 test('covers disabled, indeterminate, required, dark theme and instance overrides', async ({
@@ -72,16 +72,16 @@ test('covers disabled, indeterminate, required, dark theme and instance override
 }) => {
   const section = page.locator('#checkbox');
   const checkbox = section.getByRole('checkbox', { name: 'Accept terms' });
-  const indeterminateToggle = section
-    .locator('label')
-    .filter({ hasText: 'Indeterminate' })
-    .locator('input');
+  const indeterminateToggle = section.getByRole('checkbox', {
+    name: 'Indeterminate',
+    exact: true,
+  });
 
   await indeterminateToggle.click();
   await expect(indeterminateToggle).toBeChecked();
   await expect(checkbox).toHaveJSProperty('indeterminate', true);
   await checkbox.hover();
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(12, 35, 64)');
   await checkbox.press('Space');
   await expect(checkbox).toBeChecked();
   await expect(checkbox).toHaveJSProperty('indeterminate', false);
@@ -98,22 +98,22 @@ test('covers disabled, indeterminate, required, dark theme and instance override
   await expect(checkbox).not.toBeChecked();
   await page.mouse.move(0, 0);
   await page.evaluate(() => document.documentElement.classList.add('dark'));
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await page.evaluate(() => document.documentElement.classList.remove('dark'));
   await page.evaluate(() =>
     document.documentElement.setAttribute('data-theme', 'dark'),
   );
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await page.evaluate(() =>
     document.documentElement.removeAttribute('data-theme'),
   );
   await section.getByText('Dark theme', { exact: true }).click();
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await checkbox.press('Space');
   await expect(checkbox).toBeChecked();
-  await expect(checkbox).toHaveCSS('background-color', 'rgb(96, 165, 250)');
+  await expect(checkbox).toHaveCSS('background-color', 'rgb(253, 181, 21)');
   const instance = section.getByRole('checkbox', { name: 'Instance theme' });
-  await expect(instance).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  await expect(instance).toHaveCSS('background-color', 'rgb(253, 181, 21)');
   await expect(instance).toHaveCSS('border-top-width', '3px');
   await expect
     .poll(() =>
@@ -133,6 +133,6 @@ test('covers disabled, indeterminate, required, dark theme and instance override
         return [styles.borderRightWidth, styles.borderLeftWidth];
       }),
     )
-    .toEqual(['2px', '0px']);
+    .toEqual(['1px', '0px']);
   await page.evaluate(() => document.documentElement.removeAttribute('dir'));
 });

@@ -1,7 +1,7 @@
 # Install and use Bulud NG
 
-Bulud NG is an Angular library: use it in a standalone Angular 20.3.34+ application.
-The minimum peer version includes the current Angular 20 security patches.
+Bulud NG is an Angular library: use it in a standalone Angular 22.2.6+ application.
+The minimum peer version includes the current Angular 22 security patches.
 It is domain independent; components do not depend on Angour business services,
 API URLs or application routes. React/Vue and other Angular majors are outside
 the verified compatibility range.
@@ -14,11 +14,10 @@ Until the owner completes public npm publication, install the built tarball:
 # Library workspace
 npm run package:local
 # Consumer application — substitute the actual path
-npm install /absolute/path/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+npm install /absolute/path/bulud-ng/dist/packages/bulud-ng-3.0.0.tgz
 ```
 
-After publication: `npm install bulud-ng` (or the final owner-selected scoped
-name). Do not install/publish the private workspace root. Angular and RxJS are
+After publication: `npm install bulud-ng@3.0.0`. Do not install/publish the private workspace root. Angular and RxJS are
 peers; Tailwind 4 is optional and no third-party chart library is required.
 
 ## Minimal standalone component
@@ -104,9 +103,8 @@ for all inputs, outputs and examples.
 
 ## Server rendering and compatibility
 
-The release checks install the tarball with Angular 20.3.34, compile
-all public declarations with `skipLibCheck=false`, AOT-compile a consumer of 26
-feature entries and server-render it without browser globals. Browser-dependent
+The release checks install the tarball with Angular 22.2.6, compile
+all public declarations with `skipLibCheck=false`, AOT-compile isolated consumers of the selected features. Browser-dependent features activate on the client. Browser-dependent
 features (file picking/upload, layout observation and dialog focus) activate
 on the client. Client interaction and theme tests run separately in Playwright.
 Hydration of every possible application configuration is not claimed.

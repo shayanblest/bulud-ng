@@ -1,0 +1,26 @@
+{
+  "initial": [
+    {
+      "asset": "styles-X2PEV5WG.css",
+      "bytes": 14162,
+      "gzipBytes": 3255
+    },
+    {
+      "asset": "chunk-YMp9082u.js",
+      "bytes": 170753,
+      "gzipBytes": 57343
+    },
+    {
+      "asset": "chunk-BVqitezX.js",
+      "bytes": 1827,
+      "gzipBytes": 764
+    },
+    {
+      "asset": "main-SEW35QTJ.js",
+      "bytes": 111635,
+      "gzipBytes": 32660
+    }
+  ],
+  "totalBytes": 298377,
+  "totalGzipBytes": 94022
+}

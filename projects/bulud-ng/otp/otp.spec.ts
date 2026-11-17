@@ -1,19 +1,26 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { BuludOtp } from './otp';
 @Component({
   imports: [BuludOtp, ReactiveFormsModule],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<bulud-otp
     label="Code"
     required
-    [length]="length"
+    [length]="length()"
     [formControl]="control"
   />`,
 })
 class Host {
   control = new FormControl('');
-  length = 6;
+  readonly length = signal(6);
 }
 describe('BuludOtp', () => {
   beforeEach(() =>
@@ -41,11 +48,11 @@ describe('BuludOtp', () => {
     f.componentInstance.control.setValue('123');
     await f.whenStable();
     expect(f.componentInstance.control.hasError('otp')).toBeTrue();
-    f.componentInstance.length = 3;
+    f.componentInstance.length.set(3);
     f.changeDetectorRef.markForCheck();
     await f.whenStable();
     expect(f.componentInstance.control.valid).toBeTrue();
-    f.componentInstance.length = 0;
+    f.componentInstance.length.set(0);
     f.changeDetectorRef.markForCheck();
     await f.whenStable();
     expect(f.componentInstance.control.hasError('otpLengthConfig')).toBeTrue();

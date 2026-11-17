@@ -1,0 +1,103 @@
+@import "tailwindcss/utilities" source(none);
+:host(:not(.bulud-stepper--content)) {
+  @apply block;
+  @apply [color:var(--bulud-stepper-foreground,_var(--bulud-color-on-surface))];
+}
+:host(:not(.bulud-stepper--content)) .actions {
+  @apply flex;
+  @apply items-start;
+  @apply [gap:0];
+  @apply [list-style:none];
+  @apply [padding:0];
+  @apply [margin-block:var(--bulud-stepper-gap,_var(--bulud-spacing-5,_24px))];
+  @apply [overflow-x:auto];
+}
+:host(:not(.bulud-stepper--content)) li {
+  @apply [flex:1];
+  @apply [min-width:80px];
+  @apply relative;
+}
+:host(:not(.bulud-stepper--content)) li:not(:last-child)::after {
+  content: "";
+  @apply absolute;
+  @apply [inset-inline-start:calc(_50%_+_var(--bulud-stepper-number-size,_40px)_/_2_+_8px_)];
+  @apply [inset-inline-end:calc(_-50%_+_var(--bulud-stepper-number-size,_40px)_/_2_+_8px_)];
+  @apply [inset-block-start:calc(var(--bulud-stepper-number-size,_40px)_/_2_+_4px)];
+  @apply [border-block-start:2px_dotted_var(--bulud-stepper-border,_var(--bulud-color-muted))];
+  @apply pointer-events-none;
+}
+:host(:not(.bulud-stepper--content)) li.completed::after {
+  @apply [border-color:var(--bulud-stepper-accent,_var(--bulud-color-primary))];
+}
+:host(:not(.bulud-stepper--content)) button {
+  @apply flex;
+  @apply items-center;
+  @apply flex-col;
+  @apply [gap:var(--bulud-spacing-2,_8px)];
+  @apply [width:100%];
+  @apply [font:inherit];
+  @apply [border:0];
+  @apply [background:transparent];
+  @apply [color:var(--bulud-stepper-muted,_var(--bulud-color-muted))];
+  @apply [padding:4px];
+  @apply cursor-pointer;
+  @apply [border-radius:var(--bulud-stepper-radius,_var(--bulud-radius-control,_8px))];
+}
+:host(:not(.bulud-stepper--content)) .number {
+  @apply inline-grid;
+  @apply [place-items:center];
+  @apply [width:var(--bulud-stepper-number-size,_40px)];
+  @apply [height:var(--bulud-stepper-number-size,_40px)];
+  @apply box-border;
+  @apply [border:1px_solid_currentColor];
+  @apply [border-radius:50%];
+  @apply [background:var(--bulud-stepper-background,_var(--bulud-color-surface))];
+}
+:host(:not(.bulud-stepper--content)) .number svg {
+  @apply [width:22px];
+  @apply [height:22px];
+  @apply [fill:none];
+  @apply [stroke:currentColor];
+  @apply [stroke-width:1.75];
+  @apply [stroke-linecap:round];
+  @apply [stroke-linejoin:round];
+}
+:host(:not(.bulud-stepper--content)) button[aria-current="step"],
+:host(:not(.bulud-stepper--content)) .completed button {
+  @apply [color:var(--bulud-stepper-accent,_var(--bulud-color-primary))];
+}
+:host(:not(.bulud-stepper--content)) .completed .number {
+  @apply [background:var(--bulud-stepper-accent,_var(--bulud-color-primary))];
+  @apply [color:var(--bulud-color-on-primary)];
+  @apply [border-color:var(--bulud-stepper-accent,_var(--bulud-color-primary))];
+}
+:host(:not(.bulud-stepper--content)) button:focus-visible {
+  @apply [outline:2px_solid_var(--bulud-stepper-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:-2px];
+}
+:host(:not(.bulud-stepper--content)) button:disabled {
+  @apply [opacity:var(--bulud-stepper-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+:host(:not(.bulud-stepper--content)) .surface {
+  @apply [border:0];
+  @apply [background:var(--bulud-stepper-background,_var(--bulud-color-surface))];
+  @apply [padding:var(--bulud-stepper-padding,_var(--bulud-spacing-4,_16px))];
+  @apply [border-radius:var(--bulud-stepper-radius,_var(--bulud-radius-control,_8px))];
+}
+
+:host(.bulud-stepper--content){@apply flex;@apply justify-between;@apply items-center;@apply [color:var(--bulud-stepper-muted,var(--gray-50,var(--bulud-color-muted)))]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step{@apply flex;@apply flex-col;@apply items-center;@apply text-center;@apply [min-width:0];@apply [font:inherit]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step > .step-thumb{@apply flex;@apply items-center;@apply justify-center;@apply [margin-inline:auto];@apply [width:var(--bulud-stepper-number-size,40px)];@apply [height:var(--bulud-stepper-number-size,40px)];@apply [border:1px_solid_currentColor];@apply [margin-bottom:var(--bulud-spacing-1,4px)];@apply [border-radius:50%]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.previous > span,
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.current > span,
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.current > .step-thumb{@apply [color:var(--bulud-stepper-accent,var(--bulud-color-primary))]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.previous > .step-thumb{@apply [color:var(--bulud-color-on-primary,#fff)];@apply [background:var(--bulud-stepper-accent,var(--bulud-color-primary))]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.next > span,
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.next > .step-thumb{@apply [color:var(--bulud-stepper-muted,var(--gray-50,var(--bulud-color-muted)))]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step + div:not(.bulud-step){@apply [border-bottom:2px_dotted_currentColor];@apply [flex:1];@apply [margin-bottom:var(--bulud-spacing-5,24px)];@apply [color:var(--bulud-stepper-muted,var(--gray-50,var(--bulud-color-muted)))]}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.previous + div:not(.bulud-step){@apply [color:var(--bulud-stepper-accent,var(--bulud-color-primary))]}
+
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.previous > .step-thumb > i:not(.icon-tik){@apply hidden}
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.current > .step-thumb > i.icon-tik,
+:host(.bulud-stepper--content)::ng-deep > .bulud-step.next > .step-thumb > i.icon-tik{@apply hidden}

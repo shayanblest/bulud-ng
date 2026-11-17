@@ -5,6 +5,7 @@ import {
   provideZonelessChangeDetection,
   signal,
   ViewEncapsulation,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -24,8 +25,12 @@ import {
 
 @Component({
   imports: [BuludButton],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-button
+      [id]="id()"
+      [appearance]="appearance()"
       aria-label="Save changes"
       [disabled]="disabled()"
       [type]="type()"
@@ -41,6 +46,8 @@ import {
   `,
 })
 class TestHost {
+  readonly id = signal<string | null>(null);
+  readonly appearance = signal<'solid' | 'outline' | 'link'>('solid');
   readonly clickCount = signal(0);
   readonly disabled = signal(false);
   readonly fullWidth = signal(false);
@@ -54,13 +61,81 @@ class TestHost {
 @Component({
   template: '',
   styleUrl: '../../theme.css',
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   encapsulation: ViewEncapsulation.None,
 })
 class ShippedThemeStyles {}
 
+@Component({
+  imports: [BuludButton],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<bulud-button id="sign_in_submit">Sign in</bulud-button
+    ><bulud-button [attr.id]="'marketing-wrapper'" [id]="'cancel-42-btn'"
+      >Cancel</bulud-button
+    >`,
+})
+class NativeIdHost {}
+
 describe('BuludButton', () => {
+  it('changes appearance without changing native identity, loading or disabled behavior', async () => {
+    fixture.componentInstance.appearance.set('outline');
+    fixture.componentInstance.id.set('submit_example');
+    await fixture.whenStable();
+    expect(getButton().classList.contains('bulud-button--outline')).toBeTrue();
+    expect(getButton().id).toBe('submit_example');
+    getButton().click();
+    expect(fixture.componentInstance.clickCount()).toBe(1);
+    fixture.componentInstance.loading.set(true);
+    await fixture.whenStable();
+    expect(getButton().disabled).toBeTrue();
+    expect(getButton().getAttribute('aria-busy')).toBe('true');
+    fixture.componentInstance.loading.set(false);
+    fixture.componentInstance.appearance.set('solid');
+    await fixture.whenStable();
+    expect(getButton().classList.contains('bulud-button--outline')).toBeFalse();
+    expect(getButton().disabled).toBeFalse();
+    expect(getButton().id).toBe('submit_example');
+  });
+
+  it('transfers a static native ID once and preserves an independent wrapper hook', async () => {
+    const f = TestBed.createComponent(NativeIdHost);
+    await f.whenStable();
+    const root = f.nativeElement as HTMLElement;
+    expect(root.querySelector('bulud-button')?.hasAttribute('id')).toBeFalse();
+    expect(root.querySelector('#sign_in_submit')?.tagName).toBe('BUTTON');
+    expect(root.querySelector('#marketing-wrapper')?.tagName).toBe(
+      'BULUD-BUTTON',
+    );
+    expect(
+      root.querySelector('#marketing-wrapper #cancel-42-btn')?.tagName,
+    ).toBe('BUTTON');
+    expect(root.querySelectorAll('#sign_in_submit').length).toBe(1);
+    f.destroy();
+  });
+
   let fixture: ComponentFixture<TestHost>;
 
+  it('preserves project marketing IDs on the real button and updates/removes them without duplicate host IDs', async () => {
+    await fixture.whenStable();
+    for (const id of [
+      'sign_in_submit',
+      'dashboard_real_create_link_button',
+      'cancel-42-btn',
+      'parent_section_phone_otp_submit',
+    ]) {
+      fixture.componentInstance.id.set(id);
+      await fixture.whenStable();
+      expect(getButton().id).toBe(id);
+      expect(getHost().hasAttribute('id')).toBeFalse();
+      expect(fixture.nativeElement.querySelectorAll('[id]').length).toBe(1);
+      getButton().click();
+    }
+    expect(fixture.componentInstance.clickCount()).toBe(4);
+    fixture.componentInstance.id.set(null);
+    await fixture.whenStable();
+    expect(getButton().hasAttribute('id')).toBeFalse();
+  });
   const getHost = (): HTMLElement => {
     const host = fixture.nativeElement.querySelector('bulud-button');
 

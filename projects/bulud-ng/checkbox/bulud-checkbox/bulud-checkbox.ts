@@ -57,7 +57,7 @@ let nextCheckboxId = 0;
     '[class.bulud-checkbox-host--invalid]': 'isInvalid()',
   },
   templateUrl: './bulud-checkbox.html',
-  styleUrl: './bulud-checkbox.scss',
+  styleUrl: './bulud-checkbox.css',
 })
 export class BuludCheckbox implements ControlValueAccessor, Validator {
   private readonly injector = inject(Injector);

@@ -1,0 +1,34 @@
+@if (isTourActive) {
+  <div
+    class="tour-backdrop"
+    tabindex="-1"
+    aria-hidden="true"
+    (click)="blockInteraction($event)"
+    (dblclick)="blockInteraction($event)"
+    (pointerdown)="blockInteraction($event)"
+    (mousedown)="blockInteraction($event)"
+    (touchstart)="blockInteraction($event)"
+    (touchmove)="blockInteraction($event)"
+    (wheel)="blockInteraction($event)"
+    (contextmenu)="blockInteraction($event)"
+  ></div>
+
+  @if (highlightStyle["display"] !== "none") {
+    <div class="tour-highlight" [ngStyle]="highlightStyle"></div>
+  }
+
+  @if (step && isPositioned && total > 0) {
+    <bulud-tour-tooltip
+      [step]="step"
+      [total]="total"
+      [currentStepIndex]="currentIndex"
+      [isRtl]="isRtl"
+      [style]="tooltipStyle"
+      [theme]="theme()"
+      (nextClicked)="next()"
+      (previousClicked)="previous()"
+      (closed)="close()"
+    >
+    </bulud-tour-tooltip>
+  }
+}

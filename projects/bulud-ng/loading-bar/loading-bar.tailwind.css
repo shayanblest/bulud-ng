@@ -1,0 +1,46 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply hidden;
+  @apply fixed;
+  @apply [inset-block-start:0];
+  @apply [inset-inline:0];
+  @apply [block-size:var(--bulud-loading-bar-height,_7px)];
+  @apply [z-index:var(--bulud-loading-bar-z-index,_10000)];
+  @apply pointer-events-none;
+  @apply overflow-hidden;
+}
+:host(.active) {
+  @apply block;
+}
+.line {
+  @apply [block-size:100%];
+  @apply [margin-inline-end:auto];
+  @apply [background:var(--bulud-loading-bar-accent,_var(--bulud-color-primary))];
+  @apply [transition:width_120ms_linear];
+}
+:host(.indeterminate) .line {
+  @apply [animation:bulud-loading-sweep_1.1s_infinite_ease-in-out];
+}
+@keyframes bulud-loading-sweep {
+  from {
+    transform: translateX(var(--bulud-loading-bar-sweep-start, -100%));
+  }
+  to {
+    transform: translateX(var(--bulud-loading-bar-sweep-end, 400%));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    @apply [transition:none];
+  }
+  :host(.indeterminate) .line {
+    @apply [animation:none];
+    @apply [width:100%]!;
+    @apply [opacity:0.6];
+  }
+}
+
+:host-context([dir="rtl"]) {
+  --bulud-loading-bar-sweep-start: 100%;
+  --bulud-loading-bar-sweep-end: -400%;
+}

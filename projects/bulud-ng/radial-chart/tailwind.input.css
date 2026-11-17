@@ -1,2 +1,6 @@
 @import "tailwindcss/utilities" source(none);
 @source "./radial-chart.ts";
+
+.bulud-chart-ltr {
+  @apply [direction:ltr];
+}

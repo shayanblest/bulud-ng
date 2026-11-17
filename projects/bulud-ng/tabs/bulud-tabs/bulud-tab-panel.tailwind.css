@@ -1,0 +1,17 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply box-border;
+  @apply [color:var(--bulud-tabs-foreground)];
+  @apply block;
+  @apply [min-block-size:8rem];
+  @apply [padding:1.25rem];
+}
+
+:host(:focus-visible) {
+  @apply [outline:3px_solid_var(--bulud-tabs-focus)];
+  @apply [outline-offset:-3px];
+}
+
+:host([hidden]) {
+  @apply hidden;
+}

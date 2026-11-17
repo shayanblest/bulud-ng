@@ -1,0 +1,14 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply [direction:inherit];
+  @apply block;
+  @apply [max-inline-size:100%];
+}
+
+.bulud-accordion {
+  @apply [background:var(--bulud-accordion-background,_var(--bulud-color-surface,_#ffffff)_)];
+  @apply [border:1px_solid_var(--bulud-accordion-border,_var(--bulud-color-border,_#cbd5e1))];
+  @apply [border-radius:var(--bulud-accordion-radius,_var(--bulud-radius-control,_0.5rem)_)];
+  @apply [color:var(--bulud-accordion-foreground,_var(--bulud-color-on-surface,_#0f172a)_)];
+  @apply overflow-hidden;
+}

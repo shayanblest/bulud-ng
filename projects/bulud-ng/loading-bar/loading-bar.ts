@@ -62,7 +62,7 @@ export class BuludLoadingService {
 @Component({
   selector: 'bulud-loading-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './loading-bar.scss',
+  styleUrl: './loading-bar.css',
   host: {
     '[style]': 'styles()',
     '[attr.role]': 'visible()?"progressbar":null',

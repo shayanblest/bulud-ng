@@ -67,7 +67,15 @@
               "../skeleton/**/*.spec.ts",
               "../confirm/**/*.spec.ts",
               "../line-chart/**/*.spec.ts",
-              "../radial-chart/**/*.spec.ts"
+              "../radial-chart/**/*.spec.ts",
+              "../input-behaviors/**/*.spec.ts",
+              "../access/**/*.spec.ts",
+              "../appearance/**/*.spec.ts",
+              "../date-range/**/*.spec.ts",
+              "../runtime/**/*.spec.ts",
+              "../migration-widgets.spec.ts",
+              "../chart-engine/**/*.spec.ts",
+              "../tour/**/*.spec.ts"
             ]
           }
         }
@@ -116,7 +124,9 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": ["projects/demo/src/styles.css"]
+            "styles": [
+              "projects/demo/src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -167,7 +177,9 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": ["projects/demo/src/styles.css"]
+            "styles": [
+              "projects/demo/src/styles.css"
+            ]
           }
         }
       }
@@ -184,8 +196,17 @@
             "browser": "projects/base/src/main.ts",
             "index": "projects/base/src/index.html",
             "tsConfig": "projects/base/tsconfig.app.json",
-            "styles": ["projects/base/src/styles.css"],
-            "outputPath": "dist/base"
+            "styles": [
+              "projects/base/src/styles.css"
+            ],
+            "outputPath": "dist/base",
+            "assets": [
+              {
+                "glob": "angour.css",
+                "input": "projects/bulud-ng",
+                "output": "assets"
+              }
+            ]
           },
           "configurations": {
             "production": {

@@ -1,5 +1,9 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { BuludElementSize, BuludResizeObserver } from './bulud-resize-observer';
@@ -68,6 +72,8 @@ function createMockEntry(
 
 @Component({
   imports: [BuludResizeObserver],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div
       buludResizeObserver

@@ -1,0 +1,68 @@
+@import "tailwindcss/utilities" source(none);
+:host(:not(.bulud-tooltip--manual)) {
+  @apply block;
+  @apply [color:var(--bulud-tooltip-foreground,_var(--bulud-color-on-surface))];
+}
+:host(:not(.bulud-tooltip--manual)) .surface {
+  @apply [background:var(--bulud-tooltip-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-tooltip-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-tooltip-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-tooltip-padding,_var(--bulud-spacing-4,_16px))];
+}
+:host(:not(.bulud-tooltip--manual)) button,
+:host(:not(.bulud-tooltip--manual)) input,
+:host(:not(.bulud-tooltip--manual)) select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+:host(:not(.bulud-tooltip--manual)) button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-tooltip-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-tooltip-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-tooltip-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+:host(:not(.bulud-tooltip--manual)) button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:host(:not(.bulud-tooltip--manual)) :where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-tooltip-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:host(:not(.bulud-tooltip--manual)) :disabled {
+  @apply [opacity:var(--bulud-tooltip-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+:host(:not(.bulud-tooltip--manual)) .muted {
+  @apply [color:var(--bulud-tooltip-muted,_var(--bulud-color-muted))];
+}
+:host(:not(.bulud-tooltip--manual)) .actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-tooltip-gap,_var(--bulud-spacing-3,_12px))];
+}
+:host(:not(.bulud-tooltip--manual)) .error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+:host(:not(.bulud-tooltip--manual)) {
+  @apply inline-block;
+  @apply relative;
+}
+:host(:not(.bulud-tooltip--manual)) .tip {
+  @apply absolute;
+  @apply [inset-block-start:100%];
+  @apply [inset-inline-start:0];
+  @apply [z-index:var(--bulud-tooltip-z-index,_100)];
+  @apply [width:max-content];
+  @apply [max-width:min(24ch,_80vw)];
+  @apply whitespace-normal;
+  @apply [font-size:var(--bulud-font-size-small,_12px)];
+  @apply [box-shadow:var(--bulud-shadow-lg,_none)];
+}
+
+
+:host(.bulud-tooltip--manual) {@apply absolute;@apply [top:100%];@apply [background:var(--bulud-tooltip-background,var(--dark,#0f172a))];@apply [color:var(--bulud-tooltip-foreground,var(--light,#fff))];@apply [padding:var(--bulud-tooltip-padding,12px)];@apply [z-index:var(--bulud-tooltip-z-index,100)];@apply [border-radius:var(--bulud-tooltip-radius,4px)];}
+:host(.bulud-tooltip--manual):not(:has(.tooltip)){@apply hidden}:host(.bulud-tooltip--manual):has(.tooltip){@apply block}
+:host(.bulud-tooltip--manual)::before{content:'';@apply block;@apply [border:var(--bulud-tooltip-arrow-size,8px)_solid_transparent];@apply [border-bottom-color:var(--bulud-tooltip-background,var(--dark,#0f172a))];@apply absolute;@apply [bottom:100%];@apply [inset-inline-end:var(--bulud-tooltip-padding,12px)]}
+:host(.bulud-tooltip--manual.tooltip-anchor-positioned)::before{@apply [inset-inline-start:auto];@apply [inset-inline-end:auto];@apply [left:var(--tooltip-arrow-left,50%)];@apply [transform:translateX(-50%)]}

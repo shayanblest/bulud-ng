@@ -1,8 +1,14 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BuludStepper, BuludStep } from './stepper';
 @Component({
   imports: [BuludStepper, BuludStep],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<bulud-stepper label="Setup" [active]="999"
     ><ng-template buludStep="First">First body</ng-template
     ><ng-template buludStep="Second">Second body</ng-template

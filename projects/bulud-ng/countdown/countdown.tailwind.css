@@ -1,0 +1,60 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-countdown-foreground,_var(--bulud-color-on-surface))];
+}
+.surface {
+  @apply [background:var(--bulud-countdown-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-countdown-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-countdown-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [padding:var(--bulud-countdown-padding,_var(--bulud-spacing-4,_16px))];
+}
+button,
+input,
+select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-countdown-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-countdown-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-countdown-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-countdown-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:disabled {
+  @apply [opacity:var(--bulud-countdown-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.muted {
+  @apply [color:var(--bulud-countdown-muted,_var(--bulud-color-muted))];
+}
+.actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-countdown-gap,_var(--bulud-spacing-3,_12px))];
+}
+.error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+
+
+.bulud-countdown {
+  @apply flex items-center justify-between;
+  @apply [color:var(--bulud-countdown-foreground,inherit)];
+  @apply [gap:var(--bulud-countdown-gap,0px)];
+}
+.bulud-countdown-digits {
+  @apply [width:var(--bulud-countdown-digits-width,50px)];
+}
+.bulud-countdown-separator {
+  @apply [margin-inline:var(--bulud-countdown-separator-margin,4px)];
+}

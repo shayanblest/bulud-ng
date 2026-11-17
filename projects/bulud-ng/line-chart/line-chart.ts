@@ -47,8 +47,7 @@ let nextChartId = 0;
       } @else {
         <svg
           #plot
-          style="direction: ltr"
-          class="block w-full outline-none focus-visible:rounded-[4px] focus-visible:outline-2 focus-visible:outline-[var(--bulud-line-chart-focus,var(--bulud-color-focus))]"
+          class="bulud-chart-ltr block w-full outline-none focus-visible:rounded-[4px] focus-visible:outline-2 focus-visible:outline-[var(--bulud-line-chart-focus,var(--bulud-color-focus))]"
           [attr.width]="width()"
           [attr.height]="resolvedHeight()"
           role="img"
@@ -61,7 +60,6 @@ let nextChartId = 0;
           (keydown)="keydown($event)"
           (blur)="clear()"
         >
-          <title>{{ caption() }}</title>
           <desc>{{ keyboardLabel() }}</desc>
           <defs>
             <clipPath [id]="clipId + '-marker'">
@@ -252,14 +250,14 @@ let nextChartId = 0;
           <div
             role="tooltip"
             #tooltip
-            class="bulud-line-chart-tooltip pointer-events-none absolute z-[12] flex flex-col overflow-hidden whitespace-nowrap text-left [direction:ltr] rounded-[var(--bulud-line-chart-tooltip-radius,5px)] bg-[var(--bulud-line-chart-tooltip-background,rgba(30,30,30,0.8))] text-[var(--bulud-line-chart-tooltip-foreground,white)] [box-shadow:var(--bulud-line-chart-tooltip-shadow,2px_2px_6px_-4px_#999)]"
+            class="bulud-line-chart-tooltip pointer-events-none absolute z-[12] flex flex-col overflow-hidden whitespace-nowrap text-left [direction:ltr] rounded-[var(--bulud-line-chart-tooltip-radius,5px)] bg-[var(--bulud-line-chart-tooltip-background,var(--bulud-color-surface,rgba(30,30,30,0.8)))] text-[var(--bulud-line-chart-tooltip-foreground,var(--bulud-color-on-surface,white))] [box-shadow:var(--bulud-line-chart-tooltip-shadow,2px_2px_6px_-4px_#999)]"
             [style.left.px]="tooltipLeft()"
             [style.top.px]="tooltipTop()"
             [style.font-family]="tooltipFont"
             [style.font-size]="'12px'"
           >
             <div
-              class="mb-[4px] border-x-0 border-t-0 border-b border-solid border-[var(--bulud-line-chart-tooltip-border,rgb(51,51,51))] bg-[var(--bulud-line-chart-tooltip-title-background,rgba(0,0,0,0.7))] p-[6px]"
+              class="mb-[4px] border-x-0 border-t-0 border-b border-solid border-[var(--bulud-line-chart-tooltip-border,var(--bulud-color-border,rgb(51,51,51)))] bg-[var(--bulud-line-chart-tooltip-title-background,var(--bulud-color-surface-hover,rgba(0,0,0,0.7)))] p-[6px]"
             >
               {{ point.label }}
             </div>

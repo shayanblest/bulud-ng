@@ -1,0 +1,7 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply inline-block [vertical-align:middle] [max-width:100%];
+}
+img {
+  @apply block [width:100%] [height:auto];
+}

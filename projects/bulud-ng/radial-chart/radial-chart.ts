@@ -39,8 +39,7 @@ let nextRadialId = 0;
       </div>
     } @else {
       <svg
-        class="block"
-        style="direction:ltr"
+        class="block bulud-chart-ltr"
         role="group"
         [attr.aria-label]="label() + ': ' + formatted()"
         [attr.width]="width()"

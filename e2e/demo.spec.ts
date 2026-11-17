@@ -30,7 +30,7 @@ async function setTextareaMaxRows(
 
 test.describe('Bulud component demo', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#all');
   });
 
   test('covers button variants, sizes, disabled, loading, and reactive click state', async ({
@@ -213,7 +213,7 @@ test.describe('Bulud component demo', () => {
     await page.locator('h1').first().click();
     await expect(formTrigger).toHaveAttribute('aria-invalid', 'true');
     await expect(formDropdown).toHaveClass(/bulud-dropdown-host--invalid/);
-    await expect(formTrigger).toHaveCSS('border-top-color', 'rgb(225, 29, 72)');
+    await expect(formTrigger).toHaveCSS('border-top-color', 'rgb(161, 23, 41)');
     await formTrigger.click();
     await formDropdown.locator('[role="option"]').first().click();
     await expect(formTrigger).toContainText('Angular');
@@ -264,7 +264,7 @@ test.describe('Bulud component demo', () => {
 
     await expect(tabButtons.nth(1)).toHaveCSS(
       'border-bottom-color',
-      'rgb(124, 58, 237)',
+      'rgb(12, 35, 64)',
     );
 
     const verticalTabs = page.locator('#tabs bulud-tabs').nth(1);
@@ -316,7 +316,7 @@ test.describe('Bulud component demo', () => {
     await expect(tabsPreview).not.toHaveAttribute('data-theme');
     await expect(dropdownTrigger).toHaveCSS(
       'background-color',
-      'rgb(255, 255, 255)',
+      'rgb(243, 246, 249)',
     );
     await expect(accordionTrigger).toHaveCSS(
       'background-color',
@@ -332,15 +332,12 @@ test.describe('Bulud component demo', () => {
     await expect(dropdownPreview).toHaveAttribute('data-theme', 'dark');
     await expect(accordionPreview).toHaveAttribute('data-theme', 'dark');
     await expect(tabsPreview).toHaveAttribute('data-theme', 'dark');
-    await expect(dropdownTrigger).toHaveCSS(
-      'background-color',
-      'rgb(15, 23, 42)',
-    );
+    await expect(dropdownTrigger).toHaveCSS('background-color', 'rgb(0, 0, 0)');
     await expect(accordionTrigger).toHaveCSS(
       'background-color',
-      'rgb(15, 23, 42)',
+      'rgb(30, 30, 38)',
     );
-    await expect(tabsSurface).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+    await expect(tabsSurface).toHaveCSS('background-color', 'rgb(30, 30, 38)');
 
     const darkDropdownDescriptionColor = await dropdownDescription.evaluate(
       (element) => getComputedStyle(element).color,
@@ -366,7 +363,7 @@ test.describe('Bulud component demo', () => {
     await expect(tabsPreview).not.toHaveAttribute('data-theme');
     await expect(dropdownTrigger).toHaveCSS(
       'background-color',
-      'rgb(255, 255, 255)',
+      'rgb(243, 246, 249)',
     );
     await expect(accordionTrigger).toHaveCSS(
       'background-color',
@@ -476,7 +473,7 @@ test.describe('Bulud component demo', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(
       page.locator('#badge .bulud-badge--success').first(),
-    ).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+    ).toHaveCSS('background-color', 'rgb(38, 208, 124)');
   });
 
   test('covers explicit Persian and English digit conversion pipes', async ({
@@ -506,6 +503,19 @@ test.describe('Bulud component demo', () => {
     await expect(page.locator('#filesize-decimal')).toHaveText('1.5 MB');
     await expect(page.locator('#filesize-binary')).toHaveText('1.5 KiB');
     await expect(page.locator('#filesize-negative')).toHaveText('-1.54 kB');
+    for (const direction of ['rtl', 'ltr']) {
+      await page
+        .locator('#file-size')
+        .evaluate((el, dir) => el.setAttribute('dir', dir), direction);
+      await expect(page.locator('#filesize-negative')).toHaveCSS(
+        'direction',
+        'ltr',
+      );
+      await expect(page.locator('#filesize-decimal')).toHaveCSS(
+        'direction',
+        'ltr',
+      );
+    }
     await expect(page.locator('#filesize-null')).toHaveText('');
   });
 
@@ -521,8 +531,8 @@ test.describe('Bulud component demo', () => {
       'aria-label',
       'Resize observer target',
     );
+    await expect(size).toHaveText(/^\s*Content box: \d+ × \d+px\s*$/);
     const initialSize = (await size.textContent())?.trim() ?? '';
-    expect(initialSize).toMatch(/^Content box: \d+ × \d+px$/);
     await expect(notifications).toHaveText('Notifications: 1');
 
     await target.evaluate((element) => {
@@ -2093,7 +2103,7 @@ test.describe('Bulud component demo', () => {
   test('textarea autosize reaches the final max-height transition constraint', async ({
     page,
   }) => {
-    await page.goto('/');
+    await page.goto('/#all');
     const textarea = page.locator('#textarea-autosize-input');
     await textarea.evaluate((element) => {
       const target = element as HTMLTextAreaElement;

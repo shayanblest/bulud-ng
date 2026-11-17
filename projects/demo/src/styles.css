@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "./app";
+@import "../../bulud-ng/input-behaviors.css";
 @import "../../bulud-ng/tailwind.css";
 @import "../../bulud-ng/theme.css";
 @import "../../bulud-ng/angour.css";
@@ -6,8 +8,8 @@
 
 @theme {
   --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 :root {
@@ -18,30 +20,20 @@
 }
 
 html:lang(fa),
-html[dir='rtl'] {
+html[dir="rtl"] {
   font-family:
-    'IranYekan',
-    'IRANYekan',
-    'IRANYekanX',
-    Tahoma,
-    Arial,
-    sans-serif;
+    "IranYekan", "IRANYekan", "IRANYekanX", Tahoma, Arial, sans-serif;
   direction: rtl;
 }
 
 html:lang(fa) body,
-html[dir='rtl'] body {
+html[dir="rtl"] body {
   font-family:
-    'IranYekan',
-    'IRANYekan',
-    'IRANYekanX',
-    Tahoma,
-    Arial,
-    sans-serif;
+    "IranYekan", "IRANYekan", "IRANYekanX", Tahoma, Arial, sans-serif;
 }
 
 html:lang(en),
-html[dir='ltr'] {
+html[dir="ltr"] {
   direction: ltr;
 }
 
@@ -64,4 +56,226 @@ input {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* Demo composition only; components consume the same public project tokens. */
+.bulud-migration-demo {
+  @apply mx-auto grid gap-6 rounded-xl border p-5 sm:p-8;
+  grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
+  max-inline-size: none;
+  color: var(--bulud-color-on-surface);
+  background: var(--bulud-color-surface);
+  border-color: var(--bulud-color-border);
+  --body-bg: var(--bulud-color-surface);
+  --dark: var(--bulud-color-on-surface);
+  --gray-10: var(--bulud-color-border);
+  --gray-70: var(--bulud-color-muted);
+  --primary: var(--demo-accent, var(--bulud-color-primary));
+  --bulud-otp-accent: var(--primary);
+  --bulud-carousel-accent: var(--primary);
+  --bulud-period-picker-accent: var(--primary);
+  --bulud-period-picker-border-width: 1px;
+  --bulud-period-picker-background: var(--bulud-color-surface-hover);
+  --bulud-period-picker-border: var(--bulud-color-border);
+  --bulud-language-switch-accent: var(--primary);
+  --bulud-upload-preview-accent: var(--primary);
+  --bulud-tabs-active-foreground: var(--primary);
+  --bulud-tabs-active-border: var(--primary);
+  --bulud-tabs-panel-background: var(--bulud-color-surface);
+  --bulud-account-card-background: var(--demo-card-background, #1e1e26);
+  --bulud-account-card-wallet-background: var(
+    --demo-card-background,
+    linear-gradient(289deg, #0c2340, #536480)
+  );
+  --bulud-account-card-mt-real: var(
+    --demo-card-background,
+    linear-gradient(180deg, #0c2340, #436187, #0c2340)
+  );
+}
+.bulud-migration-demo > section,
+.demo-widget-panel {
+  @apply grid min-w-0 gap-4 rounded-2xl border p-4 sm:p-6;
+  border-color: var(--bulud-color-border);
+}
+.bulud-migration-demo h2 {
+  @apply text-xl font-bold;
+}
+.bulud-migration-demo h3 {
+  @apply text-lg font-semibold;
+}
+.bulud-migration-demo .demo-action {
+  @apply inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-normal;
+  min-block-size: 40px;
+  margin-inline-end: 8px;
+  margin-block: 4px;
+  border-color: var(--demo-accent, var(--bulud-color-on-surface));
+  color: var(--bulud-color-on-surface);
+  background: var(--bulud-color-surface);
+  cursor: pointer;
+}
+.bulud-migration-demo .demo-action:focus-visible {
+  outline: 2px solid var(--bulud-color-focus);
+  outline-offset: 2px;
+}
+.bulud-migration-demo .demo-action:disabled {
+  @apply cursor-default opacity-50;
+}
+.demo-toolbar {
+  @apply flex flex-wrap items-center gap-3 rounded-xl border p-4;
+  border-color: var(--bulud-color-border);
+}
+.bulud-migration-demo output {
+  @apply block break-words text-sm;
+  color: var(--bulud-color-muted);
+}
+.bulud-migration-demo label:not(.bulud-checkbox__label),
+.bulud-migration-demo .demo-field {
+  @apply inline-flex flex-wrap items-center gap-2 text-sm;
+}
+.bulud-migration-demo select,
+.bulud-migration-demo
+  input:not([type="checkbox"]):not([type="file"]):not([type="color"]) {
+  @apply rounded-lg border px-3 py-2;
+  max-inline-size: 100%;
+  color: var(--bulud-color-on-surface);
+  background: var(--bulud-color-surface);
+  border-color: var(--bulud-color-border);
+}
+.demo-slide {
+  @apply rounded-xl border p-6 text-center;
+  border-color: var(--bulud-color-border);
+  background: var(--bulud-color-surface-hover);
+}
+.demo-workflow {
+  @apply flex items-start justify-between gap-2;
+}
+.demo-workflow-step {
+  @apply flex min-w-0 flex-1 flex-col items-center gap-2 text-center text-sm;
+  color: var(--bulud-color-muted);
+}
+.demo-workflow-step .demo-step-number {
+  @apply grid size-10 place-items-center rounded-full border;
+}
+.demo-workflow-step.current {
+  color: var(--primary);
+}
+.demo-workflow-step.previous {
+  color: var(--primary);
+}
+.demo-workflow-step.previous .demo-step-number {
+  color: var(--bulud-color-on-primary);
+  background: var(--primary);
+}
+.demo-workflow-step.next {
+  opacity: 0.6;
+}
+.bulud-migration-demo[data-theme="contrast"] {
+  --bulud-color-surface: #000;
+  --bulud-color-on-surface: #fff;
+  --bulud-color-border: #fff;
+  --bulud-color-muted: #fff;
+}
+
+.bulud-migration-demo .demo-workflow {
+  display: flex;
+}
+.bulud-migration-demo bulud-countdown {
+  max-inline-size: min(100%, var(--bulud-demo-countdown-width, 15rem));
+}
+.bulud-migration-demo[data-theme="dark"] .demo-action {
+  border-color: var(--bulud-color-border);
+  color: var(--bulud-color-on-surface);
+}
+
+.bulud-migration-demo {
+  --bulud-line-chart-accent: var(--demo-accent, var(--bulud-color-primary));
+  --bulud-line-chart-grid: var(--bulud-color-border);
+  --bulud-line-chart-axis: var(--bulud-color-muted);
+  --bulud-radial-chart-accent: var(--demo-accent, var(--bulud-color-primary));
+  --bulud-radial-chart-track: var(--bulud-color-border);
+  --bulud-radial-chart-foreground: var(--bulud-color-on-surface);
+}
+
+.bulud-migration-demo .demo-control {
+  @apply inline-block;
+  inline-size: min(100%, var(--bulud-demo-control-width, 14rem));
+  max-inline-size: 100%;
+  --bulud-dropdown-gap: 12px;
+  --bulud-dropdown-padding-inline: 12px;
+}
+
+.bulud-demo-shell {
+  @apply min-w-0;
+  background: var(--bulud-body-bg);
+  color: var(--bulud-color-on-surface);
+  font-size: var(--bulud-font-size-control, 12px);
+  line-height: 1.5;
+}
+.bulud-demo-shell .demo-action {
+  @apply rounded-lg border px-3 py-2 text-sm;
+  border-color: var(--bulud-color-border);
+  color: var(--bulud-color-on-surface);
+  background: var(--bulud-color-surface);
+}
+.bulud-demo-shell header a:focus-visible,
+.bulud-demo-shell .demo-action:focus-visible {
+  outline: 2px solid var(--bulud-color-focus);
+  outline-offset: 2px;
+}
+.bulud-demo-shell form label {
+  @apply grid min-w-0 gap-2 text-sm;
+}
+.bulud-demo-shell bulud-checkbox {
+  @apply shrink-0;
+}
+
+/* One catalogue flow, including all late-added examples, before the sole footer. */
+.demo-catalog-continuation > * {
+  display: block;
+  min-inline-size: 0;
+}
+.demo-catalog-continuation .bulud-migration-demo {
+  margin-block: 0;
+}
+
+.bulud-demo-shell main {
+  background: var(--bulud-body-bg);
+}
+.bulud-demo-shell app-angour-demo,
+.bulud-demo-shell app-angour-controls-demo {
+  @apply mx-auto block max-w-7xl px-5 pb-10 pt-8 sm:px-8;
+}
+.bulud-demo-shell app-angour-demo > section,
+.bulud-demo-shell app-angour-controls-demo > section {
+  inline-size: 100%;
+  max-inline-size: none;
+  margin-block: 0;
+}
+
+.bulud-demo-shell app-angour-demo > .bulud-app,
+.bulud-demo-shell app-angour-controls-demo > .bulud-app {
+  @apply rounded-xl border border-bulud-border p-5 sm:p-8;
+}
+.bulud-demo-shell .demo-action {
+  font-weight: var(--bulud-button-font-weight, 400);
+}
+
+.demo-section-placeholder {
+  min-block-size: 32rem;
+}
+
+/* Foundation examples share the catalogue typography and page surface. */
+.bulud-demo-shell app-angour-demo > .bulud-app,
+.bulud-demo-shell app-angour-controls-demo > .bulud-app {
+  font-family: inherit;
+  font-size: inherit;
+}
+.bulud-demo-shell app-angour-demo h2,
+.bulud-demo-shell app-angour-controls-demo > section > h2 {
+  @apply text-xl font-semibold;
+}
+.bulud-demo-shell app-angour-demo .bulud-panel,
+.bulud-demo-shell app-angour-controls-demo .bulud-panel {
+  border-radius: var(--bulud-radius-extraLarge);
 }

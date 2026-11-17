@@ -1,8 +1,14 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BuludTooltip } from './tooltip';
 @Component({
   imports: [BuludTooltip],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<bulud-tooltip text="Helpful description"
       ><button aria-describedby="existing">Help</button></bulud-tooltip
     >

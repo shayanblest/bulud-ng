@@ -3,6 +3,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
+  Renderer2,
   inject,
   input,
 } from '@angular/core';
@@ -31,15 +34,33 @@ export type BuludButtonType = 'button' | 'submit' | 'reset';
     '[class.bulud-button-host--full-width]': 'fullWidth()',
   },
   templateUrl: './bulud-button.html',
-  styleUrl: './bulud-button.scss',
+  styleUrl: './bulud-button.css',
 })
 export class BuludButton {
   private readonly locale = inject(BULUD_LOCALE);
+  constructor() {
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const renderer = inject(Renderer2);
+    // Static `id="..."` also becomes a host attribute in Angular. Transfer it
+    // to the native control, while retaining a distinct [attr.id] wrapper hook.
+    effect(() => {
+      const id = this.id();
+      if (id !== null && host.getAttribute('id') === id) {
+        renderer.removeAttribute(host, 'id');
+      }
+    });
+  }
+
+  /** Exact project-owned ID on the native button, updated reactively. */
+  readonly id = input<string | null>(null);
   /**
    * Native type applied to the internal button. Defaults to `button` to avoid
    * accidental form submission.
    */
   readonly type = input<BuludButtonType>('button');
+
+  /** Angour outline keeps the variant color on the text and border. */
+  readonly appearance = input<'solid' | 'outline' | 'link'>('solid');
 
   /** Visual color treatment. */
   readonly variant = input<BuludButtonVariant>('primary');

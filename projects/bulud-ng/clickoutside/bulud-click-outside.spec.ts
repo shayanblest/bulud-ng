@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -10,11 +10,13 @@ import {
 
 @Component({
   imports: [BuludClickOutside],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div
       buludClickOutside
-      [enabled]="enabled"
-      [triggers]="triggers"
+      [enabled]="enabled()"
+      [triggers]="triggers()"
       (outside)="events.push($event)"
     >
       <button type="button">Inside</button>
@@ -23,8 +25,11 @@ import {
   `,
 })
 class HostComponent {
-  enabled = true;
-  triggers: readonly BuludClickOutsideTrigger[] = ['pointerdown', 'focusin'];
+  readonly enabled = signal(true);
+  readonly triggers = signal<readonly BuludClickOutsideTrigger[]>([
+    'pointerdown',
+    'focusin',
+  ]);
   readonly events: BuludClickOutsideEvent[] = [];
 }
 
@@ -69,7 +74,7 @@ describe('BuludClickOutside', () => {
   it('ignores interaction inside the host and duplicate configured triggers', () => {
     const fixture = createHost();
     const inside = fixture.nativeElement.querySelector('button');
-    fixture.componentInstance.triggers = ['pointerdown', 'pointerdown'];
+    fixture.componentInstance.triggers.set(['pointerdown', 'pointerdown']);
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
 
@@ -81,13 +86,13 @@ describe('BuludClickOutside', () => {
     const fixture = createHost();
     const outside = fixture.nativeElement.querySelectorAll('button')[1];
 
-    fixture.componentInstance.enabled = false;
+    fixture.componentInstance.enabled.set(false);
     fixture.changeDetectorRef.markForCheck();
     await fixture.whenStable();
     outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     expect(fixture.componentInstance.events).toEqual([]);
 
-    fixture.componentInstance.enabled = true;
+    fixture.componentInstance.enabled.set(true);
     fixture.changeDetectorRef.markForCheck();
     await fixture.whenStable();
     outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));

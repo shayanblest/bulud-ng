@@ -6,6 +6,24 @@ export class BasePreferences {
   readonly dark = signal(false);
   readonly text = (fa: string, en: string) =>
     this.language() === 'fa' ? fa : en;
+  private featureTheme: Promise<boolean> | undefined;
+  ensureFeatureTheme(): Promise<boolean> {
+    if (this.featureTheme) return this.featureTheme;
+    this.featureTheme = new Promise((resolve) => {
+      const link = this.document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = new URL('assets/angour.css', this.document.baseURI).href;
+      link.dataset['buludFeatureTheme'] = '';
+      link.onload = () => resolve(true);
+      link.onerror = () => {
+        link.remove();
+        this.featureTheme = undefined;
+        resolve(false);
+      };
+      this.document.head.append(link);
+    });
+    return this.featureTheme;
+  }
   constructor() {
     try {
       const saved = JSON.parse(

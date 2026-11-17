@@ -284,7 +284,8 @@ function isNestedEditingHost(element: HTMLElement): boolean {
         current,
         element.ownerDocument,
         'HTMLElement',
-      ) || !current.hasAttribute('contenteditable')
+      ) ||
+      !current.hasAttribute('contenteditable')
     ) {
       continue;
     }
@@ -597,7 +598,7 @@ function isProgrammaticFocusTarget(
   selector: 'bulud-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bulud-dialog.html',
-  styleUrl: './bulud-dialog.scss',
+  styleUrl: './bulud-dialog.css',
 })
 export class BuludDialog {
   private static nextId = 0;
@@ -626,6 +627,7 @@ export class BuludDialog {
   private readonly nativeCloseListener = (): void => this.handleNativeClose();
 
   /** Controlled open state. Use `[(open)]` for two-way binding. */
+  readonly surfaceId = input<string | null>(null);
   readonly open = input(false);
   readonly openChange = output<boolean>();
 
@@ -657,7 +659,9 @@ export class BuludDialog {
   /** Emitted only for user-initiated close requests. */
   readonly closeRequest = output<BuludDialogCloseReason>();
 
-  protected readonly dialogId = computed(() => `${this.instanceId}-surface`);
+  protected readonly dialogId = computed(
+    () => this.surfaceId() ?? `${this.instanceId}-surface`,
+  );
   protected readonly instanceStyles = computed(() => {
     const override = this.theme();
     return {

@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        angular: ["20.3.34"]
+        angular: ["22.2.6"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

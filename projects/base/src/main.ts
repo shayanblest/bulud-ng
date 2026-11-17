@@ -18,7 +18,6 @@ import {
   provideRouter,
   RouterOutlet,
   RouterLink,
-  withComponentInputBinding,
   withInMemoryScrolling,
 } from '@angular/router';
 import { BaseSidebar } from './sidebar';
@@ -129,24 +128,27 @@ bootstrapApplication(BaseApp, {
         },
         {
           path: 'components',
+          canMatch: [() => inject(BasePreferences).ensureFeatureTheme()],
           loadChildren: () =>
             import('./catalog.routes').then((m) => m.CATALOG_ROUTES),
         },
         {
           path: 'forms',
+          canMatch: [() => inject(BasePreferences).ensureFeatureTheme()],
           loadComponent: () => import('./forms').then((m) => m.BaseForms),
         },
         {
           path: 'shared',
+          canMatch: [() => inject(BasePreferences).ensureFeatureTheme()],
           loadComponent: () => import('./shared').then((m) => m.BaseShared),
         },
         {
           path: 'charts',
+          canMatch: [() => inject(BasePreferences).ensureFeatureTheme()],
           loadComponent: () => import('./charts').then((m) => m.BaseCharts),
         },
         { path: '**', redirectTo: '' },
       ],
-      withComponentInputBinding(),
       withInMemoryScrolling({
         anchorScrolling: 'enabled',
         scrollPositionRestoration: 'enabled',

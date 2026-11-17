@@ -565,21 +565,21 @@ const tabsFields: readonly (readonly [
   ThemeCase['state']?,
 ])[] = [
   ['background', '.bulud-tabs', 'background-color', 'rgb(255, 255, 255)'],
-  ['border', '.bulud-tabs', 'border-top-color', 'rgb(203, 213, 225)'],
-  ['foreground', '[buludTab="details"]', 'color', 'rgb(71, 85, 105)'],
-  ['activeForeground', '[buludTab="overview"]', 'color', 'rgb(29, 78, 216)'],
+  ['border', '.bulud-tabs', 'border-top-color', 'rgba(30, 30, 38, 0.3)'],
+  ['foreground', '[buludTab="details"]', 'color', 'rgba(30, 30, 38, 0.7)'],
+  ['activeForeground', '[buludTab="overview"]', 'color', 'rgb(12, 35, 64)'],
   [
     'hoverBackground',
     '[buludTab="details"]',
     'background-color',
-    'rgb(239, 246, 255)',
+    'rgb(243, 246, 249)',
     'hover',
   ],
   [
     'activeBorder',
     '[buludTab="overview"]',
     'border-bottom-color',
-    'rgb(37, 99, 235)',
+    'rgb(12, 35, 64)',
   ],
   [
     'panelBackground',
@@ -594,7 +594,7 @@ const tabsFields: readonly (readonly [
     'focus',
     '[buludTab="overview"]',
     'outline-color',
-    'rgb(147, 197, 253)',
+    'rgb(12, 35, 64)',
     'focus',
   ],
 ];
@@ -617,6 +617,38 @@ for (const [field, selector, property, fallback, state] of tabsFields) {
           ? lengths
           : colors,
     config: (value) => ({ tabs: { [field]: value } }),
+  });
+}
+
+for (const [field, selector, property, fallback] of [
+  ['fontSize', '.bulud-dropdown__trigger', 'font-size', '12px'],
+  ['lineHeight', '.bulud-dropdown__trigger', 'line-height', '18px'],
+  ['fontWeight', '.bulud-dropdown__trigger', 'font-weight', '400'],
+  ['paddingBlock', '.bulud-dropdown__trigger', 'padding-top', '12px'],
+  ['paddingInline', '.bulud-dropdown__trigger', 'padding-left', '12px'],
+  ['gap', '.bulud-dropdown__trigger', 'column-gap', '8px'],
+  ['optionPadding', '.bulud-dropdown__option', 'padding-top', '12px'],
+  ['optionGap', '.bulud-dropdown__option', 'column-gap', '8px'],
+] as const) {
+  const variable = ('--bulud-dropdown-' +
+    field.replace(
+      /[A-Z]/g,
+      (c) => '-' + c.toLowerCase(),
+    )) as BuludThemeCssVariable;
+  cases.push({
+    feature: 'dropdown',
+    variable,
+    selector,
+    property,
+    fallback,
+    open: selector.includes('__option'),
+    values:
+      field === 'fontWeight'
+        ? ['500', '600', '700']
+        : field === 'lineHeight'
+          ? ['20px', '22px', '24px']
+          : ['10px', '11px', '13px'],
+    config: (value) => ({ dropdown: { [field]: value } }),
   });
 }
 
@@ -711,14 +743,7 @@ describe('Existing component theme precedence', () => {
           .toBe(token.config ? global : token.fallback);
         if (token.config) {
           provide({});
-          // Ghost hover/active have different literal CSS fallbacks from the
-          // shared color defaults emitted by an empty provider configuration.
-          const providerDefault =
-            token.variable === '--bulud-button-ghost-background-hover'
-              ? 'rgb(248, 250, 252)'
-              : token.variable === '--bulud-button-ghost-background-active'
-                ? 'rgb(241, 245, 249)'
-                : token.fallback;
+          const providerDefault = token.fallback;
           expect(value())
             .withContext('omitted provider override resolves library default')
             .toBe(providerDefault);

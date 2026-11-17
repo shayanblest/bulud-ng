@@ -1,0 +1,7 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply flex;
+  @apply flex-wrap;
+  @apply [gap:var(--bulud-radio-gap,_8px)];
+  @apply [color:var(--bulud-radio-foreground,_var(--bulud-color-on-surface,_#0f172a))];
+}

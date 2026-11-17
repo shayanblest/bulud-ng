@@ -1,0 +1,118 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-chat-foreground,_var(--bulud-color-on-surface))];
+  @apply [min-inline-size:0];
+}
+section {
+  @apply [background:var(--bulud-chat-background,_var(--bulud-color-surface))];
+  @apply [border-radius:var(--bulud-chat-radius,_var(--bulud-radius-control))];
+  @apply [padding:var(--bulud-chat-padding,_24px)];
+}
+.transcript {
+  @apply [max-block-size:var(--bulud-chat-height,_480px)];
+  @apply [overflow-y:auto];
+  @apply [overscroll-behavior:contain];
+  @apply [padding:8px];
+  @apply [scrollbar-gutter:stable];
+}
+.message {
+  @apply flex;
+  @apply items-start;
+  @apply [gap:var(--bulud-chat-gap,_16px)];
+  @apply [margin-block:20px];
+  @apply [inline-size:85%];
+  @apply [min-inline-size:0];
+}
+.message.outgoing {
+  @apply [margin-inline-start:auto];
+  @apply [flex-direction:row-reverse];
+}
+.bubble {
+  @apply [min-inline-size:0];
+  @apply [flex:1];
+  @apply [background:var(--bulud-chat-bubble-background,_var(--bulud-body-bg))];
+  @apply [border:1px_solid_var(--bulud-chat-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-chat-radius,_8px)];
+  @apply [padding:16px];
+}
+.outgoing .bubble {
+  @apply [border-inline-start:3px_solid_var(--bulud-chat-accent,_var(--bulud-color-primary))];
+}
+.body {
+  @apply [white-space:pre-wrap];
+  @apply [overflow-wrap:anywhere];
+  @apply [margin-block:12px];
+}
+.bubble strong {
+  @apply [font-size:0.875rem];
+}
+footer {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:8px];
+  @apply [font-size:0.75rem];
+  @apply [color:var(--bulud-chat-muted,_var(--bulud-color-muted))];
+}
+.failed {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+.composer {
+  @apply [margin-block-start:24px];
+}
+.composer label {
+  @apply block;
+  @apply [margin-block-end:8px];
+}
+textarea {
+  @apply block;
+  @apply box-border;
+  @apply [width:100%];
+}
+.compose-actions {
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply [gap:16px];
+  @apply [margin-block-start:12px];
+}
+button {
+  @apply [font:inherit];
+  @apply [color:var(--bulud-chat-accent,_var(--bulud-color-primary))];
+  @apply [background:transparent];
+  @apply [border:1px_solid_var(--bulud-chat-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-chat-radius,_8px)];
+  @apply [padding:6px_10px];
+  @apply cursor-pointer;
+}
+.attachments {
+  @apply flex;
+  @apply [gap:8px];
+  @apply flex-wrap;
+  @apply [list-style:none];
+  @apply [padding:0];
+}
+:is(button, .transcript):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-chat-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:disabled {
+  @apply [opacity:var(--bulud-chat-disabled-opacity,_0.55)];
+  @apply [cursor:default];
+}
+@media (max-width: 600px) {
+  section {
+    @apply [padding:12px];
+  }
+  .message {
+    @apply [inline-size:100%];
+    @apply [gap:8px];
+  }
+  bulud-avatar {
+    --bulud-avatar-size: 32px;
+  }
+  .bubble {
+    @apply [padding:12px];
+  }
+}

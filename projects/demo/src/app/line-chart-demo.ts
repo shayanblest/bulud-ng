@@ -1,3 +1,6 @@
+import { BuludDropdown } from 'bulud-ng/dropdown';
+import { BuludSwitch } from 'bulud-ng/switch';
+import { migrationDemoText } from './migration-demo-translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,44 +15,71 @@ import {
 @Component({
   selector: 'app-line-chart-demo',
   standalone: true,
-  imports: [BuludLineChart],
+  imports: [BuludDropdown, BuludSwitch, BuludLineChart],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<section id="line-chart-demo" class="space-y-4 p-6">
-    <h2 class="text-xl font-bold">Native line chart</h2>
+  template: `<section
+    id="line-chart-demo"
+    class="bulud-app bulud-migration-demo"
+    data-bulud-preset="angour"
+    [attr.data-theme]="dark() ? 'dark' : 'light'"
+    [attr.dir]="rtl() ? 'rtl' : 'ltr'"
+    [attr.lang]="locale() || 'en'"
+    [style.--demo-accent]="accent()"
+    [style.--bulud-color-primary]="accent()"
+  >
+    <h2 class="text-xl font-bold">{{ t('Native line chart') }}</h2>
+    <div class="demo-toolbar">
+      <bulud-switch
+        appearance="theme"
+        [checked]="dark()"
+        (checkedChange)="dark.set($event)"
+        aria-label="Chart dark theme"
+        >{{ t('Cycle widget theme') }}</bulud-switch
+      ><label
+        >{{ t('Project accent') }}
+        <input
+          type="color"
+          aria-label="Chart accent"
+          [value]="accent() ?? '#0c2340'"
+          (input)="
+            accent.set($any($event.target).value); customTheme.set(true)
+          "
+      /></label>
+    </div>
     <label class="block"
       >Locale (any BCP 47 tag)<input
-        class="border p-2"
+        class="demo-action"
         [value]="locale()"
         (input)="setLocale($event)"
     /></label>
-    <label class="block"
-      >State
-      <select
-        class="border p-2"
+    <div class="demo-field block">
+      State
+      <bulud-dropdown
+        class="demo-control"
+        aria-label="Chart state"
+        [options]="states"
         [value]="state()"
-        (change)="state.set($any($event.target).value)"
-      >
-        @for (item of states; track item) {
-          <option [value]="item">{{ item }}</option>
-        }
-      </select></label
-    >
-    <button type="button" class="border p-2" (click)="rtl.set(!rtl())">
+        (valueChange)="state.set(stringValue($event, state()))"
+        [searchable]="false"
+        [clearable]="false"
+      />
+    </div>
+    <button type="button" class="demo-action" (click)="rtl.set(!rtl())">
       Toggle chart direction
     </button>
     <button
       type="button"
-      class="border p-2"
+      class="demo-action"
       (click)="customTheme.set(!customTheme())"
     >
       Toggle instance theme
     </button>
-    <div [dir]="rtl() ? 'rtl' : 'ltr'" class="w-full max-w-4xl">
+    <div [dir]="rtl() ? 'rtl' : 'ltr'" class="w-full min-w-0">
       <bulud-line-chart
-        caption="Current and previous year"
+        [caption]="t('Current and previous year')"
         [series]="data()"
         [locale]="locale()"
-        [xaxis]="{ categories: months }"
+        [xaxis]="{ categories: localizedMonths() }"
         [yaxis]="axis()"
         [dashArray]="[0, 6]"
         [loading]="state() === 'loading'"
@@ -57,7 +87,10 @@ import {
         [disabled]="state() === 'disabled'"
         [theme]="
           customTheme()
-            ? { accent: 'rgb(190, 40, 90)', grid: 'rgb(180, 180, 200)' }
+            ? {
+                accent: accent() ?? 'var(--bulud-color-primary)',
+                grid: 'var(--bulud-color-border)',
+              }
             : undefined
         "
       />
@@ -69,6 +102,19 @@ import {
   </section>`,
 })
 export class LineChartDemo {
+  protected readonly numberValue = (
+    value: unknown,
+    fallback: number,
+  ): number =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  protected readonly stringValue = (
+    value: unknown,
+    fallback: string,
+  ): string => (typeof value === 'string' ? value : fallback);
+  readonly dark = signal(false);
+  readonly accent = signal<string | null>(null);
+  protected readonly t = (key: string) =>
+    migrationDemoText(this.locale() || 'en', key);
   readonly states = [
     'default',
     'grade',
@@ -104,6 +150,20 @@ export class LineChartDemo {
     'Nov',
     'Dec',
   ];
+  protected readonly localizedMonths = computed(() => {
+    try {
+      const format = new Intl.DateTimeFormat(this.locale() || 'en', {
+        month: 'short',
+        calendar: 'gregory',
+        timeZone: 'UTC',
+      });
+      return Array.from({ length: 12 }, (_, index) =>
+        format.format(new Date(Date.UTC(2025, index, 1))),
+      );
+    } catch {
+      return this.months;
+    }
+  });
   readonly data = computed<readonly BuludLineSeries[]>(() => {
     const state = this.state();
     if (state === 'empty') return [];

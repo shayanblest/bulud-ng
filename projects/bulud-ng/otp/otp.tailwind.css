@@ -1,0 +1,94 @@
+@import "tailwindcss/utilities" source(none);
+:host(:not(.bulud-otp--separate)) {
+  @apply block;
+  @apply [color:var(--bulud-otp-foreground,_var(--bulud-color-on-surface))];
+}
+:host(:not(.bulud-otp--separate)) .surface {
+  @apply [background:var(--bulud-otp-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-otp-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-otp-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-otp-padding,_var(--bulud-spacing-4,_16px))];
+}
+:host(:not(.bulud-otp--separate)) button,
+:host(:not(.bulud-otp--separate)) input,
+:host(:not(.bulud-otp--separate)) select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+:host(:not(.bulud-otp--separate)) button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-otp-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-otp-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-otp-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+:host(:not(.bulud-otp--separate)) button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:host(:not(.bulud-otp--separate)) :where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-otp-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:host(:not(.bulud-otp--separate)) :disabled {
+  @apply [opacity:var(--bulud-otp-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+:host(:not(.bulud-otp--separate)) .muted {
+  @apply [color:var(--bulud-otp-muted,_var(--bulud-color-muted))];
+}
+:host(:not(.bulud-otp--separate)) .actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-otp-gap,_var(--bulud-spacing-3,_12px))];
+}
+:host(:not(.bulud-otp--separate)) .error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+:host(:not(.bulud-otp--separate)) label {
+  @apply flex;
+  @apply flex-col;
+  @apply [gap:var(--bulud-otp-gap,_var(--bulud-spacing-3,_12px))];
+}
+:host(:not(.bulud-otp--separate)) input {
+  @apply [width:100%];
+  @apply [max-width:var(--bulud-otp-width,_22rem)];
+  @apply [padding:var(--bulud-otp-padding,_var(--bulud-spacing-3,_12px))];
+  @apply text-center;
+  @apply [letter-spacing:var(--bulud-otp-letter-spacing,_0.7em)];
+  @apply [background:var(--bulud-otp-background,_var(--bulud-body-bg,_var(--bulud-color-surface))_)];
+  @apply [border:1px_solid_var(--bulud-otp-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-otp-radius,_var(--bulud-radius-control,_8px))];
+}
+:host(:not(.bulud-otp--separate).ng-invalid.ng-touched) input,
+:host(:not(.bulud-otp--separate)) input[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+
+
+.bulud-otp-group {
+  @apply flex justify-center;
+  @apply [gap:var(--bulud-otp-gap,8px)];
+}
+:host(.bulud-otp--separate) {
+  @apply block;
+  @apply [color:var(--bulud-otp-foreground,inherit)];
+}
+:host(.bulud-otp--separate:not(.bulud-otp--unstyled)) input {
+  @apply text-center;
+  @apply [font:inherit];
+  @apply [min-width:0];
+  @apply [width:var(--bulud-otp-width,3rem)];
+  @apply [padding:var(--bulud-otp-padding,12px)];
+  @apply [border:1px_solid_var(--bulud-otp-border,var(--bulud-color-border,#cbd5e1))];
+  @apply [border-radius:var(--bulud-otp-radius,8px)];
+  @apply [color:var(--bulud-otp-foreground,var(--bulud-color-on-surface,#0f172a))];
+  @apply [background:var(--bulud-otp-background,var(--bulud-color-surface,#fff))];
+}
+:host(.bulud-otp--separate:not(.bulud-otp--unstyled)) input[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-otp-error,var(--bulud-color-danger,#b91c1c))];
+}
+:host(.bulud-otp--separate) input:focus-visible {
+  @apply [outline:2px_solid_var(--bulud-otp-focus,var(--bulud-color-focus,#2563eb))];
+  @apply [outline-offset:2px];
+}

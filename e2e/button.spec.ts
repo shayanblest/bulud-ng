@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#all');
 });
 
 test('native keyboard, pointer, disabled, loading recovery, and form behavior', async ({
@@ -55,15 +55,15 @@ test('variant hover and active colors, sizes, RTL, dark theme and override prece
   page,
 }) => {
   const variants = [
-    ['primary', 'rgb(124, 58, 237)', 'rgb(109, 40, 217)', 'rgb(91, 33, 182)'],
+    ['primary', 'rgb(12, 35, 64)', 'rgb(11, 32, 58)', 'rgb(10, 28, 51)'],
     [
       'secondary',
-      'rgb(255, 255, 255)',
-      'rgb(245, 243, 255)',
-      'rgb(237, 233, 254)',
+      'rgb(253, 181, 21)',
+      'rgb(228, 163, 19)',
+      'rgb(202, 145, 17)',
     ],
-    ['danger', 'rgb(225, 29, 72)', 'rgb(190, 18, 60)', 'rgb(159, 18, 57)'],
-    ['ghost', 'rgba(0, 0, 0, 0)', 'rgb(245, 243, 255)', 'rgb(237, 233, 254)'],
+    ['danger', 'rgb(161, 23, 41)', 'rgb(145, 21, 37)', 'rgb(129, 18, 33)'],
+    ['ghost', 'rgba(0, 0, 0, 0)', 'rgb(243, 246, 249)', 'rgb(229, 233, 237)'],
   ];
   for (const [variant, background, hover, active] of variants) {
     const button = page.locator(`#variants .bulud-button--${variant}`);
@@ -77,7 +77,7 @@ test('variant hover and active colors, sizes, RTL, dark theme and override prece
   }
   for (const [size, height] of [
     ['small', '32px'],
-    ['medium', '44px'],
+    ['medium', '40px'],
     ['large', '48px'],
   ]) {
     await expect(page.locator(`.bulud-button--${size}`).first()).toHaveCSS(
@@ -92,12 +92,12 @@ test('variant hover and active colors, sizes, RTL, dark theme and override prece
   await page.locator('header button').first().click();
   await expect(button).toHaveCSS('direction', 'ltr');
   await section.getByLabel('Dark button theme').check();
-  await expect(button).toHaveCSS('background-color', 'rgb(96, 165, 250)');
+  await expect(button).toHaveCSS('background-color', 'rgb(253, 181, 21)');
   await expect(
     section.getByRole('button', { name: 'Instance theme' }),
-  ).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  ).toHaveCSS('background-color', 'rgb(253, 181, 21)');
   await section.getByLabel('Dark button theme').uncheck();
-  await expect(button).toHaveCSS('background-color', 'rgb(124, 58, 237)');
+  await expect(button).toHaveCSS('background-color', 'rgb(12, 35, 64)');
   await section.evaluate((element) =>
     element.style.setProperty('--bulud-button-background', '#123456'),
   );
@@ -108,8 +108,12 @@ test('variant hover and active colors, sizes, RTL, dark theme and override prece
   await expect(button).toHaveCSS('background-color', 'rgb(35, 69, 103)');
   await section.getByLabel('Disable action').check();
   await button.hover({ force: true });
-  await expect(button).toHaveCSS('background-color', 'rgb(35, 69, 103)');
-  await expect(button).toHaveCSS('opacity', '0.55');
+  await expect(button).toHaveCSS('background-color', 'rgba(30, 30, 38, 0.15)');
+  await host.evaluate((element) =>
+    element.style.setProperty('--bulud-button-disabled-background', '#345678'),
+  );
+  await expect(button).toHaveCSS('background-color', 'rgb(52, 86, 120)');
+  await expect(button).toHaveCSS('opacity', '1');
 });
 
 test('full width, focus overrides, and reduced motion', async ({ page }) => {
@@ -167,11 +171,12 @@ test('full width, focus overrides, and reduced motion', async ({ page }) => {
 test('root CSS overrides omitted button tokens with unrelated typed theme configuration', async ({
   page,
 }) => {
-  // The demo configures colors and button sizing but omits these four tokens.
+  // The demo uses the imported default design; omitted provider tokens stay CSS-overridable.
   const providerStyle = page.locator('style[data-bulud-theme]');
+  await expect(providerStyle).toHaveCount(1);
   await expect
     .poll(() => providerStyle.textContent())
-    .toContain('--bulud-color-primary: #7c3aed');
+    .not.toContain('--bulud-color-primary:');
   for (const token of [
     'border-width',
     'focus-width',
@@ -254,3 +259,90 @@ for (const marker of ['class', 'data-theme'] as const) {
     await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   });
 }
+
+test('project-owned marketing IDs remain exact and reactive on the native action', async ({
+  page,
+}) => {
+  const section = page.locator('#button-interactions');
+  const input = section.getByLabel('Marketing ID', { exact: true });
+  for (const id of [
+    'sign_in_submit',
+    'dashboard_real_create_link_button',
+    'cancel-42-btn',
+  ]) {
+    await input.fill(id);
+    const action = section.locator('button[id="' + id + '"]');
+    await expect(action).toHaveCount(1);
+    await expect(page.locator('[id="' + id + '"]')).toHaveCount(1);
+    await action.press('Enter');
+  }
+  await expect(section.locator('#button-count')).toHaveText('Actions: 3');
+  await section.getByLabel('Dark button theme').check();
+  await page.locator('header button').first().click();
+  await expect(section.locator('#cancel-42-btn')).toHaveAccessibleName(
+    'Save changes',
+  );
+  await input.fill('');
+  await expect(section.locator('#button-dynamic button')).not.toHaveAttribute(
+    'id',
+  );
+  await expect(section.locator('#button-dynamic')).toHaveCount(1);
+});
+
+test('primary outline follows Angour light/dark colors, hover and project overrides', async ({
+  page,
+}) => {
+  const section = page.locator('#button-interactions');
+  const button = section.getByRole('button', {
+    name: 'Submit example',
+    exact: true,
+  });
+  for (const dark of [false, true]) {
+    await section.getByLabel('Dark button theme').setChecked(dark);
+    await page.mouse.move(0, 0);
+    const color = dark ? 'rgb(253, 181, 21)' : 'rgb(12, 35, 64)';
+    await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(button).toHaveCSS('color', color);
+    await expect(button).toHaveCSS('border-top-color', color);
+    await expect(button).toHaveCSS('border-top-width', '1px');
+    await button.hover();
+    await expect(button).toHaveCSS(
+      'background-color',
+      dark ? 'rgba(213, 213, 213, 0.15)' : 'rgba(30, 30, 38, 0.15)',
+    );
+    await button.press('Enter');
+  }
+  await section.evaluate((el) =>
+    el.style.setProperty('--bulud-button-outline-foreground', '#abcdef'),
+  );
+  await expect(button).toHaveCSS('color', 'rgb(171, 205, 239)');
+  await expect(section.locator('#button-count')).toHaveText('Actions: 2');
+});
+
+test('link button keeps native action semantics and Angour colors in both themes', async ({
+  page,
+}) => {
+  const section = page.locator('#button-interactions');
+  const action = section.getByRole('button', {
+    name: 'Link action',
+    exact: true,
+  });
+  for (const dark of [false, true]) {
+    await section.getByLabel('Dark button theme').setChecked(dark);
+    await page.mouse.move(0, 0);
+    await expect(action).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(action).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+    await expect(action).toHaveCSS(
+      'color',
+      dark ? 'rgb(253, 181, 21)' : 'rgb(12, 35, 64)',
+    );
+    await action.hover();
+    await expect(action).toHaveCSS(
+      'background-color',
+      dark ? 'rgba(213, 213, 213, 0.15)' : 'rgba(30, 30, 38, 0.15)',
+    );
+    await action.press('Enter');
+  }
+  await expect(section.locator('#button-count')).toHaveText('Actions: 2');
+  await expect(action).toHaveAttribute('id', 'demo_link_action');
+});

@@ -1,4 +1,4 @@
-@import "../../bulud-ng/angour.css";
+@import "./critical-theme.css";
 @import "../../bulud-ng/angour-base.css";
 :root {
   color-scheme: light;

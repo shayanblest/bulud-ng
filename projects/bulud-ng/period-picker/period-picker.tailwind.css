@@ -1,0 +1,263 @@
+@import "tailwindcss/utilities" source(none);
+:host(.bulud-period-picker--fields) {
+  @apply block;
+  @apply [color:var(--bulud-period-picker-foreground,_var(--bulud-color-on-surface))];
+}
+:host(.bulud-period-picker--fields) fieldset {
+  @apply [min-inline-size:0];
+  @apply [margin:0];
+  @apply [border:1px_solid_var(--bulud-period-picker-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-period-picker-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [background:var(--bulud-period-picker-background,_var(--bulud-body-bg))];
+  @apply [padding:var(--bulud-period-picker-padding,_16px)];
+}
+:host(.bulud-period-picker--fields) legend {
+  @apply [padding-inline:8px];
+}
+:host(.bulud-period-picker--fields) .header {
+  @apply flex;
+  @apply items-center;
+  @apply [gap:8px];
+}
+:host(.bulud-period-picker--fields) button,
+:host(.bulud-period-picker--fields) input {
+  @apply [font:inherit];
+  @apply [color:inherit];
+  @apply [border:0];
+  @apply [background:transparent];
+  @apply [border-radius:var(--bulud-period-picker-radius,_8px)];
+  @apply [padding:8px];
+}
+:host(.bulud-period-picker--fields) button {
+  @apply cursor-pointer;
+}
+:host(.bulud-period-picker--fields) input {
+  @apply [min-inline-size:0];
+  @apply [inline-size:100%];
+  @apply text-center;
+  @apply [background:var(--bulud-color-surface)];
+}
+:host(.bulud-period-picker--fields) svg {
+  @apply [inline-size:20px];
+  @apply [block-size:20px];
+  @apply [stroke:currentColor];
+  @apply [fill:none];
+  @apply [stroke-width:1.5];
+}
+:host(.bulud-period-picker--fields) :dir(rtl) svg {
+  @apply [transform:scaleX(-1)];
+}
+:host(.bulud-period-picker--fields) .months {
+  @apply grid;
+  @apply [grid-template-columns:repeat(3,_minmax(0,_1fr))];
+  @apply [gap:var(--bulud-period-picker-gap,_8px)];
+  @apply [margin-block:16px];
+}
+:host(.bulud-period-picker--fields) .months button[aria-pressed="true"] {
+  @apply [background:var(--bulud-period-picker-accent,_var(--bulud-color-primary))];
+  @apply [color:var(--bulud-color-on-primary)];
+}
+:host(.bulud-period-picker--fields)
+  button:hover:not(:disabled):not([aria-pressed="true"]) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:host(.bulud-period-picker--fields) :is(button, input):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-period-picker-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:1px];
+}
+:host(.bulud-period-picker--fields) :disabled {
+  @apply [opacity:var(--bulud-period-picker-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+:host(.bulud-period-picker--fields) fieldset[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+:host(.bulud-period-picker--fields) .clear {
+  @apply [color:var(--bulud-period-picker-accent,_var(--bulud-color-primary))];
+}
+
+:host(.bulud-period-picker--grid) .picker-wrapper {
+  @apply relative;
+  @apply [width:fit-content];
+}
+:host(.bulud-period-picker--grid) .display {
+  @apply flex items-center justify-between;
+  @apply [background:var(--bulud-period-picker-background,var(--bulud-color-surface,var(--body-bg,#fff)))];
+  @apply [color:var(--bulud-period-picker-foreground,var(--bulud-color-on-surface,var(--dark,#111)))];
+  @apply [padding:var(--bulud-period-picker-padding,12px_16px)];
+  @apply [border-radius:var(--bulud-period-picker-radius,12px)];
+  @apply cursor-pointer;
+  @apply [font-size:var(--bulud-period-picker-font-size,14px)];
+  @apply [width:var(--bulud-period-picker-width,150px)];
+  @apply select-none;
+}
+:host(.bulud-period-picker--grid) .display i {
+  @apply [font-size:var(--bulud-period-picker-icon-size,12px)];
+}
+:host(.bulud-period-picker--grid) .month-picker {
+  @apply absolute;
+  @apply [top:calc(100%_+_8px)];
+  @apply [inset-inline-end:0];
+  @apply [background:var(--bulud-period-picker-background,var(--bulud-color-surface,var(--body-bg,#fff)))];
+  @apply [padding:var(--bulud-period-picker-popup-padding,8px)];
+  @apply [color:var(--bulud-period-picker-foreground,var(--bulud-color-on-surface,var(--dark,#111)))];
+  @apply [border-radius:var(--bulud-period-picker-radius,12px)];
+  @apply [box-shadow:var(--bulud-period-picker-shadow,0_4px_20px_rgba(0,0,0,.3))];
+  @apply [transition:all_var(--bulud-period-picker-duration,.3s)_ease];
+  @apply [opacity:1];
+  @apply pointer-events-auto;
+  @apply [z-index:var(--bulud-period-picker-z-index,1000)];
+}
+:host(.bulud-period-picker--grid) .month-picker.closed {
+  @apply [opacity:0];
+  @apply pointer-events-none;
+  @apply [transform:scale(.95)];
+}
+:host(.bulud-period-picker--grid) .header {
+  @apply flex;
+  @apply justify-between;
+  @apply items-center;
+  @apply [margin-bottom:var(--bulud-period-picker-header-gap,1.5rem)];
+  @apply [font-size:var(--bulud-period-picker-font-size,14px)];
+  @apply [padding:var(--bulud-period-picker-header-padding,12px)];
+}
+:host(.bulud-period-picker--grid) .arrow {
+  @apply [background:none];
+  @apply [border:none];
+  @apply [color:var(--bulud-period-picker-foreground,var(--bulud-color-on-surface,var(--black,#000)))];
+  @apply [font-size:inherit];
+  @apply cursor-pointer;
+}
+:host(.bulud-period-picker--grid) .arrow:hover {
+  @apply [color:var(--bulud-period-picker-accent,var(--bulud-color-primary,var(--primary,#2563eb)))];
+}
+:host(.bulud-period-picker--grid) .year {
+  @apply [font-weight:500];
+  @apply [color:var(--bulud-period-picker-foreground,var(--bulud-color-on-surface,var(--dark,#111)))];
+}
+:host(.bulud-period-picker--grid) .months-grid {
+  @apply grid;
+  @apply [grid-template-columns:repeat(3,1fr)];
+  @apply [gap:var(--bulud-period-picker-gap,1rem)];
+  @apply [direction:ltr];
+}
+:host(.bulud-period-picker--grid) .months-grid button {
+  @apply [background:none];
+  @apply [border:none];
+  @apply [color:var(--bulud-period-picker-foreground,var(--bulud-color-on-surface,var(--dark,#111)))];
+  @apply [font-size:var(--bulud-period-picker-font-size,14px)];
+  @apply [padding:var(--bulud-period-picker-month-padding,16px_32px)];
+  @apply [border-radius:var(--bulud-period-picker-radius,12px)];
+  @apply [transition:background_.2s_ease];
+  @apply cursor-pointer;
+  @apply [font-weight:600];
+}
+:host(.bulud-period-picker--grid) .months-grid button.selected {
+  @apply [background:var(--bulud-period-picker-muted,var(--bulud-color-surface-hover,var(--frame,#f1f5f9)))];
+  @apply [color:var(--bulud-period-picker-accent,var(--bulud-color-primary,var(--primary,#2563eb)))];
+}
+:host(.bulud-period-picker--grid) .months-grid button:hover:not(:disabled) {
+  @apply [background:var(--bulud-period-picker-muted,var(--bulud-color-surface-hover,var(--frame,#f1f5f9)))];
+}
+:host(.bulud-period-picker--grid) .months-grid button:disabled {
+  @apply [opacity:var(--bulud-period-picker-disabled-opacity,.4)];
+  @apply cursor-not-allowed;
+}
+
+:host(.bulud-period-picker--grid) .display bulud-symbol {
+  @apply [font-size:var(--bulud-period-picker-icon-size,12px)];
+}
+
+:host(.bulud-period-picker--grid.bulud-standalone) .month-picker {
+  @apply [inset-inline-start:0] [inset-inline-end:auto] [width:min(24rem,calc(100vw_-_48px))] box-border;
+}
+:host(.bulud-period-picker--grid.bulud-standalone) .months-grid {
+  @apply [grid-template-columns:repeat(3,minmax(0,1fr))];
+}
+:host(.bulud-period-picker--grid.bulud-standalone) .months-grid button {
+  @apply [min-inline-size:0] [overflow-wrap:anywhere] [padding-inline:var(--bulud-period-picker-month-padding-inline,8px)];
+}
+
+:host(.bulud-period-picker--navigation.bulud-standalone) > div {
+  @apply flex;
+  @apply justify-between;
+  @apply items-center;
+  @apply [gap:var(--bulud-period-picker-gap,8px)];
+}
+:host(.bulud-period-picker--navigation.bulud-standalone) button {
+  @apply [font:inherit];
+  @apply [font-size:var(--bulud-period-picker-font-size,14px)];
+  @apply flex;
+  @apply items-center;
+  @apply [gap:var(--bulud-period-picker-gap,8px)];
+  @apply [background:transparent];
+  @apply [color:var(--bulud-period-picker-foreground,var(--bulud-color-on-surface,#111))];
+  @apply [border:0];
+  @apply [padding:var(--bulud-period-picker-padding,8px)];
+  @apply cursor-pointer;
+}
+:host(.bulud-period-picker--navigation.bulud-standalone) .bulud-type-5 {
+  @apply flex;
+  @apply [gap:4px];
+  @apply [font-size:var(--bulud-period-picker-title-size,16px)];
+}
+
+/* Owned Tailwind composition; no external layout or utility stylesheet is required. */
+:host .flex {
+  @apply flex;
+}
+:host .justify-between {
+  @apply justify-between;
+}
+:host .items-center {
+  @apply items-center;
+}
+:host .end-0 {
+  @apply [inset-inline-end:0];
+}
+:host .bulud-margin-e-1 {
+  @apply [margin-inline-end:var(--bulud-spacing-1,4px)];
+}
+:host .bulud-padding-y-4 {
+  @apply [padding-block:var(--bulud-spacing-4,16px)];
+}
+:host .bulud-margin-s-4 {
+  @apply [margin-inline-start:var(--bulud-spacing-4,16px)];
+}
+:host .bulud-margin-e-4 {
+  @apply [margin-inline-end:var(--bulud-spacing-4,16px)];
+}
+:host .bulud-padding-x-6 {
+  @apply [padding-inline:var(--bulud-spacing-6,32px)];
+}
+:host .bulud-type-5 {
+  @apply [font-size:var(--bulud-font-size-5,16px)];
+}
+:host .bulud-type-6 {
+  @apply [font-size:var(--bulud-font-size-6,14px)];
+}
+:host .bulud-action {
+  @apply inline-flex items-center justify-center;
+  @apply [font:inherit];
+  @apply [line-height:1.5];
+  @apply [border:1px_solid_transparent];
+  @apply [border-radius:var(--bulud-radius-control,8px)];
+  @apply [background:transparent];
+  @apply [padding:var(--bulud-spacing-1,4px)_var(--bulud-spacing-2,8px)];
+  @apply cursor-pointer;
+}
+:host .bulud-action-text {
+  @apply [color:var(--bulud-color-on-surface,var(--dark,#111))];
+}
+:host .bulud-ltr {
+  @apply [direction:ltr];
+}
+@media (min-width: 992px) {
+}
+
+:host(.bulud-period-picker--grid) :is(.display, .month-picker) {
+  @apply [border:var(--bulud-period-picker-border-width,0px)_solid_var(--bulud-period-picker-border,var(--bulud-color-border,currentColor))];
+}
+:host(.bulud-period-picker--grid) .display:focus-visible {
+  @apply [outline:2px_solid_var(--bulud-period-picker-focus,var(--bulud-color-focus,currentColor))] [outline-offset:2px];
+}

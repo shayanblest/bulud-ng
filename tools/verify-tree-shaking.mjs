@@ -150,6 +150,34 @@ try {
   const reports = [];
   for (const test of [
     {
+      name: "tour",
+      entry: "tour",
+      type: "BuludTourOverlay",
+      template: "<bulud-tour-overlay/>",
+      present: "bulud-tour-overlay",
+      absent: [
+        "bulud-chart",
+        "bulud-file-upload",
+        "bulud-chat",
+        "bulud-period-picker",
+        "bulud-dropdown",
+      ],
+    },
+    {
+      name: "empty-state",
+      entry: "empty-state",
+      type: "BuludEmptyState",
+      template: '<bulud-empty-state title="Nothing here"/>',
+      present: "bulud-empty-state",
+      absent: [
+        "bulud-chart",
+        "bulud-file-upload",
+        "bulud-chat",
+        "bulud-period-picker",
+        "bulud-dropdown",
+      ],
+    },
+    {
       name: "button",
       entry: "button",
       type: "BuludButton",
@@ -238,10 +266,30 @@ try {
       present: "bulud-confirm",
       absent: ["bulud-skeleton", "bulud-file-upload", "bulud-chart"],
     },
+
+    {
+      name: "configuration-only",
+      entry: "",
+      type: "BULUD_ACCOUNT_CARD_CONFIG, BULUD_FILE_UPLOAD_CONFIG, BULUD_DROPDOWN_DATA_CONFIG, BULUD_CHART_ENGINE_CONFIG",
+      configOnly: true,
+      providers:
+        "{provide:BULUD_ACCOUNT_CARD_CONFIG,useValue:{}},{provide:BULUD_FILE_UPLOAD_CONFIG,useValue:{}},{provide:BULUD_DROPDOWN_DATA_CONFIG,useValue:{}},{provide:BULUD_CHART_ENGINE_CONFIG,useValue:{load:async()=>null}}",
+      template: "<p>Configuration only</p>",
+      present: "Configuration only",
+      absent: [
+        "bulud-account-card",
+        "bulud-file-upload",
+        "bulud-dropdown",
+        "bulud-chart-host",
+        "bulud-field-label",
+        "bulud-symbol",
+        "bulud-default-404-image",
+      ],
+    },
   ]) {
     await writeFile(
       join(workspace, "main.ts"),
-      `import {Component,provideZonelessChangeDetection} from '@angular/core';import {bootstrapApplication} from '@angular/platform-browser';import {${test.type}} from 'bulud-ng/${test.entry}';@Component({selector:'test-root',imports:[${test.type}],template:${JSON.stringify(test.template)}})class App{}bootstrapApplication(App,{providers:[provideZonelessChangeDetection()]});`,
+      `import {Component,provideZonelessChangeDetection} from '@angular/core';import {bootstrapApplication} from '@angular/platform-browser';import {${test.type}} from 'bulud-ng${test.entry ? "/" + test.entry : ""}';@Component({selector:'test-root',imports:[${test.configOnly ? "" : test.type}],template:${JSON.stringify(test.template)}})class App{}bootstrapApplication(App,{providers:[provideZonelessChangeDetection(),${test.providers ?? ""}]});`,
     );
     execFileSync(
       process.execPath,

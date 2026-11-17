@@ -9,10 +9,13 @@ const version =
   JSON.parse(
     readFileSync(join(root, "node_modules/@angular/core/package.json"), "utf8"),
   ).version;
-if (!/^20\.\d+\.\d+$/.test(version))
+if (!/^22\.\d+\.\d+$/.test(version))
   throw new Error(
-    "Supply an Angular 20 patch version; other major versions are not declared supported.",
+    "Supply an Angular 22 patch version; other major versions are not declared supported.",
   );
+const npmCache =
+  process.env.BULUD_SMOKE_NPM_CACHE ??
+  join(tmpdir(), "bulud-consumer-npm-cache");
 const dir = mkdtempSync(join(tmpdir(), "bulud-server-consumer-"));
 const run = (cmd, args) =>
   execFileSync(cmd, args, { cwd: dir, stdio: "inherit", timeout: 180000 });
@@ -27,7 +30,7 @@ try {
         "--pack-destination",
         dir,
         "--cache",
-        join(tmpdir(), "bulud-consumer-npm-cache"),
+        npmCache,
       ],
       { encoding: "utf8", timeout: 60000 },
     ),
@@ -48,7 +51,7 @@ try {
     "--no-fund",
     "--package-lock=false",
     "--cache",
-    join(tmpdir(), "bulud-consumer-npm-cache"),
+    npmCache,
     ...[
       "core",
       "common",
@@ -58,7 +61,13 @@ try {
       "platform-browser",
       "platform-server",
     ].map((name) => `@angular/${name}@${version}`),
-    "typescript@5.8.3",
+    "typescript@" +
+      JSON.parse(
+        readFileSync(
+          join(root, "node_modules/typescript/package.json"),
+          "utf8",
+        ),
+      ).version,
     "rxjs@7.8.2",
     join(dir, pack[0].filename),
   ]);

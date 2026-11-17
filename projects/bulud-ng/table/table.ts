@@ -94,7 +94,7 @@ export class BuludTableDetail<T> {
   selector: 'bulud-table',
   imports: [NgTemplateOutlet, BuludPagination, BuludTableFilters],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './table.scss',
+  styleUrl: './table.css',
   host: { '[style]': 'styles()' },
   template: `
     @if (filterDefinitions().length) {

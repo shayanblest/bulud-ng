@@ -115,3 +115,69 @@ test('Angour supports ancestor dark selectors, nested light scopes and scoped to
     'rgb(124, 58, 237)',
   );
 });
+
+test('both foundation catalogues follow the page theme switch', async ({
+  page,
+}) => {
+  const scope = page.locator('#angour');
+  const theme = page.getByRole('switch', {
+    name: 'Demo dark theme',
+    exact: true,
+  });
+  await theme.focus();
+  await theme.press('Space');
+  await expect(scope.locator('.bulud-panel')).toHaveCSS(
+    'background-color',
+    'rgb(30, 30, 38)',
+  );
+  await expect(scope.locator('.bulud-tabs')).toHaveCSS(
+    'background-color',
+    'rgb(30, 30, 38)',
+  );
+  await page.goto('/#angour-controls');
+  await expect(
+    page.locator('app-angour-controls-demo > section'),
+  ).toHaveAttribute('data-theme', 'dark');
+  await page.locator('header bulud-switch label').click();
+  await expect(
+    page.locator('app-angour-controls-demo > section'),
+  ).toHaveAttribute('data-theme', 'light');
+});
+
+for (const width of [375, 1280]) {
+  test(`foundation theme controls update the whole page and token labels at ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const scope = page.locator('#angour');
+    await scope
+      .getByRole('button', { name: 'Toggle Angour dark theme' })
+      .click();
+    await expect(page.locator('.bulud-demo-shell')).toHaveAttribute(
+      'data-theme',
+      'dark',
+    );
+    await expect(
+      page.getByRole('switch', { name: 'Demo dark theme', exact: true }),
+    ).toBeChecked();
+    await page.evaluate(() => {
+      location.hash = 'theme';
+    });
+    const primary = page.locator('[data-theme-swatch="primary"]');
+    await expect(primary).toContainText('#FDB515');
+    await expect(primary).toHaveCSS('background-color', 'rgb(253, 181, 21)');
+    await expect(primary.locator('[dir="ltr"]')).toHaveCSS('direction', 'ltr');
+    const surface = page.locator('[data-theme-swatch="surface"]');
+    await expect(surface).toContainText('#1E1E26');
+    await expect(surface).toHaveCSS('background-color', 'rgb(30, 30, 38)');
+    await page.locator('header bulud-switch label').click();
+    await expect(primary).toContainText('#0C2340');
+    await expect(primary).toHaveCSS('background-color', 'rgb(12, 35, 64)');
+    await expect(surface).toContainText('#FFFFFF');
+    await expect(scope).toHaveAttribute('data-theme', 'light');
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    );
+    expect(overflow).toBe(false);
+  });
+}

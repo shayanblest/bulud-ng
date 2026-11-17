@@ -1,0 +1,137 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-table-foreground,_var(--bulud-color-on-surface))];
+}
+.surface {
+  @apply [background:var(--bulud-table-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-table-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-table-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-table-padding,_var(--bulud-spacing-4,_16px))];
+}
+button,
+input,
+select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-table-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-table-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-table-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-table-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:disabled {
+  @apply [opacity:var(--bulud-table-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.muted {
+  @apply [color:var(--bulud-table-muted,_var(--bulud-color-muted))];
+}
+.actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-table-gap,_var(--bulud-spacing-3,_12px))];
+}
+.error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+.table-scroll {
+  @apply [overflow-x:auto];
+  @apply [padding:0];
+}
+table {
+  @apply [width:100%];
+  @apply [border-collapse:collapse];
+  @apply text-center;
+}
+caption {
+  @apply [text-align:start];
+  @apply [padding:var(--bulud-table-padding,_var(--bulud-spacing-4,_16px))];
+  @apply [font-weight:600];
+}
+th,
+td {
+  @apply [padding:var(--bulud-table-padding,_var(--bulud-spacing-4,_16px))];
+  @apply [border-block-end:1px_solid_var(--bulud-table-accent,_var(--bulud-color-primary))];
+  @apply whitespace-nowrap;
+}
+th {
+  @apply [font-weight:500];
+  @apply [color:var(--bulud-table-muted,_var(--bulud-color-muted))];
+}
+th button {
+  @apply [border:0];
+  @apply [padding:0];
+  @apply [background:transparent];
+}
+.details td {
+  @apply whitespace-normal;
+  @apply [text-align:start];
+  @apply [background:var(--bulud-body-bg,_var(--bulud-color-surface))];
+}
+.pagination {
+  @apply flex;
+  @apply justify-end;
+  @apply [margin-block-start:var(--bulud-spacing-4,_16px)];
+}
+.table-scroll {
+  @apply [border-width:0];
+  @apply [border-radius:0];
+}
+table {
+  @apply [border-collapse:separate];
+  @apply [border-spacing:0];
+}
+.detail-toggle {
+  @apply inline-flex;
+  @apply items-center;
+  @apply justify-center;
+  @apply [border:0];
+  @apply [background:transparent];
+  @apply [padding:var(--bulud-spacing-2,_8px)];
+}
+.detail-toggle svg {
+  @apply [width:18px];
+  @apply [height:18px];
+  @apply [fill:none];
+  @apply [stroke:currentColor];
+  @apply [stroke-width:1.5];
+  @apply [stroke-linecap:round];
+  @apply [stroke-linejoin:round];
+}
+.detail-toggle svg.expanded {
+  @apply [transform:rotate(180deg)];
+}
+tr[data-expanded="true"] td {
+  @apply [border-block-start:1px_solid_var(--bulud-table-border,_var(--bulud-color-border))];
+  @apply [border-block-end:0];
+}
+tr[data-expanded="true"] td:first-child {
+  @apply [border-inline-start:1px_solid_var(--bulud-table-border,_var(--bulud-color-border))];
+  @apply [border-start-start-radius:var(--bulud-table-radius,_8px)];
+}
+tr[data-expanded="true"] td:last-child {
+  @apply [border-inline-end:1px_solid_var(--bulud-table-border,_var(--bulud-color-border))];
+  @apply [border-start-end-radius:var(--bulud-table-radius,_8px)];
+}
+.details td {
+  @apply [background:var(--bulud-table-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-table-border,_var(--bulud-color-border))];
+  @apply [border-block-start:0];
+  @apply [border-end-start-radius:var(--bulud-table-radius,_8px)];
+  @apply [border-end-end-radius:var(--bulud-table-radius,_8px)];
+  @apply [padding:var(--bulud-spacing-5,_24px)];
+}
+.pagination {
+  @apply justify-center;
+}

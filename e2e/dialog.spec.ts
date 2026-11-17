@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#all');
   await page.locator('#dialog').scrollIntoViewIfNeeded();
 });
 
@@ -122,7 +122,7 @@ test('supports dark theme, RTL, and instance geometry override', async ({
   await section.getByRole('button', { name: 'Open dialog' }).click();
   const dialog = page.getByRole('dialog', { name: 'Review changes' });
 
-  await expect(dialog).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await expect(dialog).toHaveCSS('background-color', 'rgb(30, 30, 38)');
   await expect(dialog).toHaveCSS('inline-size', '640px');
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect(dialog).toBeVisible();

@@ -1,9 +1,15 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BULUD_SHARED_UI_CONFIG } from 'bulud-ng';
 import { BuludTable, BuludTableCell, BuludTableDetail } from './table';
 @Component({
   imports: [BuludTable, BuludTableCell, BuludTableDetail],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<bulud-table
     [rows]="rows"
     [columns]="columns"

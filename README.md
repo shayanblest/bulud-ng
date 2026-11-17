@@ -1,6 +1,6 @@
 # Bulud NG
 
-Bulud NG is a standalone Angular 20 component and utility library with
+Bulud NG is a standalone Angular 22 component and utility library with
 tree-shakable secondary entry points, typed forms integration, CSS-variable
 theming, and accessible native interaction patterns.
 
@@ -9,10 +9,10 @@ theming, and accessible native interaction patterns.
 ```bash
 npm run package:local
 # In the consumer application, until public publication:
-npm install /absolute/path/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+npm install /absolute/path/bulud-ng/dist/packages/bulud-ng-3.0.0.tgz
 ```
 
-Angular 20 is a peer dependency. Tailwind CSS 4 is optional; components work
+Angular 22 is a peer dependency. Tailwind CSS 4 is optional; components work
 without it.
 
 Register the shared theme and locale providers from the root entry point:
@@ -145,7 +145,7 @@ For reusable components/services transferred from Angour and a live `/shared` ex
 
 ## Component catalog and local npm package
 
-Run `npm start`, then open http://127.0.0.1:4314/components. Components, services and pipes have dedicated lazy pages with source examples. See [Demo and packaging](DEMO-AND-PACKAGING.md). Public publication is deferred; `npm run package:local` creates a locally installable tarball.
+Run `npm start`, then open http://127.0.0.1:4314/components. Components, services and pipes have dedicated lazy pages with source examples. See [Demo and packaging](DEMO-AND-PACKAGING.md). Before a registry release, `npm run package:local` creates a locally installable tarball.
 
 See [component catalog and new shared APIs](COMPONENT-CATALOG.md).
 

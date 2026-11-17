@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import type { Locator } from '@playwright/test';
+async function choose(demo: Locator, value: string) {
+  await demo.getByRole('combobox', { name: 'Chart state' }).click();
+  await demo.getByRole('option', { name: value, exact: true }).click();
+}
 test.beforeEach(async ({ page }) => {
   await page.goto('/#line-chart-demo');
   await expect(page.locator('#line-chart-demo')).toBeVisible();
@@ -7,7 +12,7 @@ test('renders every public state in both directions and restores the chart', asy
   page,
 }) => {
   const demo = page.locator('#line-chart-demo');
-  const select = demo.locator('select');
+
   for (const dir of ['ltr', 'rtl']) {
     if (dir === 'rtl')
       await demo
@@ -27,7 +32,7 @@ test('renders every public state in both directions and restores the chart', asy
       'error',
       'disabled',
     ]) {
-      await select.selectOption(state);
+      await choose(demo, state);
       if (state === 'loading' || state === 'error' || state === 'invalid')
         await expect(demo.getByRole('status')).toBeVisible();
       else {
@@ -35,14 +40,13 @@ test('renders every public state in both directions and restores the chart', asy
           demo.getByRole('img', { name: 'Current and previous year' }),
         ).toBeVisible();
         if (state === 'disabled')
-          await expect(demo.locator('svg')).not.toHaveAttribute(
-            'tabindex',
-            '0',
-          );
+          await expect(
+            demo.locator('bulud-line-chart svg[role=img]'),
+          ).not.toHaveAttribute('tabindex', '0');
       }
     }
   }
-  await select.selectOption('default');
+  await choose(demo, 'default');
   await expect(demo.locator('path.bulud-line-chart-line')).toHaveCount(2);
 });
 test('keyboard and pointer reach both series; Escape dismisses; theme overrides compute', async ({
@@ -63,7 +67,7 @@ test('keyboard and pointer reach both series; Escape dismisses; theme overrides 
   await demo.getByRole('button', { name: 'Toggle instance theme' }).click();
   await expect(demo.locator('path.bulud-line-chart-line').first()).toHaveCSS(
     'stroke',
-    'rgb(190, 40, 90)',
+    'rgb(12, 35, 64)',
   );
   const path = demo.locator('path.bulud-line-chart-line').first();
   await svg.scrollIntoViewIfNeeded();
@@ -77,12 +81,15 @@ test('changes arbitrary consumer locales without rebuilding the chart', async ({
   page,
 }) => {
   const demo = page.locator('#line-chart-demo');
-  await demo.locator('select').selectOption('fractional');
+  await choose(demo, 'fractional');
   const svg = demo.getByRole('img', { name: 'Current and previous year' });
   await svg.focus();
   await page.keyboard.press('Home');
   for (const locale of ['de-DE', 'fa-IR', 'ar-EG', 'tr-TR', 'ja-JP', 'en-US']) {
-    await demo.locator('input').fill(locale);
+    await demo
+      .locator('input:not([type=checkbox]):not([type=color])')
+      .first()
+      .fill(locale);
     await svg.focus();
     await page.keyboard.press('Home');
     await expect(demo.getByRole('tooltip')).toContainText(

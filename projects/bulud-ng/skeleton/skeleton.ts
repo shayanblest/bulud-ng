@@ -48,7 +48,7 @@ export type BuludSkeletonShape = 'line' | 'circle' | 'thumbnail' | 'card';
       <div class="block thumb" [class.circle]="shape() === 'circle'"></div>
     }
   </div>`,
-  styleUrl: './skeleton.scss',
+  styleUrl: './skeleton.css',
 })
 export class BuludSkeleton {
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);

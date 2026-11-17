@@ -1,0 +1,158 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-feedback-foreground,_var(--bulud-color-on-surface))];
+}
+.surface {
+  @apply [background:var(--bulud-feedback-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-feedback-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-feedback-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-feedback-padding,_var(--bulud-spacing-4,_16px))];
+}
+button,
+input,
+select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-feedback-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-feedback-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-feedback-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-feedback-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:disabled {
+  @apply [opacity:var(--bulud-feedback-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.muted {
+  @apply [color:var(--bulud-feedback-muted,_var(--bulud-color-muted))];
+}
+.actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-feedback-gap,_var(--bulud-spacing-3,_12px))];
+}
+.error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+
+.notice {
+  --notice-tone: var(--bulud-color-info, var(--bulud-color-primary, #541adb));
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 70%,
+    var(--bulud-color-on-surface, #000) 30%
+  );
+  --notice-opacity: 10%;
+  @apply flex;
+  @apply items-start;
+  @apply [gap:var(--bulud-feedback-gap,_12px)];
+  @apply [margin-block-end:var(--bulud-spacing-3,_12px)];
+  @apply [border:1px_solid_var(--bulud-feedback-border,_var(--notice-tone))];
+  @apply [border-radius:var(--bulud-feedback-radius,_6px)];
+  @apply [background:var(--bulud-feedback-background,_color-mix(in_srgb,_var(--notice-tone)_var(--notice-opacity),_transparent)_)];
+  @apply [color:var(--bulud-feedback-foreground,_var(--notice-emphasis))];
+}
+.notice:hover {
+  @apply [background:var(--bulud-feedback-background,_color-mix(in_srgb,_var(--notice-tone)_21%,_transparent)_)];
+}
+.notice[data-kind="success"] {
+  --notice-tone: var(--bulud-color-success, #2e7d32);
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 90%,
+    var(--bulud-color-on-surface, #000) 10%
+  );
+}
+.notice[data-kind="danger"] {
+  --notice-tone: var(--bulud-color-danger, #a11729);
+  --notice-emphasis: var(--bulud-color-danger-text, var(--notice-tone));
+}
+.notice[data-kind="warning"] {
+  --notice-tone: var(--bulud-color-warning, #ffcc19);
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 50%,
+    var(--bulud-color-on-surface, #000) 50%
+  );
+}
+.notice[data-kind="primary"] {
+  --notice-tone: var(--bulud-color-primary, #0c2340);
+  --notice-emphasis: var(--notice-tone);
+  --notice-opacity: var(--bulud-alert-brand-opacity, 20%);
+}
+.notice[data-kind="secondary"] {
+  --notice-tone: var(--bulud-color-secondary, #fdb515);
+  --notice-emphasis: color-mix(
+    in srgb,
+    var(--notice-tone) 50%,
+    var(--bulud-color-on-surface, #000) 50%
+  );
+  --notice-opacity: var(--bulud-alert-brand-opacity, 20%);
+}
+.notice[data-kind="neutral"] {
+  --notice-tone: var(--bulud-color-muted, #64748b);
+  --notice-emphasis: var(--bulud-color-on-surface, #000);
+}
+.notice[data-kind="light"] {
+  --notice-opacity: var(--bulud-alert-neutral-opacity, 10%);
+  --notice-tone: var(--bulud-color-on-primary, #fff);
+  --notice-emphasis: var(--bulud-color-on-surface, #000);
+}
+.notice[data-kind="dark"] {
+  --notice-opacity: var(--bulud-alert-neutral-opacity, 10%);
+  --notice-tone: var(--bulud-color-on-surface, #000);
+  --notice-emphasis: var(--notice-tone);
+}
+.notice-icon {
+  @apply [color:var(--bulud-feedback-foreground,_var(--notice-tone))];
+}
+
+.notice-body {
+  @apply [flex:1];
+  @apply [min-inline-size:0];
+  @apply [overflow-wrap:anywhere];
+  @apply [line-height:1.7];
+}
+.notice-body strong {
+  @apply block;
+}
+.notice-icon,
+.notice button svg {
+  @apply [inline-size:20px];
+  @apply [block-size:20px];
+  @apply [fill:none];
+  @apply [stroke:currentColor];
+  @apply [stroke-width:1.5];
+  @apply [stroke-linecap:round];
+  @apply [stroke-linejoin:round];
+  @apply [flex-shrink:0];
+}
+.notice button {
+  @apply grid;
+  @apply [place-items:center];
+  @apply [border:0];
+  @apply [background:transparent];
+  @apply [padding:var(--bulud-spacing-1,_4px)];
+  @apply [min-inline-size:28px];
+  @apply [min-block-size:28px];
+}
+.notice-actions:empty {
+  @apply hidden;
+}
+@media (forced-colors: active) {
+  .notice {
+    @apply [border-color:CanvasText];
+    @apply [color:CanvasText];
+  }
+}

@@ -95,7 +95,7 @@ export function buildBuludTableFilterQuery(
   selector: 'bulud-table-filters',
   imports: [BuludDropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './filters.scss',
+  styleUrl: './filters.css',
   host: { '[style]': 'styles()' },
   template: `<details class="filter-panel">
     <summary>

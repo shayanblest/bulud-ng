@@ -1,3 +1,8 @@
+import { BULUD_ANGOUR_TOKENS } from 'bulud-ng';
+import { TourDemo } from './tour-demo';
+import { BuludRadio, BuludRadioGroup } from 'bulud-ng/radio';
+import { MigrationWidgetsDemo } from './migration-widgets-demo';
+import { MigrationPrimitivesDemo } from './migration-primitives-demo';
 import { RadialChartDemo } from './radial-chart-demo';
 import { LineChartDemo } from './line-chart-demo';
 import {
@@ -5,6 +10,7 @@ import {
   Component,
   computed,
   DOCUMENT,
+  DestroyRef,
   effect,
   inject,
   signal,
@@ -60,6 +66,11 @@ interface DemoOption {
 @Component({
   selector: 'app-root',
   imports: [
+    TourDemo,
+    BuludRadio,
+    BuludRadioGroup,
+    MigrationWidgetsDemo,
+    MigrationPrimitivesDemo,
     LineChartDemo,
     RadialChartDemo,
     AngourDemo,
@@ -92,6 +103,75 @@ interface DemoOption {
 })
 export class App {
   private readonly document = inject(DOCUMENT);
+  private readonly requestedHash = signal(
+    this.document.defaultView?.location.hash.slice(1) ?? '',
+  );
+  private readonly sectionAnchors: Readonly<Record<string, readonly string[]>> =
+    {
+      angour: [
+        'angour',
+        'angour-primary',
+        'angour-override',
+        'angour-name',
+        'angour-dropdown',
+        'angour-open-dialog',
+      ],
+      'angour-controls': [
+        'angour-controls',
+        'angour-checks',
+        'angour-check',
+        'angour-plan-label',
+        'angour-radios',
+        'angour-plan',
+        'datepicker-states',
+        'angour-date',
+        'angour-date-value',
+        'angour-range',
+        'angour-range-value',
+      ],
+      'line-chart-demo': ['line-chart-demo'],
+      'radial-chart-demo': ['radial-chart-demo'],
+      'migration-primitives-demo': [
+        'migration-primitives-demo',
+        'theme-name',
+        'otp-value',
+        'otp-completed',
+        'grouped-value',
+        'keyboard-value',
+        'protected-content',
+        'tab-events',
+      ],
+      'migration-widgets-demo': [
+        'migration-widgets-demo',
+        'widget-theme',
+        'widget-month',
+        'widget-timestamp',
+        'widget-id',
+        'widget-scalar',
+        'widget-date',
+        'widget-date-value',
+        'widget-route',
+        'widget-files',
+      ],
+      'tour-demo': ['tour-demo', 'tour-active'],
+    };
+  protected requestedSection(section: string): boolean {
+    const hash = this.requestedHash();
+    return (
+      hash === 'all' ||
+      section === hash ||
+      (this.sectionAnchors[section]?.includes(hash) ?? false)
+    );
+  }
+  protected readonly globalDark = signal(false);
+  protected readonly themePalette = computed(
+    () => BULUD_ANGOUR_TOKENS[this.globalDark() ? 'dark' : 'light'],
+  );
+  protected setBadgeSize(value: unknown): void {
+    if (value === 'small' || value === 'medium' || value === 'large')
+      this.badgeSize.set(value);
+  }
+
   protected readonly language = signal<'en' | 'fa'>('fa');
   protected readonly buttonTab = signal<'preview' | 'code'>('preview');
   protected readonly dropdownTab = signal<'preview' | 'code'>('preview');
@@ -233,6 +313,14 @@ export class App {
   );
 
   constructor() {
+    const updateHash = () =>
+      this.requestedHash.set(
+        this.document.defaultView?.location.hash.slice(1) ?? '',
+      );
+    this.document.defaultView?.addEventListener('hashchange', updateHash);
+    inject(DestroyRef).onDestroy(() =>
+      this.document.defaultView?.removeEventListener('hashchange', updateHash),
+    );
     effect(() => {
       const language = this.language();
       this.document.documentElement.lang = language;
@@ -246,6 +334,7 @@ export class App {
   protected readonly buttonLoading = signal(false);
   protected readonly buttonDisabled = signal(false);
   protected readonly buttonDark = signal(false);
+  protected readonly marketingId = signal('dashboard_real_save_button');
   protected readonly clickCount = signal(0);
   protected readonly checkboxAccepted = signal(false);
   protected readonly checkboxIndeterminate = signal(false);

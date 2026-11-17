@@ -1,0 +1,261 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply inline-flex;
+  @apply [max-inline-size:100%];
+  @apply [vertical-align:middle];
+}
+
+:host(.bulud-button-host--full-width) {
+  @apply flex;
+  @apply [inline-size:100%];
+}
+
+.bulud-button {
+  --_background: var(
+    --bulud-button-background,
+    var(--bulud-color-primary, #2563eb)
+  );
+  --_background-hover: var(
+    --bulud-button-background-hover,
+    var(--bulud-color-primary-hover, #1d4ed8)
+  );
+  --_background-active: var(
+    --bulud-button-background-active,
+    var(--bulud-color-primary-active, #1e40af)
+  );
+  --_border: var(--bulud-button-border, transparent);
+  --_foreground: var(
+    --bulud-button-foreground,
+    var(--bulud-color-on-primary, #ffffff)
+  );
+  --_focus: var(--bulud-button-focus-ring, var(--bulud-color-focus, #93c5fd));
+
+  @apply items-center;
+  @apply [background:var(--\_background)];
+  @apply [border:var(--bulud-button-border-width,_1px)_solid_var(--\_border)];
+  @apply [border-radius:var(--bulud-button-radius,_var(--bulud-radius-control,_0.5rem)_)];
+  @apply box-border;
+  @apply [color:var(--\_foreground)];
+  @apply cursor-pointer;
+  @apply inline-flex;
+  @apply [font:inherit];
+  @apply [font-weight:var(--bulud-button-font-weight,_600)];
+  @apply [gap:var(--bulud-button-gap,_0.5rem)];
+  @apply [inline-size:100%];
+  @apply justify-center;
+  @apply [line-height:1];
+  @apply [min-inline-size:0];
+  @apply text-center;
+  @apply [text-decoration:none];
+  @apply [transition:background-color_120ms_ease,_border-color_120ms_ease,_box-shadow_120ms_ease,_color_120ms_ease];
+  @apply select-none;
+  @apply whitespace-normal;
+}
+
+.bulud-button:hover:not(:disabled) {
+  @apply [background:var(--\_background-hover)];
+}
+
+.bulud-button:active:not(:disabled) {
+  @apply [background:var(--\_background-active)];
+  @apply [box-shadow:var(--bulud-button-active-shadow,_none)];
+}
+
+.bulud-button:focus-visible {
+  @apply [outline:var(--bulud-button-focus-width,_3px)_solid_var(--\_focus)];
+  @apply [outline-offset:var(--bulud-button-focus-offset,_2px)];
+}
+
+.bulud-button:disabled {
+  @apply [background:var(--bulud-button-disabled-background,_var(--\_background))];
+  @apply [color:var(--bulud-button-disabled-foreground,_var(--\_foreground))];
+  @apply cursor-not-allowed;
+  @apply [opacity:var(--bulud-button-disabled-opacity,_0.55)];
+}
+
+.bulud-button--secondary {
+  --_background: var(
+    --bulud-button-secondary-background,
+    var(--bulud-color-surface, #ffffff)
+  );
+  --_background-hover: var(
+    --bulud-button-secondary-background-hover,
+    var(--bulud-color-surface-hover, #f8fafc)
+  );
+  --_background-active: var(
+    --bulud-button-secondary-background-active,
+    var(--bulud-color-surface-active, #f1f5f9)
+  );
+  --_border: var(
+    --bulud-button-secondary-border,
+    var(--bulud-color-border, #cbd5e1)
+  );
+  --_foreground: var(
+    --bulud-button-secondary-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+}
+
+.bulud-button--danger {
+  --_background: var(
+    --bulud-button-danger-background,
+    var(--bulud-color-danger, #dc2626)
+  );
+  --_background-hover: var(
+    --bulud-button-danger-background-hover,
+    var(--bulud-color-danger-hover, #b91c1c)
+  );
+  --_background-active: var(
+    --bulud-button-danger-background-active,
+    var(--bulud-color-danger-active, #991b1b)
+  );
+  --_foreground: var(
+    --bulud-button-danger-foreground,
+    var(--bulud-color-on-danger, #ffffff)
+  );
+  --_focus: var(
+    --bulud-button-danger-focus-ring,
+    var(--bulud-color-danger-focus, #fca5a5)
+  );
+}
+
+.bulud-button--ghost {
+  --_background: var(--bulud-button-ghost-background, transparent);
+  --_background-hover: var(
+    --bulud-button-ghost-background-hover,
+    var(--bulud-color-surface-hover, #f1f5f9)
+  );
+  --_background-active: var(
+    --bulud-button-ghost-background-active,
+    var(--bulud-color-surface-active, #e2e8f0)
+  );
+  --_foreground: var(
+    --bulud-button-ghost-foreground,
+    var(--bulud-color-on-surface, #0f172a)
+  );
+}
+
+.bulud-button--small {
+  @apply [block-size:var(--bulud-button-height-small,_2rem)];
+  @apply [font-size:var(--bulud-button-font-size-small,_0.8125rem)];
+  @apply [padding-inline:var(--bulud-button-padding-inline-small,_0.75rem)];
+}
+
+.bulud-button--medium {
+  @apply [block-size:var(--bulud-button-height-medium,_2.5rem)];
+  @apply [font-size:var(--bulud-button-font-size-medium,_0.875rem)];
+  @apply [padding-inline:var(--bulud-button-padding-inline-medium,_1rem)];
+}
+
+.bulud-button--large {
+  @apply [block-size:var(--bulud-button-height-large,_3rem)];
+  @apply [font-size:var(--bulud-button-font-size-large,_1rem)];
+  @apply [padding-inline:var(--bulud-button-padding-inline-large,_1.25rem)];
+}
+
+.bulud-button__content {
+  @apply [min-inline-size:0];
+  @apply [overflow-wrap:anywhere];
+  @apply [line-height:1.25];
+  @apply whitespace-normal;
+}
+
+.bulud-button__spinner {
+  @apply [animation:bulud-button-spin_700ms_linear_infinite];
+  @apply [block-size:1em];
+  @apply [border:0.125em_solid_currentColor];
+  @apply [border-inline-end-color:transparent];
+  @apply [border-radius:50%];
+  @apply box-border;
+  @apply [flex:0_0_auto];
+  @apply [inline-size:1em];
+}
+
+.bulud-visually-hidden {
+  @apply [block-size:1px];
+  @apply [clip:rect(0_0_0_0)];
+  @apply [clip-path:inset(50%)];
+  @apply [inline-size:1px];
+  @apply [margin:-1px];
+  @apply overflow-hidden;
+  @apply [padding:0];
+  @apply absolute;
+  @apply whitespace-nowrap;
+}
+
+@keyframes bulud-button-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-button {
+    @apply [transition:none];
+  }
+
+  .bulud-button__spinner {
+    @apply [animation:none];
+  }
+}
+
+@media (forced-colors: active) {
+  .bulud-button {
+    @apply [border-color:ButtonText];
+  }
+
+  .bulud-button:disabled {
+    @apply [color:GrayText];
+    @apply [opacity:1];
+  }
+}
+
+.bulud-button--danger:active:not(:disabled) {
+  @apply [box-shadow:var(--bulud-button-danger-active-shadow,_var(--bulud-button-active-shadow,_none)_)];
+}
+
+/* Angour outline: transparent surface, semantic color, subtle hover. */
+.bulud-button--outline,
+.bulud-button--link {
+  --_text-color: var(--bulud-color-primary, #0c2340);
+  --_background: var(--bulud-button-outline-background, transparent);
+  --_background-hover: var(
+    --bulud-button-outline-hover-background,
+    var(--bulud-color-subtle, rgba(30, 30, 38, 0.15))
+  );
+  --_background-active: var(
+    --bulud-button-outline-active-background,
+    var(--bulud-color-subtle, rgba(30, 30, 38, 0.15))
+  );
+  --_border: var(--bulud-button-outline-border, var(--_text-color));
+  --_foreground: var(--bulud-button-outline-foreground, var(--_text-color));
+}
+:is(.bulud-button--outline, .bulud-button--link).bulud-button--secondary {
+  --_text-color: var(--bulud-color-secondary, #fdb515);
+}
+:is(.bulud-button--outline, .bulud-button--link).bulud-button--danger {
+  --_text-color: var(--bulud-color-danger, #a11729);
+}
+:is(.bulud-button--outline, .bulud-button--link).bulud-button--ghost {
+  --_text-color: var(--bulud-color-on-surface, #1e1e26);
+}
+:is(.bulud-button--outline, .bulud-button--link):disabled {
+  @apply [background:var(--bulud-button-outline-disabled-background,transparent)] [border-color:var(--bulud-button-disabled-foreground,var(--bulud-color-muted,#7f7f7f))];
+}
+
+.bulud-button--link {
+  --_border: transparent;
+  --_foreground: var(--bulud-button-link-foreground, var(--_text-color));
+  --_background: var(--bulud-button-link-background, transparent);
+  --_background-hover: var(
+    --bulud-button-link-hover-background,
+    var(--bulud-color-subtle, rgba(30, 30, 38, 0.15))
+  );
+  --_background-active: var(
+    --bulud-button-link-active-background,
+    var(--bulud-color-subtle, rgba(30, 30, 38, 0.15))
+  );
+}
+.bulud-button--link:disabled {
+  @apply [border-color:transparent];
+}

@@ -20,9 +20,10 @@ const DEFAULT_NAVIGATION_LABEL = 'Pagination';
     class: 'bulud-pagination-host',
   },
   templateUrl: './bulud-pagination.html',
-  styleUrl: './bulud-pagination.scss',
+  styleUrl: './bulud-pagination.css',
 })
 export class BuludPagination {
+  readonly idPrefix = input<string | null>(null);
   private readonly locale = inject(BULUD_LOCALE);
 
   /** Consumer-owned selected page. The component never changes this input. */

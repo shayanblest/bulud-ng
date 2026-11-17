@@ -1,5 +1,6 @@
 <nav class="bulud-pagination" [attr.aria-label]="navigationLabel()">
   <button
+    [attr.id]="idPrefix() ? idPrefix() + '_previous' : null"
     class="bulud-pagination__control bulud-pagination__control--previous"
     type="button"
     [disabled]="disabled() || renderedPage() <= 1 || !safePageCount()"
@@ -26,6 +27,7 @@
       @if (typeof item === "number") {
         <li>
           <button
+            [attr.id]="idPrefix() ? idPrefix() + '_page_' + item : null"
             class="bulud-pagination__page"
             type="button"
             [class.bulud-pagination__page--current]="item === renderedPage()"
@@ -49,6 +51,7 @@
   </ol>
 
   <button
+    [attr.id]="idPrefix() ? idPrefix() + '_next' : null"
     class="bulud-pagination__control bulud-pagination__control--next"
     type="button"
     [disabled]="

@@ -8,8 +8,6 @@ Explicitly import `bulud-ng/angour.css` in your application's stylesheet and set
 
 ## URL → list request and filters (`bulud-ng/query`)
 
-Field and operator identifiers support dots (for example `profile.date:range.gte("2026-01-01")`). Building and parsing preserve the same accepted identifiers; prototype-changing segments remain rejected.
-
 Angour's implementation is in `libs/shared/utilities/src/lib/dataset.ts`, not a service. Its reusable functions now have a `BuludQueryService` facade. Router and HttpClient are never injected. All methods are stateless.
 
 ```ts
@@ -239,8 +237,8 @@ The demo upload endpoint discards received data. It is a bounded local test rece
 ```sh
 npm run build
 npm run package:local
-# In another Angular 20 project, use the actual absolute tarball path:
-npm install /path/to/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+# In another Angular 22 project, use the actual absolute tarball path:
+npm install /path/to/bulud-ng/dist/packages/bulud-ng-3.0.0.tgz
 ```
 
 ```ts
@@ -256,11 +254,11 @@ Import CSS explicitly in the consumer's global stylesheet:
 @import "bulud-ng/angour-base.css";
 ```
 
-Place `data-bulud-preset="angour"`, `data-theme="light"` or `"dark"`, and `dir="rtl"` or `"ltr"` on an ancestor. The application owns language/theme preferences. Peer dependencies are Angular 20 and RxJS; Tailwind is optional. Import specific secondary entries, not a barrel of every component. CSS is marked as a side effect; feature JavaScript has no eager global registrations. The demo is not included in the published library.
+Place `data-bulud-preset="angour"`, `data-theme="light"` or `"dark"`, and `dir="rtl"` or `"ltr"` on an ancestor. The application owns language/theme preferences. Peer dependencies are Angular 22 and RxJS; Tailwind is optional. Import specific secondary entries, not a barrel of every component. CSS is marked as a side effect; feature JavaScript has no eager global registrations. The demo is not included in the published library.
 
 `npm run validate:tree-shaking` packs the actual compiled package, resolves it from three isolated Angular AOT consumers without source aliases, builds production bundles and verifies unused components are absent. It uses the existing workspace toolchain and does not download dependencies.
 
-Public npm publication is **deferred by the user**. The package name/version currently remain `bulud-ng@0.0.1`; the account/scope and license must be chosen before publishing. No registry publication or ownership claim has been made. After choosing those details, add the license/metadata, check the tarball, authenticate with npm and publish with public access. Do not publish the private workspace root.
+The version 3 package is `bulud-ng@3.0.0`, licensed under the included MIT license. Publish only the compiled `dist/bulud-ng` artifact after all release checks and production performance measurements pass. Authentication and package ownership are verified separately; never publish the private workspace root.
 
 ## Added APIs
 
@@ -386,27 +384,3 @@ Content projection after the composer allows composing an existing file upload/a
 ## Package verification
 
 Existing secondary-entry imports and explicit CSS assets remain intact; no dependency or framework version changes. Package verification now builds button-only, donut-only, period-only, chat-only and number-pipe-only production consumers from an actual local tarball and checks unrelated selectors/pipes are absent. Public npm publication still awaits the owner's later account/license decision.
-
-## Skeleton and feedback from Angour
-
-- `bulud-ng/skeleton`: `BuludSkeleton`, `BuludSkeletonShape`; four CSS-only shapes,
-  bounded rows, optional live announcement, reduced motion and forced colors.
-- `bulud-ng/feedback`: existing `BuludAlert` expanded to nine semantic kinds,
-  title/icon/action content and dismiss output. Existing notification service and
-  outlet remain compatible.
-- `bulud-ng/confirm`: `BuludConfirm`, `BuludConfirmKind`; controlled creation,
-  confirmation and rejection dialog with async processing guard. No Angour
-  business services or third-party modal dependency.
-
-Each exposes the shared `theme` input; provider component keys are `skeleton`,
-`feedback`, `confirm`. Imports are separate secondary entries for tree shaking.
-
-## Period picker default year and local New Year
-
-The period picker derives its empty default year from the local calendar day,
-normalized to UTC noon only for the calendar conversion helpers. Gregorian and
-Persian New Year therefore follow the user's local date rather than UTC. It
-refreshes on focus/pointer interaction, year/month actions, Forms writes/resets
-and clearing, with no background timer. A supplied selection remains authoritative.
-Clear resets a browsed year as well as the selected value, returning to the fresh
-local year; disabled controls retain their selected value.

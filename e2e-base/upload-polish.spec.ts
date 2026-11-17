@@ -143,7 +143,8 @@ for (const rtl of [false, true])
         .click();
       const panel = page.locator('.bulud-dropdown__panel'),
         search = panel.locator('input');
-      await expect(panel).toHaveCSS('border-top-left-radius', '8px');
+      await expect(panel).toHaveCSS('border-top-left-radius', '0px');
+      await expect(panel).toHaveCSS('border-bottom-left-radius', '8px');
       await expect(search).toHaveCSS('border-top-width', '0px');
       await expect(search).toHaveCSS('outline-style', 'none');
       await expect(panel.locator('.bulud-dropdown__search')).toHaveCSS(

@@ -90,7 +90,7 @@ export interface BuludDropdownSelectedTemplateContext<T> {
     '(focusout)': 'handleFocusOut($event)',
   },
   templateUrl: './bulud-dropdown.html',
-  styleUrl: './bulud-dropdown.scss',
+  styleUrl: './bulud-dropdown.css',
 })
 export class BuludDropdown<T = unknown>
   implements ControlValueAccessor, Validator

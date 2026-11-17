@@ -1,2 +1,6 @@
 @import "tailwindcss/utilities" source(none);
 @source "./line-chart.ts";
+
+.bulud-chart-ltr {
+  @apply [direction:ltr];
+}

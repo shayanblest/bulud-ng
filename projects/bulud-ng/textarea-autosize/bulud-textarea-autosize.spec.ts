@@ -4,6 +4,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   ViewEncapsulation,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -130,6 +131,8 @@ class MockFontLoadingSet {
 
 @Component({
   imports: [BuludTextareaAutosize],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="textarea-host">
       <textarea
@@ -151,12 +154,16 @@ class HostComponent {
 
 @Component({
   imports: [BuludTextareaAutosize],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<textarea buludTextareaAutosize></textarea>`,
 })
 class ConfigHostComponent {}
 
 @Component({
   imports: [BuludTextareaAutosize],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <form>
       <input type="checkbox" />
@@ -177,6 +184,8 @@ class FormHostComponent {
 
 @Component({
   imports: [BuludTextareaAutosize],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <form id="form-a"></form>
     <textarea
@@ -197,6 +206,8 @@ class DynamicFormHostComponent {
 @Component({
   imports: [BuludTextareaAutosize],
   encapsulation: ViewEncapsulation.ShadowDom,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <form id="form-a">
       <textarea
@@ -218,6 +229,8 @@ class ShadowRootFormHostComponent {
 @Component({
   selector: 'app-root',
   imports: [BuludTextareaAutosize],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <textarea
       buludTextareaAutosize
@@ -234,6 +247,8 @@ class ApplicationRootHostComponent {
 @Component({
   imports: [BuludTextareaAutosize],
   encapsulation: ViewEncapsulation.ShadowDom,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <style>
       textarea {
@@ -264,6 +279,8 @@ class ShadowRootHostComponent {
 @Component({
   imports: [BuludTextareaAutosize],
   encapsulation: ViewEncapsulation.ShadowDom,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <style>
       textarea {
@@ -4654,6 +4671,9 @@ describe('BuludTextareaAutosize', () => {
 
   it('is safe when the injected document has no defaultView', () => {
     const injectedDocument = TestBed.inject(DOCUMENT);
+    // Angular 22 browser fixture creation itself requires ShadowRoot. Create
+    // the host first, then isolate the directive's windowless initialization.
+    const fixture = TestBed.createComponent(HostComponent);
     const shadowRootDescriptor = Object.getOwnPropertyDescriptor(
       globalThis,
       'ShadowRoot',
@@ -4673,7 +4693,6 @@ describe('BuludTextareaAutosize', () => {
 
     try {
       expect(() => {
-        const fixture = TestBed.createComponent(HostComponent);
         const textarea = fixture.nativeElement.querySelector(
           'textarea',
         ) as HTMLTextAreaElement;

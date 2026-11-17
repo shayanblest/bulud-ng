@@ -27,7 +27,7 @@ let nextId = 0;
   imports: [BuludFieldLabel],
   selector: 'bulud-rating',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './rating.scss',
+  styleUrl: './rating.css',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -41,31 +41,12 @@ let nextId = 0;
     },
   ],
   host: { '[style]': 'styles()' },
-  template: `<fieldset
-    [disabled]="isDisabled()"
-    [attr.aria-describedby]="describedBy() || null"
-    [attr.aria-invalid]="invalid() || null"
-  >
-    <legend buludFieldLabel [required]="required()">{{ label() }}</legend>
-    <div class="actions">
-      @for (star of stars; track star) {
-        <label class="star"
-          ><input
-            type="radio"
-            [name]="name"
-            [value]="star"
-            [checked]="value() === star"
-            [required]="required()"
-            (change)="choose(star)"
-            (blur)="onTouched()"
-          /><span aria-hidden="true" [class.filled]="isFilled(star)">★</span
-          ><span class="sr">{{ star }} / 5</span></label
-        >
-      }
-    </div>
-  </fieldset>`,
+  template:
+    '<fieldset\n    [disabled]="isDisabled()"\n    [attr.aria-describedby]="describedBy() || null"\n    [attr.aria-invalid]="invalid() || null"\n  >\n    <legend buludFieldLabel [required]="required()">{{ label() }}</legend>\n    <div class="actions">\n      @for (star of stars; track star) {\n        <label class="star"\n          ><input\n            type="radio" [attr.id]="inputIdPrefix() ? inputIdPrefix() + \'_\' + star : null"\n            [name]="name"\n            [value]="star"\n            [checked]="value() === star"\n            [required]="required()"\n            (change)="choose(star)"\n            (blur)="onTouched()"\n          /><span aria-hidden="true" [class.filled]="isFilled(star)">★</span\n          ><span class="sr">{{ star }} / 5</span></label\n        >\n      }\n    </div>\n  </fieldset>',
 })
 export class BuludRating implements ControlValueAccessor, Validator {
+  /** Project-owned native control identifier; no prefix normalization. */
+  readonly inputIdPrefix = input<string | null>(null);
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);
   protected readonly name = `bulud-rating-${nextId++}`;
   protected readonly stars = [1, 2, 3, 4, 5];

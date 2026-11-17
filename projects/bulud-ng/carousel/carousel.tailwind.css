@@ -1,0 +1,203 @@
+@import "tailwindcss/utilities" source(none);
+:host(.bulud-carousel--single) {
+  @apply block;
+  @apply [color:var(--bulud-carousel-foreground,_var(--bulud-color-on-surface))];
+}
+.surface {
+  @apply [background:var(--bulud-carousel-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-carousel-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-carousel-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-carousel-padding,_var(--bulud-spacing-4,_16px))];
+}
+button,
+input,
+select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-carousel-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-carousel-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-carousel-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-carousel-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:disabled {
+  @apply [opacity:var(--bulud-carousel-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.muted {
+  @apply [color:var(--bulud-carousel-muted,_var(--bulud-color-muted))];
+}
+.actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-carousel-gap,_var(--bulud-spacing-3,_12px))];
+}
+.error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+.slide {
+  @apply [padding-block-start:var(--bulud-carousel-padding,_var(--bulud-spacing-5,_20px)_)];
+}
+.actions {
+  @apply justify-between;
+}
+
+
+.bulud-carousel-multi {
+  @apply grid w-full items-center;
+  @apply [grid-template-columns:auto_minmax(0,1fr)_auto];
+  @apply [gap:var(--bulud-carousel-gap,0px)];
+  @apply [contain:layout_paint];
+  @apply [overscroll-behavior-y:contain];
+}
+.itb-carousel__viewport {
+  @apply relative flex h-full w-full min-w-[0px] overflow-hidden;
+  @apply [overflow-anchor:none];
+  @apply [touch-action:pan-y];
+  @apply [overscroll-behavior:contain];
+  @apply [-webkit-overflow-scrolling:auto];
+  @apply [will-change:transform];
+}
+.itb-carousel__wrapper {
+  @apply flex flex-nowrap;
+  @apply flex-row;
+  @apply [width:max-content];
+  @apply [min-width:100%];
+  @apply [transition:transform_var(--bulud-carousel-duration,.5s)_ease-in-out];
+  @apply [will-change:transform];
+  @apply [backface-visibility:hidden];
+  @apply [touch-action:none];
+}
+.itb-carousel__wrapper.dragging {
+  @apply [transition:none];
+}
+.itb-carousel__item {
+  @apply h-full shrink-0 text-center;
+  @apply box-border;
+  @apply whitespace-normal;
+}
+.bulud-carousel-multi > button {
+  @apply [touch-action:manipulation];
+  @apply [-webkit-tap-highlight-color:transparent];
+  @apply select-none;
+}
+.bulud-carousel-multi > button > i {
+  @apply [font-size:var(--bulud-carousel-icon-size,24px)];
+}
+.bulud-carousel-multi > button > svg {
+  @apply [width:var(--bulud-carousel-icon-size,24px)];
+  @apply [height:var(--bulud-carousel-icon-size,24px)];
+}
+@media (max-width: 576px) {
+  .bulud-carousel-multi > button > i {
+    @apply [font-size:var(--bulud-carousel-mobile-icon-size,16px)];
+  }
+  .bulud-carousel-multi > button > svg {
+    @apply [width:var(--bulud-carousel-mobile-icon-size,16px)];
+    @apply [height:var(--bulud-carousel-mobile-icon-size,16px)];
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .itb-carousel__wrapper {
+    @apply [transition:none];
+  }
+}
+
+
+:host(.bulud-carousel--scroll) {
+  @apply block w-full;
+}
+.carousel-viewport {
+  @apply block w-full;
+  @apply [overflow-x:auto];
+  @apply [overflow-y:hidden];
+  @apply [scroll-snap-type:x_mandatory];
+  @apply [-webkit-overflow-scrolling:touch];
+  @apply [touch-action:pan-y];
+  @apply [cursor:grab];
+  @apply select-none;
+  @apply [scrollbar-width:none];
+}
+.carousel-viewport::-webkit-scrollbar {
+  @apply hidden;
+}
+.carousel-viewport:active {
+  @apply [cursor:grabbing];
+}
+.carousel-viewport.is-ready {
+  @apply [opacity:1];
+  @apply [scroll-behavior:smooth];
+}
+.carousel-viewport.is-dragging {
+  @apply [scroll-snap-type:none];
+  @apply [scroll-behavior:auto];
+  @apply [cursor:grabbing];
+}
+.carousel-track {
+  @apply flex w-full items-stretch;
+}
+.carousel-track ::ng-deep > * {
+  @apply [flex:0_0_100%]!;
+  @apply [width:100%]!;
+  @apply [min-width:100%]!;
+  @apply [max-width:100%]!;
+  @apply [scroll-snap-align:start];
+  @apply [scroll-snap-stop:always];
+  @apply box-border;
+  @apply overflow-hidden;
+  @apply block;
+}
+.dots-container {
+  @apply flex justify-center;
+  @apply [gap:var(--bulud-carousel-gap,8px)];
+  @apply [margin-top:var(--bulud-carousel-dot-margin,15px)];
+}
+.dots-container > button {
+  @apply block;
+  @apply [width:var(--bulud-carousel-dot-size,8px)];
+  @apply [height:var(--bulud-carousel-dot-size,8px)];
+  @apply [border:0];
+  @apply [padding:0];
+  @apply [border-radius:var(--bulud-carousel-radius,50%)];
+  @apply [background:var(--bulud-carousel-muted,var(--gray-10,#e2e8f0))];
+  @apply cursor-pointer;
+  @apply [transition:all_var(--bulud-carousel-duration,.3s)_ease];
+}
+.dots-container > button.active {
+  @apply [background:var(--bulud-carousel-accent,var(--primary,#2563eb))];
+  @apply [transform:scale(var(--bulud-carousel-active-scale,1.3))];
+}
+.dots-container > button:focus-visible,
+.carousel-viewport:focus-visible {
+  @apply [outline:var(--bulud-carousel-focus-width,2px)_solid_var(--bulud-carousel-focus,var(--bulud-color-focus,#93c5fd))];
+  @apply [outline-offset:var(--bulud-carousel-focus-offset,2px)];
+}
+@media (prefers-reduced-motion: reduce) {
+  .dots-container > button {
+    @apply [transition:none];
+  }
+  .carousel-viewport.is-ready {
+    @apply [scroll-behavior:auto];
+  }
+}
+
+.carousel-track ::ng-deep img {
+  @apply [max-width:100%];
+  @apply [height:auto];
+  @apply [margin-left:auto];
+  @apply [margin-right:auto];
+}
+
+.itb-carousel__item{@apply [padding-inline:calc(var(--bulud-carousel-card-gap,0px)/2)]}
+.bulud-carousel-multi > button{@apply [background:transparent];@apply [color:var(--bulud-carousel-foreground,var(--bulud-color-on-surface))];@apply [border:0];@apply [padding:var(--bulud-carousel-arrow-padding,4px_8px)];@apply cursor-pointer;@apply [font:inherit]}
+.bulud-carousel-multi > button:disabled{@apply cursor-default;@apply [opacity:var(--bulud-carousel-disabled-opacity,.5)]}

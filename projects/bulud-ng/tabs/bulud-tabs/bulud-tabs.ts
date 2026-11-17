@@ -1,4 +1,15 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
+  BULUD_SHARED_UI_CONFIG,
+  buludSharedUiStyles,
+  BuludSharedUiTheme,
+} from 'bulud-ng';
+import {
+  Directive,
+  TemplateRef,
+  contentChild,
+  viewChild,
+  output,
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
@@ -19,7 +30,12 @@ export type BuludTabId = string;
 /** Arrow-key axis used by the tabs keyboard interaction. */
 export type BuludTabsOrientation = 'horizontal' | 'vertical';
 
+@Directive({ selector: 'ng-template[buludTabHeading]', standalone: true })
+export class BuludTabHeading {
+  readonly templateRef = inject<TemplateRef<unknown>>(TemplateRef);
+}
 interface BuludTabsContext {
+  readonly presentation: () => 'native' | 'projected';
   readonly orientation: () => BuludTabsOrientation;
   readonly isActive: (id: BuludTabId) => boolean;
   readonly tabDomId: (id: BuludTabId) => string;
@@ -42,7 +58,7 @@ const BULUD_TABS_CONTEXT = new InjectionToken<BuludTabsContext>(
   selector: '[buludTab]',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<ng-content />',
-  styleUrl: './bulud-tab.scss',
+  styleUrl: './bulud-tab.css',
   host: {
     class: 'bulud-tab',
     '[attr.role]': '"tab"',
@@ -95,9 +111,11 @@ export class BuludTab {
  */
 @Component({
   selector: '[buludTabPanel]',
+  imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: '<ng-content />',
-  styleUrl: './bulud-tab-panel.scss',
+  template:
+    '<ng-template #body><ng-content/></ng-template>@if(context.presentation()==="native"){<ng-container [ngTemplateOutlet]="body"/>}',
+  styleUrl: './bulud-tab-panel.css',
   host: {
     class: 'bulud-tab-panel',
     '[attr.role]': '"tabpanel"',
@@ -108,6 +126,8 @@ export class BuludTab {
   },
 })
 export class BuludTabPanel {
+  readonly heading = contentChild(BuludTabHeading);
+  readonly content = viewChild<TemplateRef<unknown>>('body');
   protected readonly context = inject(BULUD_TABS_CONTEXT);
 
   /** Identifier of the tab whose content this panel contains. */
@@ -127,6 +147,7 @@ export class BuludTabPanel {
  */
 @Component({
   selector: 'bulud-tabs',
+  imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
@@ -136,18 +157,43 @@ export class BuludTabPanel {
   ],
   host: {
     class: 'bulud-tabs-host',
+    '[class.bulud-tabs-host--projected]': "presentation()==='projected'",
+    '[style]': 'styles()',
     '[class.bulud-tabs-host--vertical]': 'orientation() === "vertical"',
   },
   templateUrl: './bulud-tabs.html',
-  styleUrl: './bulud-tabs.scss',
+  styleUrl: './bulud-tabs.css',
 })
 export class BuludTabs implements BuludTabsContext {
   private static nextId = 0;
   private readonly instanceId = `bulud-tabs-${BuludTabs.nextId++}`;
   private readonly tabItems = contentChildren(BuludTab);
+  readonly presentation = input<'native' | 'projected'>('native');
+  readonly id = input<string>();
+  readonly tabColorButton = input(false);
+  readonly theme = input<Partial<BuludSharedUiTheme>>();
+  readonly tabChange = output<string>();
+  readonly panels = contentChildren(BuludTabPanel);
+  private readonly sharedConfig = inject(BULUD_SHARED_UI_CONFIG);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly styles = computed(() =>
+    buludSharedUiStyles('tabs', this.sharedConfig, this.theme()),
+  );
+  protected readonly focusIndex = computed(() =>
+    Math.max(
+      0,
+      this.panels().findIndex((tab) => tab.buludTabPanel() === this.activeId()),
+    ),
+  );
+  protected projectedTabId(index: number): string {
+    return (this.id() ?? this.instanceId) + '-tab-' + index;
+  }
+  protected projectedPanelId(index: number): string {
+    return (this.id() ?? this.instanceId) + '-panel-' + index;
+  }
 
   /** Currently selected tab identifier. Supports `[(activeId)]`. */
-  readonly activeId = model<BuludTabId | null>(null);
+  readonly activeId = model<BuludTabId | null | undefined>(null);
 
   /** Orientation used for layout and arrow-key navigation. */
   readonly orientation = input<BuludTabsOrientation>('horizontal');
@@ -158,10 +204,11 @@ export class BuludTabs implements BuludTabsContext {
   protected readonly selectedId = computed<BuludTabId | null>(() => {
     const tabs = this.tabItems();
     const requested = this.activeId();
+    if (this.presentation() === 'projected') return requested ?? null;
     const requestedTab = tabs.find((tab) => tab.buludTab() === requested);
 
     if (requestedTab && !requestedTab.disabled()) {
-      return requested;
+      return requested ?? null;
     }
 
     return tabs.find((tab) => !tab.disabled())?.buludTab() ?? null;
@@ -172,6 +219,7 @@ export class BuludTabs implements BuludTabsContext {
     // are added, removed, disabled, or when an invalid id is supplied.
     const selectedId = this.selectedId;
     effect(() => {
+      if (this.presentation() === 'projected') return;
       const nextId = selectedId();
       if (this.activeId() !== nextId) {
         this.activeId.set(nextId);
@@ -184,14 +232,19 @@ export class BuludTabs implements BuludTabsContext {
   }
 
   tabDomId(id: BuludTabId): string {
-    return `${this.instanceId}-tab-${this.toDomSegment(id)}`;
+    return `${this.id() ?? this.instanceId}-tab-${this.toDomSegment(id)}`;
   }
 
   panelDomId(id: BuludTabId): string {
-    return `${this.instanceId}-panel-${this.toDomSegment(id)}`;
+    return `${this.id() ?? this.instanceId}-panel-${this.toDomSegment(id)}`;
   }
 
   select(id: BuludTabId): void {
+    if (this.presentation() === 'projected') {
+      this.activeId.set(id);
+      this.tabChange.emit(id);
+      return;
+    }
     const tab = this.tabItems().find((item) => item.buludTab() === id);
     if (tab && !tab.disabled()) {
       this.activeId.set(id);
@@ -242,5 +295,38 @@ export class BuludTabs implements BuludTabsContext {
       (character.codePointAt(0) ?? 0).toString(16).padStart(4, '0'),
     );
     return codePoints.length > 0 ? `u-${codePoints.join('-')}` : 'empty';
+  }
+  protected projectedKeydown(event: KeyboardEvent, index: number): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.select(this.panels()[index].buludTabPanel());
+      return;
+    }
+    const count = this.panels().length;
+    const rtl = this.element.nativeElement.matches(':dir(rtl)');
+    const direction =
+      event.key === 'ArrowRight'
+        ? rtl
+          ? -1
+          : 1
+        : event.key === 'ArrowLeft'
+          ? rtl
+            ? 1
+            : -1
+          : 0;
+    const target =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? count - 1
+          : direction
+            ? (index + direction + count) % count
+            : -1;
+    if (target >= 0) {
+      event.preventDefault();
+      this.element.nativeElement
+        .querySelector<HTMLElement>('#' + this.projectedTabId(target))
+        ?.focus();
+    }
   }
 }

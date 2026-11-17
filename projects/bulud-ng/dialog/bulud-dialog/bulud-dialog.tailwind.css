@@ -1,0 +1,60 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply [direction:inherit];
+  @apply contents;
+}
+
+.bulud-dialog__overlay {
+  @apply [background:transparent];
+  @apply [border:0];
+  @apply box-border;
+  @apply [height:100%];
+  @apply [inset:0];
+  @apply [margin:0];
+  @apply [max-height:none];
+  @apply [max-width:none];
+  @apply [padding:0];
+  @apply fixed;
+  @apply [width:100%];
+  @apply [z-index:calc(_var(--bulud-dialog-stack-base,_1000)_+_var(--bulud-dialog-stack-level,_0)_)];
+}
+
+.bulud-dialog__overlay::backdrop {
+  @apply [background:transparent];
+}
+
+.bulud-dialog__backdrop {
+  @apply items-center;
+  @apply [background:var(--bulud-dialog-backdrop,_rgb(15_23_42_/_0.6))];
+  @apply flex;
+  @apply [inset:0];
+  @apply justify-center;
+  @apply overflow-auto;
+  @apply [padding:var(--bulud-dialog-viewport-gutter,_1rem)];
+  @apply absolute;
+}
+
+.bulud-dialog__surface {
+  @apply [background:var(--bulud-dialog-background,_#ffffff)];
+  @apply [border:var(--bulud-dialog-border-width,_1px)_solid_var(--bulud-dialog-border,_#cbd5e1)];
+  @apply [border-radius:var(--bulud-dialog-radius,_0.75rem)];
+  @apply box-border;
+  @apply [color:var(--bulud-dialog-foreground,_#0f172a)];
+  @apply [inline-size:min(100%,_var(--bulud-dialog-max-width,_32rem))];
+  @apply [max-block-size:calc(100dvh_-_2_*_var(--bulud-dialog-viewport-gutter,_1rem))];
+  @apply overflow-auto;
+  @apply [padding:var(--bulud-dialog-padding,_1.5rem)];
+  @apply [box-shadow:var(--bulud-dialog-shadow,_0_1.5rem_4rem_rgb(15_23_42_/_0.24))];
+}
+
+.bulud-dialog__surface:focus {
+  @apply [outline:var(--bulud-dialog-focus-width,_3px)_solid_var(--bulud-dialog-focus,_#93c5fd)];
+  @apply [outline-offset:var(--bulud-dialog-focus-offset,_2px)];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-dialog__backdrop,
+  .bulud-dialog__surface {
+    @apply [transition:none];
+  }
+}

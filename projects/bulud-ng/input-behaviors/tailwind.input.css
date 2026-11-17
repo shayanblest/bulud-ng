@@ -1,0 +1,25 @@
+@import "tailwindcss/utilities" source(none);
+.bulud-button-loader__spinner {
+  @apply inline-block rounded-full align-middle;
+  @apply [width:var(--bulud-button-loader-size,20px)];
+  @apply [height:var(--bulud-button-loader-size,20px)];
+  @apply [border:var(--bulud-button-loader-stroke,3px)_solid];
+  @apply [margin:0];
+  @apply [margin-inline-start:var(--bulud-button-loader-gap,8px)];
+  @apply shrink-0;
+  @apply [inset-inline-end:0];
+  @apply [border-color:var(--bulud-button-loader-muted,var(--bulud-color-border))];
+  @apply [border-top-color:var(--bulud-button-loader-foreground,currentColor)];
+  @apply [border-left-color:var(--bulud-button-loader-foreground,currentColor)];
+  @apply [animation:bulud-input-spin_var(--bulud-button-loader-duration,.5s)_linear_infinite];
+}
+@keyframes bulud-input-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulud-button-loader__spinner {
+    @apply [animation:none];
+  }
+}

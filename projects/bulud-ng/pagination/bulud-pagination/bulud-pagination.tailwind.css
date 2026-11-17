@@ -1,0 +1,147 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply box-border;
+  @apply block;
+  @apply text-center;
+  @apply [max-inline-size:100%];
+  @apply [overflow-x:auto];
+  @apply [overflow-y:hidden];
+  @apply [padding:calc(_var(--bulud-pagination-focus-width,_3px)_+_var(--bulud-pagination-focus-offset,_2px)_)];
+  /* Scroll endpoints can truncate fractional content widths by one CSS pixel. */
+  @apply [padding-inline:calc(_var(--bulud-pagination-focus-width,_3px)_+_var(--bulud-pagination-focus-offset,_2px)_+_1px_)];
+  @apply [vertical-align:middle];
+}
+
+.bulud-pagination {
+  @apply items-center;
+  @apply box-border;
+  @apply [color:var(--bulud-pagination-foreground,_#0f172a)];
+  @apply inline-flex;
+  @apply [font:inherit];
+  @apply [gap:var(--bulud-pagination-gap,_0.25rem)];
+  @apply [inline-size:max-content];
+}
+
+.bulud-pagination__pages {
+  @apply items-center;
+  @apply inline-flex;
+  @apply [gap:var(--bulud-pagination-gap,_0.25rem)];
+  @apply [list-style:none];
+  @apply [margin:0];
+  @apply [min-inline-size:0];
+  @apply [padding:0];
+}
+
+.bulud-pagination__page,
+.bulud-pagination__control {
+  @apply items-center;
+  @apply [background:var(--bulud-pagination-background,_#ffffff)];
+  @apply [border:var(--bulud-pagination-border-width,_1px)_solid_var(--bulud-pagination-border,_#cbd5e1)];
+  @apply [border-radius:var(--bulud-pagination-radius,_0.5rem)];
+  @apply box-border;
+  @apply [color:var(--bulud-pagination-foreground,_#0f172a)];
+  @apply cursor-pointer;
+  @apply inline-flex;
+  @apply [font:inherit];
+  @apply [font-weight:var(--bulud-pagination-font-weight,_600)];
+  @apply justify-center;
+  @apply [min-block-size:var(--bulud-pagination-size,_2.5rem)];
+  @apply [padding:0];
+  @apply [scroll-margin-inline:calc(_var(--bulud-pagination-focus-width,_3px)_+_var(--bulud-pagination-focus-offset,_2px)_+_1px_)];
+  @apply text-center;
+  @apply [transition:background-color_120ms_ease,_border-color_120ms_ease];
+}
+
+.bulud-pagination__page {
+  @apply [inline-size:auto];
+  @apply [min-inline-size:var(--bulud-pagination-size,_2.5rem)];
+  @apply [padding-inline:var(--bulud-pagination-page-padding,_0.5rem)];
+}
+
+.bulud-pagination__control {
+  @apply [inline-size:var(--bulud-pagination-size,_2.5rem)];
+}
+
+.bulud-pagination__page:hover:not(:disabled):not(
+    .bulud-pagination__page--current
+  ),
+.bulud-pagination__control:hover:not(:disabled) {
+  @apply [background:var(--bulud-pagination-background-hover,_#f8fafc)];
+}
+
+.bulud-pagination__page--current {
+  @apply [background:var(--bulud-pagination-active-background,_#2563eb)];
+  @apply [border-color:var(--bulud-pagination-active-background,_#2563eb)];
+  @apply [color:var(--bulud-pagination-active-foreground,_#ffffff)];
+}
+
+.bulud-pagination__page:focus-visible,
+.bulud-pagination__control:focus-visible {
+  @apply [outline:var(--bulud-pagination-focus-width,_3px)_solid_var(--bulud-pagination-focus,_#93c5fd)];
+  @apply [outline-offset:var(--bulud-pagination-focus-offset,_2px)];
+}
+
+.bulud-pagination__page:disabled,
+.bulud-pagination__control:disabled {
+  @apply cursor-not-allowed;
+  @apply [opacity:var(--bulud-pagination-disabled-opacity,_0.55)];
+}
+
+@media (forced-colors: active) {
+  .bulud-pagination__page--current {
+    @apply [border:2px_solid_ButtonText];
+    @apply [text-decoration:underline];
+    @apply [text-decoration-thickness:2px];
+    @apply [text-underline-offset:0.2em];
+  }
+
+  .bulud-pagination__page:focus-visible,
+  .bulud-pagination__control:focus-visible {
+    @apply [outline-color:Highlight];
+  }
+}
+
+.bulud-pagination__ellipsis {
+  @apply items-center;
+  @apply [color:var(--bulud-pagination-muted-foreground,_#64748b)];
+  @apply inline-flex;
+  @apply [inline-size:var(--bulud-pagination-size,_2.5rem)];
+  @apply justify-center;
+  @apply [min-block-size:var(--bulud-pagination-size,_2.5rem)];
+  @apply select-none;
+}
+
+.bulud-pagination__direction-icon {
+  /* SVG geometry stays centered independently of font baseline and text direction. */
+  @apply [direction:ltr];
+  @apply [unicode-bidi:isolate];
+  @apply inline-flex;
+  @apply items-center;
+  @apply justify-center;
+  @apply [inline-size:1em];
+  @apply [block-size:1em];
+  @apply [font-size:var(--bulud-pagination-direction-icon-size,_1.5em)];
+  @apply [line-height:1];
+}
+
+:host(:dir(rtl))
+  .bulud-pagination__control--previous
+  .bulud-pagination__direction-icon,
+:host(:dir(rtl))
+  .bulud-pagination__control--next
+  .bulud-pagination__direction-icon {
+  @apply [transform:scaleX(-1)];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulud-pagination__page,
+  .bulud-pagination__control {
+    @apply [transition:none];
+  }
+}
+
+.bulud-pagination__direction-icon svg {
+  @apply block;
+  @apply [inline-size:100%];
+  @apply [block-size:100%];
+}

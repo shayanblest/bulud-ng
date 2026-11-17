@@ -1,0 +1,131 @@
+@import "tailwindcss/utilities" source(none);
+/* Optional application primitives; import after angour.css. */
+.bulud-app {
+  @apply [background:var(--bulud-body-bg)];
+  @apply [color:var(--bulud-body-color)];
+  @apply [font-family:var(--bulud-font-sans,_system-ui,_sans-serif)];
+  @apply [font-size:var(--bulud-font-size-6,_14px)];
+  @apply [line-height:1.5];
+  @apply [padding:var(--bulud-spacing-5,_24px)];
+}
+.bulud-app:lang(fa) {
+  @apply [font-family:var(--bulud-font-persian,_Tahoma,_sans-serif)];
+}
+.bulud-app:lang(ar) {
+  @apply [font-family:var(--bulud-font-arabic,_Tahoma,_sans-serif)];
+}
+.bulud-app,
+.bulud-app *,
+.bulud-app *::before,
+.bulud-app *::after {
+  @apply box-border;
+}
+.bulud-app :is(button, input, select, textarea) {
+  @apply [font:inherit];
+}
+.bulud-panel {
+  @apply [background:var(--bulud-color-surface)];
+  @apply [color:var(--bulud-color-on-surface)];
+  @apply [border:1px_solid_var(--bulud-color-border)];
+  @apply [border-radius:var(--bulud-radius-extraLarge,_12px)];
+  @apply [padding:var(--bulud-spacing-5,_24px)];
+  @apply [box-shadow:var(--bulud-shadow-small)];
+}
+.bulud-stack {
+  @apply flex;
+  @apply flex-col;
+  @apply [gap:var(--bulud-spacing-4,_16px)];
+}
+.bulud-row {
+  @apply flex;
+  @apply items-center;
+  @apply flex-wrap;
+  @apply [gap:var(--bulud-spacing-3,_12px)];
+}
+.bulud-muted {
+  @apply [color:var(--bulud-color-muted)];
+}
+.bulud-input {
+  @apply [background:var(--bulud-body-bg)];
+  @apply [color:var(--bulud-color-on-surface)];
+  @apply [border:1px_solid_var(--bulud-color-border)];
+  @apply [border-radius:var(--bulud-radius-control,_8px)];
+  @apply [padding:var(--bulud-spacing-3,_12px)];
+  @apply [inline-size:100%];
+}
+.bulud-input::placeholder {
+  @apply [color:var(--bulud-color-muted)];
+  @apply [opacity:1];
+}
+.bulud-input:focus-visible {
+  @apply [outline:var(--bulud-input-focus-width,1px)_solid_var(--bulud-color-focus)];
+  @apply [outline-offset:var(--bulud-input-focus-offset,1px)];
+}
+.bulud-input[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-color-danger)];
+}
+.bulud-input:disabled {
+  @apply [opacity:var(--bulud-button-disabled-opacity,_0.55)];
+  @apply cursor-not-allowed;
+}
+.bulud-table-container {
+  @apply [overflow-x:auto];
+}
+.bulud-table {
+  @apply [border-collapse:collapse];
+  @apply [inline-size:100%];
+  @apply [text-align:start];
+}
+.bulud-table :is(td, th) {
+  @apply [border-block-end:1px_solid_var(--bulud-color-border)];
+  @apply [padding:var(--bulud-spacing-4,_16px)_var(--bulud-spacing-2,_8px)];
+  @apply [text-align:start];
+}
+.bulud-table th {
+  @apply [font-weight:600];
+}
+.bulud-table caption {
+  @apply [text-align:start];
+  @apply [padding-block:var(--bulud-spacing-3,_12px)];
+}
+
+/* Native textarea skin; works with Angular's native forms accessor. */
+.bulud-textarea {
+  @apply block;
+  @apply box-border;
+  @apply [inline-size:100%];
+  @apply [min-block-size:var(--bulud-textarea-min-height,_126px)];
+  @apply [resize:vertical];
+  @apply [font:inherit];
+  @apply [line-height:var(--bulud-textarea-line-height,_1.6)];
+  @apply [text-align:start];
+  @apply [background:var(--bulud-textarea-background,_var(--bulud-body-bg,_var(--bulud-color-surface))_)];
+  @apply [color:var(--bulud-textarea-foreground,_var(--bulud-color-on-surface))];
+  @apply [border:1px_solid_var(--bulud-textarea-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-textarea-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-textarea-padding,_var(--bulud-spacing-3,_12px))];
+}
+.bulud-textarea::placeholder {
+  @apply [color:var(--bulud-textarea-muted,_var(--bulud-color-muted))];
+  @apply [opacity:1];
+}
+.bulud-textarea:focus {
+  @apply [outline:none];
+  @apply [border-color:var(--bulud-textarea-focus,_var(--bulud-color-primary))];
+}
+.bulud-textarea:focus-visible {
+  @apply [box-shadow:0_0_0_1px_var(--bulud-textarea-focus,_var(--bulud-color-primary))];
+}
+.bulud-textarea[aria-invalid="true"],
+.bulud-textarea.ng-invalid.ng-touched {
+  @apply [border-color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+.bulud-textarea:disabled {
+  @apply [opacity:var(--bulud-textarea-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+@media (forced-colors: active) {
+  .bulud-textarea:focus-visible {
+    @apply [outline:1px_solid_Highlight];
+  }
+}

@@ -1,0 +1,78 @@
+@import "tailwindcss/utilities" source(none);
+:host(:not(.bulud-tabs-host--projected)) {
+  @apply [color:var(--bulud-tabs-foreground)];
+  @apply block;
+  @apply [min-inline-size:0];
+}
+
+:host(:not(.bulud-tabs-host--projected)) .bulud-tabs {
+  @apply [background:var(--bulud-tabs-background)];
+  @apply [border:1px_solid_var(--bulud-tabs-border)];
+  @apply [border-radius:var(--bulud-tabs-radius)];
+  @apply overflow-hidden;
+}
+
+:host(:not(.bulud-tabs-host--projected)) .bulud-tabs__list {
+  @apply items-stretch;
+  @apply [background:var(--bulud-tabs-background)];
+  @apply [border-block-end:1px_solid_var(--bulud-tabs-border)];
+  @apply flex;
+  @apply [gap:var(--bulud-tabs-gap)];
+  @apply [overflow-x:auto];
+  @apply [padding-inline:0.5rem];
+}
+
+:host(:not(.bulud-tabs-host--projected)) .bulud-tabs--vertical {
+  @apply grid;
+  @apply [grid-template-columns:auto_1fr];
+}
+
+:host(:not(.bulud-tabs-host--projected))
+  .bulud-tabs--vertical
+  .bulud-tabs__list {
+  @apply [border-block-end:0];
+  @apply [border-inline-end:1px_solid_var(--bulud-tabs-border)];
+  @apply flex-col;
+  @apply [min-inline-size:10rem];
+  @apply [overflow-x:visible];
+  @apply [padding-block:0.5rem];
+  @apply [padding-inline:0.5rem_0];
+}
+
+:host(:not(.bulud-tabs-host--projected)) .bulud-tabs__panels {
+  @apply [background:var(--bulud-tabs-panel-background)];
+}
+
+.bulud-tabs-projected {
+  @apply flex list-none;
+  @apply [gap:var(--bulud-tabs-gap,1rem)];
+  @apply overflow-auto;
+}
+.bulud-tabs-projected > li {
+  @apply cursor-pointer text-center;
+  @apply [flex:1];
+  @apply [padding:var(--bulud-tabs-padding,15px)];
+  @apply [border-top-left-radius:var(--bulud-tabs-radius,3px)];
+  @apply [border-top-right-radius:var(--bulud-tabs-radius,3px)];
+}
+.bulud-tabs-projected.color-button > li {
+  @apply [background:var(--bulud-tabs-background,var(--frame,var(--bulud-color-surface,#fff)))];
+  @apply [border:var(--bulud-tabs-border-width,1px)_solid_var(--bulud-tabs-border,var(--gray-10,#eee))];
+  @apply [border-radius:var(--bulud-tabs-button-radius,8px)];
+}
+.bulud-tabs-projected.color-button > li.active {
+  @apply [background:var(--bulud-tabs-accent,var(--primary-subtle,var(--bulud-color-subtle,#eff6ff)))];
+}
+.bulud-tabs-projected.color-default > li {
+  @apply [background:var(--bulud-tabs-muted,var(--dark-subtle,var(--bulud-color-subtle,#f1f5f9)))];
+}
+.bulud-tabs-projected.color-default > li.active {
+  @apply [background:var(--bulud-tabs-background,var(--frame,var(--bulud-color-surface,#fff)))];
+}
+.bulud-tabs-projected > li:focus-visible {
+  @apply [outline:var(--bulud-tabs-focus-width,2px)_solid_var(--bulud-tabs-focus,var(--bulud-color-focus,#93c5fd))];
+  @apply [outline-offset:var(--bulud-tabs-focus-offset,2px)];
+}
+.bulud-tabs-projected-panel {
+  @apply contents;
+}

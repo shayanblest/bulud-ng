@@ -4,7 +4,7 @@ import {
   Component,
   computed,
   contentChildren,
-  effect,
+  afterRenderEffect,
   forwardRef,
   inject,
   InjectionToken,
@@ -44,7 +44,7 @@ let nextRadio = 0;
 @Component({
   selector: 'bulud-radio-group',
   template: '<ng-content />',
-  styleUrl: './bulud-radio-group.scss',
+  styleUrl: './bulud-radio-group.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     { provide: RADIO_GROUP, useExisting: forwardRef(() => BuludRadioGroup) },
@@ -117,7 +117,7 @@ export class BuludRadioGroup
   );
 
   constructor() {
-    effect(() => {
+    afterRenderEffect(() => {
       this.required();
       this.requireOption();
       this.radios()
@@ -181,7 +181,7 @@ export class BuludRadioGroup
 @Component({
   selector: 'bulud-radio',
   templateUrl: './bulud-radio.html',
-  styleUrl: './bulud-radio.scss',
+  styleUrl: './bulud-radio.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[attr.id]': 'null',

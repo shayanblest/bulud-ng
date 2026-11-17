@@ -1,0 +1,279 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-file-upload-foreground,_var(--bulud-color-on-surface))];
+}
+.surface {
+  @apply [border:0];
+  @apply [background:var(--bulud-file-upload-background,_var(--bulud-color-surface))];
+  @apply [border-radius:var(--bulud-file-upload-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [padding:var(--bulud-file-upload-padding,_var(--bulud-spacing-4,_16px))];
+}
+.picker {
+  @apply relative;
+  @apply flex;
+  @apply flex-col;
+  @apply items-center;
+  @apply justify-center;
+  @apply text-center;
+  @apply [gap:var(--bulud-file-upload-gap,_var(--bulud-spacing-3,_12px))];
+  @apply [min-height:var(--bulud-file-upload-min-height,_200px)];
+  @apply [padding:var(--bulud-file-upload-padding,_var(--bulud-spacing-5,_24px))];
+  @apply [border:0];
+  @apply [border-radius:var(--bulud-file-upload-radius,_var(--bulud-radius-extraLarge,_12px)_)];
+  @apply [background:var(--bulud-body-bg,_var(--bulud-color-surface))];
+  @apply cursor-pointer;
+}
+.picker input {
+  @apply absolute;
+  @apply [inset:0];
+  @apply [width:100%];
+  @apply [height:100%];
+  @apply [opacity:0];
+  @apply [cursor:inherit];
+}
+.picker:has(input:focus-visible),
+.picker.dragging {
+  @apply [outline:2px_solid_var(--bulud-file-upload-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+.picker:has(input:disabled) {
+  @apply [opacity:var(--bulud-file-upload-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.picker.invalid,
+:host(.ng-invalid.ng-touched) .picker {
+  @apply [box-shadow:inset_0_0_0_1px_var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+.upload-icon {
+  @apply [width:var(--bulud-file-upload-icon-size,_44px)];
+  @apply [height:var(--bulud-file-upload-icon-size,_44px)];
+  @apply [color:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+}
+.surface svg {
+  @apply [fill:none];
+  @apply [stroke:currentColor];
+  @apply [stroke-width:1.5];
+  @apply [stroke-linecap:round];
+  @apply [stroke-linejoin:round];
+}
+.surface small,
+.muted {
+  @apply [color:var(--bulud-file-upload-muted,_var(--bulud-color-muted))];
+}
+.file-toolbar,
+.actions {
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply [gap:var(--bulud-file-upload-gap,_12px)];
+  @apply [margin-block:var(--bulud-spacing-3,_12px)];
+  @apply flex-wrap;
+}
+.surface button {
+  @apply [border:0];
+  @apply [border-radius:var(--bulud-file-upload-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [padding:8px_12px];
+  @apply [background:transparent];
+  @apply [color:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+  @apply [font:inherit];
+  @apply cursor-pointer;
+}
+.surface button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+.surface button:focus-visible {
+  @apply [outline:2px_solid_var(--bulud-file-upload-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+.surface button:disabled {
+  @apply [opacity:var(--bulud-file-upload-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.file-list {
+  @apply grid;
+  @apply [grid-template-columns:repeat(auto-fit,_minmax(min(100%,_260px),_1fr))];
+  @apply [gap:12px];
+  @apply [list-style:none];
+  @apply [padding:0];
+}
+.surface li {
+  @apply flex;
+  @apply items-center;
+  @apply [gap:12px];
+  @apply [min-width:0];
+  @apply [background:var(--bulud-body-bg,_var(--bulud-color-surface))];
+  @apply [padding:12px];
+  @apply [border-radius:var(--bulud-file-upload-radius,_12px)];
+}
+.surface li img {
+  @apply [width:64px];
+  @apply [height:64px];
+  @apply [object-fit:contain];
+  @apply [border:0];
+  @apply [border-radius:var(--bulud-file-upload-radius,_8px)];
+}
+.file-icon {
+  @apply [width:36px];
+  @apply [height:36px];
+  @apply [flex-shrink:0];
+  @apply [color:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+}
+.file-info {
+  @apply flex;
+  @apply flex-col;
+  @apply [gap:4px];
+  @apply [overflow-wrap:anywhere];
+  @apply [min-width:0];
+  @apply [flex:1];
+}
+.remove {
+  @apply grid;
+  @apply [place-items:center];
+  @apply [padding:8px];
+}
+.remove svg {
+  @apply [width:18px];
+  @apply [height:18px];
+}
+.upload-button {
+  @apply [background:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+  @apply [color:var(--bulud-color-on-primary)];
+}
+.upload-button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-primary-hover)];
+  @apply [color:var(--bulud-color-on-primary)];
+}
+.upload-state {
+  @apply flex;
+  @apply items-center;
+  @apply [gap:var(--bulud-file-upload-gap,_12px)];
+  @apply [margin-block:var(--bulud-spacing-3,_12px)];
+  @apply [color:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+}
+.upload-state.complete {
+  @apply [color:var(--bulud-color-success)];
+}
+.upload-state-icon {
+  @apply [inline-size:24px];
+  @apply [block-size:24px];
+  @apply [flex-shrink:0];
+}
+.upload-progress-details {
+  @apply [flex:1];
+  @apply [min-inline-size:0];
+}
+.upload-progress-heading {
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply [gap:var(--bulud-file-upload-gap,_12px)];
+  @apply [font-size:var(--bulud-font-size-7,_12px)];
+  @apply [line-height:1.5];
+  @apply [margin-block-end:var(--bulud-spacing-1,_4px)];
+}
+.upload-caption {
+  @apply [overflow-wrap:anywhere];
+}
+.upload-percent {
+  @apply [flex-shrink:0];
+  @apply [color:var(--bulud-file-upload-muted,_var(--bulud-color-muted))];
+}
+.surface progress {
+  @apply block;
+  @apply [width:100%];
+  @apply [height:var(--bulud-file-upload-progress-height,_2px)];
+  @apply [border:0];
+  @apply [accent-color:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+}
+.surface progress::-webkit-progress-bar {
+  @apply [background:var(--bulud-file-upload-border,_var(--bulud-color-border))];
+}
+.surface progress::-webkit-progress-value {
+  @apply [background:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+}
+.surface progress::-moz-progress-bar {
+  @apply [background:var(--bulud-file-upload-accent,_var(--bulud-color-primary))];
+}
+.upload-error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+.upload-success {
+  @apply [color:var(--bulud-color-success)];
+}
+@media (forced-colors: active) {
+  .picker {
+    @apply [outline:1px_solid_ButtonText];
+  }
+  .picker:has(input:focus-visible) {
+    @apply [outline:2px_solid_Highlight];
+  }
+}
+
+.surface progress.complete {
+  @apply [accent-color:var(--bulud-color-success)];
+}
+.surface progress.complete::-webkit-progress-value {
+  @apply [background:var(--bulud-color-success)];
+}
+.surface progress.complete::-moz-progress-bar {
+  @apply [background:var(--bulud-color-success)];
+}
+
+.upload-button:disabled {
+  @apply [background:var(--bulud-button-disabled-background,_var(--bulud-color-subtle,_var(--bulud-color-surface-hover))_)];
+  @apply [color:var(--bulud-button-disabled-foreground,_var(--bulud-file-upload-muted,_var(--bulud-color-muted))_)];
+  @apply [opacity:var(--bulud-button-disabled-opacity,_1)];
+}
+.actions button {
+  @apply [min-block-size:var(--bulud-button-height-medium,_40px)];
+}
+
+:host(.bulud-file-upload--preview){@apply block}.file-upload{@apply [background:var(--bulud-file-upload-background,var(--body-bg,#fff))];@apply [padding:var(--bulud-file-upload-padding,16px)];@apply [border-radius:var(--bulud-file-upload-radius,12px)];@apply relative;@apply flex;@apply items-center;@apply justify-center;@apply flex-col}.file-upload>input[type=file]{@apply absolute;@apply [inset:0];@apply [opacity:0]}.preview-upload-state{@apply flex;@apply [margin-top:var(--bulud-file-upload-gap,12px)]}.preview-upload-state>div{@apply [flex:1];@apply [padding-left:var(--bulud-file-upload-progress-padding,8px)]}.upload-progress{@apply [height:var(--bulud-file-upload-progress-height,2px)];@apply [margin-top:var(--bulud-file-upload-progress-gap,4px)];@apply [background:var(--bulud-file-upload-muted,var(--gray-10,#eee))]}.upload-progress>div{@apply [height:100%]}.csv-preview{@apply [width:100%];@apply text-center}.csv-line-success{@apply [height:var(--bulud-file-upload-success-height,3px)];@apply [margin-top:var(--bulud-file-upload-success-gap,6px)];@apply [background:var(--bulud-file-upload-success,linear-gradient(to_left,rgb(46,125,50)_0%,rgba(0,180,0,.08)_100%))]}
+
+:host(.bulud-file-upload--preview){@apply [color:var(--bulud-file-upload-foreground,var(--bulud-color-on-surface,#111))];@apply [font-family:inherit]}
+.file-upload button{@apply [font:inherit];@apply cursor-pointer;@apply [background:transparent];@apply [border:0];@apply [color:var(--bulud-file-upload-accent,var(--bulud-color-primary,#2563eb))];@apply [padding:8px_12px]}
+.file-upload>div:first-child{@apply absolute;@apply [inset:12px_auto_auto_12px];@apply flex;@apply [z-index:11]}
+.file-upload>input[type=file]{@apply [width:100%];@apply [height:100%];@apply cursor-pointer}
+.file-upload>.bulud-padding-y-5{@apply [padding-block:24px]}.bulud-margin-b-2{@apply [margin-bottom:8px]}.bulud-margin-b-4{@apply [margin-bottom:16px]}
+.bulud-padding-3{@apply [padding:12px]}.file-upload img{@apply block;@apply [width:100%];@apply [height:auto]}
+.flex{@apply flex}.justify-between{@apply justify-between}.items-center{@apply items-center}.w-full{@apply [width:100%]}
+.bulud-color-accent{@apply [color:var(--bulud-file-upload-accent,var(--bulud-color-primary,#2563eb))]}.bulud-color-positive{@apply [color:var(--bulud-file-upload-positive,#16a34a)]}.bulud-color-muted{@apply [color:var(--bulud-file-upload-muted,#64748b)]}
+.truncate{@apply overflow-hidden;@apply [text-overflow:ellipsis];@apply whitespace-nowrap}.font-medium{@apply [font-weight:500]}
+.bulud-background-accent{@apply [background:var(--bulud-file-upload-accent,var(--bulud-color-primary,#2563eb))]}.bulud-background-positive{@apply [background:var(--bulud-file-upload-positive,#16a34a)]}
+
+.bulud-upload-actions{@apply [z-index:11]}.bulud-upload-csv-icon{@apply [font-size:50px]}.bulud-upload-image-icon{@apply [font-size:36px]}.bulud-upload-preview-icon{@apply [font-size:40px]}
+
+/* Owned Tailwind composition; no external layout or utility stylesheet is required. */
+.flex{@apply flex;}
+.justify-between{@apply justify-between;}
+.items-center{@apply items-center;}
+.content-center{@apply content-center;}
+.absolute{@apply absolute;}
+.truncate{@apply truncate;}
+.font-medium{@apply [font-weight:500];}
+.w-full{@apply w-full;}
+.top-0{@apply [top:0];}
+.start-0{@apply [inset-inline-start:0];}
+.bulud-color-accent{@apply [color:var(--bulud-color-primary,var(--primary,#2563eb))];}
+.bulud-color-positive{@apply [color:var(--bulud-color-success,#2e7d32)];}
+.bulud-color-muted{@apply [color:var(--bulud-color-muted,#64748b)];}
+.bulud-background-accent{@apply [background:var(--bulud-color-primary,var(--primary,#2563eb))];}
+.bulud-background-positive{@apply [background:var(--bulud-color-success,#2e7d32)];}
+.bulud-margin-b-2{@apply [margin-bottom:var(--bulud-spacing-2,8px)];}
+.bulud-padding-3{@apply [padding:var(--bulud-spacing-3,12px)];}
+.bulud-margin-3{@apply [margin:var(--bulud-spacing-3,12px)];}
+.bulud-margin-b-4{@apply [margin-bottom:var(--bulud-spacing-4,16px)];}
+.bulud-padding-y-5{@apply [padding-block:var(--bulud-spacing-5,24px)];}
+.bulud-margin-y-8{@apply [margin-block:var(--bulud-spacing-8,48px)];}
+.bulud-type-7{@apply [font-size:var(--bulud-font-size-7,12px)];}
+.bulud-type-8{@apply [font-size:var(--bulud-font-size-8,10px)];}
+.bulud-action{@apply inline-flex items-center justify-center;@apply [font:inherit];@apply [line-height:1.5];@apply [border:1px_solid_transparent];@apply [border-radius:var(--bulud-radius-control,8px)];@apply [background:transparent];@apply [padding:var(--bulud-spacing-1,4px)_var(--bulud-spacing-2,8px)];@apply cursor-pointer;}
+.bulud-action-link{@apply [color:var(--bulud-color-primary,var(--primary,#2563eb))];}
+.bulud-action-outline{@apply [color:var(--bulud-color-primary,var(--primary,#2563eb))];@apply [border-color:currentColor];}
+@media(min-width:992px){}
+
+:host(.bulud-file-upload--preview){@apply [width:var(--bulud-file-upload-width,100%)];@apply [max-width:var(--bulud-file-upload-max-width,100%)]}
+.file-upload{@apply box-border;@apply [min-height:var(--bulud-file-upload-min-height,180px)];@apply [border:1px_solid_var(--bulud-file-upload-border,var(--bulud-color-border,#cbd5e1))];@apply [color:var(--bulud-file-upload-foreground,var(--bulud-color-on-surface,#111))];@apply [background:var(--bulud-file-upload-background,var(--bulud-color-surface,#fff))];@apply [width:100%];@apply text-center;@apply [overflow-wrap:anywhere];@apply [gap:var(--bulud-file-upload-gap,8px)]}
+.file-upload:focus-within{@apply [outline:2px_solid_var(--bulud-file-upload-focus,var(--bulud-color-focus,#93c5fd))];@apply [outline-offset:2px]}
+.file-upload:has(input:disabled){@apply [opacity:var(--bulud-file-upload-disabled-opacity,.55)]}

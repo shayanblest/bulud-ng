@@ -1,4 +1,39 @@
-<div
+@if(presentation()==='projected'){ <ul
+      class="bulud-tabs-projected nav-tabs gap-4 overflow-auto"
+      [class.color-button]="tabColorButton()"
+      [class.color-default]="!tabColorButton()"
+      role="tablist"
+      [attr.aria-label]="ariaLabel()"
+    >
+      @for (tab of panels(); track tab; let i = $index) {
+        <li
+          role="tab"
+          [id]="projectedTabId(i)"
+          [attr.aria-controls]="projectedPanelId(i)"
+          [attr.aria-selected]="activeId() === tab.buludTabPanel()"
+          [attr.tabindex]="focusIndex() === i ? 0 : -1"
+          [class.active]="activeId() === tab.buludTabPanel()"
+          (click)="select(tab.buludTabPanel())"
+          (keydown)="projectedKeydown($event, i)"
+        >
+          @if (tab.heading(); as heading) {
+            <ng-container [ngTemplateOutlet]="heading.templateRef" />
+          }
+        </li>
+      }
+    </ul>
+    @for (tab of panels(); track tab; let i = $index) {
+      @if (activeId()?.toLowerCase() === tab.buludTabPanel().toLowerCase()) {
+        <div
+          class="bulud-tabs-projected-panel"
+          role="tabpanel"
+          [id]="projectedPanelId(i)"
+          [attr.aria-labelledby]="projectedTabId(i)"
+        >
+          <ng-container [ngTemplateOutlet]="tab.content() ?? null" />
+        </div>
+      }
+    }}@else{<div
   class="bulud-tabs"
   [class.bulud-tabs--vertical]="orientation() === 'vertical'"
 >
@@ -15,3 +50,4 @@
     <ng-content select="[buludTabPanel]" />
   </div>
 </div>
+}

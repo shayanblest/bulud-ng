@@ -1,4 +1,4 @@
-import { defineBuludTheme } from './bulud-theme';
+import type { BuludThemeConfig } from './bulud-theme';
 
 /** Angour's reusable foundations. Font files remain owned by the consumer. */
 export const BULUD_ANGOUR_TOKENS = {
@@ -109,7 +109,7 @@ function angourTheme(mode: 'light' | 'dark') {
     border: 'transparent',
     foreground: color,
   });
-  return defineBuludTheme({
+  return {
     colors: {
       primary,
       primaryHover,
@@ -129,7 +129,7 @@ function angourTheme(mode: 'light' | 'dark') {
     },
     shape: { controlRadius: BULUD_ANGOUR_TOKENS.radius.control },
     button: {
-      fontWeight: '600',
+      fontWeight: '400',
       gap: '8px',
       secondaryBackground: palette.secondary,
       secondaryBackgroundHover: mode === 'light' ? '#e4a313' : '#243952',
@@ -296,7 +296,7 @@ function angourTheme(mode: 'light' | 'dark') {
       focus,
       radius: '8px',
     },
-  });
+  } satisfies BuludThemeConfig;
 }
 
 /** Static light preset for the existing typed Bulud theme API. */

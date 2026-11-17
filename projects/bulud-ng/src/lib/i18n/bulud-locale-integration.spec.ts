@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideBuludLocale } from './bulud-i18n';
@@ -12,6 +13,8 @@ import { BuludPagination } from '../../../pagination/bulud-pagination/bulud-pagi
 
 @Component({
   imports: [BuludBadge, BuludButton, BuludDropdown, BuludPagination],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div id="ancestor" [attr.dir]="ancestorDirection">
       <bulud-button loading [loadingLabel]="buttonLoadingLabel()">

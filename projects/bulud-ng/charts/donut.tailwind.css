@@ -1,0 +1,69 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-donut-foreground,_var(--bulud-color-on-surface))];
+}
+figure {
+  @apply [margin:0];
+  @apply [padding:var(--bulud-donut-padding,_16px)];
+  @apply [background:var(--bulud-donut-background,_var(--bulud-color-surface))];
+  @apply [border-radius:var(--bulud-donut-radius,_8px)];
+}
+figcaption {
+  @apply [font-weight:600];
+  @apply [margin-block-end:16px];
+}
+.ring {
+  @apply block;
+  @apply [inline-size:min(100%,_260px)];
+  @apply [margin-inline:auto];
+  @apply [direction:ltr];
+}
+.ring circle {
+  @apply [fill:none];
+  @apply [stroke-width:var(--bulud-donut-stroke-width,_12px)];
+  @apply [transform:rotate(-90deg)];
+  @apply [transform-origin:60px_60px];
+}
+.track {
+  @apply [stroke:var(--bulud-donut-border,_var(--bulud-color-border))];
+}
+.slice {
+  @apply [stroke:var(--bulud-donut-accent,_var(--bulud-color-primary))];
+}
+.slice:nth-of-type(3n) {
+  @apply [stroke:var(--bulud-donut-positive,_var(--bulud-color-success))];
+}
+.slice:nth-of-type(3n + 1) {
+  @apply [stroke:var(--bulud-donut-negative,_var(--bulud-color-danger))];
+}
+text {
+  @apply [fill:currentColor];
+  @apply [font:10px_sans-serif];
+}
+ul {
+  @apply [list-style:none];
+  @apply [padding:0];
+  @apply [margin:16px_0];
+}
+li {
+  @apply flex;
+  @apply items-center;
+  @apply [gap:8px];
+  @apply [margin-block:8px];
+}
+li strong {
+  @apply [margin-inline-start:auto];
+}
+.swatch {
+  @apply [inline-size:12px];
+  @apply [block-size:12px];
+  @apply [border-radius:50%];
+  @apply [background:var(--bulud-donut-accent,_var(--bulud-color-primary))];
+}
+li:nth-child(3n + 2) .swatch {
+  @apply [background:var(--bulud-donut-positive,_var(--bulud-color-success))];
+}
+li:nth-child(3n) .swatch {
+  @apply [background:var(--bulud-donut-negative,_var(--bulud-color-danger))];
+}

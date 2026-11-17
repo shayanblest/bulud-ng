@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -17,6 +18,8 @@ interface TestOption {
 
 @Component({
   imports: [BuludDropdown],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-dropdown
       aria-label="Choose a framework"
@@ -66,6 +69,8 @@ class TestHost {
 
 @Component({
   imports: [BuludDropdown, ReactiveFormsModule],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-dropdown
       required
@@ -86,6 +91,8 @@ class FormsHost {
 
 @Component({
   imports: [BuludDropdown, ReactiveFormsModule],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-dropdown
       aria-label="Choose frameworks"
@@ -107,6 +114,8 @@ class MultipleFormsHost {
 
 @Component({
   imports: [BuludDropdown, FormsModule],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-dropdown
       [options]="options"

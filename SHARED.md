@@ -237,8 +237,8 @@ The demo upload endpoint discards received data. It is a bounded local test rece
 ```sh
 npm run build
 npm run package:local
-# In another Angular 20 project, use the actual absolute tarball path:
-npm install /path/to/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+# In another Angular 22 project, use the actual absolute tarball path:
+npm install /path/to/bulud-ng/dist/packages/bulud-ng-3.0.0.tgz
 ```
 
 ```ts
@@ -254,11 +254,11 @@ Import CSS explicitly in the consumer's global stylesheet:
 @import "bulud-ng/angour-base.css";
 ```
 
-Place `data-bulud-preset="angour"`, `data-theme="light"` or `"dark"`, and `dir="rtl"` or `"ltr"` on an ancestor. The application owns language/theme preferences. Peer dependencies are Angular 20 and RxJS; Tailwind is optional. Import specific secondary entries, not a barrel of every component. CSS is marked as a side effect; feature JavaScript has no eager global registrations. The demo is not included in the published library.
+Place `data-bulud-preset="angour"`, `data-theme="light"` or `"dark"`, and `dir="rtl"` or `"ltr"` on an ancestor. The application owns language/theme preferences. Peer dependencies are Angular 22 and RxJS; Tailwind is optional. Import specific secondary entries, not a barrel of every component. CSS is marked as a side effect; feature JavaScript has no eager global registrations. The demo is not included in the published library.
 
 `npm run validate:tree-shaking` packs the actual compiled package, resolves it from three isolated Angular AOT consumers without source aliases, builds production bundles and verifies unused components are absent. It uses the existing workspace toolchain and does not download dependencies.
 
-Public npm publication is **deferred by the user**. The package name/version currently remain `bulud-ng@0.0.1`; the account/scope and license must be chosen before publishing. No registry publication or ownership claim has been made. After choosing those details, add the license/metadata, check the tarball, authenticate with npm and publish with public access. Do not publish the private workspace root.
+The version 3 package is `bulud-ng@3.0.0`, licensed under the included MIT license. Publish only the compiled `dist/bulud-ng` artifact after all release checks and production performance measurements pass. Authentication and package ownership are verified separately; never publish the private workspace root.
 
 ## Added APIs
 

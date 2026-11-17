@@ -653,8 +653,7 @@ function expectedEntryExports(sourceEntries, packageName) {
     [...sourceEntries.keys()].map((entry) => {
       const name =
         entry === "." ? packageName : `${packageName}-${entry.slice(2)}`;
-      const declaration =
-        entry === "." ? "./index.d.ts" : `${entry}/index.d.ts`;
+      const declaration = `./types/${name}.d.ts`;
       return [
         entry,
         {
@@ -986,10 +985,15 @@ function validateApi() {
   const undocumentedSymbols = [];
   const staleSymbols = [];
   for (const [entry, sourcePath] of sourceEntries) {
-    const declarationPath =
+    const declarationName =
       entry === "."
-        ? join(packageRoot, "index.d.ts")
-        : join(packageRoot, entry.slice(2), "index.d.ts");
+        ? packageJson.name
+        : `${packageJson.name}-${entry.slice(2)}`;
+    const declarationPath = join(
+      packageRoot,
+      "types",
+      `${declarationName}.d.ts`,
+    );
     if (!statSafe(declarationPath)) {
       declarationMismatches.push(
         `${entry}: missing ${relative(root, declarationPath)}`,
@@ -1340,7 +1344,10 @@ async function validateSmokeImports() {
   try {
     const smokeNpmEnv = {
       ...process.env,
-      npm_config_cache: join(temporaryRoot, "npm-cache"),
+      // Reuse verified npm downloads when requested; the consumer install
+      // remains isolated and uses normal npm integrity/dependency checks.
+      npm_config_cache:
+        process.env.BULUD_SMOKE_NPM_CACHE || join(temporaryRoot, "npm-cache"),
     };
     writeFileSync(
       join(temporaryRoot, "package.json"),

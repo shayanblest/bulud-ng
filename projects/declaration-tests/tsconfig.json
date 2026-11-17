@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "bulud-ng": ["../../dist/bulud-ng/index.d.ts"]
+      "bulud-ng": ["../../dist/bulud-ng/types/bulud-ng.d.ts"]
     },
     "types": [],
     "declaration": true,

@@ -1,0 +1,220 @@
+{
+  "url": "http://127.0.0.1:4318",
+  "production": true,
+  "results": [
+    {
+      "mode": "mobile",
+      "run": 1,
+      "performance": 99,
+      "FCP": 635.77055,
+      "LCP": 635.77055,
+      "TBT": 92,
+      "CLS": 0,
+      "metrics": {
+        "first-contentful-paint": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        },
+        "total-blocking-time": {
+          "score": 0.98,
+          "value": "90\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "score": 1,
+          "value": "0"
+        },
+        "speed-index": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        }
+      }
+    },
+    {
+      "mode": "mobile",
+      "run": 2,
+      "performance": 98,
+      "FCP": 635.0692,
+      "LCP": 635.0692,
+      "TBT": 173.9999999999999,
+      "CLS": 0,
+      "metrics": {
+        "first-contentful-paint": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        },
+        "total-blocking-time": {
+          "score": 0.92,
+          "value": "170\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "score": 1,
+          "value": "0"
+        },
+        "speed-index": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        }
+      }
+    },
+    {
+      "mode": "mobile",
+      "run": 3,
+      "performance": 98,
+      "FCP": 626.35205,
+      "LCP": 626.35205,
+      "TBT": 151,
+      "CLS": 0,
+      "metrics": {
+        "first-contentful-paint": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        },
+        "total-blocking-time": {
+          "score": 0.94,
+          "value": "150\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "score": 1,
+          "value": "0"
+        },
+        "speed-index": {
+          "score": 1,
+          "value": "0.6\u00a0s"
+        }
+      }
+    },
+    {
+      "mode": "desktop",
+      "run": 1,
+      "performance": 100,
+      "FCP": 168.37885,
+      "LCP": 168.37885,
+      "TBT": 0,
+      "CLS": 0,
+      "metrics": {
+        "first-contentful-paint": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        },
+        "total-blocking-time": {
+          "score": 1,
+          "value": "0\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "score": 1,
+          "value": "0"
+        },
+        "speed-index": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        }
+      }
+    },
+    {
+      "mode": "desktop",
+      "run": 2,
+      "performance": 100,
+      "FCP": 167.4222,
+      "LCP": 167.4222,
+      "TBT": 0,
+      "CLS": 0,
+      "metrics": {
+        "first-contentful-paint": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        },
+        "total-blocking-time": {
+          "score": 1,
+          "value": "0\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "score": 1,
+          "value": "0"
+        },
+        "speed-index": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        }
+      }
+    },
+    {
+      "mode": "desktop",
+      "run": 3,
+      "performance": 100,
+      "FCP": 167.3958,
+      "LCP": 167.3958,
+      "TBT": 0,
+      "CLS": 0,
+      "metrics": {
+        "first-contentful-paint": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        },
+        "total-blocking-time": {
+          "score": 1,
+          "value": "0\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "score": 1,
+          "value": "0"
+        },
+        "speed-index": {
+          "score": 1,
+          "value": "0.2\u00a0s"
+        }
+      }
+    }
+  ],
+  "method": "Three Lighthouse production runs per form factor; normal viewport-deferred catalogue, gzip delivery. All metric scores >= 0.9; median Performance > 95.",
+  "buildAssetsSha256": "9fca52a2b9a3384b3695b0d964604530253e0f327504f389a9dbee9e4f788667",
+  "reports": [
+    {
+      "name": "viewport-final-lighthouse-desktop-1.report.json",
+      "sha256": "89f8d946718c180756ddaa671cb52391a7460616d17e3d0b714b93d6adb79e21"
+    },
+    {
+      "name": "viewport-final-lighthouse-desktop-2.report.json",
+      "sha256": "0680b8f8dc1cfe1277af098293b18791448c48b70121d37d9d2c498f7bdcb099"
+    },
+    {
+      "name": "viewport-final-lighthouse-desktop-3.report.json",
+      "sha256": "55f57435dd58eba71c384d6821ff1aa872e803aa08eaf839cf1fa426b74b88d5"
+    },
+    {
+      "name": "viewport-final-lighthouse-mobile-1.report.json",
+      "sha256": "94e27c5a149f140a1166017f8a89fc027064376f4bb6a880eb4d228e73308267"
+    },
+    {
+      "name": "viewport-final-lighthouse-mobile-2.report.json",
+      "sha256": "45afa01f713473d3188c07e62ab2ed6d6508adc202028f0ac8a0b8911e1da9be"
+    },
+    {
+      "name": "viewport-final-lighthouse-mobile-3.report.json",
+      "sha256": "4600d62abc142edf518a9b2612ed0e97c573ffe618858302e5f0b56fb0ae0e39"
+    }
+  ]
+}

@@ -46,7 +46,7 @@ const BULUD_ACCORDION_CONTEXT = new InjectionToken<BuludAccordionContext>(
   selector: '[buludAccordionItem]',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bulud-accordion-item.html',
-  styleUrl: './bulud-accordion-item.scss',
+  styleUrl: './bulud-accordion-item.css',
   host: {
     class: 'bulud-accordion-item-host',
     '[class.bulud-accordion-item-host--expanded]': 'isExpanded()',
@@ -156,7 +156,7 @@ export class BuludAccordionItem {
     },
   ],
   templateUrl: './bulud-accordion.html',
-  styleUrl: './bulud-accordion.scss',
+  styleUrl: './bulud-accordion.css',
   host: {
     class: 'bulud-accordion-host',
     '[class.bulud-accordion-host--multiple]': 'multiple()',
@@ -167,6 +167,9 @@ export class BuludAccordion implements BuludAccordionContext {
   private readonly instanceId = `bulud-accordion-${BuludAccordion.nextId++}`;
   private readonly items = contentChildren(BuludAccordionItem);
   private hasProjectedItems = false;
+
+  /** Project-owned prefix for native trigger/panel IDs and their ARIA references. */
+  readonly idPrefix = input<string | null>(null);
 
   /** Allows several items to remain expanded at the same time. */
   readonly multiple = input(false, { transform: booleanAttribute });
@@ -231,11 +234,11 @@ export class BuludAccordion implements BuludAccordionContext {
   }
 
   itemDomId(id: BuludAccordionId): string {
-    return `${this.instanceId}-item-${this.toDomSegment(id)}`;
+    return `${this.idPrefix() ?? this.instanceId}-item-${this.toDomSegment(id)}`;
   }
 
   panelDomId(id: BuludAccordionId): string {
-    return `${this.instanceId}-panel-${this.toDomSegment(id)}`;
+    return `${this.idPrefix() ?? this.instanceId}-panel-${this.toDomSegment(id)}`;
   }
 
   toggle(id: BuludAccordionId): void {
@@ -286,7 +289,6 @@ export class BuludAccordion implements BuludAccordionContext {
       // required input. Ignore that transient state until the next render.
       return undefined;
     }
-
   }
 
   private toDomSegment(id: BuludAccordionId): string {

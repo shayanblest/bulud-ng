@@ -23,7 +23,7 @@ export type BuludBadgeSize = 'small' | 'medium' | 'large';
     '[class.bulud-badge-host--dismissible]': 'dismissible()',
   },
   templateUrl: './bulud-badge.html',
-  styleUrl: './bulud-badge.scss',
+  styleUrl: './bulud-badge.css',
 })
 export class BuludBadge {
   private readonly locale = inject(BULUD_LOCALE);

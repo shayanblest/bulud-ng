@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, model } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { BuludCheckbox } from 'bulud-ng/checkbox';
 import { BuludButton } from 'bulud-ng/button';
@@ -170,8 +170,7 @@ import {
             calendar="gregory"
             language="en"
             value="2025-03-21"
-            [theme]="{ selectedBackground: '#7c3aed' }"
-            [style.--bulud-datepicker-selected-background]="'#15375b'"
+            [theme]="{ selectedBackground: '#15375b' }"
           />
         </div>
         <div class="bulud-row">
@@ -193,8 +192,8 @@ import {
   `,
 })
 export class AngourControlsDemo {
-  protected readonly rtl = signal(true);
-  protected readonly dark = signal(false);
+  readonly rtl = model(true);
+  readonly dark = model(false);
   protected readonly accepted = new FormControl(false, { nonNullable: true });
   protected readonly plan = new FormControl<BuludRadioValue | null>(null);
   protected readonly date = new FormControl<BuludDatepickerValue>('2025-03-21');

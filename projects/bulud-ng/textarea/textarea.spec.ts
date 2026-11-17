@@ -1,4 +1,8 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BULUD_SHARED_UI_CONFIG } from 'bulud-ng';
@@ -6,6 +10,8 @@ import { signal } from '@angular/core';
 import { BuludTextarea } from './textarea';
 @Component({
   imports: [BuludTextarea, ReactiveFormsModule],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<label
     >Message<textarea
       buludTextarea
@@ -49,6 +55,8 @@ describe('Native themed textarea', () => {
 
 @Component({
   imports: [BuludTextarea],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<textarea
     buludTextarea
     aria-label="Message"

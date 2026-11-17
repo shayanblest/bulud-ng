@@ -1,0 +1,18 @@
+@import "tailwindcss/utilities" source(none);
+:host(.bulud-standalone) .angour-dropdown-value{@apply flex;@apply items-center;@apply [gap:var(--bulud-language-switch-gap,8px)];@apply [font-size:var(--bulud-language-switch-font-size,14px)]}:host(.bulud-standalone) .angour-dropdown-value bulud-symbol{@apply [font-size:var(--bulud-language-switch-icon-size,24px)]}:host(.bulud-standalone) .bulud-language-option{@apply flex;@apply justify-between;@apply items-center;@apply [padding:var(--bulud-language-switch-padding,12px)];@apply [gap:var(--bulud-language-switch-gap,8px)]}
+
+/* Owned Tailwind composition; no external layout or utility stylesheet is required. */
+:host .flex{@apply flex;}
+:host .justify-between{@apply justify-between;}
+:host .items-center{@apply items-center;}
+:host .relative{@apply relative;}
+:host .bulud-margin-0{@apply [margin:var(--bulud-spacing-0,0px)];}
+:host .bulud-margin-x-2{@apply [margin-inline:var(--bulud-spacing-2,8px)];}
+:host .bulud-padding-3{@apply [padding:var(--bulud-spacing-3,12px)];}
+:host .bulud-margin-e-3{@apply [margin-inline-end:var(--bulud-spacing-3,12px)];}
+:host .bulud-type-1{@apply [font-size:var(--bulud-font-size-1,24px)];}
+:host .bulud-type-6{@apply [font-size:var(--bulud-font-size-6,14px)];}
+:host .bulud-radio{@apply [accent-color:var(--bulud-color-primary,var(--primary,#2563eb))];}
+@media(min-width:992px){}
+
+:host{@apply [--bulud-dropdown-scrollbar-width:none];@apply [--bulud-dropdown-scrollbar-display:none]}

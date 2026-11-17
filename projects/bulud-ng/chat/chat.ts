@@ -69,7 +69,7 @@ const LABELS: BuludChatLabels = {
   selector: 'bulud-chat',
   imports: [BuludAvatar, BuludButton, BuludTextarea, BuludDateTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './chat.scss',
+  styleUrl: './chat.css',
   host: { '[style]': 'styles()' },
   template: `<section [attr.aria-label]="text().title">
     <div

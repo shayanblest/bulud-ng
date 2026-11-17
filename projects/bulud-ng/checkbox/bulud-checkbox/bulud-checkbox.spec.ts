@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -12,6 +13,8 @@ import { BuludCheckbox } from './bulud-checkbox';
 
 @Component({
   imports: [BuludCheckbox, ReactiveFormsModule],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-checkbox
       id="terms"
@@ -242,7 +245,7 @@ describe('BuludCheckbox', () => {
     expect(variables['--bulud-checkbox-checked-background']).toBe('#123456');
     expect(variables['--bulud-checkbox-focus-width']).toBe('3px');
     expect(variables['--bulud-checkbox-focus-offset']).toBe('2px');
-    expect(variables['--bulud-checkbox-gap']).toBe('0.625rem');
+    expect(variables['--bulud-checkbox-gap']).toBe('8px');
     expect(variables['--bulud-checkbox-border-width']).toBe('1px');
 
     getHost().style.setProperty(

@@ -1,5 +1,46 @@
 import { InjectionToken } from '@angular/core';
 export interface BuludSharedUiTheme {
+  readonly borderWidth?: string;
+  readonly maxWidth?: string;
+  readonly minHeight?: string;
+  readonly cardGap?: string;
+  readonly actionSize?: string;
+  readonly balanceSize?: string;
+  readonly disabledPadding?: string;
+  readonly footerPadding?: string;
+  readonly imageGap?: string;
+  readonly labelSize?: string;
+  readonly titleLineHeight?: string;
+  readonly titleSize?: string;
+  readonly titleWeight?: string;
+
+  readonly arrowSize?: string;
+  readonly duration?: string;
+  readonly fontSize?: string;
+  readonly headBackground?: string;
+  readonly headerGap?: string;
+  readonly headerPadding?: string;
+  readonly iconSize?: string;
+  readonly monthPadding?: string;
+  readonly mqDemo?: string;
+  readonly mqDemoForeground?: string;
+  readonly mqReal?: string;
+  readonly mqRealForeground?: string;
+  readonly mtDemo?: string;
+  readonly mtReal?: string;
+  readonly popupPadding?: string;
+  readonly progressGap?: string;
+  readonly progressHeight?: string;
+  readonly progressPadding?: string;
+  readonly shadow?: string;
+  readonly success?: string;
+  readonly successGap?: string;
+  readonly successHeight?: string;
+  readonly tooltipWidth?: string;
+  readonly walletBackground?: string;
+  readonly width?: string;
+  readonly zIndex?: string;
+
   readonly positive?: string;
   readonly negative?: string;
   readonly grid?: string;
@@ -15,6 +56,9 @@ export interface BuludSharedUiTheme {
   readonly disabledOpacity: string;
 }
 export type BuludSharedUiFeature =
+  | 'language-switch'
+  | 'account-card'
+  | 'tabs'
   | 'skeleton'
   | 'confirm'
   | 'chat'
@@ -38,6 +82,8 @@ export type BuludSharedUiFeature =
   | 'carousel'
   | 'countdown';
 export interface BuludSharedUiConfig {
+  /** Optional project icon font; layouts and visual styles are owned by this library. */
+  readonly legacyIcons?: boolean;
   readonly theme?: Partial<BuludSharedUiTheme>;
   readonly components?: Partial<
     Record<BuludSharedUiFeature, Partial<BuludSharedUiTheme>>

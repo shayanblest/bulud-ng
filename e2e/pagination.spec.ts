@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.goto('/#pagination', { waitUntil: 'domcontentloaded' });
   await page.locator('#pagination').scrollIntoViewIfNeeded();
 });
 
@@ -25,13 +25,13 @@ test('is controlled, accessible, bounded, and keyboard operable', async ({
     name: 'صفحه فعلی، 5',
   });
   await currentPage.hover();
-  await expect(currentPage).toHaveCSS('background-color', 'rgb(124, 58, 237)');
+  await expect(currentPage).toHaveCSS('background-color', 'rgb(12, 35, 64)');
 
   const normalPage = navigation.getByRole('button', {
     name: 'رفتن به صفحه 6',
   });
   await normalPage.hover();
-  await expect(normalPage).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+  await expect(normalPage).toHaveCSS('background-color', 'rgb(243, 246, 249)');
 
   const buttons = navigation.getByRole('button');
   const buttonNames = await buttons.evaluateAll((elements) =>
@@ -126,13 +126,13 @@ test('supports disabled, RTL, dark mode, and instance theme precedence', async (
   await section.getByLabel('Dark theme').check();
   await expect(
     navigation.getByRole('button', { name: 'صفحه فعلی، 4' }),
-  ).toHaveCSS('background-color', 'rgb(124, 58, 237)');
+  ).toHaveCSS('background-color', 'rgb(253, 181, 21)');
   const instance = section
     .locator('#pagination-instance-theme')
     .getByRole('button', {
       name: 'Current page, 2',
     });
-  await expect(instance).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  await expect(instance).toHaveCSS('background-color', 'rgb(253, 181, 21)');
   await expect(instance).toHaveCSS('width', '48px');
 });
 
@@ -155,7 +155,7 @@ test('contains narrow multi-digit pagination overflow and keeps every control re
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 900 });
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.goto('/#pagination', { waitUntil: 'domcontentloaded' });
   const section = page.locator('#pagination');
   const pagination = page.locator('#pagination-dynamic');
   const navigation = pagination.getByRole('navigation');

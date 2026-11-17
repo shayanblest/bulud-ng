@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -14,6 +15,8 @@ import {
 
 @Component({
   imports: [BuludTabs, BuludTab, BuludTabPanel],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-tabs
       [activeId]="activeId()"
@@ -37,6 +40,8 @@ class TestHost {
 
 @Component({
   imports: [BuludTabs, BuludTab, BuludTabPanel],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-tabs
       [activeId]="outerActive()"
@@ -68,6 +73,8 @@ class NestedTabsHost {
 
 @Component({
   imports: [BuludTabs, BuludTab, BuludTabPanel],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-tabs>
       <button type="button" [buludTab]="'team/a'">Slash</button>

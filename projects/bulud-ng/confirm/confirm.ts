@@ -69,7 +69,7 @@ export type BuludConfirmKind = 'creation' | 'confirmation' | 'rejection';
       </div>
     </section></bulud-dialog
   >`,
-  styleUrl: './confirm.scss',
+  styleUrl: './confirm.css',
 })
 export class BuludConfirm {
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);

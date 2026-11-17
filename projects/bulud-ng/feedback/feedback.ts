@@ -51,7 +51,7 @@ export class BuludNotificationService {
 @Component({
   selector: 'bulud-alert',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './feedback.scss',
+  styleUrl: './feedback.css',
   host: { '[style]': 'styles()' },
   template: `<div
     class="surface notice"

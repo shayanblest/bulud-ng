@@ -1,0 +1,76 @@
+@import "tailwindcss/utilities" source(none);
+bulud-chart-host {
+  @apply block [width:100%];
+}
+
+
+bulud-chart {
+  .apexcharts-svg {
+    @apply [background:transparent];
+  }
+
+  .apexcharts-gridline {
+    @apply [stroke:var(--bulud-chart-grid,var(--gray-10,#eee))];
+  }
+
+  .apexcharts-xaxis line,
+  .apexcharts-yaxis line,
+  .apexcharts-xaxis-tick {
+    @apply [stroke:var(--bulud-chart-grid,var(--gray-10,#eee))];
+  }
+
+  .apexcharts-xaxis-texts-g text,
+  .apexcharts-yaxis-texts-g text {
+    @apply [fill:var(--bulud-chart-muted,var(--gray-70,#777))]!;
+  }
+
+  .apexcharts-candlestick-series path {
+    @apply [stroke-width:2px]!;
+    @apply [shape-rendering:geometricPrecision];
+  }
+
+  .apexcharts-tooltip {
+    @apply pointer-events-none;
+    @apply [z-index:20];
+    @apply [background:transparent]!;
+    @apply [border:0]!;
+    @apply [box-shadow:none]!;
+  }
+
+  .stock-chart-tooltip {
+    @apply [min-width:var(--bulud-chart-tooltip-width,110px)];
+    @apply [padding:var(--bulud-chart-padding,10px_12px)];
+    @apply [border-radius:var(--bulud-chart-radius,10px)];
+    @apply [background:var(--bulud-chart-background,var(--frame,#fff))];
+    @apply [color:var(--bulud-chart-foreground,var(--body-color,#111))];
+    @apply [box-shadow:0_8px_24px_-6px_var(--gray-30),_0_0_1px_0_var(--gray-30)];
+    @apply [border:1px_solid_var(--bulud-chart-grid,var(--gray-10,#eee))];
+    @apply [font-size:12px];
+    @apply [line-height:1.5];
+  }
+
+  .stock-chart-tooltip__title {
+    @apply [margin-bottom:6px];
+    @apply [color:var(--bulud-chart-muted,var(--gray-70,#777))];
+    @apply [font-size:11px];
+  }
+
+  .stock-chart-tooltip__row {
+    @apply flex;
+    @apply items-center;
+    @apply justify-between;
+    @apply [gap:12px];
+  }
+
+  .stock-chart-tooltip__row span {
+    @apply [color:var(--bulud-chart-muted,var(--gray-70,#777))];
+  }
+
+  .stock-chart-tooltip__row strong {
+    @apply [color:var(--bulud-chart-foreground,var(--body-color,#111))];
+    @apply [font-weight:600];
+  }
+}
+
+
+bulud-donut-chart .apexcharts-datalabel-label{@apply [font-size:var(--bulud-donut-chart-font-size,14px)]}bulud-donut-chart .donut2-chart-wrapper{@apply relative}bulud-donut-chart .donut-center-html{@apply absolute;@apply [top:50%];@apply [left:50%];@apply [transform:translate(-50%,-50%)];@apply text-center;@apply [white-space:pre-line];@apply [font-weight:bold];@apply [font-size:var(--bulud-donut-chart-font-size,14px)];@apply [color:var(--bulud-donut-chart-foreground,var(--dark,#111))];@apply pointer-events-none;@apply select-none}

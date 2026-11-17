@@ -1,0 +1,22 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply inline-grid;
+  @apply [place-items:center];
+  @apply overflow-hidden;
+  @apply [flex:none];
+  @apply [vertical-align:middle];
+  @apply [inline-size:var(--bulud-avatar-size,_48px)];
+  @apply [block-size:var(--bulud-avatar-size,_48px)];
+  @apply [border-radius:var(--bulud-avatar-radius,_50%)];
+  @apply [background:var(--bulud-avatar-background,_var(--bulud-color-primary))];
+  @apply [color:var(--bulud-avatar-foreground,_var(--bulud-color-on-primary))];
+  @apply [font-weight:600];
+}
+img {
+  @apply [inline-size:100%];
+  @apply [block-size:100%];
+  @apply object-cover;
+}
+span {
+  @apply [font:inherit];
+}

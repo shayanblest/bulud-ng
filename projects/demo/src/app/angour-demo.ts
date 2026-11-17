@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  model,
+  signal,
+} from '@angular/core';
 import { BuludButton } from 'bulud-ng/button';
 import { BuludBadge } from 'bulud-ng/badge';
 import { BuludDropdown } from 'bulud-ng/dropdown';
@@ -39,8 +44,7 @@ import { BuludPagination } from 'bulud-ng/pagination';
         <h2>{{ rtl() ? 'دیزاین سیستم انگور' : 'Angour design system' }}</h2>
         <button
           type="button"
-          class="bulud-input"
-          style="inline-size:auto"
+          class="demo-action"
           (click)="dark.set(!dark())"
           [attr.aria-pressed]="dark()"
           aria-label="Toggle Angour dark theme"
@@ -49,8 +53,7 @@ import { BuludPagination } from 'bulud-ng/pagination';
         </button>
         <button
           type="button"
-          class="bulud-input"
-          style="inline-size:auto"
+          class="demo-action"
           (click)="rtl.set(!rtl())"
           aria-label="Toggle Angour direction"
         >
@@ -66,7 +69,7 @@ import { BuludPagination } from 'bulud-ng/pagination';
       </p>
       <div class="bulud-panel bulud-stack">
         <div class="bulud-row">
-          <bulud-button id="angour-primary">{{
+          <bulud-button [attr.id]="'angour-primary'">{{
             rtl() ? 'ذخیره' : 'Save'
           }}</bulud-button>
           <bulud-button variant="secondary">{{
@@ -79,8 +82,8 @@ import { BuludPagination } from 'bulud-ng/pagination';
           <bulud-button disabled>Disabled</bulud-button>
           <bulud-button loading>Loading</bulud-button>
           <bulud-button
-            id="angour-override"
-            style="--bulud-button-background: #7c3aed; --bulud-button-background-hover: #6d28d9"
+            [attr.id]="'angour-override'"
+            style="--bulud-button-background: #7c3aed; --bulud-button-background-hover: #6d28d9; --bulud-button-foreground: #ffffff"
             >Instance override</bulud-button
           >
         </div>
@@ -113,16 +116,26 @@ import { BuludPagination } from 'bulud-ng/pagination';
           }}</bulud-switch>
         </div>
         <bulud-tabs aria-label="Angour example tabs" [(activeId)]="tab">
-          <button buludTab="overview">Overview</button>
-          <button buludTab="details">Details</button>
-          <div buludTabPanel="overview">Reusable surfaces and controls.</div>
+          <button buludTab="overview">
+            {{ rtl() ? 'نمای کلی' : 'Overview' }}
+          </button>
+          <button buludTab="details">{{ rtl() ? 'جزئیات' : 'Details' }}</button>
+          <div buludTabPanel="overview">
+            {{
+              rtl()
+                ? 'سطوح و کنترل‌های قابل استفاده در همهٔ پروژه‌ها.'
+                : 'Reusable surfaces and controls.'
+            }}
+          </div>
           <div buludTabPanel="details">
             No application services or Bootstrap dependency.
           </div>
         </bulud-tabs>
         <bulud-accordion>
           <section buludAccordionItem="foundations">
-            <span buludAccordionTrigger>Design foundations</span>
+            <span buludAccordionTrigger>{{
+              rtl() ? 'پایه‌های طراحی' : 'Design foundations'
+            }}</span>
             <p buludAccordionPanel>
               Colors, spacing, typography, radii and shadows.
             </p>
@@ -154,7 +167,9 @@ import { BuludPagination } from 'bulud-ng/pagination';
           [currentPage]="page()"
           (pageChange)="page.set($event)"
         />
-        <bulud-button id="angour-open-dialog" (click)="dialog.set(true)"
+        <bulud-button
+          [attr.id]="'angour-open-dialog'"
+          (click)="dialog.set(true)"
           >Open Angour dialog</bulud-button
         >
         <bulud-dialog
@@ -179,8 +194,8 @@ import { BuludPagination } from 'bulud-ng/pagination';
   `,
 })
 export class AngourDemo {
-  protected readonly dark = signal(false);
-  protected readonly rtl = signal(true);
+  readonly dark = model(false);
+  readonly rtl = model(true);
   protected readonly dialog = signal(false);
   protected readonly page = signal(1);
   protected readonly tab = signal<string | null>('overview');

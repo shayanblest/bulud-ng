@@ -1,0 +1,57 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply inline-flex;
+}
+.bulud-radio {
+  @apply inline-flex;
+  @apply items-center;
+  @apply [gap:var(--bulud-radio-gap,_8px)];
+  @apply cursor-pointer;
+}
+.bulud-radio__input {
+  @apply [appearance:none];
+  @apply [margin:0];
+  @apply inline-grid;
+  @apply [place-items:center];
+  @apply [flex:0_0_auto];
+  @apply [cursor:inherit];
+  @apply [inline-size:var(--bulud-radio-size,_16px)];
+  @apply [block-size:var(--bulud-radio-size,_16px)];
+  @apply [border:var(--bulud-radio-border-width,_1px)_solid_var(--bulud-radio-border,_var(--bulud-color-border,_#cbd5e1))];
+  @apply [border-radius:50%];
+  @apply [background:var(--bulud-radio-background,_transparent)];
+}
+.bulud-radio__input:checked {
+  @apply [border-color:var(--bulud-radio-checked,_var(--bulud-color-primary,_#2563eb))];
+}
+.bulud-radio__input:checked::after {
+  content: "";
+  @apply [inline-size:var(--bulud-radio-dot-size,_8px)];
+  @apply [block-size:var(--bulud-radio-dot-size,_8px)];
+  @apply [border-radius:50%];
+  @apply [background:var(--bulud-radio-checked,_var(--bulud-color-primary,_#2563eb))];
+}
+.bulud-radio__input:focus-visible {
+  @apply [outline:var(--bulud-radio-focus-width,_3px)_solid_var(--bulud-radio-focus,_var(--bulud-color-focus,_#93c5fd))];
+  @apply [outline-offset:var(--bulud-radio-focus-offset,_2px)];
+}
+.bulud-radio__input[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-color-danger,_#dc2626)];
+}
+.bulud-radio label {
+  @apply [cursor:inherit];
+}
+:host(.bulud-radio--disabled) {
+  @apply [opacity:var(--bulud-radio-disabled-opacity,_0.55)];
+}
+:host(.bulud-radio--disabled) .bulud-radio {
+  @apply cursor-not-allowed;
+}
+@media (forced-colors: active) {
+  .bulud-radio__input {
+    @apply [appearance:auto];
+  }
+  .bulud-radio__input::after {
+    @apply hidden;
+  }
+}

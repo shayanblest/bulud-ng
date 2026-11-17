@@ -1,0 +1,42 @@
+@import "tailwindcss/utilities" source(none);
+section {
+  @apply text-center;
+  @apply [color:var(--bulud-confirm-foreground,_var(--bulud-color-on-surface))];
+  @apply [background:var(--bulud-confirm-background,_var(--bulud-color-surface))];
+  @apply [border-radius:var(--bulud-confirm-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-confirm-padding,_16px)];
+}
+.icon {
+  @apply [inline-size:var(--bulud-confirm-icon-size,_48px)];
+  @apply [block-size:var(--bulud-confirm-icon-size,_48px)];
+  @apply [fill:none];
+  @apply [stroke:var(--bulud-confirm-accent,_var(--bulud-color-primary))];
+  @apply [stroke-width:1.5];
+  @apply [stroke-linecap:round];
+  @apply [stroke-linejoin:round];
+}
+[data-kind="creation"] .icon {
+  @apply [stroke:var(--bulud-confirm-accent,_var(--bulud-color-success))];
+}
+[data-kind="rejection"] .icon {
+  @apply [stroke:var(--bulud-confirm-accent,_var(--bulud-color-danger-text,_var(--bulud-color-danger))_)];
+}
+h2 {
+  @apply [font:inherit];
+  @apply [font-size:var(--bulud-font-size-4,_18px)];
+  @apply [font-weight:600];
+  @apply [margin-block:var(--bulud-confirm-gap,_12px)];
+  @apply [overflow-wrap:anywhere];
+}
+p {
+  @apply [margin-block:var(--bulud-confirm-gap,_12px)];
+  @apply [line-height:1.7];
+  @apply [overflow-wrap:anywhere];
+}
+.actions {
+  @apply flex;
+  @apply justify-center;
+  @apply flex-wrap;
+  @apply [gap:var(--bulud-confirm-gap,_16px)];
+  @apply [margin-block-start:var(--bulud-spacing-5,_24px)];
+}

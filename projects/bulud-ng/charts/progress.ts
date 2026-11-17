@@ -52,55 +52,7 @@ import {
         }
       </figure>
     }`,
-  styles: `
-    :host {
-      display: block;
-      color: var(--bulud-progress-foreground, var(--bulud-color-on-surface));
-    }
-    figure {
-      margin: 0;
-      padding: var(--bulud-progress-padding, 16px);
-      background: var(--bulud-progress-background, var(--bulud-color-surface));
-      border-radius: var(--bulud-progress-radius, 8px);
-    }
-    figcaption {
-      margin-block-end: 12px;
-    }
-    .ring {
-      display: block;
-      inline-size: min(100%, 260px);
-      margin-inline: auto;
-      direction: ltr;
-    }
-    circle {
-      fill: none;
-      stroke-width: var(--bulud-progress-stroke-width, 8px);
-      transform: rotate(-90deg);
-      transform-origin: 60px 60px;
-    }
-    .track {
-      stroke: var(--bulud-progress-border, var(--bulud-color-border));
-      background: var(--bulud-progress-border, var(--bulud-color-border));
-    }
-    .value {
-      stroke: var(--bulud-progress-accent, var(--bulud-color-primary));
-      stroke-linecap: round;
-    }
-    text {
-      fill: currentColor;
-      font: 12px sans-serif;
-    }
-    .bar {
-      border-radius: var(--bulud-progress-radius, 100px);
-      height: var(--bulud-progress-height, 16px);
-      overflow: hidden;
-    }
-    .fill {
-      height: 100%;
-      background: var(--bulud-progress-accent, var(--bulud-color-primary));
-      border-radius: inherit;
-    }
-  `,
+  styleUrl: './progress.css',
 })
 export class BuludProgress {
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);

@@ -1,0 +1,122 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply inline-flex;
+  @apply [max-inline-size:100%];
+  @apply [vertical-align:middle];
+}
+
+.bulud-badge {
+  @apply items-center;
+  @apply [border:var(--bulud-badge-border-width,_1px)_solid_transparent];
+  @apply [border-radius:var(--bulud-badge-radius,_999px)];
+  @apply box-border;
+  @apply inline-flex;
+  @apply [font:inherit];
+  @apply [font-weight:var(--bulud-badge-font-weight,_500)];
+  @apply [gap:0];
+  @apply [line-height:var(--bulud-badge-line-height,_1.25)];
+  @apply [max-inline-size:100%];
+  @apply whitespace-nowrap;
+}
+
+.bulud-badge__content {
+  @apply [min-inline-size:0];
+  @apply [overflow-wrap:anywhere];
+}
+
+.bulud-badge__content + .bulud-badge__dismiss {
+  @apply [margin-inline-start:var(--bulud-badge-dismiss-gap,_0.375rem)];
+}
+
+.bulud-badge--small {
+  @apply [min-block-size:var(--bulud-badge-height-small,_20px)];
+  @apply [padding-inline:var(--bulud-badge-padding-inline-small,_6px)];
+  @apply [font-size:var(--bulud-badge-font-size-small,_10px)];
+}
+
+.bulud-badge--medium {
+  @apply [min-block-size:var(--bulud-badge-height-medium,_24px)];
+  @apply [padding-inline:var(--bulud-badge-padding-inline-medium,_8px)];
+  @apply [font-size:var(--bulud-badge-font-size-medium,_12px)];
+}
+
+.bulud-badge--large {
+  @apply [min-block-size:var(--bulud-badge-height-large,_28px)];
+  @apply [padding-inline:var(--bulud-badge-padding-inline-large,_10px)];
+  @apply [font-size:var(--bulud-badge-font-size-large,_14px)];
+}
+
+.bulud-badge__dot {
+  @apply [background:currentColor];
+  @apply [block-size:var(--bulud-badge-dot-size,_4px)];
+  @apply [border-radius:50%];
+  @apply [flex:0_0_auto];
+  @apply [inline-size:var(--bulud-badge-dot-size,_4px)];
+  @apply [margin-inline-end:var(--bulud-badge-dot-gap,_6px)];
+}
+
+.bulud-badge__dismiss {
+  @apply items-center;
+  @apply [background:transparent];
+  @apply [border:0];
+  @apply [border-radius:50%];
+  @apply [color:currentColor];
+  @apply cursor-pointer;
+  @apply inline-flex;
+  @apply [flex:0_0_auto];
+  @apply justify-center;
+  @apply [margin-inline-end:var(--bulud-badge-dismiss-margin,_-0.375rem)];
+  @apply [padding:var(--bulud-badge-dismiss-padding,_0.125rem)];
+  @apply [min-inline-size:var(--bulud-badge-dismiss-size,_1.5rem)];
+  @apply [min-block-size:var(--bulud-badge-dismiss-size,_1.5rem)];
+}
+
+.bulud-badge__dismiss svg {
+  @apply [block-size:var(--bulud-badge-dismiss-icon-size,_0.875rem)];
+  @apply block;
+  @apply [fill:none];
+  @apply [inline-size:var(--bulud-badge-dismiss-icon-size,_0.875rem)];
+  @apply [stroke:currentColor];
+  @apply [stroke-linecap:round];
+  @apply [stroke-linejoin:round];
+  @apply [stroke-width:2];
+}
+
+.bulud-badge__dismiss:hover {
+  @apply [background:var(--bulud-badge-dismiss-hover-background,_rgb(15_23_42_/_0.1))];
+}
+
+.bulud-badge__dismiss:focus-visible {
+  @apply [outline:var(--bulud-badge-focus-width,_2px)_solid_var(--bulud-badge-focus,_currentColor)];
+  @apply [outline-offset:var(--bulud-badge-focus-offset,_2px)];
+}
+
+.bulud-badge--neutral {
+  @apply [background:var(--bulud-badge-neutral-background,_#f8fafc)];
+  @apply [border-color:var(--bulud-badge-neutral-border,_var(--bulud-color-border,_#cbd5e1)_)];
+  @apply [color:var(--bulud-badge-neutral-foreground,_#1e293b)];
+}
+
+.bulud-badge--primary {
+  @apply [background:var(--bulud-badge-primary-background,_#eff6ff)];
+  @apply [border-color:var(--bulud-badge-primary-border,_#bfdbfe)];
+  @apply [color:var(--bulud-badge-primary-foreground,_#1d4ed8)];
+}
+
+.bulud-badge--success {
+  @apply [background:var(--bulud-badge-success-background,_#dcfce7)];
+  @apply [border-color:var(--bulud-badge-success-border,_#bbf7d0)];
+  @apply [color:var(--bulud-badge-success-foreground,_#15803d)];
+}
+
+.bulud-badge--warning {
+  @apply [background:var(--bulud-badge-warning-background,_#fef3c7)];
+  @apply [border-color:var(--bulud-badge-warning-border,_#fde68a)];
+  @apply [color:var(--bulud-badge-warning-foreground,_#a16207)];
+}
+
+.bulud-badge--danger {
+  @apply [background:var(--bulud-badge-danger-background,_#ffe4e6)];
+  @apply [border-color:var(--bulud-badge-danger-border,_#fecdd3)];
+  @apply [color:var(--bulud-badge-danger-foreground,_#be123c)];
+}

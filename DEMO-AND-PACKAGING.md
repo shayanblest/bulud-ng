@@ -13,8 +13,8 @@ The demo upload endpoint discards received data. It is a bounded local test rece
 ```sh
 npm run build
 npm run package:local
-# In another Angular 20 project, use the actual absolute tarball path:
-npm install /path/to/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+# In another Angular 22 project, use the actual absolute tarball path:
+npm install /path/to/bulud-ng/dist/packages/bulud-ng-3.0.0.tgz
 ```
 
 ```ts
@@ -30,11 +30,11 @@ Import CSS explicitly in the consumer's global stylesheet:
 @import "bulud-ng/angour-base.css";
 ```
 
-Place `data-bulud-preset="angour"`, `data-theme="light"` or `"dark"`, and `dir="rtl"` or `"ltr"` on an ancestor. The application owns language/theme preferences. Peer dependencies are Angular 20 and RxJS; Tailwind is optional. Import specific secondary entries, not a barrel of every component. CSS is marked as a side effect; feature JavaScript has no eager global registrations. The demo is not included in the published library.
+Place `data-bulud-preset="angour"`, `data-theme="light"` or `"dark"`, and `dir="rtl"` or `"ltr"` on an ancestor. The application owns language/theme preferences. Peer dependencies are Angular 22 and RxJS; Tailwind is optional. Import specific secondary entries, not a barrel of every component. CSS is marked as a side effect; feature JavaScript has no eager global registrations. The demo is not included in the published library.
 
 `npm run validate:tree-shaking` packs the actual compiled package, resolves it from five isolated Angular AOT consumers without source aliases, builds production bundles and verifies unused components are absent. It also compiles all exported entry declarations with `skipLibCheck: false` and checks every CSS export. It uses the existing workspace toolchain and does not download dependencies.
 
-Public npm publication is **deferred by the user**. The package name/version currently remain `bulud-ng@0.0.1`; the account/scope and license must be chosen before publishing. No registry publication or ownership claim has been made. After choosing those details, add the license/metadata, check the tarball, authenticate with npm and publish with public access. Do not publish the private workspace root.
+Version 3 uses `bulud-ng@3.0.0` and the included MIT license. Publish the compiled `dist/bulud-ng` package only after the API, dependency, package, browser and production performance checks pass. Verify npm authentication and version availability separately.
 
 ## Added APIs
 
@@ -76,9 +76,7 @@ Pagination is controlled through `[currentPage]` and `(pageChange)`. Counts ≤5
 
 See the current component catalog / chat / label / display-pipe contracts in [SHARED.md](SHARED.md).
 
-Before public publication, run `node dist/bulud-ng/publish-check.mjs`. This deliberately
-fails while the owner-selected license and LICENSE file are missing. Add the chosen
-LICENSE to the `ng-package.json` assets when that decision is made. This check is also
+Before public publication, run `node dist/bulud-ng/publish-check.mjs`. The MIT license and LICENSE asset are already included. The guard rejects incomplete metadata or missing exports. This check is also
 run automatically by `npm publish` inside the built package; local `npm pack` remains
 available. Run the historical API/dependency approval checks separately; a successful
 pack or consumer build does not imply those review gates passed.

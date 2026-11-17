@@ -28,18 +28,7 @@ import {
     @if (isRequired()) {
       <span class="marker" aria-hidden="true"> *</span>
     }`,
-  styles: `
-    :host {
-      color: var(--bulud-field-label-foreground, var(--bulud-color-on-surface));
-    }
-    .marker {
-      color: var(
-        --bulud-field-label-accent,
-        var(--bulud-color-danger-text, var(--bulud-color-danger))
-      );
-      font-weight: var(--bulud-field-label-weight, 600);
-    }
-  `,
+  styleUrl: './field-label.css',
 })
 export class BuludFieldLabel {
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);

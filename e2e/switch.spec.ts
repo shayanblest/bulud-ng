@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#all');
 });
 
 test('supports switch semantics, projected label, and keyboard interaction', async ({
@@ -17,12 +17,12 @@ test('supports switch semantics, projected label, and keyboard interaction', asy
   await expect(control).not.toBeChecked();
   await expect(control).not.toHaveAttribute('aria-invalid');
   await label.hover();
-  await expect(track).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+  await expect(track).toHaveCSS('background-color', 'rgb(243, 246, 249)');
   await control.press('Space');
   await expect(control).toBeChecked();
   await expect(control).not.toHaveAttribute('aria-invalid');
   await label.hover();
-  await expect(track).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(track).toHaveCSS('background-color', 'rgb(12, 35, 64)');
   await expect(section.locator('#switch-state')).toHaveText(
     'Notifications enabled',
   );
@@ -61,17 +61,20 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   await expect(track).toHaveCSS('outline-width', '3px');
 
   await section.getByText('Dark theme', { exact: true }).click();
-  await expect(track).toHaveCSS('background-color', 'rgb(15, 23, 42)');
+  await expect(track).toHaveCSS('background-color', 'rgb(30, 30, 38)');
   await control.press('Space');
   await expect(control).toBeChecked();
-  await expect(track).toHaveCSS('background-color', 'rgb(96, 165, 250)');
+  await expect(track).toHaveCSS('background-color', 'rgb(253, 181, 21)');
 
   const instance = section.getByRole('switch', { name: 'Instance theme' });
   const instanceWrapper = instance.locator('xpath=ancestor::bulud-switch[1]');
   const instanceTrack = instanceWrapper.locator('.bulud-switch__track');
   const thumb = wrapper.locator('.bulud-switch__thumb');
   await expect(instance).toBeChecked();
-  await expect(instanceTrack).toHaveCSS('background-color', 'rgb(20, 83, 45)');
+  await expect(instanceTrack).toHaveCSS(
+    'background-color',
+    'rgb(253, 181, 21)',
+  );
   await expect(instanceTrack).toHaveCSS('width', '52px');
 
   const invalid = section.getByRole('switch', {
@@ -86,10 +89,10 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
   const invalidTrack = invalidHost.locator(
     ':scope > .bulud-switch > .bulud-switch__label > .bulud-switch__track',
   );
-  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(251, 113, 133)');
+  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(211, 48, 48)');
   await invalid.press('Space');
   await expect(invalid).toBeChecked();
-  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(251, 113, 133)');
+  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(211, 48, 48)');
 
   await instanceWrapper.evaluate((element) => {
     document
@@ -99,14 +102,20 @@ test('covers disabled, dark theme, focus, and instance theme overrides', async (
       .append(element);
   });
   await expect(instance).not.toHaveAttribute('aria-invalid');
-  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(20, 83, 45)');
+  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(253, 181, 21)');
   await instance.press('Space');
   await expect(instance).not.toBeChecked();
-  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(71, 85, 105)');
+  await expect(instanceTrack).toHaveCSS(
+    'border-color',
+    'rgba(213, 213, 213, 0.3)',
+  );
   await invalid.press('Space');
   await expect(invalid).not.toBeChecked();
-  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(251, 113, 133)');
-  await expect(instanceTrack).toHaveCSS('border-color', 'rgb(71, 85, 105)');
+  await expect(invalidTrack).toHaveCSS('border-color', 'rgb(211, 48, 48)');
+  await expect(instanceTrack).toHaveCSS(
+    'border-color',
+    'rgba(213, 213, 213, 0.3)',
+  );
 
   await page.evaluate(() => (document.documentElement.dir = 'rtl'));
   await expect(control).toBeChecked();

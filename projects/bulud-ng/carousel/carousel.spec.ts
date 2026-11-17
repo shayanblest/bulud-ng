@@ -1,8 +1,14 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BuludCarousel, BuludSlide } from './carousel';
 @Component({
   imports: [BuludCarousel, BuludSlide],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<bulud-carousel label="Gallery"
     ><ng-template buludSlide="First">First content</ng-template
     ><ng-template buludSlide="Second">Second content</ng-template>

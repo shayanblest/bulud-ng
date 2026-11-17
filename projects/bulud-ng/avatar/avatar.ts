@@ -25,29 +25,7 @@ import {
       <span aria-hidden="true">{{ initials() }}</span>
     }
     <ng-content />`,
-  styles: `
-    :host {
-      display: inline-grid;
-      place-items: center;
-      overflow: hidden;
-      flex: none;
-      vertical-align: middle;
-      inline-size: var(--bulud-avatar-size, 48px);
-      block-size: var(--bulud-avatar-size, 48px);
-      border-radius: var(--bulud-avatar-radius, 50%);
-      background: var(--bulud-avatar-background, var(--bulud-color-primary));
-      color: var(--bulud-avatar-foreground, var(--bulud-color-on-primary));
-      font-weight: 600;
-    }
-    img {
-      inline-size: 100%;
-      block-size: 100%;
-      object-fit: cover;
-    }
-    span {
-      font: inherit;
-    }
-  `,
+  styleUrl: './avatar.css',
 })
 export class BuludAvatar {
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);

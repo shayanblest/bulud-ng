@@ -1,0 +1,51 @@
+@import "tailwindcss/utilities" source(none);
+.platform-card{@apply inline-flex;@apply [border-radius:var(--bulud-account-card-radius,12px)];@apply [background:var(--bulud-account-card-background,#1e1e26)];@apply overflow-hidden;@apply flex-col;@apply [width:100%]}.platform-card.wallet-card{@apply [background:var(--bulud-account-card-wallet-background,linear-gradient(289deg,#0C2340_0%,#536480_100%))]}.platform-card>.head{@apply [background:var(--bulud-account-card-head-background,radial-gradient(257.77%_129.65%_at_3.57%_13.33%,rgba(213,213,216,.21)_0%,rgba(213,213,216,0)_100%))]}.card-platform{@apply flex;@apply justify-between;@apply items-center}.card-platform.mt.demo{@apply [background:var(--bulud-account-card-mt-demo,linear-gradient(180deg,#000_3.42%,rgba(0,0,0,.25)_45.59%,#000_95.09%))]}.card-platform.mt.real{@apply [background:var(--bulud-account-card-mt-real,linear-gradient(180deg,#0C2340_3.42%,#436187_45.59%,#0C2340_95.09%))]}.card-platform.mq.demo{@apply [background:var(--bulud-account-card-mq-demo,linear-gradient(180deg,#ababab_3.42%,rgb(171_171_171_/_60%)_45.59%,#ababab_95.09%))];@apply [color:var(--bulud-account-card-mq-demo-foreground,#000)]!}.card-platform.mq.real{@apply [background:var(--bulud-account-card-mq-real,linear-gradient(180deg,#BDA68A_3.42%,#F3DCC0_45.59%,#BDA68A_95.09%))];@apply [color:var(--bulud-account-card-mq-real-foreground,#000000)]!}
+
+:host(.bulud-standalone) .platform-card{@apply [color:var(--bulud-account-card-foreground,#fff)];@apply [font-family:inherit]}
+:host(.bulud-standalone) .platform-card>div:first-child{@apply flex;@apply flex-col;@apply justify-between;@apply items-center;@apply text-center;@apply relative;@apply [flex:1];@apply [padding-top:var(--bulud-account-card-header-padding,16px)]}
+:host(.bulud-standalone) .platform-card>div:first-child:has(.bulud-background-negative){@apply [padding-top:var(--bulud-account-card-disabled-padding,48px)]}
+:host(.bulud-standalone) .bulud-background-negative{@apply absolute;@apply [inset:0_0_auto];@apply [background:var(--bulud-account-card-negative,#dc2626)];@apply [color:#fff];@apply [padding:8px_0];@apply [width:100%]}
+:host(.bulud-standalone) .bulud-type-5{@apply [font-size:var(--bulud-account-card-font-size,16px)]}:host(.bulud-standalone) .bulud-type-7{@apply [font-size:var(--bulud-account-card-label-size,12px)]}:host(.bulud-standalone) .bulud-type-2{@apply [font-size:var(--bulud-account-card-balance-size,22px)]}
+:host(.bulud-standalone) .font-light{@apply [font-weight:300]}:host(.bulud-standalone) .font-bold{@apply [font-weight:700]}:host(.bulud-standalone) p{@apply [margin:0_0_16px]}
+:host(.bulud-standalone) .bulud-margin-y-4{@apply [margin-block:16px]}:host(.bulud-standalone) .bulud-margin-t-4{@apply [margin-top:16px]}:host(.bulud-standalone) .bulud-margin-t-2{@apply [margin-top:8px]}:host(.bulud-standalone) .bulud-margin-t-1{@apply [margin-top:4px]}:host(.bulud-standalone) .bulud-margin-b-4{@apply [margin-bottom:16px]}
+:host(.bulud-standalone) .flex{@apply flex}:host(.bulud-standalone) .gap-2{@apply [gap:8px]}:host(.bulud-standalone) .my-auto{@apply [margin-block:auto]}
+:host(.bulud-standalone) .card-platform{@apply [padding:var(--bulud-account-card-footer-padding,24px)]}:host(.bulud-standalone) .card-platform>div{@apply [padding-inline:24px]}
+
+.bulud-card-account-number{@apply text-left}
+
+/* Owned Tailwind composition; no external layout or utility stylesheet is required. */
+:host .flex{@apply flex;}
+:host .flex-col{@apply flex-col;}
+:host .justify-between{@apply justify-between;}
+:host .items-center{@apply items-center;}
+:host .relative{@apply relative;}
+:host .absolute{@apply absolute;}
+:host .text-center{@apply text-center;}
+:host .font-bold{@apply [font-weight:700];}
+:host .font-normal{@apply [font-weight:400];}
+:host .font-light{@apply [font-weight:300];}
+:host .grow{@apply grow;}
+:host .my-auto{@apply my-auto;}
+:host .top-0{@apply [top:0];}
+:host .start-0{@apply [inset-inline-start:0];}
+:host .end-0{@apply [inset-inline-end:0];}
+:host .border-2{@apply border-2;}
+:host .bulud-color-on-accent{@apply [color:var(--bulud-account-card-foreground,#fff)];}
+:host .bulud-background-negative{@apply [background:var(--bulud-color-danger,#a11729)];}
+:host .bulud-margin-0{@apply [margin:var(--bulud-spacing-0,0px)];}
+:host .bulud-margin-t-1{@apply [margin-top:var(--bulud-spacing-1,4px)];}
+:host .bulud-padding-y-2{@apply [padding-block:var(--bulud-spacing-2,8px)];}
+:host .bulud-margin-t-2{@apply [margin-top:var(--bulud-spacing-2,8px)];}
+:host .gap-2{@apply [gap:var(--bulud-spacing-2,8px)];}
+:host .bulud-padding-t-4{@apply [padding-top:var(--bulud-spacing-4,16px)];}
+:host .bulud-margin-t-4{@apply [margin-top:var(--bulud-spacing-4,16px)];}
+:host .bulud-margin-b-4{@apply [margin-bottom:var(--bulud-spacing-4,16px)];}
+:host .bulud-margin-y-4{@apply [margin-block:var(--bulud-spacing-4,16px)];}
+:host .bulud-padding-x-5{@apply [padding-inline:var(--bulud-spacing-5,24px)];}
+:host .bulud-padding-y-5{@apply [padding-block:var(--bulud-spacing-5,24px)];}
+:host .bulud-padding-t-8{@apply [padding-top:var(--bulud-spacing-8,48px)];}
+:host .bulud-type-2{@apply [font-size:var(--bulud-font-size-2,22px)];}
+:host .bulud-type-5{@apply [font-size:var(--bulud-font-size-5,16px)];}
+:host .bulud-type-7{@apply [font-size:var(--bulud-font-size-7,12px)];}
+:host .bulud-round-start{@apply [border-start-start-radius:var(--bulud-radius-small,6px)];}
+@media(min-width:992px){}

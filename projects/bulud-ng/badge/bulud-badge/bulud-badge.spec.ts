@@ -4,6 +4,7 @@ import {
   EnvironmentInjector,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -19,6 +20,8 @@ import { BuludBadge } from './bulud-badge';
 @Component({
   standalone: true,
   imports: [BuludBadge],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <bulud-badge
       [variant]="variant()"
@@ -195,8 +198,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'heightSmall',
       variable: '--bulud-badge-height-small',
-      fallback: '1.625rem',
-      computed: '26px',
+      fallback: '20px',
+      computed: '20px',
       size: 'small',
       selector: '.bulud-badge',
       property: 'min-block-size',
@@ -204,8 +207,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'fontSizeSmall',
       variable: '--bulud-badge-font-size-small',
-      fallback: '0.8125rem',
-      computed: '13px',
+      fallback: '10px',
+      computed: '10px',
       size: 'small',
       selector: '.bulud-badge',
       property: 'font-size',
@@ -213,8 +216,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'paddingInlineSmall',
       variable: '--bulud-badge-padding-inline-small',
-      fallback: '0.75rem',
-      computed: '12px',
+      fallback: '6px',
+      computed: '6px',
       size: 'small',
       selector: '.bulud-badge',
       property: 'padding-inline-start',
@@ -222,8 +225,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'heightMedium',
       variable: '--bulud-badge-height-medium',
-      fallback: '2rem',
-      computed: '32px',
+      fallback: '24px',
+      computed: '24px',
       size: 'medium',
       selector: '.bulud-badge',
       property: 'min-block-size',
@@ -231,8 +234,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'fontSizeMedium',
       variable: '--bulud-badge-font-size-medium',
-      fallback: '0.875rem',
-      computed: '14px',
+      fallback: '12px',
+      computed: '12px',
       size: 'medium',
       selector: '.bulud-badge',
       property: 'font-size',
@@ -240,8 +243,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'paddingInlineMedium',
       variable: '--bulud-badge-padding-inline-medium',
-      fallback: '0.875rem',
-      computed: '14px',
+      fallback: '8px',
+      computed: '8px',
       size: 'medium',
       selector: '.bulud-badge',
       property: 'padding-inline-start',
@@ -249,8 +252,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'heightLarge',
       variable: '--bulud-badge-height-large',
-      fallback: '2.25rem',
-      computed: '36px',
+      fallback: '28px',
+      computed: '28px',
       size: 'large',
       selector: '.bulud-badge',
       property: 'min-block-size',
@@ -258,8 +261,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'fontSizeLarge',
       variable: '--bulud-badge-font-size-large',
-      fallback: '0.9375rem',
-      computed: '15px',
+      fallback: '14px',
+      computed: '14px',
       size: 'large',
       selector: '.bulud-badge',
       property: 'font-size',
@@ -267,8 +270,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'paddingInlineLarge',
       variable: '--bulud-badge-padding-inline-large',
-      fallback: '1rem',
-      computed: '16px',
+      fallback: '10px',
+      computed: '10px',
       size: 'large',
       selector: '.bulud-badge',
       property: 'padding-inline-start',
@@ -286,7 +289,7 @@ describe('Badge geometry theme precedence', () => {
       field: 'lineHeight',
       variable: '--bulud-badge-line-height',
       fallback: '1.25',
-      computed: '17.5px',
+      computed: '15px',
       size: 'medium',
       selector: '.bulud-badge',
       property: 'line-height',
@@ -294,8 +297,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'dotSize',
       variable: '--bulud-badge-dot-size',
-      fallback: '0.4375rem',
-      computed: '7px',
+      fallback: '4px',
+      computed: '4px',
       size: 'medium',
       selector: '.bulud-badge__dot',
       property: 'width',
@@ -303,8 +306,8 @@ describe('Badge geometry theme precedence', () => {
     {
       field: 'dotGap',
       variable: '--bulud-badge-dot-gap',
-      fallback: '0.625rem',
-      computed: '10px',
+      fallback: '6px',
+      computed: '6px',
       size: 'medium',
       selector: '.bulud-badge__dot',
       property: 'margin-inline-end',

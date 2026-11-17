@@ -6,3 +6,5 @@ export type {
   BuludDatepickerTheme,
 } from './lib/theme/form-control-themes';
 export * from './lib/theme/shared-ui-theme';
+
+export * from './lib/theme/feature-config';

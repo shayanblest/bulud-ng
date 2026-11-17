@@ -52,7 +52,7 @@ let nextSwitchId = 0;
     '[class.bulud-switch-host--theme]': "appearance() === 'theme'",
   },
   templateUrl: './bulud-switch.html',
-  styleUrl: './bulud-switch.scss',
+  styleUrl: './bulud-switch.css',
 })
 export class BuludSwitch implements ControlValueAccessor, Validator {
   private readonly injector = inject(Injector);

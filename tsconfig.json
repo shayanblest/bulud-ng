@@ -2,7 +2,9 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "bulud-ng/radial-chart": ["./projects/bulud-ng/radial-chart/public-api.ts"],
+      "bulud-ng/radial-chart": [
+        "./projects/bulud-ng/radial-chart/public-api.ts"
+      ],
       "bulud-ng/line-chart": ["./projects/bulud-ng/line-chart/public-api.ts"],
       "bulud-ng": ["./projects/bulud-ng/src/public-api.ts"],
       "bulud-ng/radio": ["./projects/bulud-ng/radio/public-api.ts"],
@@ -51,7 +53,28 @@
       "bulud-ng/chat": ["./projects/bulud-ng/chat/public-api.ts"],
       "bulud-ng/field-label": ["./projects/bulud-ng/field-label/public-api.ts"],
       "bulud-ng/skeleton": ["./projects/bulud-ng/skeleton/public-api.ts"],
-      "bulud-ng/confirm": ["./projects/bulud-ng/confirm/public-api.ts"]
+      "bulud-ng/confirm": ["./projects/bulud-ng/confirm/public-api.ts"],
+      "bulud-ng/input-behaviors": [
+        "./projects/bulud-ng/input-behaviors/public-api.ts"
+      ],
+      "bulud-ng/access": ["./projects/bulud-ng/access/public-api.ts"],
+      "bulud-ng/appearance": ["./projects/bulud-ng/appearance/public-api.ts"],
+      "bulud-ng/date-range": ["./projects/bulud-ng/date-range/public-api.ts"],
+      "bulud-ng/runtime": ["./projects/bulud-ng/runtime/public-api.ts"],
+      "bulud-ng/language-switch": [
+        "./projects/bulud-ng/language-switch/public-api.ts"
+      ],
+      "bulud-ng/account-card": [
+        "./projects/bulud-ng/account-card/public-api.ts"
+      ],
+      "bulud-ng/chart-engine": [
+        "./projects/bulud-ng/chart-engine/public-api.ts"
+      ],
+      "bulud-ng/default-404-image": [
+        "./projects/bulud-ng/default-404-image/public-api.ts"
+      ],
+      "bulud-ng/symbol": ["./projects/bulud-ng/symbol/public-api.ts"],
+      "bulud-ng/tour": ["./projects/bulud-ng/tour/public-api.ts"]
     },
     "strict": true,
     "noImplicitOverride": true,

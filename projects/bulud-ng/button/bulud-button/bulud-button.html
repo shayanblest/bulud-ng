@@ -1,5 +1,8 @@
 <button
+  [attr.id]="id()"
   class="bulud-button"
+  [class.bulud-button--outline]="appearance() === 'outline'"
+  [class.bulud-button--link]="appearance() === 'link'"
   [class.bulud-button--primary]="variant() === 'primary'"
   [class.bulud-button--secondary]="variant() === 'secondary'"
   [class.bulud-button--danger]="variant() === 'danger'"

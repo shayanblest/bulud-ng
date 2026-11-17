@@ -1,0 +1,8 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply [color:var(--bulud-field-label-foreground,_var(--bulud-color-on-surface))];
+}
+.marker {
+  @apply [color:var(--bulud-field-label-accent,_var(--bulud-color-danger-text,_var(--bulud-color-danger))_)];
+  @apply [font-weight:var(--bulud-field-label-weight,_600)];
+}

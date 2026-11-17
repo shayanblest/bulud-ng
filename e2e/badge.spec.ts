@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#all');
 });
 
 for (const direction of ['rtl', 'ltr'] as const) {
@@ -24,13 +24,13 @@ for (const direction of ['rtl', 'ltr'] as const) {
       });
       let dismissals = 0;
       for (const [size, height] of [
-        ['small', '26px'],
-        ['medium', '32px'],
-        ['large', '36px'],
+        ['small', '20px'],
+        ['medium', '24px'],
+        ['large', '28px'],
       ]) {
         await restore.click();
         const sizeControl = scope
-          .getByRole('group', { name: 'Dismissible badge size' })
+          .getByRole('radiogroup', { name: 'Dismissible badge size' })
           .getByRole('radio', { name: size, exact: true });
         await sizeControl.check();
         await expect(sizeControl).toBeChecked();
@@ -42,7 +42,7 @@ for (const direction of ['rtl', 'ltr'] as const) {
           await expect(badge).toHaveCSS('min-height', height);
           await expect(badge).toHaveCSS(
             'background-color',
-            theme === 'dark' ? 'rgb(30, 41, 59)' : 'rgb(248, 250, 252)',
+            theme === 'dark' ? 'rgb(52, 52, 60)' : 'rgb(243, 246, 249)',
           );
           const dismissBox = await dismiss.boundingBox();
           const contentBox = await host
@@ -64,7 +64,9 @@ for (const direction of ['rtl', 'ltr'] as const) {
           await dismiss.hover();
           await expect(dismiss).toHaveCSS(
             'background-color',
-            'rgba(15, 23, 42, 0.1)',
+            theme === 'dark'
+              ? 'rgba(213, 213, 213, 0.15)'
+              : 'rgba(30, 30, 38, 0.15)',
           );
           if (key === 'pointer') await dismiss.click();
           else await page.keyboard.press(key);
@@ -84,9 +86,9 @@ test('covers variants, sizes, passive empty/text semantics, dots, RTL and theme 
 }) => {
   const scope = page.locator('#badge-states');
   for (const [size, height] of [
-    ['small', '26px'],
-    ['medium', '32px'],
-    ['large', '36px'],
+    ['small', '20px'],
+    ['medium', '24px'],
+    ['large', '28px'],
   ]) {
     await expect(scope.locator(`.bulud-badge--${size}`).first()).toHaveCSS(
       'min-height',
@@ -119,9 +121,9 @@ test('covers variants, sizes, passive empty/text semantics, dots, RTL and theme 
       await dot.evaluate((el) => getComputedStyle(el).backgroundColor),
     ).toBe(await dot.evaluate((el) => getComputedStyle(el).color));
   }
-  await expect(badge).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+  await expect(badge).toHaveCSS('background-color', 'rgb(243, 246, 249)');
   await scope.getByLabel('Dark badge theme').check();
-  await expect(badge).toHaveCSS('background-color', 'rgb(30, 41, 59)');
+  await expect(badge).toHaveCSS('background-color', 'rgb(52, 52, 60)');
   await expect(scope.getByText('Instance theme', { exact: true })).toHaveCSS(
     'color',
     'rgb(255, 255, 255)',
@@ -141,7 +143,7 @@ test('covers variants, sizes, passive empty/text semantics, dots, RTL and theme 
     el.style.removeProperty('--bulud-badge-neutral-background'),
   );
   await scope.getByLabel('Dark badge theme').uncheck();
-  await expect(badge).toHaveCSS('background-color', 'rgb(248, 250, 252)');
+  await expect(badge).toHaveCSS('background-color', 'rgb(243, 246, 249)');
 });
 
 for (const marker of ['class', 'data-theme'] as const) {
@@ -155,11 +157,11 @@ for (const marker of ['class', 'data-theme'] as const) {
       await scope.evaluate((el) => el.setAttribute('data-theme', 'dark'));
     }
     for (const [variant, color] of [
-      ['neutral', 'rgb(30, 41, 59)'],
-      ['primary', 'rgb(30, 58, 138)'],
-      ['success', 'rgb(20, 83, 45)'],
-      ['warning', 'rgb(120, 53, 15)'],
-      ['danger', 'rgb(136, 19, 55)'],
+      ['neutral', 'rgb(52, 52, 60)'],
+      ['primary', 'rgb(253, 181, 21)'],
+      ['success', 'rgb(38, 208, 124)'],
+      ['warning', 'rgb(255, 204, 25)'],
+      ['danger', 'rgb(255, 128, 128)'],
     ]) {
       const badge = scope.locator(`.bulud-badge--${variant}`).first();
       await expect(badge).toHaveCSS('background-color', color);
@@ -202,7 +204,7 @@ test('CSS geometry and focus overrides inherit and yield to instance values', as
   await button.hover();
   await expect(button).toHaveCSS('background-color', 'rgb(35, 69, 103)');
   await host.evaluate((el) =>
-    el.style.setProperty('--bulud-badge-dismiss-size', '36px'),
+    el.style.setProperty('--bulud-badge-dismiss-size', '28px'),
   );
-  await expect(button).toHaveCSS('min-width', '36px');
+  await expect(button).toHaveCSS('min-width', '28px');
 });

@@ -1,0 +1,48 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-progress-foreground,_var(--bulud-color-on-surface))];
+}
+figure {
+  @apply [margin:0];
+  @apply [padding:var(--bulud-progress-padding,_16px)];
+  @apply [background:var(--bulud-progress-background,_var(--bulud-color-surface))];
+  @apply [border-radius:var(--bulud-progress-radius,_8px)];
+}
+figcaption {
+  @apply [margin-block-end:12px];
+}
+.ring {
+  @apply block;
+  @apply [inline-size:min(100%,_260px)];
+  @apply [margin-inline:auto];
+  @apply [direction:ltr];
+}
+circle {
+  @apply [fill:none];
+  @apply [stroke-width:var(--bulud-progress-stroke-width,_8px)];
+  @apply [transform:rotate(-90deg)];
+  @apply [transform-origin:60px_60px];
+}
+.track {
+  @apply [stroke:var(--bulud-progress-border,_var(--bulud-color-border))];
+  @apply [background:var(--bulud-progress-border,_var(--bulud-color-border))];
+}
+.value {
+  @apply [stroke:var(--bulud-progress-accent,_var(--bulud-color-primary))];
+  @apply [stroke-linecap:round];
+}
+text {
+  @apply [fill:currentColor];
+  @apply [font:12px_sans-serif];
+}
+.bar {
+  @apply [border-radius:var(--bulud-progress-radius,_100px)];
+  @apply [height:var(--bulud-progress-height,_16px)];
+  @apply overflow-hidden;
+}
+.fill {
+  @apply [height:100%];
+  @apply [background:var(--bulud-progress-accent,_var(--bulud-color-primary))];
+  @apply [border-radius:inherit];
+}

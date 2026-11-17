@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -10,6 +11,8 @@ import { activateStateStyle } from '../../src/lib/theme/theme-test-helpers';
 
 @Component({
   imports: [BuludDialog],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <button #trigger id="trigger" type="button" (click)="open.set(true)">
       Open
@@ -70,6 +73,8 @@ class TestHost {
 
 @Component({
   imports: [BuludDialog],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <button id="stack-trigger" type="button">Open stack</button>
     <bulud-dialog [(open)]="thirdOpen" aria-label="Third dialog">
@@ -97,6 +102,8 @@ class StackHost {
 
 @Component({
   imports: [BuludDialog],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div
       class="clipped-shell"
@@ -114,6 +121,8 @@ class ClippedHost {
 
 @Component({
   imports: [BuludDialog],
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- Mutable consumer fixture retained by the official Angular 22 migration.
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <button id="native-trigger" type="button" (click)="open.set(true)">
       Open native form dialog

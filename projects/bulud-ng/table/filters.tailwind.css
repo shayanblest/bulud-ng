@@ -1,0 +1,76 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [margin-block-end:var(--bulud-table-filters-gap,_var(--bulud-spacing-4,_16px)_)];
+  @apply [color:var(--bulud-table-filters-foreground,_var(--bulud-color-on-surface))];
+}
+.filter-panel {
+  @apply [border:1px_solid_var(--bulud-table-filters-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-table-filters-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [padding:var(--bulud-table-filters-padding,_var(--bulud-spacing-3,_12px))];
+  @apply [background:var(--bulud-table-filters-background,_var(--bulud-color-surface))];
+}
+summary {
+  @apply cursor-pointer;
+  @apply [list-style:none];
+  @apply flex;
+  @apply items-center;
+  @apply [gap:var(--bulud-spacing-2,_8px)];
+  @apply [width:fit-content];
+}
+summary::-webkit-details-marker {
+  @apply hidden;
+}
+summary svg {
+  @apply [width:18px];
+  @apply [height:18px];
+  @apply [stroke:var(--bulud-table-filters-accent,_var(--bulud-color-primary))];
+  @apply [fill:none];
+  @apply [stroke-width:1.5];
+}
+.count {
+  @apply [border-radius:var(--bulud-radius-control,_8px)];
+  @apply [padding-inline:8px];
+  @apply [background:var(--bulud-color-primary)];
+  @apply [color:var(--bulud-color-on-primary)];
+}
+.fields {
+  @apply grid;
+  @apply [grid-template-columns:repeat(auto-fit,_minmax(min(100%,_180px),_1fr))];
+  @apply [gap:var(--bulud-table-filters-gap,_var(--bulud-spacing-4,_16px))];
+  @apply [margin-block:16px];
+}
+.field {
+  @apply flex;
+  @apply flex-col;
+  @apply [gap:8px];
+  @apply [min-width:0];
+}
+input,
+button {
+  @apply [font:inherit];
+  @apply [color:inherit];
+  @apply [background:var(--bulud-body-bg,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-table-filters-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-table-filters-radius,_var(--bulud-radius-control,_8px)_)];
+  @apply [padding:12px];
+}
+input {
+  @apply [min-width:0];
+  @apply [width:100%];
+  @apply box-border;
+}
+button {
+  @apply cursor-pointer;
+}
+:disabled {
+  @apply [opacity:var(--bulud-table-filters-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+:is(summary, input, button):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-table-filters-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+input[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-color-danger)];
+}

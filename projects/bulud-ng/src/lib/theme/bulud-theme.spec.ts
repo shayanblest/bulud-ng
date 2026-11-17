@@ -20,16 +20,16 @@ import {
 
 describe('Bulud theme', () => {
   const optionalButtonDefaults = {
-    secondaryBackground: 'var(--bulud-color-surface, #ffffff)',
-    secondaryBackgroundHover: 'var(--bulud-color-surface-hover, #f8fafc)',
-    secondaryBackgroundActive: 'var(--bulud-color-surface-active, #f1f5f9)',
-    secondaryBorder: 'var(--bulud-color-border, #cbd5e1)',
-    secondaryForeground: 'var(--bulud-color-on-surface, #0f172a)',
-    ghostForeground: 'var(--bulud-color-on-surface, #0f172a)',
-    disabledBackground: 'var(--_background)',
-    disabledForeground: 'var(--_foreground)',
-    activeShadow: 'none',
-    dangerActiveShadow: 'var(--bulud-button-active-shadow, none)',
+    secondaryBackground: '#FDB515',
+    secondaryBackgroundHover: '#e4a313',
+    secondaryBackgroundActive: '#ca9111',
+    secondaryBorder: 'transparent',
+    secondaryForeground: '#000000',
+    ghostForeground: '#0C2340',
+    disabledBackground: 'rgba(30, 30, 38, 0.15)',
+    disabledForeground: 'rgba(30, 30, 38, 0.5)',
+    activeShadow: '0 0 0 0.4rem rgba(12, 35, 64, 0.2)',
+    dangerActiveShadow: '0 0 0 0.4rem rgba(161, 23, 41, 0.1)',
     borderWidth: '1px',
     focusWidth: '3px',
     focusOffset: '2px',
@@ -136,7 +136,7 @@ describe('Bulud theme', () => {
     expect(resolveBuludTheme().pagination).toEqual(
       resolveBuludTheme(BULUD_DEFAULT_THEME).pagination,
     );
-    expect(resolveBuludTheme().pagination.activeBackground).toBe('#2563eb');
+    expect(resolveBuludTheme().pagination.activeBackground).toBe('#0C2340');
     expect(resolveBuludTheme().pagination.pagePadding).toBe('0.5rem');
     expect(resolveBuludTheme().pagination.directionIconSize).toBe('1.5em');
   });
@@ -297,7 +297,7 @@ describe('Bulud theme', () => {
   it('resolves checkbox focus geometry defaults and configured values', () => {
     expect(resolveBuludTheme().checkbox.focusWidth).toBe('3px');
     expect(resolveBuludTheme().checkbox.focusOffset).toBe('2px');
-    expect(resolveBuludTheme().checkbox.gap).toBe('0.625rem');
+    expect(resolveBuludTheme().checkbox.gap).toBe('8px');
     expect(resolveBuludTheme().checkbox.borderWidth).toBe('1px');
     expect(resolveBuludTheme().checkbox.labelLineHeight).toBe('1.5');
 

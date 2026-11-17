@@ -1,0 +1,91 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-rating-foreground,_var(--bulud-color-on-surface))];
+}
+.surface {
+  @apply [background:var(--bulud-rating-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-rating-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-rating-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-rating-padding,_var(--bulud-spacing-4,_16px))];
+}
+button,
+input,
+select {
+  @apply [font:inherit];
+  @apply [color:inherit];
+}
+button {
+  @apply cursor-pointer;
+  @apply [background:var(--bulud-rating-background,_var(--bulud-color-surface))];
+  @apply [border:1px_solid_var(--bulud-rating-border,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-rating-radius,_var(--bulud-radius-control,_8px))];
+  @apply [padding:var(--bulud-spacing-2,_8px)_var(--bulud-spacing-3,_12px)];
+}
+button:hover:not(:disabled) {
+  @apply [background:var(--bulud-color-surface-hover)];
+}
+:where(button, input, select):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-rating-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+:disabled {
+  @apply [opacity:var(--bulud-rating-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}
+.muted {
+  @apply [color:var(--bulud-rating-muted,_var(--bulud-color-muted))];
+}
+.actions {
+  @apply flex;
+  @apply flex-wrap;
+  @apply items-center;
+  @apply [gap:var(--bulud-rating-gap,_var(--bulud-spacing-3,_12px))];
+}
+.error {
+  @apply [color:var(--bulud-color-danger-text,_var(--bulud-color-danger))];
+}
+fieldset {
+  @apply [border:0];
+  @apply [padding:0];
+  @apply [margin:0];
+}
+legend {
+  @apply [padding:0];
+  @apply [margin-block-end:var(--bulud-spacing-3,_12px)];
+}
+.star {
+  @apply relative;
+  @apply inline-grid;
+  @apply [place-items:center];
+  @apply cursor-pointer;
+}
+.star input {
+  @apply absolute;
+  @apply [width:100%];
+  @apply [height:100%];
+  @apply [margin:0];
+  @apply [opacity:0];
+  @apply [cursor:inherit];
+}
+.star > span:first-of-type {
+  @apply [font-size:var(--bulud-rating-size,_2rem)];
+  @apply [color:var(--bulud-rating-muted,_var(--bulud-color-border))];
+}
+.star > span.filled {
+  @apply [color:var(--bulud-rating-accent,_var(--bulud-color-primary))];
+}
+.star:has(input:focus-visible) {
+  @apply [outline:2px_solid_var(--bulud-rating-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+.sr {
+  @apply absolute;
+  @apply [width:1px];
+  @apply [height:1px];
+  @apply overflow-hidden;
+  @apply [clip-path:inset(50%)];
+}
+fieldset:disabled {
+  @apply [opacity:var(--bulud-rating-disabled-opacity,_0.5)];
+}

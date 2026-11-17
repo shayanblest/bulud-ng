@@ -1,3 +1,6 @@
+import { BuludDropdown } from 'bulud-ng/dropdown';
+import { BuludSwitch } from 'bulud-ng/switch';
+import { migrationDemoText } from './migration-demo-translations';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,18 +11,47 @@ import { BuludRadialChart } from 'bulud-ng/radial-chart';
 @Component({
   selector: 'app-radial-chart-demo',
   standalone: true,
-  imports: [BuludRadialChart],
+  imports: [BuludDropdown, BuludSwitch, BuludRadialChart],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<section id="radial-chart-demo" class="space-y-4 p-6">
-    <h2 class="text-xl font-bold">Radial percentage</h2>
-    <label
-      >State
-      <select [value]="state()" (change)="setState($event)">
-        @for (state of states; track state) {
-          <option [value]="state">{{ state }}</option>
-        }
-      </select></label
-    >
+  template: `<section
+    id="radial-chart-demo"
+    class="bulud-app bulud-migration-demo"
+    data-bulud-preset="angour"
+    [attr.data-theme]="dark() ? 'dark' : 'light'"
+    [attr.dir]="rtl() ? 'rtl' : 'ltr'"
+    [attr.lang]="locale() || 'en'"
+    [style.--demo-accent]="accent()"
+    [style.--bulud-color-primary]="accent()"
+  >
+    <h2 class="text-xl font-bold">{{ t('Radial percentage') }}</h2>
+    <div class="demo-toolbar">
+      <bulud-switch
+        appearance="theme"
+        [checked]="dark()"
+        (checkedChange)="dark.set($event)"
+        aria-label="Chart dark theme"
+        >{{ t('Cycle widget theme') }}</bulud-switch
+      ><label
+        >{{ t('Project accent') }}
+        <input
+          type="color"
+          aria-label="Chart accent"
+          [value]="accent() ?? '#0c2340'"
+          (input)="accent.set($any($event.target).value); override.set(true)"
+      /></label>
+    </div>
+    <div class="demo-field">
+      State
+      <bulud-dropdown
+        class="demo-control"
+        aria-label="Chart state"
+        [options]="states"
+        [value]="state()"
+        (valueChange)="state.set(stringValue($event, state()))"
+        [searchable]="false"
+        [clearable]="false"
+      />
+    </div>
     <label
       >Locale (any BCP 47 tag)
       <input [value]="locale()" (input)="setLocale($event)"
@@ -27,9 +59,13 @@ import { BuludRadialChart } from 'bulud-ng/radial-chart';
     <label
       >Chart label <input [value]="label()" (input)="setLabel($event)"
     /></label>
-    <button type="button" (click)="rtl.set(!rtl())">
+    <button class="demo-action" type="button" (click)="rtl.set(!rtl())">
       Toggle radial direction</button
-    ><button type="button" (click)="override.set(!override())">
+    ><button
+      class="demo-action"
+      type="button"
+      (click)="override.set(!override())"
+    >
       Toggle radial theme
     </button>
     <div class="w-full max-w-[400px]" [dir]="rtl() ? 'rtl' : 'ltr'">
@@ -42,7 +78,10 @@ import { BuludRadialChart } from 'bulud-ng/radial-chart';
         [disabled]="state() === 'disabled'"
         [theme]="
           override()
-            ? { accent: 'rgb(190, 40, 90)', track: 'rgb(200, 200, 210)' }
+            ? {
+                accent: accent() ?? 'var(--bulud-color-primary)',
+                track: 'var(--bulud-color-border)',
+              }
             : undefined
         "
       />
@@ -50,6 +89,19 @@ import { BuludRadialChart } from 'bulud-ng/radial-chart';
   </section>`,
 })
 export class RadialChartDemo {
+  protected readonly numberValue = (
+    value: unknown,
+    fallback: number,
+  ): number =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  protected readonly stringValue = (
+    value: unknown,
+    fallback: string,
+  ): string => (typeof value === 'string' ? value : fallback);
+  readonly dark = signal(false);
+  readonly accent = signal<string | null>(null);
+  protected readonly t = (key: string) =>
+    migrationDemoText(this.locale() || 'en', key);
   readonly states = [
     'default',
     'zero',

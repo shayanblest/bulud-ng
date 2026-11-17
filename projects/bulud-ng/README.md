@@ -8,23 +8,20 @@ Angour setup, forms and server-rendering notes.
 
 ## Installation
 
-Public npm publication is pending the owner’s package name/account and license decision.
-The library supports Angular 20: the distribution checks exercise 20.3.34 (the minimum patched
-peer version). Compatibility with other Angular major versions has not been verified. Build and install the local package first:
+Version 3 targets Angular 22.2.6 or newer within Angular 22. Distribution checks compile all public entry points in an isolated consumer. For local development, build and install the package:
 
 ```bash
 # In the library workspace:
 npm run package:local
 # In your Angular application, using the actual absolute path:
-npm install /path/to/bulud-ng/dist/packages/bulud-ng-0.0.1.tgz
+npm install /path/to/bulud-ng/dist/packages/bulud-ng-3.0.0.tgz
 ```
 
-After public publication, install the chosen registry package with `npm install bulud-ng`
-(or the final scoped name). The private workspace root is never the published artifact.
+Install the published version with `npm install bulud-ng@3.0.0`. The private workspace root is never the published artifact.
 The built package has a `prepublishOnly` guard: an owner-selected license and its
 LICENSE file must be included before public publication. No license is assumed.
 
-Angular packages are peer dependencies. Install a compatible Angular 20.3.34+
+Angular packages are peer dependencies. Install a compatible Angular 22.2.6+
 version in the consuming application.
 
 Tailwind CSS 4 is optional. Bulud components work without Tailwind.
@@ -1280,7 +1277,7 @@ Reusable Angour tables, URL/list query tools, OTP, file selection, feedback and 
 
 ## Component catalog and installation
 
-In the source workspace, run `npm start` and open http://127.0.0.1:4314/components. Import individual secondary entry points for tree shaking. The packaged [shared API guide](SHARED.md) includes current installation steps, all shared APIs and new period picker, avatar, empty state, donut/progress components. Public registry publication is pending the owner's package and license decision.
+In the source workspace, run `npm start` and open http://127.0.0.1:4314/components. Import individual secondary entry points for tree shaking. The packaged [shared API guide](SHARED.md) includes current installation steps, all shared APIs and new period picker, avatar, empty state, donut/progress components. Version 3 publication requires the production performance, package and compatibility checks described in the release guide.
 
 See the current component catalog / chat / label / display-pipe contracts in [SHARED.md](SHARED.md).
 
@@ -1350,7 +1347,7 @@ Escape. The consumer must clear processing on failure or close after success;
 Demos, examples and APIs: `/components/skeleton`, `/components/alert`,
 `/components/confirm`.
 
-## Native line charts (2.0.0)
+## Native line charts
 
 Import `BuludLineChart` from `bulud-ng/line-chart` for multiple series, dashed
 comparisons, explicit axes and custom financial/grade labels. The component uses
@@ -1359,10 +1356,31 @@ runtime dependency. See [the public API](../../docs/PUBLIC-API.md) for the typed
 inputs, theme configuration and keyboard accessibility. Existing `charts`
 exports remain compatible.
 
-## Radial percentages (2.1.0)
+## Radial percentages
 
 Import `BuludRadialChart` from `bulud-ng/radial-chart` for a native scalar
 percentage ring with exact values, rounded caps, responsive name/value placement,
 hover and keyboard/pointer selection. Arbitrary locale and consumer-supplied
 labels update reactively. The separate Tailwind entry imports no Apex or shared
 root config; it does not change existing donut/progress components.
+
+## Tailwind source and compiled styles
+
+All component designs are authored as static Tailwind v4 utilities in the files listed in `tools/tailwind-styles.json`. CSS custom properties supply theme values, so switching language, direction, or theme does not generate runtime classes. `npm run build:styles` compiles each feature independently; `npm run validate:styles` detects stale output. Build, demo build, and tests run this step automatically. There is no Preflight or project-wide source scan in library styles, and importing one entry does not import an aggregate JavaScript module.
+
+Published consumers receive ordinary compiled CSS and do not need a Tailwind compiler or Bootstrap. Import `bulud-ng/theme.css` explicitly for the library palette. Optional `bulud-ng/angour.css` and `bulud-ng/angour-base.css` provide the Angour palette. Existing projects can opt into `BULUD_SHARED_UI_CONFIG.legacyUtilityClasses` while migrating their existing utility classes and icon font. Leave it false in portable projects to use the component layouts and built-in SVG symbols.
+
+## Angular compatibility
+
+Version 3 requires Angular 22.2.6 or newer within Angular 22. This is a major version because version 2 supports Angular 22. Import paths remain independent; project policies are supplied through the new typed providers.
+
+## Version 3 migration
+
+Version 3 requires Angular 22.2.6 or newer within major 22. Angular's matching
+framework/compiler packages must use the same patch. All default component
+skins now use one Angour token source, authored in Tailwind; the optional scoped
+preset uses those same colors and geometry. Existing feature components own
+new presentation modes rather than exporting renamed duplicates. See
+[SHARED.md](./SHARED.md#canonical-shared-api-in-version-3) for canonical OTP,
+carousel, tabs, stepper, period picker, upload and chart migration examples, and
+[SHARED.md](./SHARED.md#product-tour-bulud-ngtour) for the portable tour API.

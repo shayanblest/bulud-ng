@@ -100,6 +100,32 @@ describe('Shared UI typed theme precedence', () => {
       );
     });
   }
+  it('period border width respects instance, component and global configuration', () => {
+    const config = {
+      theme: { borderWidth: '1px' },
+      components: { 'period-picker': { borderWidth: '2px' } },
+    };
+    expect(
+      buludSharedUiStyles('period-picker', config, { borderWidth: '3px' })[
+        '--bulud-period-picker-border-width'
+      ],
+    ).toBe('3px');
+    expect(
+      buludSharedUiStyles('period-picker', config, undefined)[
+        '--bulud-period-picker-border-width'
+      ],
+    ).toBe('2px');
+    expect(
+      buludSharedUiStyles('period-picker', { theme: config.theme }, undefined)[
+        '--bulud-period-picker-border-width'
+      ],
+    ).toBe('1px');
+    expect(
+      buludSharedUiStyles('period-picker', {}, undefined)[
+        '--bulud-period-picker-border-width'
+      ],
+    ).toBeUndefined();
+  });
   it('does not emit undefined fields or fallback styles that override scoped CSS', () => {
     expect(buludSharedUiStyles('otp', {}, undefined)).toEqual({});
     expect(

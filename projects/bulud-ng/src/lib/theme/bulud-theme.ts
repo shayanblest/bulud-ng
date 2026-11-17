@@ -1,3 +1,4 @@
+import { BULUD_ANGOUR_LIGHT_THEME } from './angour-theme';
 import {
   BuludRadioTheme,
   BuludDatepickerTheme,
@@ -73,6 +74,17 @@ export interface BuludButtonTheme {
 
 /** Theme tokens for dropdown controls. */
 export interface BuludDropdownTheme {
+  readonly fontSize?: string;
+  readonly lineHeight?: string;
+  readonly fontWeight?: string;
+  readonly minHeight?: string;
+  readonly paddingBlock?: string;
+  readonly paddingInline?: string;
+  readonly gap?: string;
+  readonly optionMinHeight?: string;
+  readonly optionPadding?: string;
+  readonly optionGap?: string;
+
   readonly background: string;
   readonly border: string;
   readonly invalidBorder?: string;
@@ -347,6 +359,18 @@ const BULUD_BADGE_GEOMETRY_VARIABLES = new Set([
   '--bulud-badge-focus-width',
   '--bulud-badge-focus-offset',
 ]);
+const BULUD_DROPDOWN_GEOMETRY_VARIABLES = new Set([
+  '--bulud-dropdown-font-size',
+  '--bulud-dropdown-line-height',
+  '--bulud-dropdown-font-weight',
+  '--bulud-dropdown-min-height',
+  '--bulud-dropdown-padding-block',
+  '--bulud-dropdown-padding-inline',
+  '--bulud-dropdown-gap',
+  '--bulud-dropdown-option-min-height',
+  '--bulud-dropdown-option-padding',
+  '--bulud-dropdown-option-gap',
+]);
 const BULUD_CHECKBOX_GEOMETRY_VARIABLES = new Set([
   '--bulud-checkbox-border-width',
   '--bulud-checkbox-disabled-opacity',
@@ -389,29 +413,8 @@ const BULUD_PAGINATION_GEOMETRY_VARIABLES = new Set([
   '--bulud-pagination-focus-width',
   '--bulud-pagination-focus-offset',
 ]);
-const BULUD_PAGINATION_THEME_VARIABLES = {
-  background: '--bulud-pagination-background',
-  backgroundHover: '--bulud-pagination-background-hover',
-  activeBackground: '--bulud-pagination-active-background',
-  border: '--bulud-pagination-border',
-  foreground: '--bulud-pagination-foreground',
-  activeForeground: '--bulud-pagination-active-foreground',
-  mutedForeground: '--bulud-pagination-muted-foreground',
-  focus: '--bulud-pagination-focus',
-  disabledOpacity: '--bulud-pagination-disabled-opacity',
-  radius: '--bulud-pagination-radius',
-  size: '--bulud-pagination-size',
-  pagePadding: '--bulud-pagination-page-padding',
-  directionIconSize: '--bulud-pagination-direction-icon-size',
-  gap: '--bulud-pagination-gap',
-  borderWidth: '--bulud-pagination-border-width',
-  focusWidth: '--bulud-pagination-focus-width',
-  focusOffset: '--bulud-pagination-focus-offset',
-  fontWeight: '--bulud-pagination-font-weight',
-} as const satisfies Record<keyof BuludPaginationTheme, BuludThemeCssVariable>;
-
 /** Concrete defaults retained internally for theme resolution. */
-const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
+const BASE_DEFAULT_THEME: ResolvedBuludTheme = {
   ...FORM_CONTROL_THEME_DEFAULTS,
   colors: {
     primary: '#2563eb',
@@ -468,6 +471,16 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
     },
   },
   dropdown: {
+    fontSize: 'var(--bulud-font-size-control,12px)',
+    lineHeight: '1.5',
+    fontWeight: '400',
+    minHeight: '0px',
+    paddingBlock: '12px',
+    paddingInline: '12px',
+    gap: '8px',
+    optionMinHeight: '0px',
+    optionPadding: '12px',
+    optionGap: '8px',
     background: '#ffffff',
     border: '#cbd5e1',
     invalidBorder: '#dc2626',
@@ -638,6 +651,77 @@ const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
   },
 };
 
+/** One default design system. The historical structural defaults only fill tokens not present in Angour. */
+const RESOLVED_DEFAULT_THEME: ResolvedBuludTheme = {
+  ...BASE_DEFAULT_THEME,
+  radio: { ...BASE_DEFAULT_THEME.radio, ...BULUD_ANGOUR_LIGHT_THEME.radio },
+  datepicker: {
+    ...BASE_DEFAULT_THEME.datepicker,
+    ...BULUD_ANGOUR_LIGHT_THEME.datepicker,
+  },
+  colors: { ...BASE_DEFAULT_THEME.colors, ...BULUD_ANGOUR_LIGHT_THEME.colors },
+  shape: { ...BASE_DEFAULT_THEME.shape, ...BULUD_ANGOUR_LIGHT_THEME.shape },
+  dropdown: {
+    ...BASE_DEFAULT_THEME.dropdown,
+    ...BULUD_ANGOUR_LIGHT_THEME.dropdown,
+  },
+  tabs: { ...BASE_DEFAULT_THEME.tabs, ...BULUD_ANGOUR_LIGHT_THEME.tabs },
+  accordion: {
+    ...BASE_DEFAULT_THEME.accordion,
+    ...BULUD_ANGOUR_LIGHT_THEME.accordion,
+  },
+  checkbox: {
+    ...BASE_DEFAULT_THEME.checkbox,
+    ...BULUD_ANGOUR_LIGHT_THEME.checkbox,
+  },
+  switch: { ...BASE_DEFAULT_THEME.switch, ...BULUD_ANGOUR_LIGHT_THEME.switch },
+  dialog: { ...BASE_DEFAULT_THEME.dialog, ...BULUD_ANGOUR_LIGHT_THEME.dialog },
+  pagination: {
+    ...BASE_DEFAULT_THEME.pagination,
+    ...BULUD_ANGOUR_LIGHT_THEME.pagination,
+  },
+  button: {
+    ...BASE_DEFAULT_THEME.button,
+    ...BULUD_ANGOUR_LIGHT_THEME.button,
+    small: {
+      ...BASE_DEFAULT_THEME.button.small,
+      ...BULUD_ANGOUR_LIGHT_THEME.button.small,
+    },
+    medium: {
+      ...BASE_DEFAULT_THEME.button.medium,
+      ...BULUD_ANGOUR_LIGHT_THEME.button.medium,
+    },
+    large: {
+      ...BASE_DEFAULT_THEME.button.large,
+      ...BULUD_ANGOUR_LIGHT_THEME.button.large,
+    },
+  },
+  badge: {
+    ...BASE_DEFAULT_THEME.badge,
+    ...BULUD_ANGOUR_LIGHT_THEME.badge,
+    neutral: {
+      ...BASE_DEFAULT_THEME.badge.neutral,
+      ...BULUD_ANGOUR_LIGHT_THEME.badge.neutral,
+    },
+    primary: {
+      ...BASE_DEFAULT_THEME.badge.primary,
+      ...BULUD_ANGOUR_LIGHT_THEME.badge.primary,
+    },
+    success: {
+      ...BASE_DEFAULT_THEME.badge.success,
+      ...BULUD_ANGOUR_LIGHT_THEME.badge.success,
+    },
+    warning: {
+      ...BASE_DEFAULT_THEME.badge.warning,
+      ...BULUD_ANGOUR_LIGHT_THEME.badge.warning,
+    },
+    danger: {
+      ...BASE_DEFAULT_THEME.badge.danger,
+      ...BULUD_ANGOUR_LIGHT_THEME.badge.danger,
+    },
+  },
+};
+
 /**
  * Legacy-shaped defaults for consumer configuration. Optional tokens
  * stay omitted so spreading this object preserves consumer CSS fallbacks.
@@ -767,7 +851,7 @@ export function resolveBuludTheme(
       },
     },
     dropdown: {
-      ...BULUD_DEFAULT_THEME.dropdown,
+      ...RESOLVED_DEFAULT_THEME.dropdown,
       ...config.dropdown,
       invalidBorder: dropdownInvalidBorder,
     },
@@ -924,6 +1008,16 @@ export function createBuludThemeVariables(
     '--bulud-button-height-large': theme.button.large.height,
     '--bulud-button-font-size-large': theme.button.large.fontSize,
     '--bulud-button-padding-inline-large': theme.button.large.paddingInline,
+    '--bulud-dropdown-font-size': theme.dropdown.fontSize,
+    '--bulud-dropdown-line-height': theme.dropdown.lineHeight,
+    '--bulud-dropdown-font-weight': theme.dropdown.fontWeight,
+    '--bulud-dropdown-min-height': theme.dropdown.minHeight,
+    '--bulud-dropdown-padding-block': theme.dropdown.paddingBlock,
+    '--bulud-dropdown-padding-inline': theme.dropdown.paddingInline,
+    '--bulud-dropdown-gap': theme.dropdown.gap,
+    '--bulud-dropdown-option-min-height': theme.dropdown.optionMinHeight,
+    '--bulud-dropdown-option-padding': theme.dropdown.optionPadding,
+    '--bulud-dropdown-option-gap': theme.dropdown.optionGap,
     '--bulud-dropdown-background': theme.dropdown.background,
     '--bulud-dropdown-border': theme.dropdown.border,
     '--bulud-dropdown-invalid-border': theme.dropdown.invalidBorder,
@@ -1106,6 +1200,9 @@ function createBuludThemeCss(
   const checkboxGeometry = entries.filter(([property]) =>
     BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property),
   );
+  const dropdownGeometry = entries.filter(([property]) =>
+    BULUD_DROPDOWN_GEOMETRY_VARIABLES.has(property),
+  );
   const switchGeometry = entries.filter(([property]) =>
     BULUD_SWITCH_GEOMETRY_VARIABLES.has(property),
   );
@@ -1118,6 +1215,7 @@ function createBuludThemeCss(
   const lightModeVariables = entries.filter(
     ([property]) =>
       !isFormGeometry(property) &&
+      !BULUD_DROPDOWN_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_BADGE_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_CHECKBOX_GEOMETRY_VARIABLES.has(property) &&
       !BULUD_SWITCH_GEOMETRY_VARIABLES.has(property) &&
@@ -1157,7 +1255,7 @@ function createBuludThemeCss(
       !BULUD_PAGINATION_GEOMETRY_VARIABLES.has(property),
   );
 
-  return `:root {\n${declarations([...formGeometry, ...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...formDarkVariables, ...buttonDarkModeVariables, ...dropdownDarkModeVariables, ...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
+  return `:root {\n${declarations([...formGeometry, ...dropdownGeometry, ...badgeGeometry, ...checkboxGeometry, ...switchGeometry, ...dialogGeometry, ...paginationGeometry])}\n}\n\n${BULUD_THEME_SCOPE} {\n${declarations(lightModeVariables)}\n}\n\n${BULUD_DARK_THEME_SCOPE} {\n${declarations([...formDarkVariables, ...buttonDarkModeVariables, ...dropdownDarkModeVariables, ...switchDarkModeVariables, ...dialogDarkModeVariables, ...paginationDarkModeVariables])}\n}`;
 }
 
 /**
@@ -1180,144 +1278,34 @@ export function provideBuludTheme(
   const theme = resolveBuludTheme(config);
   const variables = { ...createBuludThemeVariables(theme) };
 
-  for (const prefix of ['radio', 'datepicker'] as const) {
-    const allowed = formThemeVariables(prefix, config[prefix] ?? {});
-    for (const variable of Object.keys(variables) as BuludThemeCssVariable[]) {
-      if (variable.startsWith(`--bulud-${prefix}-`) && !(variable in allowed))
-        delete variables[variable];
+  // The stylesheet supplies the design system. Only explicit consumer leaves
+  // become provider declarations, so omitted values never pin a different palette.
+  const explicit = new Set<string>();
+  const kebab = (name: string) =>
+    name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase());
+  for (const [group, fields] of Object.entries(config)) {
+    if (!fields || typeof fields !== 'object') continue;
+    for (const [field, value] of Object.entries(fields)) {
+      if (value === undefined) continue;
+      if (typeof value === 'string') {
+        explicit.add(
+          group === 'shape'
+            ? '--bulud-radius-control'
+            : `--bulud-${group === 'colors' ? 'color' : group}-${kebab(field)}`,
+        );
+      } else if (value && typeof value === 'object') {
+        for (const [leaf, entry] of Object.entries(value))
+          if (typeof entry === 'string')
+            explicit.add(
+              group === 'button'
+                ? `--bulud-button-${kebab(leaf)}-${field}`
+                : `--bulud-${group}-${field}-${kebab(leaf)}`,
+            );
+      }
     }
   }
-
-  // Omitted optional tokens must remain CSS fallbacks, not high-specificity
-  // provider declarations that override consumer :root rules.
-  if (config.dropdown?.invalidBorder === undefined) {
-    delete variables['--bulud-dropdown-invalid-border'];
-  }
-
-  for (const [field, variable] of [
-    ['borderWidth', '--bulud-button-border-width'],
-    ['focusWidth', '--bulud-button-focus-width'],
-    ['focusOffset', '--bulud-button-focus-offset'],
-    ['ghostBackground', '--bulud-button-ghost-background'],
-    ['secondaryBackground', '--bulud-button-secondary-background'],
-    ['secondaryBackgroundHover', '--bulud-button-secondary-background-hover'],
-    ['secondaryBackgroundActive', '--bulud-button-secondary-background-active'],
-    ['secondaryBorder', '--bulud-button-secondary-border'],
-    ['secondaryForeground', '--bulud-button-secondary-foreground'],
-    ['ghostForeground', '--bulud-button-ghost-foreground'],
-    ['disabledBackground', '--bulud-button-disabled-background'],
-    ['disabledForeground', '--bulud-button-disabled-foreground'],
-    ['activeShadow', '--bulud-button-active-shadow'],
-    ['dangerActiveShadow', '--bulud-button-danger-active-shadow'],
-  ] as const) {
-    if (config.button?.[field] === undefined) {
-      delete variables[variable];
-    }
-  }
-
-  for (const [field, variable] of [
-    ['heightSmall', '--bulud-badge-height-small'],
-    ['fontSizeSmall', '--bulud-badge-font-size-small'],
-    ['paddingInlineSmall', '--bulud-badge-padding-inline-small'],
-    ['heightMedium', '--bulud-badge-height-medium'],
-    ['fontSizeMedium', '--bulud-badge-font-size-medium'],
-    ['paddingInlineMedium', '--bulud-badge-padding-inline-medium'],
-    ['heightLarge', '--bulud-badge-height-large'],
-    ['fontSizeLarge', '--bulud-badge-font-size-large'],
-    ['paddingInlineLarge', '--bulud-badge-padding-inline-large'],
-    ['borderWidth', '--bulud-badge-border-width'],
-    ['lineHeight', '--bulud-badge-line-height'],
-    ['dotSize', '--bulud-badge-dot-size'],
-    ['dotGap', '--bulud-badge-dot-gap'],
-    ['dismissSize', '--bulud-badge-dismiss-size'],
-    ['dismissGap', '--bulud-badge-dismiss-gap'],
-    ['dismissMargin', '--bulud-badge-dismiss-margin'],
-    ['dismissPadding', '--bulud-badge-dismiss-padding'],
-    ['dismissIconSize', '--bulud-badge-dismiss-icon-size'],
-    ['focusWidth', '--bulud-badge-focus-width'],
-    ['focusOffset', '--bulud-badge-focus-offset'],
-  ] as const) {
-    if (config.badge?.[field] === undefined) {
-      delete variables[variable];
-    }
-  }
-
-  for (const [field, variable] of [
-    ['background', '--bulud-checkbox-background'],
-    ['backgroundHover', '--bulud-checkbox-background-hover'],
-    ['border', '--bulud-checkbox-border'],
-    ['borderWidth', '--bulud-checkbox-border-width'],
-    ['checkedBackground', '--bulud-checkbox-checked-background'],
-    ['checkedForeground', '--bulud-checkbox-checked-foreground'],
-    ['foreground', '--bulud-checkbox-foreground'],
-    ['focus', '--bulud-checkbox-focus'],
-    ['focusWidth', '--bulud-checkbox-focus-width'],
-    ['focusOffset', '--bulud-checkbox-focus-offset'],
-    ['disabledOpacity', '--bulud-checkbox-disabled-opacity'],
-    ['radius', '--bulud-checkbox-radius'],
-    ['size', '--bulud-checkbox-size'],
-    ['gap', '--bulud-checkbox-gap'],
-    ['labelLineHeight', '--bulud-checkbox-label-line-height'],
-  ] as const) {
-    if (config.checkbox?.[field] === undefined) {
-      delete variables[variable];
-    }
-  }
-
-  for (const [field, variable] of [
-    ['background', '--bulud-switch-background'],
-    ['backgroundHover', '--bulud-switch-background-hover'],
-    ['border', '--bulud-switch-border'],
-    ['borderWidth', '--bulud-switch-border-width'],
-    ['checkedBackground', '--bulud-switch-checked-background'],
-    ['checkedThumb', '--bulud-switch-checked-thumb'],
-    ['disabledOpacity', '--bulud-switch-disabled-opacity'],
-    ['focus', '--bulud-switch-focus'],
-    ['focusWidth', '--bulud-switch-focus-width'],
-    ['focusOffset', '--bulud-switch-focus-offset'],
-    ['foreground', '--bulud-switch-foreground'],
-    ['gap', '--bulud-switch-gap'],
-    ['height', '--bulud-switch-height'],
-    ['labelLineHeight', '--bulud-switch-label-line-height'],
-    ['padding', '--bulud-switch-padding'],
-    ['radius', '--bulud-switch-radius'],
-    ['thumb', '--bulud-switch-thumb'],
-    ['thumbSize', '--bulud-switch-thumb-size'],
-    ['width', '--bulud-switch-width'],
-  ] as const) {
-    if (config.switch?.[field] === undefined) {
-      delete variables[variable];
-    }
-  }
-
-  for (const [field, variable] of [
-    ['backdrop', '--bulud-dialog-backdrop'],
-    ['background', '--bulud-dialog-background'],
-    ['foreground', '--bulud-dialog-foreground'],
-    ['border', '--bulud-dialog-border'],
-    ['borderWidth', '--bulud-dialog-border-width'],
-    ['radius', '--bulud-dialog-radius'],
-    ['shadow', '--bulud-dialog-shadow'],
-    ['padding', '--bulud-dialog-padding'],
-    ['maxWidth', '--bulud-dialog-max-width'],
-    ['focus', '--bulud-dialog-focus'],
-    ['focusWidth', '--bulud-dialog-focus-width'],
-    ['focusOffset', '--bulud-dialog-focus-offset'],
-    ['viewportGutter', '--bulud-dialog-viewport-gutter'],
-    ['stackBase', '--bulud-dialog-stack-base'],
-  ] as const) {
-    if (config.dialog?.[field] === undefined) {
-      delete variables[variable];
-    }
-  }
-
-  for (const [field, variable] of Object.entries(
-    BULUD_PAGINATION_THEME_VARIABLES,
-  ) as Array<[keyof BuludPaginationTheme, BuludThemeCssVariable]>) {
-    if (config.pagination?.[field] === undefined) {
-      delete variables[variable];
-    }
-  }
+  for (const variable of Object.keys(variables) as BuludThemeCssVariable[])
+    if (!explicit.has(variable)) delete variables[variable];
 
   return makeEnvironmentProviders([
     {

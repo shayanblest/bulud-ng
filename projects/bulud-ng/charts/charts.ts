@@ -1,3 +1,4 @@
+import { BuludChartHost } from 'bulud-ng/chart-engine';
 import {
   booleanAttribute,
   ChangeDetectionStrategy,
@@ -77,182 +78,212 @@ export function buludChartDomain(
     ? [low, high]
     : null;
 }
+type CandleTuple = [number, number, number, number];
+
+interface StockChartPoint {
+  x: string;
+  y: CandleTuple;
+}
+
+interface StockChartSeriesItem {
+  data: StockChartPoint[];
+}
+
+interface StockTooltipContext {
+  seriesIndex: number;
+  dataPointIndex: number;
+  w: {
+    config: {
+      series: StockChartSeriesItem[];
+    };
+  };
+}
+
 @Component({
   selector: 'bulud-chart',
+  imports: [BuludChartHost],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: './charts.scss',
+  styleUrl: './charts.css',
   host: { '[style]': 'styles()' },
-  template: `<figure [attr.aria-busy]="loading()">
-    <figcaption>{{ caption() }}</figcaption>
-    <div class="types" role="group" [attr.aria-label]="text().type">
-      <button
-        type="button"
-        [disabled]="disabled() || loading()"
-        [attr.aria-pressed]="type() === 'line'"
-        [attr.aria-label]="text().line"
-        (click)="type.set('line')"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="m3 17 6-6 4 3 8-9" />
-        </svg></button
-      ><button
-        type="button"
-        [disabled]="disabled() || loading()"
-        [attr.aria-pressed]="type() === 'candlestick'"
-        [attr.aria-label]="text().candlestick"
-        (click)="type.set('candlestick')"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M7 2v5m0 9v6m10-20v8m0 8v4M4 7h6v9H4Zm10 3h6v8h-6Z" />
-        </svg>
-      </button>
-    </div>
-    @if (loading() || error() || invalid() || !points().length) {
-      <p role="status">
-        {{
-          loading()
-            ? text().loading
-            : error() || invalid()
-              ? text().error
-              : text().empty
-        }}
-      </p>
+  template: `@if (series() !== undefined) {
+      <bulud-chart-host [options]="engineOptions()" />
     } @else {
-      <svg
-        class="plot"
-        viewBox="0 0 640 360"
-        role="img"
-        [attr.aria-label]="caption()"
-        dir="ltr"
-      >
-        <title>{{ caption() }}</title>
-        <desc>{{ text().table }}</desc>
-        @for (tick of ticks(); track $index) {
-          <line
-            class="grid"
-            x1="80"
-            x2="620"
-            [attr.y1]="tick.y"
-            [attr.y2]="tick.y"
-          />
-          <text class="axis" x="66" [attr.y]="tick.y + 4" text-anchor="end">
-            {{ tick.label }}
-          </text>
-        }
-        @for (point of points(); track $index) {
-          <line
-            class="grid"
-            [attr.x1]="point.x"
-            [attr.x2]="point.x"
-            y1="14"
-            y2="314"
-          />
-        }
-        @if (type() === 'line') {
-          <polyline class="line" [attr.points]="linePath()" />
-          @for (point of points(); track $index) {
-            <circle
-              class="marker"
-              [attr.cx]="point.x"
-              [attr.cy]="point.y"
-              r="4"
-            >
-              <title>{{ point.label }}: {{ point.value }}</title>
-            </circle>
-          }
+      <figure [attr.aria-busy]="loading()">
+        <figcaption>{{ caption() }}</figcaption>
+        <div class="types" role="group" [attr.aria-label]="text().type">
+          <button
+            type="button"
+            [disabled]="disabled() || loading()"
+            [attr.aria-pressed]="type() === 'line'"
+            [attr.aria-label]="text().line"
+            (click)="type.set('line')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m3 17 6-6 4 3 8-9" />
+            </svg></button
+          ><button
+            type="button"
+            [disabled]="disabled() || loading()"
+            [attr.aria-pressed]="type() === 'candlestick'"
+            [attr.aria-label]="text().candlestick"
+            (click)="type.set('candlestick')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M7 2v5m0 9v6m10-20v8m0 8v4M4 7h6v9H4Zm10 3h6v8h-6Z" />
+            </svg>
+          </button>
+        </div>
+        @if (loading() || error() || invalid() || !points().length) {
+          <p role="status">
+            {{
+              loading()
+                ? text().loading
+                : error() || invalid()
+                  ? text().error
+                  : text().empty
+            }}
+          </p>
         } @else {
-          @for (candle of candleShapes(); track $index) {
-            <g class="candle" [class.up]="candle.up">
-              <title>
-                {{ candle.label }} — {{ text().open }}: {{ candle.open }},
-                {{ text().high }}: {{ candle.high }}, {{ text().low }}:
-                {{ candle.low }}, {{ text().close }}: {{ candle.close }}
-              </title>
+          <svg
+            class="plot"
+            viewBox="0 0 640 360"
+            role="img"
+            [attr.aria-label]="caption()"
+            dir="ltr"
+          >
+            <title>{{ caption() }}</title>
+            <desc>{{ text().table }}</desc>
+            @for (tick of ticks(); track $index) {
               <line
-                [attr.x1]="candle.x"
-                [attr.x2]="candle.x"
-                [attr.y1]="candle.top"
-                [attr.y2]="candle.bottom"
+                class="grid"
+                x1="80"
+                x2="620"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
               />
-              <rect
-                [attr.x]="candle.x - candle.width / 2"
-                [attr.y]="candle.bodyTop"
-                [attr.width]="candle.width"
-                [attr.height]="candle.height"
+              <text class="axis" x="66" [attr.y]="tick.y + 4" text-anchor="end">
+                {{ tick.label }}
+              </text>
+            }
+            @for (point of points(); track $index) {
+              <line
+                class="grid"
+                [attr.x1]="point.x"
+                [attr.x2]="point.x"
+                y1="14"
+                y2="314"
               />
-            </g>
-          }
-        }
-        @for (label of xLabels(); track $index) {
-          <text
-            class="axis"
-            [attr.x]="label.x"
-            y="342"
-            [attr.text-anchor]="label.anchor"
-          >
-            {{ label.label }}
-          </text>
-        }
-      </svg>
-      <details (toggle)="toggleTable($event)">
-        <summary>{{ text().table }}</summary>
-        @if (showTable()) {
-          <div
-            class="table-scroll"
-            tabindex="0"
-            role="region"
-            [attr.aria-label]="text().table"
-          >
-            <table>
-              <caption>
-                {{
-                  caption()
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">{{ text().date }}</th>
-                  @if (type() === 'line') {
-                    <th scope="col">{{ text().value }}</th>
-                  } @else {
-                    <th scope="col">{{ text().open }}</th>
-                    <th scope="col">{{ text().high }}</th>
-                    <th scope="col">{{ text().low }}</th>
-                    <th scope="col">{{ text().close }}</th>
-                  }
-                </tr>
-              </thead>
-              <tbody>
-                @if (type() === 'line') {
-                  @for (p of line(); track $index) {
+            }
+            @if (type() === 'line') {
+              <polyline class="line" [attr.points]="linePath()" />
+              @for (point of points(); track $index) {
+                <circle
+                  class="marker"
+                  [attr.cx]="point.x"
+                  [attr.cy]="point.y"
+                  r="4"
+                >
+                  <title>{{ point.label }}: {{ point.value }}</title>
+                </circle>
+              }
+            } @else {
+              @for (candle of candleShapes(); track $index) {
+                <g class="candle" [class.up]="candle.up">
+                  <title>
+                    {{ candle.label }} — {{ text().open }}: {{ candle.open }},
+                    {{ text().high }}: {{ candle.high }}, {{ text().low }}:
+                    {{ candle.low }}, {{ text().close }}: {{ candle.close }}
+                  </title>
+                  <line
+                    [attr.x1]="candle.x"
+                    [attr.x2]="candle.x"
+                    [attr.y1]="candle.top"
+                    [attr.y2]="candle.bottom"
+                  />
+                  <rect
+                    [attr.x]="candle.x - candle.width / 2"
+                    [attr.y]="candle.bodyTop"
+                    [attr.width]="candle.width"
+                    [attr.height]="candle.height"
+                  />
+                </g>
+              }
+            }
+            @for (label of xLabels(); track $index) {
+              <text
+                class="axis"
+                [attr.x]="label.x"
+                y="342"
+                [attr.text-anchor]="label.anchor"
+              >
+                {{ label.label }}
+              </text>
+            }
+          </svg>
+          <details (toggle)="toggleTable($event)">
+            <summary>{{ text().table }}</summary>
+            @if (showTable()) {
+              <div
+                class="table-scroll"
+                tabindex="0"
+                role="region"
+                [attr.aria-label]="text().table"
+              >
+                <table>
+                  <caption>
+                    {{
+                      caption()
+                    }}
+                  </caption>
+                  <thead>
                     <tr>
-                      <th scope="row">{{ p.x }}</th>
-                      <td>{{ p.y }}</td>
+                      <th scope="col">{{ text().date }}</th>
+                      @if (type() === 'line') {
+                        <th scope="col">{{ text().value }}</th>
+                      } @else {
+                        <th scope="col">{{ text().open }}</th>
+                        <th scope="col">{{ text().high }}</th>
+                        <th scope="col">{{ text().low }}</th>
+                        <th scope="col">{{ text().close }}</th>
+                      }
                     </tr>
-                  }
-                } @else {
-                  @for (p of candles(); track $index) {
-                    <tr>
-                      <th scope="row">{{ p.x }}</th>
-                      <td>{{ p.open }}</td>
-                      <td>{{ p.high }}</td>
-                      <td>{{ p.low }}</td>
-                      <td>{{ p.close }}</td>
-                    </tr>
-                  }
-                }
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    @if (type() === 'line') {
+                      @for (p of line(); track $index) {
+                        <tr>
+                          <th scope="row">{{ p.x }}</th>
+                          <td>{{ p.y }}</td>
+                        </tr>
+                      }
+                    } @else {
+                      @for (p of candles(); track $index) {
+                        <tr>
+                          <th scope="row">{{ p.x }}</th>
+                          <td>{{ p.open }}</td>
+                          <td>{{ p.high }}</td>
+                          <td>{{ p.low }}</td>
+                          <td>{{ p.close }}</td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </details>
         }
-      </details>
-    }
-    <ng-content />
-  </figure>`,
+        <ng-content />
+      </figure>
+    }`,
 })
 export class BuludChart {
   private readonly config = inject(BULUD_SHARED_UI_CONFIG);
-  readonly caption = input.required<string>();
+  readonly caption = input('');
+  /** Supplying engine series preserves the existing interactive candlestick renderer. */
+  readonly series = input<readonly unknown[]>();
+  readonly xaxis = input<object>({});
+  readonly yaxis = input<object>();
   readonly line = input<readonly BuludLinePoint[]>([]);
   readonly candles = input<readonly BuludCandlePoint[]>([]);
   readonly type = model<BuludChartType>('line');
@@ -362,4 +393,173 @@ export class BuludChart {
   protected toggleTable(event: Event): void {
     this.showTable.set((event.target as HTMLDetailsElement).open);
   }
+  protected readonly engineOptions = computed<Readonly<
+    Record<string, unknown>
+  > | null>(() => {
+    const seriesData =
+      (this.series()?.[0] as { data?: StockChartPoint[] } | undefined)?.data ??
+      [];
+    if (
+      !Array.isArray(seriesData) ||
+      !seriesData.length ||
+      !seriesData.every(
+        (point) =>
+          point &&
+          Array.isArray(point.y) &&
+          point.y.length === 4 &&
+          point.y.every(
+            (value) => typeof value === 'number' && Number.isFinite(value),
+          ),
+      )
+    ) {
+      return null;
+    }
+
+    const allYValues = seriesData.flatMap((point) => point.y);
+    const min = Math.min(...allYValues);
+    const max = Math.max(...allYValues);
+    const range = Math.max(max - min, 1);
+    const margin = range * 0.04;
+
+    return {
+      series: this.series(),
+      chart: {
+        type: 'candlestick',
+        height: 350,
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        animations: { enabled: false },
+        background: 'transparent',
+        parentHeightOffset: 0,
+      },
+      plotOptions: {
+        candlestick: {
+          colors: {
+            upward: 'var(--bulud-charts-positive, #0A66C2)',
+            downward: 'var(--bulud-charts-negative, #F5A623)',
+          },
+          wick: {
+            useFillColor: true,
+          },
+        },
+      },
+      stroke: {
+        width: 2,
+      },
+      grid: {
+        show: true,
+        borderColor: 'var(--gray-10)',
+        position: 'back',
+        xaxis: { lines: { show: true } },
+        yaxis: { lines: { show: true } },
+        padding: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        },
+      },
+      xaxis: {
+        ...this.xaxis(),
+        type: 'category',
+        tickPlacement: 'on',
+        tooltip: {
+          enabled: false,
+        },
+        labels: {
+          ...((this.xaxis() as { labels?: object })?.labels ?? {}),
+          show: true,
+          rotate: 0,
+          hideOverlappingLabels: false,
+          trim: false,
+          style: {
+            colors: (
+              ((this.xaxis() as { categories?: string[] })?.categories as
+                string[] | undefined) ?? []
+            ).map(() => 'var(--gray-70)'),
+            fontSize: '11px',
+          },
+        },
+        axisBorder: {
+          show: true,
+          color: 'var(--gray-10)',
+        },
+        axisTicks: {
+          show: true,
+          color: 'var(--gray-10)',
+        },
+      },
+      yaxis: this.yaxis() ?? {
+        min: min - margin,
+        max: max + margin,
+        tickAmount: 6,
+        forceNiceScale: false,
+        decimalsInFloat: this.digits(),
+        labels: {
+          formatter: (val: number) => Number(val).toFixed(this.digits()),
+          style: { colors: 'var(--gray-70)' },
+          offsetX: -6,
+        },
+      },
+      tooltip: {
+        enabled: true,
+        shared: false,
+        intersect: true,
+        followCursor: false,
+        custom: ({
+          seriesIndex,
+          dataPointIndex,
+          w,
+        }: StockTooltipContext): string => {
+          const point = w.config.series[seriesIndex]?.data?.[dataPointIndex];
+
+          if (!point || !Array.isArray(point.y)) {
+            return '';
+          }
+
+          const [open, high, low, close] = point.y;
+          const label = point.x ?? '';
+          const format = (value: number): string =>
+            Number(value).toFixed(this.digits());
+
+          return `
+            <div class="stock-chart-tooltip">
+              <div class="stock-chart-tooltip__title">${label}</div>
+              <div class="stock-chart-tooltip__row">
+                <span>Open</span>
+                <strong>${format(open)}</strong>
+              </div>
+              <div class="stock-chart-tooltip__row">
+                <span>Close</span>
+                <strong>${format(close)}</strong>
+              </div>
+              <div class="stock-chart-tooltip__row">
+                <span>Min</span>
+                <strong>${format(low)}</strong>
+              </div>
+              <div class="stock-chart-tooltip__row">
+                <span>Max</span>
+                <strong>${format(high)}</strong>
+              </div>
+            </div>
+          `;
+        },
+      },
+      dataLabels: {
+        enabled: false,
+      },
+      states: {
+        hover: {
+          filter: {
+            type: 'none',
+          },
+        },
+        active: {
+          filter: {
+            type: 'none',
+          },
+        },
+      },
+    };
+  });
 }

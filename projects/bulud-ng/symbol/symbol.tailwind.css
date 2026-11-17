@@ -1,0 +1,7 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply contents;
+}
+.bulud-symbol-svg {
+  @apply inline-block [width:1em] [height:1em] [vertical-align:middle];
+}

@@ -1,0 +1,184 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply inline-block;
+  @apply [max-inline-size:100%];
+}
+.bulud-datepicker__trigger {
+  @apply inline-flex;
+  @apply items-center;
+  @apply [inline-size:100%];
+  @apply [min-block-size:var(--bulud-datepicker-trigger-height,_42px)];
+  @apply [font:inherit];
+  @apply [text-align:start];
+  @apply cursor-pointer;
+  @apply [padding:var(--bulud-datepicker-padding,_12px)];
+  @apply [border-radius:var(--bulud-datepicker-radius,_8px)];
+  @apply [border:var(--bulud-datepicker-border-width,_1px)_solid_var(--bulud-datepicker-border,_var(--bulud-color-border,_#cbd5e1))];
+  @apply [background:var(--bulud-datepicker-background,_var(--bulud-color-surface,_#fff)_)];
+  @apply [color:var(--bulud-datepicker-foreground,_var(--bulud-color-on-surface,_#0f172a)_)];
+}
+.bulud-datepicker__placeholder {
+  @apply [color:var(--bulud-datepicker-muted,_var(--bulud-color-muted,_#64748b))];
+}
+.bulud-datepicker__trigger[aria-invalid="true"] {
+  @apply [border-color:var(--bulud-color-danger,_#dc2626)];
+}
+.bulud-datepicker__panel {
+  @apply fixed;
+  @apply [inset:auto];
+  @apply [margin:0];
+  @apply box-border;
+  @apply [width:var(--bulud-datepicker-width,_23.375rem)];
+  @apply [max-width:calc(100vw_-_16px)];
+  @apply [max-height:calc(100dvh_-_16px)];
+  @apply overflow-auto;
+  @apply [padding:var(--bulud-datepicker-padding,_12px)];
+  @apply [border:0];
+  @apply [border-radius:var(--bulud-datepicker-radius,_8px)];
+  @apply [font:inherit];
+  @apply [font-size:var(--bulud-datepicker-font-size,_12px)];
+  @apply [color:var(--bulud-datepicker-foreground,_var(--bulud-color-on-surface,_#0f172a)_)];
+  @apply [background:var(--bulud-datepicker-background,_var(--bulud-color-surface,_#fff)_)];
+}
+.bulud-datepicker__layout {
+  @apply grid;
+  @apply [grid-template-columns:minmax(0,_1fr)_var(--bulud-datepicker-year-width,_60px)];
+  @apply [gap:var(--bulud-datepicker-gap,_4px)];
+  @apply [direction:ltr];
+}
+.bulud-datepicker__calendar {
+  @apply [min-width:0];
+}
+.bulud-datepicker__header {
+  @apply flex;
+  @apply items-center;
+  @apply justify-between;
+  @apply [margin-block-end:var(--bulud-datepicker-header-gap,_8px)];
+}
+.bulud-datepicker__heading {
+  @apply text-center;
+  @apply [margin:0];
+  @apply [font-weight:var(--bulud-datepicker-heading-weight,_500)];
+}
+.bulud-datepicker__status {
+  @apply [color:var(--bulud-datepicker-muted,_#64748b)];
+  @apply text-center;
+  @apply [margin-block:var(--bulud-datepicker-gap,_4px)];
+}
+.bulud-datepicker__grid {
+  @apply [border-collapse:collapse];
+  @apply [table-layout:fixed];
+  @apply [inline-size:100%];
+  @apply text-center;
+}
+.bulud-datepicker__grid th {
+  @apply [color:var(--bulud-datepicker-muted,_#64748b)];
+  @apply [font-weight:var(--bulud-datepicker-weekday-weight,_400)];
+  @apply [font-size:var(--bulud-datepicker-weekday-size,_1em)];
+  @apply [inline-size:calc(100%_/_7)];
+  @apply [padding:0_0_var(--bulud-datepicker-header-gap,_8px)];
+  @apply whitespace-nowrap;
+}
+.bulud-datepicker__grid abbr {
+  @apply block;
+  @apply [max-inline-size:100%];
+  @apply text-center;
+  @apply [text-decoration:none];
+}
+.bulud-datepicker__grid td {
+  @apply [padding:0];
+  @apply [block-size:var(--bulud-datepicker-day-size,_28px)];
+}
+.bulud-datepicker__day,
+.bulud-datepicker__nav,
+.bulud-datepicker__clear,
+.bulud-datepicker__year {
+  @apply [font:inherit];
+  @apply [color:inherit];
+  @apply cursor-pointer;
+  @apply [background:transparent];
+  @apply [border:0];
+  @apply [border-radius:var(--bulud-datepicker-radius,_8px)];
+  @apply [min-block-size:var(--bulud-datepicker-day-size,_28px)];
+  @apply [padding:var(--bulud-datepicker-gap,_4px)];
+}
+.bulud-datepicker__day {
+  @apply [inline-size:100%];
+}
+.bulud-datepicker__nav {
+  @apply grid;
+  @apply [place-items:center];
+  @apply [inline-size:var(--bulud-datepicker-day-size,_28px)];
+}
+.bulud-datepicker__nav svg {
+  @apply [width:var(--bulud-datepicker-nav-size,_16px)];
+  @apply [height:var(--bulud-datepicker-nav-size,_16px)];
+  @apply [fill:none];
+  @apply [stroke:currentColor];
+  @apply [stroke-width:var(--bulud-datepicker-nav-stroke,_1px)];
+}
+.bulud-datepicker__calendar[dir="rtl"] .bulud-datepicker__nav svg {
+  @apply [transform:rotate(180deg)];
+}
+.bulud-datepicker__years {
+  @apply relative;
+  @apply [max-height:var(--bulud-datepicker-year-height,_230px)];
+  @apply overflow-auto;
+  @apply [scrollbar-width:thin];
+  @apply [scrollbar-color:var(--bulud-datepicker-scrollbar,_#d5d5d5)_transparent];
+  @apply [background:var(--bulud-datepicker-year-background,_var(--bulud-color-surface,_#fff)_)];
+  @apply [border-radius:var(--bulud-datepicker-radius,_8px)];
+  @apply [padding:var(--bulud-datepicker-gap,_4px)];
+  @apply [direction:ltr];
+}
+.bulud-datepicker__year {
+  @apply block;
+  @apply [width:100%];
+  @apply [min-height:var(--bulud-datepicker-year-size,_34px)];
+}
+.bulud-datepicker__year[aria-pressed="true"] {
+  @apply [background:var(--bulud-datepicker-year-selected-background,_#e2e8f0)];
+}
+.bulud-datepicker__panel button:hover:not(:disabled) {
+  @apply [background:var(--bulud-datepicker-hover-background,_var(--bulud-color-surface-hover,_#f1f5f9)_)];
+}
+.bulud-datepicker__panel .bulud-datepicker__day--selected {
+  @apply [background:var(--bulud-datepicker-selected-background,_#2563eb)];
+  @apply [color:var(--bulud-datepicker-selected-foreground,_#fff)];
+}
+.bulud-datepicker__panel--range .bulud-datepicker__day--selected {
+  @apply [background:var(--bulud-datepicker-range-endpoint-background,_var(--bulud-color-primary,_#2563eb)_)];
+  @apply [color:var(--bulud-datepicker-range-endpoint-foreground,_var(--bulud-color-on-primary,_#fff)_)];
+}
+.bulud-datepicker__range {
+  @apply [background:var(--bulud-datepicker-range-background,_#eff6ff)];
+}
+.bulud-datepicker__trigger:disabled,
+.bulud-datepicker__panel button:disabled {
+  @apply [opacity:var(--bulud-datepicker-disabled-opacity,_0.55)];
+  @apply cursor-not-allowed;
+}
+.bulud-datepicker__trigger:focus-visible,
+.bulud-datepicker__panel button:focus-visible {
+  @apply [outline:var(--bulud-datepicker-focus-width,_2px)_solid_var(--bulud-datepicker-focus,_var(--bulud-color-focus,_#93c5fd))];
+  @apply [outline-offset:var(--bulud-datepicker-focus-offset,_0px)];
+}
+.bulud-datepicker__help {
+  @apply absolute;
+  @apply [inline-size:1px];
+  @apply [block-size:1px];
+  @apply overflow-hidden;
+  @apply [clip-path:inset(50%)];
+  @apply whitespace-nowrap;
+}
+@media (forced-colors: active) {
+  .bulud-datepicker__day--selected,
+  .bulud-datepicker__year[aria-pressed="true"] {
+    @apply [outline:2px_solid_Highlight];
+  }
+}
+
+.bulud-datepicker__clear {
+  @apply [margin-block-start:var(--bulud-datepicker-header-gap,_8px)];
+  @apply [inline-size:100%];
+}

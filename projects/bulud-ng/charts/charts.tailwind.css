@@ -1,0 +1,107 @@
+@import "tailwindcss/utilities" source(none);
+:host {
+  @apply block;
+  @apply [color:var(--bulud-charts-foreground,_var(--bulud-color-on-surface))];
+}
+figure {
+  @apply [margin:0];
+  @apply [background:var(--bulud-charts-background,_var(--bulud-color-surface))];
+  @apply [padding:var(--bulud-charts-padding,_var(--bulud-spacing-4,_16px))];
+  @apply [border-radius:var(--bulud-charts-radius,_var(--bulud-radius-control,_8px))];
+}
+figcaption {
+  @apply [font-weight:600];
+  @apply [margin-block-end:var(--bulud-spacing-3,_12px)];
+}
+.types {
+  @apply flex;
+  @apply justify-end;
+  @apply [background:var(--bulud-color-subtle,_var(--bulud-color-border))];
+  @apply [border-radius:var(--bulud-charts-radius,_8px)];
+  @apply [padding:4px];
+  @apply [width:fit-content];
+  @apply [margin-inline-start:auto];
+}
+button {
+  @apply inline-grid;
+  @apply [place-items:center];
+  @apply [border:0];
+  @apply [background:transparent];
+  @apply [color:var(--bulud-charts-accent,_var(--bulud-color-primary))];
+  @apply [padding:8px_16px];
+  @apply [border-radius:var(--bulud-charts-radius,_6px)];
+  @apply cursor-pointer;
+}
+button[aria-pressed="true"] {
+  @apply [background:var(--bulud-charts-background,_var(--bulud-color-surface))];
+}
+button svg {
+  @apply [width:20px];
+  @apply [height:20px];
+  @apply [fill:none];
+  @apply [stroke:currentColor];
+  @apply [stroke-width:1.5];
+}
+.plot {
+  @apply [direction:ltr];
+  @apply block;
+  @apply [width:100%];
+  @apply [height:auto];
+  @apply overflow-visible;
+  @apply [font-family:inherit];
+}
+.grid {
+  @apply [stroke:var(--bulud-charts-grid,_var(--bulud-color-border))];
+  @apply [stroke-width:0.7];
+}
+.axis {
+  @apply [fill:var(--bulud-charts-muted,_var(--bulud-color-muted))];
+  @apply [font-size:11px];
+}
+.line {
+  @apply [fill:none];
+  @apply [stroke:var(--bulud-charts-accent,_var(--bulud-color-primary))];
+  @apply [stroke-width:2];
+  @apply [vector-effect:non-scaling-stroke];
+}
+.marker {
+  @apply [fill:var(--bulud-charts-accent,_var(--bulud-color-primary))];
+  @apply [opacity:0];
+}
+.marker:hover {
+  @apply [opacity:1];
+}
+.candle {
+  @apply [fill:var(--bulud-charts-negative,_#f5a623)];
+  @apply [stroke:var(--bulud-charts-negative,_#f5a623)];
+  @apply [stroke-width:1.5];
+}
+.candle.up {
+  @apply [fill:var(--bulud-charts-positive,_#0a66c2)];
+  @apply [stroke:var(--bulud-charts-positive,_#0a66c2)];
+}
+.table-scroll {
+  @apply [overflow-x:auto];
+}
+table {
+  @apply [border-collapse:collapse];
+  @apply [width:100%];
+}
+th,
+td {
+  @apply [padding:8px];
+  @apply [border-bottom:1px_solid_var(--bulud-charts-border,_var(--bulud-color-border))];
+  @apply [text-align:start];
+}
+summary {
+  @apply cursor-pointer;
+  @apply [width:fit-content];
+}
+:is(button, summary, .table-scroll):focus-visible {
+  @apply [outline:2px_solid_var(--bulud-charts-focus,_var(--bulud-color-focus))];
+  @apply [outline-offset:2px];
+}
+button:disabled {
+  @apply [opacity:var(--bulud-charts-disabled-opacity,_0.5)];
+  @apply [cursor:default];
+}

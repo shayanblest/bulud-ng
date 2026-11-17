@@ -1,0 +1,194 @@
+[
+  {
+    "input": "projects/bulud-ng/accordion/bulud-accordion/bulud-accordion-item.tailwind.css",
+    "output": "projects/bulud-ng/accordion/bulud-accordion/bulud-accordion-item.css"
+  },
+  {
+    "input": "projects/bulud-ng/accordion/bulud-accordion/bulud-accordion.tailwind.css",
+    "output": "projects/bulud-ng/accordion/bulud-accordion/bulud-accordion.css"
+  },
+  {
+    "input": "projects/bulud-ng/avatar/avatar.tailwind.css",
+    "output": "projects/bulud-ng/avatar/avatar.css"
+  },
+  {
+    "input": "projects/bulud-ng/badge/bulud-badge/bulud-badge.tailwind.css",
+    "output": "projects/bulud-ng/badge/bulud-badge/bulud-badge.css"
+  },
+  {
+    "input": "projects/bulud-ng/button/bulud-button/bulud-button.tailwind.css",
+    "output": "projects/bulud-ng/button/bulud-button/bulud-button.css"
+  },
+  {
+    "input": "projects/bulud-ng/carousel/carousel.tailwind.css",
+    "output": "projects/bulud-ng/carousel/carousel.css"
+  },
+  {
+    "input": "projects/bulud-ng/charts/charts.tailwind.css",
+    "output": "projects/bulud-ng/charts/charts.css"
+  },
+  {
+    "input": "projects/bulud-ng/charts/donut.tailwind.css",
+    "output": "projects/bulud-ng/charts/donut.css"
+  },
+  {
+    "input": "projects/bulud-ng/charts/progress.tailwind.css",
+    "output": "projects/bulud-ng/charts/progress.css"
+  },
+  {
+    "input": "projects/bulud-ng/chat/chat.tailwind.css",
+    "output": "projects/bulud-ng/chat/chat.css"
+  },
+  {
+    "input": "projects/bulud-ng/checkbox/bulud-checkbox/bulud-checkbox.tailwind.css",
+    "output": "projects/bulud-ng/checkbox/bulud-checkbox/bulud-checkbox.css"
+  },
+  {
+    "input": "projects/bulud-ng/confirm/confirm.tailwind.css",
+    "output": "projects/bulud-ng/confirm/confirm.css"
+  },
+  {
+    "input": "projects/bulud-ng/countdown/countdown.tailwind.css",
+    "output": "projects/bulud-ng/countdown/countdown.css"
+  },
+  {
+    "input": "projects/bulud-ng/datepicker/bulud-datepicker/bulud-datepicker.tailwind.css",
+    "output": "projects/bulud-ng/datepicker/bulud-datepicker/bulud-datepicker.css"
+  },
+  {
+    "input": "projects/bulud-ng/dialog/bulud-dialog/bulud-dialog.tailwind.css",
+    "output": "projects/bulud-ng/dialog/bulud-dialog/bulud-dialog.css"
+  },
+  {
+    "input": "projects/bulud-ng/dropdown/bulud-dropdown/bulud-dropdown.tailwind.css",
+    "output": "projects/bulud-ng/dropdown/bulud-dropdown/bulud-dropdown.css"
+  },
+  {
+    "input": "projects/bulud-ng/empty-state/empty-state.tailwind.css",
+    "output": "projects/bulud-ng/empty-state/empty-state.css"
+  },
+  {
+    "input": "projects/bulud-ng/feedback/feedback.tailwind.css",
+    "output": "projects/bulud-ng/feedback/feedback.css"
+  },
+  {
+    "input": "projects/bulud-ng/field-label/field-label.tailwind.css",
+    "output": "projects/bulud-ng/field-label/field-label.css"
+  },
+  {
+    "input": "projects/bulud-ng/file-upload/file-upload.tailwind.css",
+    "output": "projects/bulud-ng/file-upload/file-upload.css"
+  },
+  {
+    "input": "projects/bulud-ng/loading-bar/loading-bar.tailwind.css",
+    "output": "projects/bulud-ng/loading-bar/loading-bar.css"
+  },
+  {
+    "input": "projects/bulud-ng/otp/otp.tailwind.css",
+    "output": "projects/bulud-ng/otp/otp.css"
+  },
+  {
+    "input": "projects/bulud-ng/pagination/bulud-pagination/bulud-pagination.tailwind.css",
+    "output": "projects/bulud-ng/pagination/bulud-pagination/bulud-pagination.css"
+  },
+  {
+    "input": "projects/bulud-ng/period-picker/period-picker.tailwind.css",
+    "output": "projects/bulud-ng/period-picker/period-picker.css"
+  },
+  {
+    "input": "projects/bulud-ng/radio/bulud-radio/bulud-radio-group.tailwind.css",
+    "output": "projects/bulud-ng/radio/bulud-radio/bulud-radio-group.css"
+  },
+  {
+    "input": "projects/bulud-ng/radio/bulud-radio/bulud-radio.tailwind.css",
+    "output": "projects/bulud-ng/radio/bulud-radio/bulud-radio.css"
+  },
+  {
+    "input": "projects/bulud-ng/rating/rating.tailwind.css",
+    "output": "projects/bulud-ng/rating/rating.css"
+  },
+  {
+    "input": "projects/bulud-ng/skeleton/skeleton.tailwind.css",
+    "output": "projects/bulud-ng/skeleton/skeleton.css"
+  },
+  {
+    "input": "projects/bulud-ng/stepper/stepper.tailwind.css",
+    "output": "projects/bulud-ng/stepper/stepper.css"
+  },
+  {
+    "input": "projects/bulud-ng/switch/bulud-switch/bulud-switch.tailwind.css",
+    "output": "projects/bulud-ng/switch/bulud-switch/bulud-switch.css"
+  },
+  {
+    "input": "projects/bulud-ng/table/filters.tailwind.css",
+    "output": "projects/bulud-ng/table/filters.css"
+  },
+  {
+    "input": "projects/bulud-ng/table/table.tailwind.css",
+    "output": "projects/bulud-ng/table/table.css"
+  },
+  {
+    "input": "projects/bulud-ng/tabs/bulud-tabs/bulud-tab-panel.tailwind.css",
+    "output": "projects/bulud-ng/tabs/bulud-tabs/bulud-tab-panel.css"
+  },
+  {
+    "input": "projects/bulud-ng/tabs/bulud-tabs/bulud-tab.tailwind.css",
+    "output": "projects/bulud-ng/tabs/bulud-tabs/bulud-tab.css"
+  },
+  {
+    "input": "projects/bulud-ng/tabs/bulud-tabs/bulud-tabs.tailwind.css",
+    "output": "projects/bulud-ng/tabs/bulud-tabs/bulud-tabs.css"
+  },
+  {
+    "input": "projects/bulud-ng/tooltip/tooltip.tailwind.css",
+    "output": "projects/bulud-ng/tooltip/tooltip.css"
+  },
+  {
+    "input": "projects/bulud-ng/account-card/account-card.css",
+    "output": "projects/bulud-ng/account-card.css"
+  },
+  {
+    "input": "projects/bulud-ng/input-behaviors/tailwind.input.css",
+    "output": "projects/bulud-ng/input-behaviors.css"
+  },
+  {
+    "input": "projects/bulud-ng/language-switch/language-switch.css",
+    "output": "projects/bulud-ng/language-switch.css"
+  },
+  {
+    "input": "projects/bulud-ng/line-chart/tailwind.input.css",
+    "output": "projects/bulud-ng/line-chart.css"
+  },
+  {
+    "input": "projects/bulud-ng/radial-chart/tailwind.input.css",
+    "output": "projects/bulud-ng/radial-chart.css"
+  },
+  {
+    "input": "projects/bulud-ng/tailwind/angour.input.css",
+    "output": "projects/bulud-ng/angour.css"
+  },
+  {
+    "input": "projects/bulud-ng/tailwind/angour-base.input.css",
+    "output": "projects/bulud-ng/angour-base.css"
+  },
+  {
+    "input": "projects/bulud-ng/symbol/symbol.tailwind.css",
+    "output": "projects/bulud-ng/symbol/symbol.css"
+  },
+  {
+    "input": "projects/bulud-ng/default-404-image/default-404-image.tailwind.css",
+    "output": "projects/bulud-ng/default-404-image/default-404-image.css"
+  },
+  {
+    "input": "projects/bulud-ng/chart-engine/chart-engine.tailwind.css",
+    "output": "projects/bulud-ng/chart-engine/chart-engine.css"
+  },
+  {
+    "input": "projects/bulud-ng/tour/tour.tailwind.css",
+    "output": "projects/bulud-ng/tour/tour.css"
+  },
+  {
+    "input": "projects/bulud-ng/tailwind/theme.input.css",
+    "output": "projects/bulud-ng/theme.css"
+  }
+]

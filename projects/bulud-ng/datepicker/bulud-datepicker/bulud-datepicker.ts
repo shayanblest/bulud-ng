@@ -61,7 +61,7 @@ let nextId = 0;
 @Component({
   selector: 'bulud-datepicker',
   templateUrl: './bulud-datepicker.html',
-  styleUrl: './bulud-datepicker.scss',
+  styleUrl: './bulud-datepicker.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     {
@@ -452,6 +452,12 @@ export class BuludDatepicker implements ControlValueAccessor, Validator {
   }
   private refreshToday(): void {
     this.todayValue.set(this.localToday());
+  }
+  /** Browse an ISO month without selecting/emitting a form value. */
+  showMonth(date: string): void {
+    if (!parseDate(date)) return;
+    this.viewDate.set(this.clamp(date));
+    this.yearAnchor.set(Math.max(this.view().year, this.yearAnchor()));
   }
   protected openCalendar(): void {
     if (this.open()) {
