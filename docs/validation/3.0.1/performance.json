@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-18",
+  "scope": "Production Bulud demo only; not authenticated Angour Trader",
+  "url": "http://127.0.0.1:4319/",
+  "throttling": "Lighthouse default simulated mobile; desktop preset; sequential idle runs",
+  "runs": [
+    {
+      "formFactor": "mobile",
+      "performance": 99,
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 627.64895,
+          "display": "0.6\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "value": 627.64895,
+          "display": "0.6\u00a0s"
+        },
+        "total-blocking-time": {
+          "value": 95.5,
+          "display": "100\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0,
+          "display": "0"
+        }
+      },
+      "runWarnings": [],
+      "sha256": "420a204c042bdf90833f2a3725e6d987781052b0c7fc6d89c18d6237fc4f682d",
+      "report": "dist/validation/3.0.1/bulud-carousel-release-mobile.report.json"
+    },
+    {
+      "formFactor": "desktop",
+      "performance": 100,
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 170.68175,
+          "display": "0.2\u00a0s"
+        },
+        "largest-contentful-paint": {
+          "value": 170.68175,
+          "display": "0.2\u00a0s"
+        },
+        "total-blocking-time": {
+          "value": 0,
+          "display": "0\u00a0ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0,
+          "display": "0"
+        }
+      },
+      "runWarnings": [],
+      "sha256": "8a40c7b54ce1c3191c5e8551af9357a4eebaf5d50fff125d03adaf2e577a5f95",
+      "report": "dist/validation/3.0.1/bulud-carousel-release-desktop.report.json"
+    }
+  ]
+}

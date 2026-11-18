@@ -267,24 +267,40 @@ export class BuludCarousel {
   private touchX = 0;
   private startX = 0;
   private startScroll = 0;
+  private readonly geometryRevision = signal(0);
 
   private clamp(index: number): number {
     return Math.max(0, Math.min(Math.trunc(index) || 0, this.count() - 1));
   }
+  private scrollGeometry() {
+    const element = this.viewport()?.nativeElement;
+    if (!element) return null;
+    return {
+      element,
+      width: element.clientWidth,
+      rtl:
+        element.ownerDocument.defaultView?.getComputedStyle(element)
+          .direction === 'rtl',
+    };
+  }
   private rtl(): boolean {
+    const element = this.viewport()?.nativeElement;
     return (
-      this.viewport()!.nativeElement.ownerDocument.defaultView?.getComputedStyle(
-        this.viewport()!.nativeElement,
-      ).direction === 'rtl'
+      !!element &&
+      element.ownerDocument.defaultView?.getComputedStyle(element).direction ===
+        'rtl'
     );
   }
   private scrollToIndex(index: number, smooth: boolean): void {
-    const element = this.viewport()!.nativeElement,
-      left = index * element.clientWidth * (this.rtl() ? -1 : 1);
-    element.scrollTo({ left, behavior: smooth ? 'smooth' : 'instant' });
+    const geometry = this.scrollGeometry();
+    if (!geometry) return;
+    geometry.element.scrollTo({
+      left: index * geometry.width * (geometry.rtl ? -1 : 1),
+      behavior: smooth ? 'smooth' : 'instant',
+    });
   }
   goToSlide(index: number): void {
-    this.scrollToIndex(this.clamp(index), true);
+    if (!this.disabled()) this.scrollToIndex(this.clamp(index), true);
   }
   protected slideLabel(index: number): string {
     return this.runtime.text('Carousel.Slide', 'Slide ' + (index + 1), {
@@ -293,10 +309,9 @@ export class BuludCarousel {
   }
   protected onScroll(): void {
     const element = this.viewport()!.nativeElement;
-    if (!element.clientWidth) return;
-    const index = this.clamp(
-      Math.round(Math.abs(element.scrollLeft) / element.clientWidth),
-    );
+    const width = element.clientWidth;
+    if (!width) return;
+    const index = this.clamp(Math.round(Math.abs(element.scrollLeft) / width));
     if (index !== this.active()) {
       this.active.set(index);
       this.slideChange.emit(index);
@@ -317,22 +332,20 @@ export class BuludCarousel {
     if (this.disabled()) return;
     if (event.button !== 0) return;
     const element = this.viewport()!.nativeElement;
-    this.dragging.set(true);
-    this.startX = event.pageX - element.offsetLeft;
+    this.startX = event.pageX;
     this.startScroll = element.scrollLeft;
+    this.dragging.set(true);
   }
   protected mouseMove(event: MouseEvent): void {
     if (!this.dragging()) return;
     event.preventDefault();
     const element = this.viewport()!.nativeElement;
-    element.scrollLeft =
-      this.startScroll - (event.pageX - element.offsetLeft - this.startX);
+    element.scrollLeft = this.startScroll - (event.pageX - this.startX);
   }
   protected mouseUp(event: MouseEvent): void {
     if (!this.dragging()) return;
     this.dragging.set(false);
-    const distance =
-      this.startX - (event.pageX - this.viewport()!.nativeElement.offsetLeft);
+    const distance = this.startX - event.pageX;
     this.goToSlide(
       this.active() + (Math.abs(distance) > 50 ? (distance > 0 ? 1 : -1) : 0),
     );
@@ -372,44 +385,65 @@ export class BuludCarousel {
       });
     });
 
-    afterRenderEffect((onCleanup) => {
-      if (this.presentation() !== 'scroll') return;
-      const viewport = this.viewport()!.nativeElement,
-        track = this.scrollTrack()!.nativeElement,
-        win = viewport.ownerDocument.defaultView;
-      if (!win) return;
-      const count = () => this.count.set(track.children.length);
-      count();
-      const Observer = (
-        win as Window & { MutationObserver?: typeof MutationObserver }
-      ).MutationObserver;
-      const mutation = Observer ? new Observer(count) : undefined;
-      mutation?.observe(track, { childList: true });
-      const Resize = (
-        win as Window & { ResizeObserver?: typeof ResizeObserver }
-      ).ResizeObserver;
-      const resize = Resize
-        ? new Resize(() => this.scrollToIndex(this.active(), false))
-        : undefined;
-      resize?.observe(viewport);
-      onCleanup(() => {
-        mutation?.disconnect();
-        resize?.disconnect();
-      });
+    afterRenderEffect({
+      read: (onCleanup) => {
+        if (this.presentation() !== 'scroll') return;
+        const viewport = this.viewport()!.nativeElement,
+          track = this.scrollTrack()!.nativeElement,
+          win = viewport.ownerDocument.defaultView;
+        if (!win) return;
+        const count = () => this.count.set(track.children.length);
+        count();
+        const Observer = (
+          win as Window & { MutationObserver?: typeof MutationObserver }
+        ).MutationObserver;
+        const mutation = Observer ? new Observer(count) : undefined;
+        mutation?.observe(track, { childList: true });
+        const Resize = (
+          win as Window & { ResizeObserver?: typeof ResizeObserver }
+        ).ResizeObserver;
+        const resize = Resize
+          ? new Resize(() =>
+              this.geometryRevision.update((revision) => revision + 1),
+            )
+          : undefined;
+        resize?.observe(viewport);
+        onCleanup(() => {
+          mutation?.disconnect();
+          resize?.disconnect();
+        });
+      },
     });
-    afterRenderEffect(() => {
-      if (this.presentation() !== 'scroll') return;
-      const initial = this.defaultIndex();
-      this.direction();
-      this.runtime.viewportWidth();
-      const target =
-        this.previousDefault !== initial
-          ? initial
-          : untracked(() => this.active());
-      this.previousDefault = initial;
-      this.active.set(this.clamp(target));
-      this.scrollToIndex(this.clamp(target), false);
-      this.ready.set(true);
+    // Measure every carousel before any carousel writes its scroll position.
+    // Mixed read/write callbacks force a fresh page layout for each instance.
+    afterRenderEffect({
+      earlyRead: () => {
+        if (this.presentation() !== 'scroll') return null;
+        this.direction();
+        this.runtime.viewportWidth();
+        this.geometryRevision();
+        this.count();
+        const initial = this.defaultIndex();
+        const geometry = this.scrollGeometry();
+        const count = this.scrollTrack()?.nativeElement.children.length ?? 0;
+        const target =
+          this.previousDefault !== initial
+            ? initial
+            : untracked(() => this.active());
+        const index = Math.max(0, Math.min(Math.trunc(target) || 0, count - 1));
+        return geometry ? { ...geometry, initial, index, count } : null;
+      },
+      write: (measurement) => {
+        const geometry = measurement();
+        if (!geometry) return;
+        this.previousDefault = geometry.count ? geometry.initial : undefined;
+        this.active.set(geometry.index);
+        geometry.element.scrollTo({
+          left: geometry.index * geometry.width * (geometry.rtl ? -1 : 1),
+          behavior: 'instant',
+        });
+        this.ready.set(true);
+      },
     });
   }
 }
